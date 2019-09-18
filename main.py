@@ -7,6 +7,8 @@ Created on Tue Sep 17 19:14:08 2019
 """
 
 import numpy as np
+import sobol_seq
+from scipy.stats import norm
 
 T         = 2
 sig_zf_0  = 0.15
@@ -18,6 +20,7 @@ n_zm      = 5
 sig_psi_0 = 0.12
 sig_psi   = 0.03
 n_psi     = 15
+beta = 0.95
 
 # let's approximate three Markov chains
 
@@ -71,8 +74,8 @@ def utility(c):
 #print(cmult(0.5))
 
 
-def Vlast(zm,zf,psi,theta):
-    income = np.exp(zm) + np.exp(zf)
+def Vlast(sm,sf,zm,zf,psi,theta):
+    income = sm + np.exp(zm) + sf + np.exp(zf)
     kf, km = cmult(theta)
     cf, cm = kf*income, km*income
     u_couple = umult(theta)*utility(income)
@@ -85,11 +88,11 @@ def Vlast(zm,zf,psi,theta):
     VF = u_f + psi
     return V, VM, VF
 
-def Vs(z):
-    return utility(np.exp(z))
+def Vs(s,z):    
+    return utility(s+np.exp(z))
     
     
-out = Vlast(grid[-1][20,0],grid[-1][20,1],grid[-1][20,2],0.5)
+#out = Vlast(0,0,grid[-1][20,0],grid[-1][20,1],grid[-1][20,2],0.5)
 
 gamma = 0.5
 
@@ -99,20 +102,21 @@ print('Time elapsed is {}'.format(default_timer()-start))
 
 
 
-def theta_opt(zm,zf,psi,npoints=50):
+def theta_opt(sm,sf,zm,zf,psi,npoints=100):
     
     # everything should be an array
     zm = zm if isinstance(zm,np.ndarray) else np.array([zm])
     zf = zf if isinstance(zf,np.ndarray) else np.array([zf])
     psi = psi if isinstance(psi,np.ndarray) else np.array([psi])
+    sm = sm if isinstance(sm,np.ndarray) else np.array([sm])
+    sf = sf if isinstance(sf,np.ndarray) else np.array([sf])
     
+    VM_S = Vs(sm,zm)
+    VF_S = Vs(sf,zf)
     
-    VM_S = Vs(zm)
-    VF_S = Vs(zf)
+    thetas = np.linspace(0.001,0.999,npoints)
     
-    thetas = np.linspace(0.01,0.99,npoints)
-    
-    V, VM, VF = Vlast(zm[:,np.newaxis],zf[:,np.newaxis],psi[:,np.newaxis],thetas)
+    V, VM, VF = Vlast(sm[:,np.newaxis],sf[:,np.newaxis],zm[:,np.newaxis],zf[:,np.newaxis],psi[:,np.newaxis],thetas)
     S_M = (VM - VM_S[:,np.newaxis])
     S_F = (VF - VF_S[:,np.newaxis])
     
@@ -152,16 +156,21 @@ def theta_opt(zm,zf,psi,npoints=50):
 
 
 
-def Vnext(zm,zf,psi):
-    topt = theta_opt(zm,zf,psi)
+def Vnext(sm,sf,zm,zf,psi):
+    topt = theta_opt(sm,sf,zm,zf,psi)
+    
+    if sm.size == 1: sm = sm*np.ones_like(sf)
+    if sf.size == 1: sf = sf*np.ones_like(sm)
+    if zm.size == 1: zm = zm*np.ones_like(zf)
+    if zf.size == 1: zf = zf*np.ones_like(zm)
     
     Vout_f = np.zeros_like(zf)
     Vout_m = np.zeros_like(zm)
-    Vf = Vs(zf)
-    Vm = Vs(zm)
+    Vf = Vs(sf,zf)
+    Vm = Vs(sm,zm)
     
     i_mar = ~np.isnan(topt)
-    Vmar_tuple = Vlast(zm[i_mar],zf[i_mar],psi[i_mar],topt[i_mar])
+    Vmar_tuple = Vlast(sm[i_mar],sf[i_mar],zm[i_mar],zf[i_mar],psi[i_mar],topt[i_mar])
     Vout_m[i_mar] = Vmar_tuple[1]
     Vout_f[i_mar] = Vmar_tuple[2]
     Vout_m[~i_mar] = Vm[~i_mar]
@@ -173,11 +182,68 @@ def Vnext(zm,zf,psi):
 
 
 
-tht = theta_opt(grid[-1][:,0],grid[-1][:,1],grid[-1][:,2])
 
-Vnxt = Vnext(grid[-1][:,0],grid[-1][:,1],grid[-1][:,2])
+npart = 7
+v = norm.ppf(sobol_seq.i4_sobol_generate(3,npart))
+sig_a = 0.1
+sig_z = 0.2
 
 
-      
-print(tht)
+def EVnext_f(sf,zf):
+    sf = sf if isinstance(sf,np.ndarray) else np.array([sf])
+    zf = zf if isinstance(zf,np.ndarray) else np.array([zf])
+    sm = sf*np.exp(sig_a*v[:,0])
+    zm = zf + sig_z*v[:,1]
+    psi = sig_psi_0*v[:,2]
+    EV_f = Vnext(sm,sf,zm,zf,psi)[0].mean()
+    return EV_f
+    
+    
+from scipy.optimize import fminbound
+
+
+nnodes = 7
+z_nodes = norm.ppf(sobol_seq.i4_sobol_generate(1,nnodes))
+
+def Vzero(a0,z0):
+    income = a0 + np.exp(z0)
+    z_next = z0 + sig_zf*z_nodes
+    
+    def total_u(s):
+        c = income - s
+        
+        EV = np.mean([EVnext_f(s,z) for z in z_next])
+        return -(utility(c) + beta*EV)
+    
+    
+    smin = 0
+    smax = 0.9*income
+    
+    s_opt = fminbound(total_u,smin,smax)
+    
+    return -total_u(s_opt), s_opt, s_opt/income
+
+
+#print(Vzero(0,0.4))
+        
+    
+    
+
+    
+    
+#tht = theta_opt(0,0,grid[-1][:,0],grid[-1][:,1],grid[-1][:,2])
+
+#Vnxt = Vnext(0,0,grid[-1][:,0],grid[-1][:,1],grid[-1][:,2])
+   
+
+a0v = np.arange(0,5,0.01)
+
+savings = [Vzero(a0,-0.4)[2] for a0 in a0v]
+
+import matplotlib.pyplot as plt
+plt.figure()
+plt.plot(a0v,savings)
+
+
+#print(tht)
 print('Time elapsed is {}'.format(default_timer()-start))

@@ -22,6 +22,10 @@ n_psi     = 15
 # let's approximate three Markov chains
 
 
+from timeit import default_timer
+
+start = default_timer()
+
 from rw_approximations import rouw_nonst
 from mc_tools import combine_matrices_two_lists
 
@@ -89,36 +93,91 @@ out = Vlast(grid[-1][20,0],grid[-1][20,1],grid[-1][20,2],0.5)
 
 gamma = 0.5
 
-def theta_opt(zm,zf,psi):
+
+
+print('Time elapsed is {}'.format(default_timer()-start))
+
+
+
+def theta_opt(zm,zf,psi,npoints=50):
+    
+    # everything should be an array
+    zm = zm if isinstance(zm,np.ndarray) else np.array([zm])
+    zf = zf if isinstance(zf,np.ndarray) else np.array([zf])
+    psi = psi if isinstance(psi,np.ndarray) else np.array([psi])
+    
     
     VM_S = Vs(zm)
     VF_S = Vs(zf)
     
-    def nbs(theta,ret_s=False):
-        V, VM, VF = Vlast(zm,zf,psi,theta)
-        S_M = VM - VM_S
-        S_F = VF - VF_S
-        
-        out = -np.inf
-        if S_M > 0 and S_F > 0:
-            out = (S_M**gamma)*(S_F**(1-gamma))
-            
-        return out
+    thetas = np.linspace(0.01,0.99,npoints)
     
-    thetas = np.linspace(0.05,0.95,50)
+    V, VM, VF = Vlast(zm[:,np.newaxis],zf[:,np.newaxis],psi[:,np.newaxis],thetas)
+    S_M = (VM - VM_S[:,np.newaxis])
+    S_F = (VF - VF_S[:,np.newaxis])
     
-    nbs_all = [nbs(t) for t in thetas]
+    i_pos = (np.array(S_M > 0) & np.array(S_F > 0))
+    ind_no = np.where(~i_pos)
+    ind_y  =  np.where(i_pos)
     
-    if np.any(np.array(nbs_all)>0):
-        theta = thetas[np.argmax(nbs_all)]
-    else:
-        theta = np.nan
+    nbs_all = np.empty_like(S_M)
+    
+    nbs_all[ind_no] = -np.inf
+    nbs_all[ind_y] = (S_M[ind_y]**gamma)*(S_F[ind_y]**(1-gamma))
+    
+    # this is matrix containing Nash Bargaining Surplus where rows are states
+    # and columns are thetas
+    
+    # maximize each row over thetas and pick theta    
+    theta = np.array([
+                        thetas[np.argmax(nbs_row)] if np.any(nbs_row>0)
+                        else np.nan 
+                        for nbs_row in nbs_all]
+                    )
+      
+
+    ''' 
+    # alternative version w/o looping:
+    
+    i_no = np.all(nbs_all<0,axis=1)
+    ind_no = np.where(i_no)[0]
+    ind_y  = np.where(~i_no)[0]
+    theta = np.empty_like(zm)
+    
+    theta[ind_no] = np.nan
+    theta[ind_y]  = thetas[np.argmax(nbs_all[ind_y,:],axis=1)]
+    '''
         
     return theta
 
-tht = np.array([theta_opt(g[0],g[1],g[2]) for g in grid[-1]])
 
+
+def Vnext(zm,zf,psi):
+    topt = theta_opt(zm,zf,psi)
+    
+    Vout_f = np.zeros_like(zf)
+    Vout_m = np.zeros_like(zm)
+    Vf = Vs(zf)
+    Vm = Vs(zm)
+    
+    i_mar = ~np.isnan(topt)
+    Vmar_tuple = Vlast(zm[i_mar],zf[i_mar],psi[i_mar],topt[i_mar])
+    Vout_m[i_mar] = Vmar_tuple[1]
+    Vout_f[i_mar] = Vmar_tuple[2]
+    Vout_m[~i_mar] = Vm[~i_mar]
+    Vout_f[~i_mar] = Vf[~i_mar]
+    
+    return Vout_f, Vout_m
+    
+
+
+
+
+tht = theta_opt(grid[-1][:,0],grid[-1][:,1],grid[-1][:,2])
+
+Vnxt = Vnext(grid[-1][:,0],grid[-1][:,1],grid[-1][:,2])
 
 
       
 print(tht)
+print('Time elapsed is {}'.format(default_timer()-start))

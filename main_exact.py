@@ -19,7 +19,7 @@ def theta_opt(setup,sm,sf,zm,zf,psi):
     VF_S = setup.vs_last(sf,zf)
     
     
-    V, VM, VF = setup.vm_last(sm[:,np.newaxis]+sf[:,np.newaxis],zm[:,np.newaxis],zf[:,np.newaxis],psi[:,np.newaxis],setup.thetagrid)
+    V, VF, VM = setup.vm_last(sm[:,np.newaxis]+sf[:,np.newaxis],zm[:,np.newaxis],zf[:,np.newaxis],psi[:,np.newaxis],setup.thetagrid)
     S_M = (VM - VM_S[:,np.newaxis])
     S_F = (VF - VF_S[:,np.newaxis])
     
@@ -60,6 +60,8 @@ def theta_opt(setup,sm,sf,zm,zf,psi):
 
 
 
+
+
 def v_after_mar_exact(setup,sm,sf,zm,zf,psi):
     
     sm, sf, zm, zf, psi = num_to_nparray(sm,sf,zm,zf,psi)
@@ -80,8 +82,8 @@ def v_after_mar_exact(setup,sm,sf,zm,zf,psi):
     
     if np.any(i_mar):
         Vmar_tuple = setup.vm_last(sm[i_mar]+sf[i_mar],zm[i_mar],zf[i_mar],psi[i_mar],topt[i_mar])
-        Vout_m[i_mar] = Vmar_tuple[1]
-        Vout_f[i_mar] = Vmar_tuple[2]
+        Vout_m[i_mar] = Vmar_tuple[2]
+        Vout_f[i_mar] = Vmar_tuple[1]
     
     Vout_m[~i_mar] = Vm[~i_mar]
     Vout_f[~i_mar] = Vf[~i_mar]

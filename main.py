@@ -10,6 +10,8 @@ import numpy as np
 import sobol_seq
 from scipy.stats import norm
 from numba import jit
+import matplotlib.pyplot as plt
+plt.figure()
 
 T         = 2
 sig_zf_0  = 0.15
@@ -95,10 +97,10 @@ def V_postren(s,zm,zf,psi,theta):
 
 
 
-ntheta=200
+ntheta = 100
 thetas = np.linspace(0.01,0.99,ntheta)
 ns = 100
-sgrid = np.linspace(0,10,ns)
+sgrid = np.linspace(0,4,ns)
 
 gexo = grid[-1]
 
@@ -253,12 +255,17 @@ a0 = 2
 zgrid = zf[0]
 
 
-savings_rate = [Vzero(a0,z)[2] for z in zgrid]
+z0 = zf[0][4]
 
-import matplotlib.pyplot as plt
-plt.figure()
-plt.plot(zgrid,savings_rate,label="exact") # these are exact savings on the grid
+'''
 
+savings_rate = [Vzero(a,z0)[1] for a in sgrid]
+
+
+
+
+plt.plot(sgrid,savings_rate,label="exact") # these are exact savings on the grid
+'''
 
 #print(tht)
 print('Time elapsed is {}'.format(default_timer()-start))
@@ -292,17 +299,14 @@ def Vzero_int(a0,z0):
     
     return -neg_total_u(s_opt), s_opt, s_opt/income
 
-savings_rate_int = [Vzero_int(a0,z)[2] for z in zgrid]
-plt.plot(zgrid,savings_rate_int,label="interpolation")
+
+'''
+savings_rate_int = [Vzero_int(a,z0)[1] for a in sgrid]
+plt.plot(sgrid,savings_rate_int,label="interpolation")
 plt.legend()
+'''
 
 print('Time elapsed is {}'.format(default_timer()-start))
-
-
-
-
-
-
 
 ## this section uses grids for everything
 
@@ -323,6 +327,9 @@ print('Time elapsed is {}'.format(default_timer()-start))
 
 from trans_unif import transition_uniform
 from mc_tools import int_prob
+
+
+
 
 
 def V_newmar(sf,sm,ind_or_inds):
@@ -347,22 +354,25 @@ def V_newmar(sf,sm,ind_or_inds):
     assert np.all(gexo[ind,1] == zm[-1][izm])
     assert np.all(gexo[ind,2] == psi[-1][ipsi])
     
+    ism, isf, isc, psf, psm, psc = (x[:,None] for x in (ism,isf,isc,psf, psm, psc))
+    
+    
     
     
     Vms = VMval_single[ism,izm]*psm + VMval_single[ism+1,izm]*(1-psm)
     Vfs = VFval_single[isf,izf]*psf + VFval_single[isf+1,izf]*(1-psf)
-    Vmm = VMval_postren[isc,ind,:]*psc[:,None] + VMval_postren[isc+1,ind,:]*(1-psc[:,None])
-    Vfm = VFval_postren[isc,ind,:]*psc[:,None] + VFval_postren[isc+1,ind,:]*(1-psc[:,None])
+    Vmm = VMval_postren[isc,ind,:]*(psc[:,:,None]) + VMval_postren[isc+1,ind,:]*(1-psc[:,:,None])
+    Vfm = VFval_postren[isc,ind,:]*(psc[:,:,None]) + VFval_postren[isc+1,ind,:]*(1-psc[:,:,None])
     
-    s_m = Vmm - Vms[:,None]
-    s_f = Vfm - Vfs[:,None]
+    s_m = Vmm - Vms[:,:,None]
+    s_f = Vfm - Vfs[:,:,None]
     
     nbs = -np.inf*np.ones_like(s_m)
     
     i_pos = ((s_m > 0) & (s_f>0) )
     nbs[i_pos] = s_m[i_pos]**(gamma) * s_f[i_pos]**(1-gamma)
     
-    ismar = np.any(nbs>0,axis=1)
+    ismar = np.any(nbs>0,axis=2)
     Vout_m, Vout_f = np.empty_like(Vms), np.empty_like(Vfs)
     
     Vout_m[~ismar] = Vms[~ismar]
@@ -377,9 +387,6 @@ def V_newmar(sf,sm,ind_or_inds):
 def EV_next(sf,trim_lvl=0.01):
     
     p_mat = np.empty((n_zf*n_zm*n_psi,zf[0].shape[0]))
-    
-    
-   #
     
     
     for iz in range(zf[0].shape[0]):
@@ -403,31 +410,139 @@ def EV_next(sf,trim_lvl=0.01):
         p_mat[:,iz] = p_vec
         
     
-    VF_next = np.ones((1,n_zf*n_zm*n_psi))*(-1e-10)
+    VF_next = np.ones((sf.size,n_zf*n_zm*n_psi))*(-1e-10)
     inds = np.where( np.any(p_mat>0,axis=1 ) )[0]
+    
+    EV_f = 0.0
     
     for ipart in range(npart):
         sm = sf*np.exp(sig_a*v[ipart,0])
-        VF_next[0,inds] = V_newmar(sf,sm,inds)[0]
-        try:
-            EV_f += (1/npart)*np.dot(VF_next,p_mat)
-        except:
-            EV_f = (1/npart)*np.dot(VF_next,p_mat)
-    
+        VF_next[:,inds] = V_newmar(sf,sm,inds)[0]
+        EV_f += (1/npart)*np.dot(VF_next,p_mat)
+        
     
     
     
     return EV_f#, p_mat, VF_next
 
+
+EV_integrated = EV_next(sgrid)
+
+
+def Vzero_grid(a0):
+    income = a0[:,None] + np.exp(zf[0][None,:])
+    
+    
+    def neg_total_u(s,inc,EVg):
+        c = inc - s
+        assert np.all(c > 0)
+        EV = np.interp(s,sgrid,EVg)        
+        return -(utility(c) + beta*EV)
+    
+    
+    
+    smin = np.zeros_like(income)
+    smax = 0.9*income
+    
+    EVT = EV_integrated.T
+    
+    s_opt = np.array([
+                         [
+                          fminbound( lambda x : neg_total_u(x,income[j,i],EVval),smin[j,i],smax[j,i] ) 
+                          for i, EVval in enumerate(EVT)
+                         ]
+                       for j in range(a0.size)
+                      ])
+    
+    
+    V_ret =  np.array([-neg_total_u(s_opt[:,i],income[:,i],EV) for i, EV in enumerate(EVT)]).T
+    
+    return V_ret, s_opt, s_opt/income
+
+
+
+def first_true(mask, axis=None, invalid_val=-1):
+    return np.where(mask.any(axis=axis), mask.argmax(axis=axis), invalid_val)
+
+def last_true(mask, axis=None, invalid_val=-1):
+    val = mask.shape[axis] - np.flip(mask, axis=axis).argmax(axis=axis) - 1
+    return np.where(mask.any(axis=axis), val, invalid_val)
+
+
+
+def V_preren(kappa=0.45,return_all=False):
+    
+    ism, psm = transition_uniform(sgrid,kappa*sgrid)
+    isf, psf = transition_uniform(sgrid,kappa*sgrid)
+    
+    ind = np.array(range(n_zm*n_zf*n_psi))
+    izf = ind // (n_zm*n_psi)
+    izm = (ind - izf*n_zm*n_psi) // n_psi
+    ipsi = ind - izf*n_zm*n_psi - izm*n_psi
+    
+    Vm_divorce = (VMval_single[ism,:]*psm[:,None] + VMval_single[ism+1,:]*(1-psm[:,None]))[:,izm,None]
+    Vf_divorce = (VFval_single[isf,:]*psf[:,None] + VFval_single[isf+1,:]*(1-psf[:,None]))[:,izf,None]
+    
+    S_f = VFval_postren - Vf_divorce
+    S_m = VMval_postren - Vm_divorce
+    
+    I_f = np.array(S_f > 0)
+    I_m = np.array(S_m > 0)
+    
+    sq = (I_f & I_m)
+    
+    together = np.any(sq,axis=2)
+    f_ren = (~I_f & together[:,:,None])
+    m_ren = (~I_m & together[:,:,None])
+    
+    nf = first_true(I_f,axis=2)
+    nm = last_true(I_m,axis=2)
+    
+    # debugging
+    Sf_min  = np.take_along_axis(S_f,nf[:,:,None],2).squeeze()
+    Sf_min1 = np.take_along_axis(S_f,nf[:,:,None]-1,2).squeeze()
+    Sm_min  = np.take_along_axis(S_m,nm[:,:,None],2).squeeze()
+    i_sm = np.minimum(nm[:,:,None]+1, ntheta-1) # o/w can exceed the size
+    Sm_min1 = np.take_along_axis(S_m,i_sm,2).squeeze()
+    
+    assert np.all(Sf_min[together]>0)
+    assert np.all(Sf_min1[together]<0)
+    assert np.all(Sm_min[together]>0)
+    assert np.all(Sm_min1[together]<0)
+    # end debugging
+    
+    # I create new for preren
+    VF_out = np.copy(VFval_postren)
+    VM_out = np.copy(VMval_postren)
+    
+    
+    Vf_ren_f = np.take_along_axis(VFval_postren,nf[:,:,None],2)
+    Vf_ren_m = np.take_along_axis(VFval_postren,nm[:,:,None],2)
+    Vm_ren_f = np.take_along_axis(VMval_postren,nf[:,:,None],2)
+    Vm_ren_m = np.take_along_axis(VMval_postren,nm[:,:,None],2)
+    
+    
+    bool_divorce = np.broadcast_to(~together[:,:,None],VF_out.shape)
+    VF_out[bool_divorce] = np.broadcast_to(Vf_divorce,VF_out.shape)[bool_divorce]
+    VM_out[bool_divorce] = np.broadcast_to(Vm_divorce,VF_out.shape)[bool_divorce]
+    
+    VF_out[f_ren] = np.broadcast_to(Vf_ren_f,VF_out.shape)[f_ren]
+    VM_out[f_ren] = np.broadcast_to(Vm_ren_f,VM_out.shape)[f_ren]
+    VF_out[m_ren] = np.broadcast_to(Vf_ren_m,VF_out.shape)[m_ren]
+    VM_out[m_ren] = np.broadcast_to(Vm_ren_m,VM_out.shape)[m_ren]
+    
+    if not return_all:
+        return VF_out, VM_out
+    else:
+        return VF_out, VM_out, (S_f, S_m, together, f_ren, m_ren, nf, nm)
+
+vv = V_preren()
+    
+
 print('Time elapsed is {}'.format(default_timer()-start))
-pv = EV_next(2.0)
-print('Time elapsed is {}'.format(default_timer()-start))
-pv2 = np.array([EVnext_f(2.0,z) for z in zf[-1]]).flatten()
+sss = Vzero_grid(sgrid)
+plt.plot(sgrid,sss[1][:,4],label="interpolation-smart")
+plt.legend()
 print('Time elapsed is {}'.format(default_timer()-start))
 
-q  = V_newmar(np.array([0.0,0.0]),np.array([0.0,0.0]),(np.array([4,4]),np.array([4,4]),np.array([8,8])))
-q2 = V_newmar(np.array([0.0,0.0]),np.array([0.0,0.0]),np.array([368,368]) )
-qq = Vnext(np.array([0.0,0.0]),np.array([0.0,0.0]),zm[-1][np.array([4,4])],zf[-1][np.array([4,4])],psi[-1][np.array([8,8])])
-print((q,qq))
-    
-    
+

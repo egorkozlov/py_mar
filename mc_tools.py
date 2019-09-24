@@ -60,7 +60,7 @@ def trim_matrix(M,level=0.001):
      
     return Mout
 
-@jit
+#@jit
 def trim_one_matrix(M,level=0.001):
     
     Mout = M
@@ -83,7 +83,7 @@ def combine_matrices(a,b,Pia,Pib,check=True,trim=True,trim_level=0.001):
     
     return grid, Pi
   
-@jit
+#@jit
 def combine_matrices_list(alist,b,Pialist,Pib,check=True,trim=True,trim_level=0.001):
     # this combines each element of Pialist and Pib
     # they assumed to be independent (i.e. Pialist and Pib can be combined in any order)
@@ -101,7 +101,7 @@ def combine_matrices_list(alist,b,Pialist,Pib,check=True,trim=True,trim_level=0.
     return grid, Pi
 
 
-@jit
+#@jit
 def combine_matrices_two_lists(alist,blist,Pialist,Piblist,check=True,trim=True,trim_level=0.001):
     # this combines each element of Pialist and Pib
     # they assumed to be independent (i.e. Pialist and Pib can be combined in any order)

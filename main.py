@@ -62,23 +62,26 @@ if __name__ == '__main__':
     
     from integrator_singles import ev_after_savings_grid_all_z
     from renegotiation import v_last_period_renegotiated
-    
+    from integrator_couples import ev_couple_after_savings
     
     vv = v_last_period_renegotiated(setup,V0)
     print('Renegotiation for period 1 done at {}'.format(default_timer()-start))
     
     
-    V1 = { 'M':  {'V':None,'VF':vv[0],'VM':vv[1]},
+    V1 = { 'M':  {'V':vv[0],'VF':vv[1],'VM':vv[2]},
           'SF': {'V':VFval_single},
           'SM': {'V':VMval_single}
          }
     
     
+    evc = ev_couple_after_savings(setup,V1['M'])
+    print('Integration for couples done at {}'.format(default_timer()-start))
+    
     female = True
     
     solution = list()
     
-    V = V1
+    V = V0
     
     for female in [True,False]:
         

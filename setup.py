@@ -12,6 +12,8 @@ from scipy.stats import norm
 import sobol_seq
 from collections import namedtuple
 
+from scipy import sparse
+
 
 
 class ModelSetup(object):
@@ -64,6 +66,8 @@ class ModelSetup(object):
         
         zfzm, zfzmmat = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], exogrid['zf_t_mat'], exogrid['zm_t_mat'])
         exogrid['all_t'], exogrid['all_t_mat'] = combine_matrices_two_lists(zfzm,exogrid['psi_t'],zfzmmat,exogrid['psi_t_mat'])
+        exogrid['all_t_mat_sparse_T'] = [sparse.csc_matrix(D.T) if D is not None else None for D in exogrid['all_t_mat']]
+        
         
         Exogrid_nt = namedtuple('Exogrid_nt',exogrid.keys())
         
@@ -77,7 +81,7 @@ class ModelSetup(object):
         self.agrid = np.linspace(self.amin,self.amax,self.na)
 
         # grid for theta
-        self.ntheta = 100
+        self.ntheta = 112
         self.thetamin = 0.01
         self.thetamax = 0.99
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta)

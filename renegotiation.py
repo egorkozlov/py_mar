@@ -19,7 +19,7 @@ def v_last_period_renegotiated(setup,V,kappa=0.45,return_all=False):
     
     
     VMval_single, VFval_single = V['SM']['V'], V['SF']['V']
-    VMval_postren, VFval_postren = V['M']['VM'], V['M']['VF']
+    Vval_postren, VMval_postren, VFval_postren = V['M']['V'], V['M']['VM'], V['M']['VF']
     
     
     Vm_divorce = (VMval_single[ism,:]*psm[:,None] + VMval_single[ism+1,:]*(1-psm[:,None]))[:,izm,None]
@@ -57,27 +57,35 @@ def v_last_period_renegotiated(setup,V,kappa=0.45,return_all=False):
     # I create new for preren
     VF_out = np.copy(VFval_postren)
     VM_out = np.copy(VMval_postren)
-    
+    V_out  = np.copy(Vval_postren)
     
     Vf_ren_f = np.take_along_axis(VFval_postren,nf[:,:,None],2)
     Vf_ren_m = np.take_along_axis(VFval_postren,nm[:,:,None],2)
     Vm_ren_f = np.take_along_axis(VMval_postren,nf[:,:,None],2)
     Vm_ren_m = np.take_along_axis(VMval_postren,nm[:,:,None],2)
-    
+    V_ren_f  = np.take_along_axis(Vval_postren,nf[:,:,None],2)
+    V_ren_m  = np.take_along_axis(Vval_postren,nm[:,:,None],2)
     
     bt = lambda x : np.broadcast_to(x, VF_out.shape) # mad skillz
     # this assumed VF_out and VM_out have the same shape
+    
+    t_stretch = bt(setup.thetagrid[None,None,:])
     
     bool_divorce = bt(~together[:,:,None])
     VF_out[bool_divorce] = bt(Vf_divorce)[bool_divorce]
     VM_out[bool_divorce] = bt(Vm_divorce)[bool_divorce]
     
+    V_out[bool_divorce] = t_stretch[bool_divorce]*VF_out[bool_divorce] + \
+                      (1-t_stretch[bool_divorce])*VM_out[bool_divorce] # check me please
+    
     VF_out[f_ren] = bt(Vf_ren_f)[f_ren]
     VM_out[f_ren] = bt(Vm_ren_f)[f_ren]
+    V_out[f_ren]  = bt( V_ren_f)[f_ren]
     VF_out[m_ren] = bt(Vf_ren_m)[m_ren]
     VM_out[m_ren] = bt(Vm_ren_m)[m_ren]
+    V_out[m_ren]  = bt( V_ren_m)[m_ren]
     
     if not return_all:
-        return VF_out, VM_out
+        return V_out, VF_out, VM_out
     else:
-        return VF_out, VM_out, (S_f, S_m, together, f_ren, m_ren, nf, nm)
+        return V_out, VF_out, VM_out, (S_f, S_m, together, f_ren, m_ren, nf, nm)

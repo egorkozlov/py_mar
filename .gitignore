@@ -122,3 +122,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+wrapping-fortran/compiler-test/.DS_Store
+
+wrapping-fortran/.DS_Store

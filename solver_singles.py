@@ -7,8 +7,45 @@ This collects solver for single agents
 import numpy as np
 from scipy.optimize import fminbound
 
+from opt_test import build_s_grid, sgrid_on_agrid, get_EV, v_optimize
 
 def v_period_zero_grid(setup,a0,EV,female):
+    EVT = np.float32(EV.T)
+    
+    agrid = setup.agrid
+    sgrid = build_s_grid(agrid,20,0.001,0.1)
+    ind, p = sgrid_on_agrid(sgrid,agrid)
+    
+    
+    
+    
+    
+    zvals = setup.exogrid.zf_t[0] if female else setup.exogrid.zm_t[0]
+    sigma = setup.pars['crra_power']
+    beta = setup.pars['beta']
+    
+    
+    money = a0[:,None] + np.exp(zvals[None,:])
+    
+    
+    V_ret, c_opt, s_opt = np.empty_like(money), np.empty_like(money), np.empty_like(money)
+    
+    
+    
+    for i, (EVi, mi) in enumerate(zip(EVT,money.T)):
+        EV_on_sgrid = get_EV(ind,p,EVi)
+        V_ret[:,i], c_opt[:,i], s_opt[:,i] = v_optimize(mi,sgrid,EV_on_sgrid,1.0,sigma,beta,0.0)
+    
+    return V_ret, s_opt, s_opt/money
+        
+        
+        
+    
+
+
+
+
+def v_period_zero_grid_0(setup,a0,EV,female):
     # this takes gender as argument so should be called twice
     
     agrid = setup.agrid

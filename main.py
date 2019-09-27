@@ -14,6 +14,7 @@ from setup import ModelSetup
 
 
 
+
 if __name__ == '__main__':
     
     
@@ -64,6 +65,7 @@ if __name__ == '__main__':
     from renegotiation import v_last_period_renegotiated
     from integrator_couples import ev_couple_after_savings
     
+    
     vv = v_last_period_renegotiated(setup,V0)
     print('Renegotiation for period 1 done at {}'.format(default_timer()-start))
     
@@ -92,6 +94,14 @@ if __name__ == '__main__':
         solution.append(v_period_zero_grid(setup,setup.agrid,EV_integrated,female))
         print('Optimization singles for period 0 done at {}'.format(default_timer()-start))
         
+    
+    from solver_couples import vm_period_zero_grid
+    
+    
+    vv_coup = vm_period_zero_grid(setup,setup.agrid,np.float32(evc[0]))
+    
+    
+    
     
     plt.plot(setup.agrid,solution[0][2][:,4],label="interpolation-smart-0")
     plt.plot(setup.agrid,solution[1][2][:,4],label="interpolation-smart-1")

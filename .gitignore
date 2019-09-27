@@ -126,3 +126,5 @@ dmypy.json
 wrapping-fortran/compiler-test/.DS_Store
 
 wrapping-fortran/.DS_Store
+
+.DS_Store

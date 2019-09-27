@@ -11,10 +11,8 @@ def ev_couple_after_savings(setup,Vren,use_sparse=True):
     # takes renegotiated values as input
     
     # this does dot product along 3rd dimension
-    
-    
-    
-    
+    # this takes V that already accounts for renegotiation (so that is e
+    # expected pre-negotiation V)
     
     
     if use_sparse:

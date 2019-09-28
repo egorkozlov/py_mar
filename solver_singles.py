@@ -7,13 +7,14 @@ This collects solver for single agents
 import numpy as np
 from scipy.optimize import fminbound
 
-from opt_test import build_s_grid, sgrid_on_agrid, get_EV, v_optimize
+from opt_test import build_s_grid, sgrid_on_agrid, get_EV
+from opt_test import v_optimize_gpu as v_optimize
 
 def v_period_zero_grid(setup,a0,EV,female):
     EVT = np.float32(EV.T)
     
     agrid = setup.agrid
-    sgrid = build_s_grid(agrid,20,0.001,0.1)
+    sgrid = build_s_grid(agrid,10,0.001,0.1)
     ind, p = sgrid_on_agrid(sgrid,agrid)
     
     

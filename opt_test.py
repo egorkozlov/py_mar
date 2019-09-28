@@ -7,7 +7,7 @@ Created on Thu Sep 26 20:44:26 2019
 """
 
 import numpy as np
-from numba import jit, prange
+from numba import jit, prange, cuda, float32
 #from numba.pycc import CC
 
 #cc = CC('aot_test')
@@ -80,8 +80,8 @@ def get_EV(ind,p,EVin):
 
 
 
-@jit(nopython=True)#,parallel=True)
-def v_optimize(money,sgrid,EV_on_sgrid,umult,sigma,beta,uadd):
+@jit(nopython=True,parallel=True)
+def v_optimize_cpu_loop(money,sgrid,EV_on_sgrid,umult,sigma,beta,uadd):
     
     V, c, s = np.empty(money.shape,np.float64), np.empty(money.shape,np.float64), np.empty(money.shape,np.float64)
     
@@ -91,8 +91,47 @@ def v_optimize(money,sgrid,EV_on_sgrid,umult,sigma,beta,uadd):
     oms = 1-sigma
     
     # does not allow for logs yet
-    def u(c): return umult*(c**(oms))/(oms)
+    def u(c): return umult*(c**(oms))/(oms)    
     
+    for im in range(money.size): # or prange
+        mi = money[im]        
+        c_best = mi
+        V_best = np.float32(-np.inf)
+        s_best = np.float32(0.0)   
+        
+        for i_sav in range(ns):
+            s_current = sgrid[i_sav]
+            c_current = mi - s_current
+            if c_current <= 0: break                 
+            V_new = u(c_current) + beta*EV_on_sgrid[i_sav]
+            
+            # update if imporved
+            if V_new >= V_best:
+                c_best = c_current
+                V_best = V_new
+                s_best = s_current
+                    
+            
+        c[im] = c_best
+        s[im] = s_best
+        V[im] = V_best + uadd
+        
+    return V, c, s
+
+
+
+@jit(nopython=True)#,parallel=True)
+def v_optimize_cpu_a(money,sgrid,EV_on_sgrid,umult,sigma,beta,uadd):
+    
+    V, c, s = np.empty(money.shape,np.float64), np.empty(money.shape,np.float64), np.empty(money.shape,np.float64)
+    
+    i_sav = 1
+    ns = sgrid.size
+    
+    oms = 1-sigma
+    
+    # does not allow for logs yet
+    def u(c): return umult*(c**(oms))/(oms)    
     
     for im in range(money.size): # or prange
         #i_sav = 1 # use this if parallel
@@ -106,52 +145,127 @@ def v_optimize(money,sgrid,EV_on_sgrid,umult,sigma,beta,uadd):
         s[im] = sgrid[i_opt]
         V[im] = V_vec[i_opt] + uadd
         
+        
+        
+    return V, c, s
+
+
+def v_optimize_gpu(money,sgrid,EV_on_sgrid,umult,sigma,beta,uadd):
+    
+    V, c, s = cuda.device_array(money.shape,np.float64), cuda.device_array(money.shape,np.float64), cuda.device_array(money.shape,np.float64)
+    
+    ns = sgrid.size
+    
+    oms = 1-sigma    
+    
+    money = np.float32(money)
+    
+    bEV_on_sgrid = beta*EV_on_sgrid
+    (money,sgrid,bEV_on_sgrid) = (cuda.to_device(np.ascontiguousarray(x)) for x in (money,sgrid,bEV_on_sgrid))
+    
+    @cuda.jit
+    def cuda_ker(money,sgrid,bEV_on_sgrid,c,s,V):
+        im = cuda.grid(1)
+        nm = money.size        
+        
+        s_money = cuda.shared.array(shape=(nm,),dtype=float32)
+        s_money[:] = money
+        
+        s_sgrid = cuda.shared.array(shape=(sgrid.size,),dtype=float32)
+        s_sgrid[:] = sgrid
+        
+        s_bEV = cuda.shared.array(shape=(sgrid.size,),dtype=float32)
+        s_bEV[:] = bEV_on_sgrid
+        
+        
+        def u(c): # scalar
+            return umult*(c**(oms))/(oms)
+       
+        if im < nm:
+            mi = s_money[im]
+            #i_sav = 1
+            
+            c_best = mi
+            V_best = np.float32(-np.inf)
+            s_best = np.float32(0.0)           
+            
+            # just another loop
+            for i_sav in range(ns):
+                s_current = s_sgrid[i_sav]
+                c_current = mi - s_current
+                if c_current <= 0: break                 
+                V_new = u(c_current) + s_bEV[i_sav]
+                
+                # update if imporved
+                if V_new >= V_best:
+                    c_best = c_current
+                    V_best = V_new
+                    s_best = s_current
+                    
+            c[im] = c_best
+            s[im] = s_best
+            V[im] = V_best + uadd
+        
+       
+    cuda_ker[money.size,money.size](money,sgrid,bEV_on_sgrid,c,s,V)
+    
+        
     return V, c, s
 
 
 
-@jit(nopython=True)#,parallel=True)
+signature = 'Tuple((float32[:,:],float32[:,:],float32[:,:]))(float32[:],float32[:],float32[:,:],float32,float32,float32,float32)'
+@jit(signature,nopython=True,parallel=True)
+#@cc.export('vopt_MEV',signature)
 def v_optimize_multiEV(money,sgrid,EV_on_sgrid_M,umult,sigma,beta,uadd):
-    
     
     ntheta = EV_on_sgrid_M.shape[-1]
     shp = (money.size,ntheta)
-    V, c, s = np.empty(shp,np.float64), np.empty(shp,np.float64), np.empty(shp,np.float64)
+    V, c, s = np.empty(shp,np.float32), np.empty(shp,np.float32), np.empty(shp,np.float32)
     
     i_sav = 1
     ns = sgrid.size
     
     oms = 1-sigma
     
-    # does not allow for logs yet
     def u(c): return umult*(c**(oms))/(oms)
     
-    #i_all = np.arange(ntheta)
     
     for im in range(money.size): # or prange
         #i_sav = 1 # use this if parallel
         mi = money[im]
         while i_sav < ns-1 and mi > sgrid[i_sav+1]: i_sav += 1
         
+        c_vec = np.empty(i_sav)
+        #V_vec = np.empty((i_sav,ntheta))
+        
         c_vec = mi - sgrid[:(i_sav+1)]
-        V_vec = np.expand_dims(u(c_vec),1) + beta*EV_on_sgrid_M[:(i_sav+1),:]
+        
+        uv = u(c_vec)
         
         i_opt = np.empty(ntheta,np.int32)
-        for it in range(ntheta):
-            i_opt[it] = np.argmax(V_vec[:,it])
-            V[im,it] = V_vec[i_opt[it],it] + uadd
+        V_opt = np.empty(ntheta,np.float32)
+        
+        for it in prange(ntheta):            
+            Vvec_it = uv + beta*EV_on_sgrid_M[:(i_sav+1),it]
+            iopt = np.argmax(Vvec_it)
+            i_opt[it] = iopt
+            V_opt[it] = Vvec_it[iopt] + uadd
             
-        #i_opt = V_vec.argmax(axis=0)
+            
+        
         c[im,:] = c_vec[i_opt]
         s[im,:] = sgrid[i_opt]
-        #V[im,:] = V_vec[i_opt,i_all] + uadd
+        
+        V[im,:] = V_opt + uadd
         
     return V, c, s
             
 
 
 if __name__ == "__main__":
-    #cc.compile()     
+    #cc.compile()  
+    
     #from aot_test import build_s_grid, sgrid_on_agrid
     agrid = np.array([0,1,2,4,5,7,10,12,15,20],dtype=np.float64)       
 

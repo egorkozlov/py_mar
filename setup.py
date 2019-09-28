@@ -75,13 +75,13 @@ class ModelSetup(object):
         self.exogrid = Exogrid_nt(**exogrid)
 
 
-        self.na = 100
+        self.na = 60
         self.amin = 0
         self.amax = 4
         self.agrid = np.linspace(self.amin,self.amax,self.na)
 
         # grid for theta
-        self.ntheta = 112
+        self.ntheta = 70
         self.thetamin = 0.01
         self.thetamax = 0.99
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta)

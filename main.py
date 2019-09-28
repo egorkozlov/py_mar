@@ -97,9 +97,8 @@ if __name__ == '__main__':
     
     from solver_couples import vm_period_zero_grid
     
-    
     vv_coup = vm_period_zero_grid(setup,setup.agrid,np.float32(evc[0]))
-    
+    print('Optimization for couples done at {}'.format(default_timer()-start))
     
     
     

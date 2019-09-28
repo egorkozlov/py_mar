@@ -166,23 +166,16 @@ def v_optimize_gpu(money,sgrid,EV_on_sgrid,umult,sigma,beta,uadd):
     @cuda.jit
     def cuda_ker(money,sgrid,bEV_on_sgrid,c,s,V):
         im = cuda.grid(1)
-        nm = money.size        
-        
-        s_money = cuda.shared.array(shape=(nm,),dtype=float32)
-        s_money[:] = money
-        
-        s_sgrid = cuda.shared.array(shape=(sgrid.size,),dtype=float32)
-        s_sgrid[:] = sgrid
-        
-        s_bEV = cuda.shared.array(shape=(sgrid.size,),dtype=float32)
-        s_bEV[:] = bEV_on_sgrid
+        nm = money.size
         
         
         def u(c): # scalar
             return umult*(c**(oms))/(oms)
-       
+            
+        
+        
         if im < nm:
-            mi = s_money[im]
+            mi = money[im]
             #i_sav = 1
             
             c_best = mi
@@ -191,10 +184,10 @@ def v_optimize_gpu(money,sgrid,EV_on_sgrid,umult,sigma,beta,uadd):
             
             # just another loop
             for i_sav in range(ns):
-                s_current = s_sgrid[i_sav]
+                s_current = sgrid[i_sav]
                 c_current = mi - s_current
                 if c_current <= 0: break                 
-                V_new = u(c_current) + s_bEV[i_sav]
+                V_new = u(c_current) + bEV_on_sgrid[i_sav]
                 
                 # update if imporved
                 if V_new >= V_best:
@@ -202,6 +195,7 @@ def v_optimize_gpu(money,sgrid,EV_on_sgrid,umult,sigma,beta,uadd):
                     V_best = V_new
                     s_best = s_current
                     
+            
             c[im] = c_best
             s[im] = s_best
             V[im] = V_best + uadd

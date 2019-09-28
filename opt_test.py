@@ -172,8 +172,6 @@ def v_optimize_gpu(money,sgrid,EV_on_sgrid,umult,sigma,beta,uadd):
         def u(c): # scalar
             return umult*(c**(oms))/(oms)
             
-        
-        
         if im < nm:
             mi = money[im]
             #i_sav = 1
@@ -215,8 +213,7 @@ def v_optimize_multiEV(money,sgrid,EV_on_sgrid_M,umult,sigma,beta,uadd):
     
     ntheta = EV_on_sgrid_M.shape[-1]
     shp = (money.size,ntheta)
-    V, c, s = np.empty(shp,np.float32), np.empty(shp,np.float32), np.empty(shp,np.float32)
-    
+    V, c, s = np.empty(shp,np.float32), np.empty(shp,np.float32), np.empty(shp,np.float32)    
     i_sav = 1
     ns = sgrid.size
     
@@ -254,7 +251,63 @@ def v_optimize_multiEV(money,sgrid,EV_on_sgrid_M,umult,sigma,beta,uadd):
         V[im,:] = V_opt + uadd
         
     return V, c, s
+
+
+def v_optimize_MEV_gpu(money,sgrid,EV_on_sgrid_M,umult,sigma,beta,uadd):
+    
+    ntheta = EV_on_sgrid_M.shape[-1]
+    shp = (money.size,ntheta)
+    V, c, s = cuda.device_array(shp,np.float64), cuda.device_array(shp,np.float64), cuda.device_array(shp,np.float64)
+    ns = sgrid.size
+    
+    oms = 1-sigma
+    
+    bEV_on_sgrid = beta*EV_on_sgrid_M
+    (money,sgrid,bEV_on_sgrid) = (cuda.to_device(np.ascontiguousarray(x)) for x in (money,sgrid,bEV_on_sgrid))
+    
+    @cuda.jit
+    def cuda_ker(money,sgrid,bEV_on_sgrid_mult,c,s,V):
+        im, ie = cuda.grid(2)
+        nm = money.size    
+        ne = bEV_on_sgrid_mult.shape[1]
+        
+        if ie < ne:
+            bEV_on_sgrid = bEV_on_sgrid_mult[:,ie]        
+        
+        def u(c): # scalar
+            return umult*(c**(oms))/(oms)
             
+        if im < nm and ie < ne:
+            mi = money[im]
+            #i_sav = 1
+            
+            c_best = mi
+            V_best = np.float32(-np.inf)
+            s_best = np.float32(0.0)           
+            
+            # just another loop
+            for i_sav in range(ns):
+                s_current = sgrid[i_sav]
+                c_current = mi - s_current
+                if c_current <= 0: break                 
+                V_new = u(c_current) + bEV_on_sgrid[i_sav]
+                
+                # update if imporved
+                if V_new >= V_best:
+                    c_best = c_current
+                    V_best = V_new
+                    s_best = s_current
+                    
+            c[im,ie] = c_best
+            s[im,ie] = s_best
+            V[im,ie] = V_best + uadd        
+       
+        
+    b_pergrid = (money.size,bEV_on_sgrid.shape[1])        
+    cuda_ker[b_pergrid,b_pergrid](money,sgrid,bEV_on_sgrid,c,s,V)
+    
+    return V, c, s
+    
 
 
 if __name__ == "__main__":
@@ -278,6 +331,7 @@ if __name__ == "__main__":
     beta = 1.0
     
     V, c, s = v_optimize(money,sgrid,EV_on_sgrid,umult,sigma,beta,uadd)
-    
+
+
     
     

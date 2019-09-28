@@ -6,7 +6,9 @@ This is solver for those who are couples at period 0
 import numpy as np
 from numba import jit
 
-from opt_test import build_s_grid, sgrid_on_agrid, get_EV, v_optimize_multiEV
+from opt_test import build_s_grid, sgrid_on_agrid, get_EV 
+
+from opt_test import v_optimize_MEV_gpu as v_optimize
 
 #from aot_test import vopt_MEV
 
@@ -46,7 +48,7 @@ def vm_period_zero_grid(setup,a0,EV):
             MEV[:,itheta] = (1/umult)*get_EV(ind,p,EV[:,iexo,itheta])
             
         
-        q = v_optimize_multiEV(mi,sgrid,MEV,np.float32(1.0),sigma,beta,np.float32(0.0))
+        q = v_optimize(mi,sgrid,MEV,np.float32(1.0),sigma,beta,np.float32(0.0))
         #q = vopt_MEV(mi,sgrid,MEV,1,sigma,beta,0)
         
                 

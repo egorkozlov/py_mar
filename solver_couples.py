@@ -8,7 +8,7 @@ from numba import jit
 
 from opt_test import build_s_grid, sgrid_on_agrid, get_EV, v_optimize_multiEV
 
-from aot_test import vopt_MEV
+#from aot_test import vopt_MEV
 
 #@jit(nopython=True)
 def vm_period_zero_grid(setup,a0,EV):

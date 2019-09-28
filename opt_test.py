@@ -209,7 +209,7 @@ def v_optimize_gpu(money,sgrid,EV_on_sgrid,umult,sigma,beta,uadd):
 
 
 signature = 'Tuple((float32[:,:],float32[:,:],float32[:,:]))(float32[:],float32[:],float32[:,:],float32,float32,float32,float32)'
-@jit(signature,nopython=True,parallel=True)
+@jit(signature,nopython=True)#,parallel=True)
 #@cc.export('vopt_MEV',signature)
 def v_optimize_multiEV(money,sgrid,EV_on_sgrid_M,umult,sigma,beta,uadd):
     

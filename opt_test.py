@@ -8,6 +8,9 @@ Created on Thu Sep 26 20:44:26 2019
 
 import numpy as np
 from numba import jit, prange, cuda, float32
+
+from platform import system
+
 #from numba.pycc import CC
 
 #cc = CC('aot_test')
@@ -73,6 +76,18 @@ def sgrid_on_agrid(sgrid,agrid):
 def get_EV(ind,p,EVin):
     EVout = np.empty(ind.shape,np.float32)
     EVout[:] = p*EVin[ind] + (1-p)*EVin[ind+1]
+    
+    return EVout
+
+#@jit('float32[:](int32[:],float32[:],float32[:])',nopython=True)
+def get_EVM(ind,p,EVin):
+    
+    ev_aux_shape  = EVin.shape[1:]
+    shap = (ind.size,) + ev_aux_shape
+    EVout = np.empty(shap,np.float32)
+    
+    pb = p.reshape(((p.size,)+(1,)*len(ev_aux_shape)))
+    EVout[:] = pb*EVin[ind,...] + (1-pb)*EVin[ind+1,...]
     
     return EVout
 
@@ -180,7 +195,7 @@ def v_optimize_np(money,sgrid,EV_on_sgrid,umult,sigma,beta,uadd):
     
     return V, c, s
 
-import cupy as cp
+if system() != 'Darwin': import cupy as cp
 
 def v_optimize_cp(money,sgrid,EV_on_sgrid,umult,sigma,beta,uadd):
     
@@ -323,6 +338,70 @@ def v_optimize_MEV_cp(money,sgrid,EV_on_sgrid_M,umult,sigma,beta,uadd):
     
     
     return cp.asnumpy(V), cp.asnumpy(c), cp.asnumpy(s)
+
+
+def v_optimize_MEV_np_massive(money,sgrid,EVM,sigma,beta):
+    
+    ntheta = EVM.shape[-1]
+    shp = money.shape + (ntheta,) # shape of the result
+    
+    V, c, s = np.empty(shp,np.float32), np.empty(shp,np.float32), np.empty(shp,np.float32)    
+    
+    oms = 1-sigma
+    
+    def u(c): return (c**(oms))/(oms)   
+    
+    ns = sgrid.size
+    
+    s_expanded = sgrid.reshape((1,ns,1))
+    
+    c_mat = np.expand_dims(money,1) - s_expanded 
+    u_mat = np.full(c_mat.shape,-np.inf)
+    u_mat[c_mat>0] = u(c_mat[c_mat>0])
+    
+    V_arr = np.expand_dims(u_mat,3) + beta*np.expand_dims(EVM,0)
+    
+    i_opt = V_arr.argmax(axis=1)
+    
+    s = sgrid[i_opt]
+    c = np.expand_dims(money,2) - s
+    V = u(c) + beta*np.take_along_axis(EVM,i_opt,0)
+    
+    return V, c, s
+
+
+def v_optimize_MEV_cp_massive(money,sgrid,EVM,sigma,beta):
+    
+    money,sgrid,EVM = (cp.asarray(x) for x in (money,sgrid,EVM))
+    
+    ntheta = EVM.shape[-1]
+    shp = money.shape + (ntheta,) # shape of the result
+    
+    V, c, s = cp.empty(shp,cp.float32), cp.empty(shp,cp.float32), cp.empty(shp,cp.float32)    
+    
+    oms = 1-sigma
+    
+    def u(c): return (c**(oms))/(oms)   
+    
+    ns = sgrid.size
+    
+    s_expanded = sgrid.reshape((1,ns,1))
+    
+    c_mat = cp.expand_dims(money,1) - s_expanded 
+    u_mat = cp.full(c_mat.shape,-cp.inf)
+    u_mat[c_mat>0] = u(c_mat[c_mat>0])
+    
+    V_arr = cp.expand_dims(u_mat,3) + beta*cp.expand_dims(EVM,0)
+    
+    i_opt = V_arr.argmax(axis=1)
+    
+    s = sgrid[i_opt]
+    c = cp.expand_dims(money,2) - s
+    V = u(c) + beta*cp.take_along_axis(EVM,i_opt,0)
+    
+    return cp.asnumpy(V), cp.asnumpy(c), cp.asnumpy(s)
+
+
 
 
 

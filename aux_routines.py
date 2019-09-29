@@ -5,6 +5,7 @@ This collects auxiliary functions
 
 """
 import numpy as np
+from platform import system
 
 
 
@@ -49,7 +50,8 @@ def last_true(mask, axis=None, invalid_val=-1):
 
 
 
-import cupy as cp
+if system() != 'Darwin': import cupy as cp
+
 def cp_take_along_axis(a, indices, axis):
     """Take values from the input array by matching 1d index and data slices.
     Args:
@@ -71,7 +73,7 @@ def cp_take_along_axis(a, indices, axis):
     ndim = a.ndim
 
     if not (-ndim <= axis < ndim):
-        raise _errors._AxisError('Axis overrun')
+        raise Exception('Axis overrun')
 
     axis %= a.ndim
 

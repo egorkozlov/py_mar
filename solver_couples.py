@@ -13,7 +13,7 @@ from platform import system
 
 if system() != 'Darwin':
     from opt_test import v_optimize_MEV_cp as v_optimize
-    from opt_test import v_optimize_MEV_np_massive as v_optimizeM
+    from opt_test import v_optimize_MEV_cp_massive as v_optimizeM
 else:
     from opt_test import v_optimize_MEV_np as v_optimize
     from opt_test import v_optimize_MEV_np_massive as v_optimizeM
@@ -49,26 +49,35 @@ def vm_period_zero_grid(setup,a0,EV):
     MMEV = (1/umult_vec[None,None,:])*get_EVM(ind,p,EV)
     
     
-    V_pure, c_opt, s_opt = v_optimizeM(money,sgrid,MMEV,sigma,beta)
     
-    V_ret = umult_vec[None,None,:]*V_pure + psi[None,:,None]
     
-    '''
-    for iexo in range(setup.nexo):
-        mi = money[:,iexo]
-        uadd = psi[iexo]       
+    nbatch = 20
+    istart = 0
+    ifinish = nbatch
+    
+    
+    
+    for ibatch in range(int(np.floor(setup.nexo/nbatch))):
+        money_i = money[:,istart:ifinish]
+        MMEV_i = MMEV[:,istart:ifinish]
+        V_pure_i, c_opt_i, s_opt_i = v_optimizeM(money_i,sgrid,MMEV_i,sigma,beta)
+        V_ret_i = umult_vec[None,None,:]*V_pure_i + psi[None,istart:ifinish,None]
         
-        MEV = (1/umult_vec[None,:])*get_EVM(ind,p,EV[:,iexo,:])
         
-        assert np.max(np.abs(MEV-MMEV[:,iexo,:])) < 1e-5
+        V_ret[:,istart:ifinish,:] = V_ret_i
+        c_opt[:,istart:ifinish,:] = c_opt_i
+        s_opt[:,istart:ifinish,:] = s_opt_i
         
-        q = v_optimize(mi,sgrid,MEV,np.float32(1.0),sigma,beta,np.float32(0.0))
-        #q = vopt_MEV(mi,sgrid,MEV,1,sigma,beta,0)
+        istart = ifinish
+        ifinish = ifinish+nbatch if ifinish+nbatch < setup.nexo else setup.nexo
         
-                
-        V_ret[:,iexo,:] = umult_vec[None,:]*q[0] + uadd
-        c_opt[:,iexo,:], s_opt[:,iexo,:] = q[1:]
-    '''
+    
+    
+    
+    #V_pure, c_opt, s_opt = v_optimizeM(money,sgrid,MMEV,sigma,beta)
+    
+    #V_ret = umult_vec[None,None,:]*V_pure + psi[None,:,None]
+    
            
     return V_ret, c_opt, s_opt
 

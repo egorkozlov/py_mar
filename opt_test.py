@@ -293,7 +293,7 @@ def v_optimize_MEV_np(money,sgrid,EV_on_sgrid_M,umult,sigma,beta,uadd):
     return V, c, s
 
 
-
+from aux_routines import cp_take_along_axis
 def v_optimize_MEV_cp(money,sgrid,EV_on_sgrid_M,umult,sigma,beta,uadd):
     
     money,sgrid,EV_on_sgrid_M = (cp.asarray(x) for x in (money,sgrid,EV_on_sgrid_M))
@@ -318,7 +318,7 @@ def v_optimize_MEV_cp(money,sgrid,EV_on_sgrid_M,umult,sigma,beta,uadd):
     
     s = sgrid[i_opt]
     c = cp.expand_dims(money,1) - s
-    V = u(c) + beta*cp.take_along_axis(EV_on_sgrid_M,i_opt,0)
+    V = u(c) + beta*cp_take_along_axis(EV_on_sgrid_M,i_opt,0)
     
     
     

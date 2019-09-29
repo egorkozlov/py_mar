@@ -85,12 +85,14 @@ if __name__ == '__main__':
     
     V = V0
     
+    from solver_singles import v_period_zero_grid
+    
     for female in [True,False]:
         
         EV_integrated = ev_after_savings_grid_all_z(setup,V,setup.agrid,female)
         print('Integration done at {}'.format(default_timer()-start))
         
-        from solver_singles import v_period_zero_grid
+        
         solution.append(v_period_zero_grid(setup,setup.agrid,EV_integrated,female))
         print('Optimization singles for period 0 done at {}'.format(default_timer()-start))
         

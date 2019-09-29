@@ -6,6 +6,8 @@ This is solver for those who are couples at period 0
 import numpy as np
 from numba import jit
 
+from timeit import default_timer
+
 from opt_test import build_s_grid, sgrid_on_agrid, get_EV, get_EVM
 
 #from opt_test import v_optimize_multiEV as v_optimize
@@ -23,6 +25,8 @@ else:
 
 #@jit(nopython=True)
 def vm_period_zero_grid(setup,a0,EV):
+    
+    start = default_timer()
     
     agrid = setup.agrid
     sgrid = build_s_grid(agrid,10,0.001,0.1)
@@ -49,9 +53,10 @@ def vm_period_zero_grid(setup,a0,EV):
     MMEV = (1/umult_vec[None,None,:])*get_EVM(ind,p,EV)
     
     
+    print('MMEV computed after {} sec'.format(default_timer()-start))
     
     
-    nbatch = 20
+    nbatch = 200
     istart = 0
     ifinish = nbatch
     
@@ -71,6 +76,7 @@ def vm_period_zero_grid(setup,a0,EV):
         istart = ifinish
         ifinish = ifinish+nbatch if ifinish+nbatch < setup.nexo else setup.nexo
         
+        print('Batch {} done at {} sec'.format(ibatch,default_timer()-start))
     
     
     

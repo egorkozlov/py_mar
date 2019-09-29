@@ -397,7 +397,7 @@ def v_optimize_MEV_cp_massive(money,sgrid,EVM,sigma,beta):
     
     s = sgrid[i_opt]
     c = cp.expand_dims(money,2) - s
-    V = u(c) + beta*cp.take_along_axis(EVM,i_opt,0)
+    V = u(c) + beta*cp_take_along_axis(EVM,i_opt,0)
     
     return cp.asnumpy(V), cp.asnumpy(c), cp.asnumpy(s)
 

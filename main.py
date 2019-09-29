@@ -11,7 +11,14 @@ import matplotlib.pyplot as plt
 from timeit import default_timer
 from setup import ModelSetup
 
+
 from platform import system
+
+
+#if system() != 'Darwin':
+from solver_couples import vm_period_zero_grid_massive as vm_period_zero_grid
+#else:
+#    from solver_couples import vm_period_zero_grid_loop as vm_period_zero_grid
 
 
 
@@ -76,13 +83,8 @@ if __name__ == '__main__':
          }
     
     
-    evc = ev_couple_after_savings(setup,V1['M'])
-    print('Integration for couples done at {}'.format(default_timer()-start))
     
-    female = True
-    
-    solution = list()
-    
+    solution = list()    
     V = V0
     
     from solver_singles import v_period_zero_grid
@@ -90,14 +92,14 @@ if __name__ == '__main__':
     for female in [True,False]:
         
         EV_integrated = ev_after_savings_grid_all_z(setup,V,setup.agrid,female)
-        print('Integration done at {}'.format(default_timer()-start))
-        
+        print('Integration done at {}'.format(default_timer()-start))        
         
         solution.append(v_period_zero_grid(setup,setup.agrid,EV_integrated,female))
         print('Optimization singles for period 0 done at {}'.format(default_timer()-start))
         
     
-    from solver_couples import vm_period_zero_grid
+    evc = ev_couple_after_savings(setup,V1['M'])
+    print('Integration for couples done at {}'.format(default_timer()-start))
     
     vv_coup = vm_period_zero_grid(setup,setup.agrid,np.float32(evc[0]))
     print('Optimization for couples done at {}'.format(default_timer()-start))
@@ -110,7 +112,7 @@ if __name__ == '__main__':
     
     plt.legend()
     print('Time elapsed is {}'.format(default_timer()-start))
-
+    
 
 
 

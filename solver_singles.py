@@ -6,15 +6,11 @@ This collects solver for single agents
 
 import numpy as np
 from scipy.optimize import fminbound
-from platform import system
 
-from opt_test import build_s_grid, sgrid_on_agrid, get_EV
+#from opt_test import build_s_grid, sgrid_on_agrid, get_EVM
+from optimizers import build_s_grid, sgrid_on_agrid, get_EVM
+from optimizers import v_optimize
 
-
-if system() != 'Darwin': 
-    from opt_test import v_optimize_cp as v_optimize
-else:
-    from opt_test import v_optimize_np as v_optimize
 
 
 def v_period_zero_grid(setup,a0,EV,female):
@@ -23,9 +19,6 @@ def v_period_zero_grid(setup,a0,EV,female):
     agrid = setup.agrid
     sgrid = build_s_grid(agrid,10,0.001,0.1)
     ind, p = sgrid_on_agrid(sgrid,agrid)
-    
-    
-    
     
     
     zvals = setup.exogrid.zf_t[0] if female else setup.exogrid.zm_t[0]
@@ -39,18 +32,15 @@ def v_period_zero_grid(setup,a0,EV,female):
     V_ret, c_opt, s_opt = np.empty_like(money), np.empty_like(money), np.empty_like(money)
     
     
+    EV_all = get_EVM(ind,p,EV)
     
     for i, (EVi, mi) in enumerate(zip(EVT,money.T)):
-        EV_on_sgrid = get_EV(ind,p,EVi)
-        V_ret[:,i], c_opt[:,i], s_opt[:,i] = v_optimize(mi,sgrid,EV_on_sgrid,1.0,sigma,beta,0.0)
+        V_ret[:,i], c_opt[:,i], s_opt[:,i] = v_optimize(mi,sgrid,EV_all[:,i],sigma,beta)
     
     return V_ret, s_opt, s_opt/money
         
         
         
-    
-
-
 
 
 def v_period_zero_grid_0(setup,a0,EV,female):

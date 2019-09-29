@@ -4,29 +4,24 @@
 This is solver for those who are couples at period 0
 """
 import numpy as np
-from numba import jit
-
 from timeit import default_timer
 
-from opt_test import build_s_grid, sgrid_on_agrid, get_EV, get_EVM
 
-#from opt_test import v_optimize_multiEV as v_optimize
+from optimizers import build_s_grid, sgrid_on_agrid, get_EVM
+from optimizers import v_optimize as v_optimizeM
+
 from platform import system
 
-if system() != 'Darwin':
-    from opt_test import v_optimize_MEV_cp as v_optimize
-    from opt_test import v_optimize_MEV_cp_massive as v_optimizeM
+if system() != 'Darwin':    
+    nbatch_def = 200
 else:
-    from opt_test import v_optimize_MEV_np as v_optimize
-    from opt_test import v_optimize_MEV_np_massive as v_optimizeM
-    
-    
-#from aot_test import vopt_MEV
+    nbatch_def = 1
+
 
 #@jit(nopython=True)
-def vm_period_zero_grid(setup,a0,EV):
+def vm_period_zero_grid_massive(setup,a0,EV,nbatch=nbatch_def,verbose=False):
     
-    start = default_timer()
+    if verbose: start = default_timer()
     
     agrid = setup.agrid
     sgrid = build_s_grid(agrid,10,0.001,0.1)
@@ -53,14 +48,12 @@ def vm_period_zero_grid(setup,a0,EV):
     MMEV = (1/umult_vec[None,None,:])*get_EVM(ind,p,EV)
     
     
-    print('MMEV computed after {} sec'.format(default_timer()-start))
+    if verbose: print('MMEV computed after {} sec'.format(default_timer()-start))
     
-    
-    nbatch = 200
     istart = 0
-    ifinish = nbatch
+    ifinish = nbatch if nbatch < setup.nexo else setup.nexo
     
-    
+    # this natually splits everything onto slices
     
     for ibatch in range(int(np.floor(setup.nexo/nbatch))):
         money_i = money[:,istart:ifinish]
@@ -76,20 +69,21 @@ def vm_period_zero_grid(setup,a0,EV):
         istart = ifinish
         ifinish = ifinish+nbatch if ifinish+nbatch < setup.nexo else setup.nexo
         
-        print('Batch {} done at {} sec'.format(ibatch,default_timer()-start))
+        if verbose: print('Batch {} done at {} sec'.format(ibatch,default_timer()-start))
     
-    
-    
-    #V_pure, c_opt, s_opt = v_optimizeM(money,sgrid,MMEV,sigma,beta)
-    
-    #V_ret = umult_vec[None,None,:]*V_pure + psi[None,:,None]
-    
-           
     return V_ret, c_opt, s_opt
 
 
-
+# this is equivalent to the above function with nbatch = 1
+'''
 def vm_period_zero_grid_loop(setup,a0,EV):
+    
+    
+    if system() != 'Darwin':
+        from opt_test import v_optimize_MEV_cp as v_optimize
+    else:
+        from opt_test import v_optimize_MEV_np as v_optimize
+    
     
     agrid = setup.agrid
     sgrid = build_s_grid(agrid,10,0.001,0.1)
@@ -119,7 +113,9 @@ def vm_period_zero_grid_loop(setup,a0,EV):
         
         MEV = (1/umult_vec[None,:])*get_EVM(ind,p,EV[:,iexo,:])        
         
-        q = v_optimize(mi,sgrid,MEV,np.float32(1.0),sigma,beta,np.float32(0.0))
+        q = v_optimizeM(mi,sgrid,MEV,sigma,beta)
+        #q = v_optimize(mi,sgrid,MEV,sigma,beta)
+        
         
                 
         V_ret[:,iexo,:] = umult_vec[None,:]*q[0] + uadd
@@ -127,3 +123,4 @@ def vm_period_zero_grid_loop(setup,a0,EV):
     
            
     return V_ret, c_opt, s_opt
+'''

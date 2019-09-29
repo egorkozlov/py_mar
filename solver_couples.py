@@ -8,7 +8,8 @@ from numba import jit
 
 from opt_test import build_s_grid, sgrid_on_agrid, get_EV 
 
-from opt_test import v_optimize_multiEV as v_optimize
+#from opt_test import v_optimize_multiEV as v_optimize
+from opt_test import v_optimize_MEV_cp as v_optimize
 
 #from aot_test import vopt_MEV
 

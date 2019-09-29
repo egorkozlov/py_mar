@@ -206,7 +206,6 @@ def v_optimize_cp(money,sgrid,EV_on_sgrid,umult,sigma,beta,uadd):
     s = sgrid[i_opt]
     c = money - s
     V = u(c) + beta*EV_on_sgrid[i_opt] 
-
     
     return cp.asnumpy(V), cp.asnumpy(c), cp.asnumpy(s)
 
@@ -264,6 +263,67 @@ def v_optimize_gpu(money,sgrid,EV_on_sgrid,umult,sigma,beta,uadd):
     
         
     return V, c, s
+
+
+
+def v_optimize_MEV_np(money,sgrid,EV_on_sgrid_M,umult,sigma,beta,uadd):
+    
+    ntheta = EV_on_sgrid_M.shape[-1]
+    shp = (money.size,ntheta)
+    V, c, s = np.empty(shp,np.float32), np.empty(shp,np.float32), np.empty(shp,np.float32)    
+    
+    
+    oms = 1-sigma
+    
+    def u(c): return umult*(c**(oms))/(oms)   
+    
+    
+    c_mat = np.expand_dims(money,1) - np.expand_dims(sgrid,0)
+    u_mat = np.full(c_mat.shape,-np.inf)
+    u_mat[c_mat>0] = u(c_mat[c_mat>0])
+    
+    V_arr = np.expand_dims(u_mat,2) + beta*np.expand_dims(EV_on_sgrid_M,0)
+    
+    i_opt = V_arr.argmax(axis=1)
+    
+    s = sgrid[i_opt]
+    c = np.expand_dims(money,1) - s
+    V = u(c) + beta*np.take_along_axis(EV_on_sgrid_M,i_opt,0)
+    
+    return V, c, s
+
+
+
+def v_optimize_MEV_cp(money,sgrid,EV_on_sgrid_M,umult,sigma,beta,uadd):
+    
+    money,sgrid,EV_on_sgrid_M = (cp.asarray(x) for x in (money,sgrid,EV_on_sgrid_M))
+    
+    ntheta = EV_on_sgrid_M.shape[-1]
+    shp = (money.size,ntheta)
+    V, c, s = cp.empty(shp,cp.float32), cp.empty(shp,cp.float32), cp.empty(shp,cp.float32)    
+    
+    
+    oms = 1-sigma
+    
+    def u(c): return umult*(c**(oms))/(oms)   
+    
+    
+    c_mat = cp.expand_dims(money,1) - cp.expand_dims(sgrid,0)
+    u_mat = cp.full(c_mat.shape,-cp.inf)
+    u_mat[c_mat>0] = u(c_mat[c_mat>0])
+    
+    V_arr = cp.expand_dims(u_mat,2) + beta*cp.expand_dims(EV_on_sgrid_M,0)
+    
+    i_opt = V_arr.argmax(axis=1)
+    
+    s = sgrid[i_opt]
+    c = cp.expand_dims(money,1) - s
+    V = u(c) + beta*cp.take_along_axis(EV_on_sgrid_M,i_opt,0)
+    
+    
+    
+    return cp.asnumpy(V), cp.asnumpy(c), cp.asnumpy(s)
+
 
 
 

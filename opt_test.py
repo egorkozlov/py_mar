@@ -184,6 +184,8 @@ import cupy as cp
 
 def v_optimize_cp(money,sgrid,EV_on_sgrid,umult,sigma,beta,uadd):
     
+    (money,sgrid,EV_on_sgrid) = (cp.asarray(x) for x in  (money,sgrid,EV_on_sgrid))
+
     V, c, s = cp.empty(money.size,cp.float64), cp.empty(money.size,cp.float64), cp.empty(money.size,cp.float64)
     
     
@@ -195,19 +197,18 @@ def v_optimize_cp(money,sgrid,EV_on_sgrid,umult,sigma,beta,uadd):
     # does not allow for logs yet
     def u(c): return umult*(c**(oms))/(oms)
     
-    
-    
-    
     c_mat = cp.expand_dims(money,1) - cp.expand_dims(sgrid,0)
-    u_mat = cp.full_like(c_mat,-cp.inf)
+    u_mat = cp.full(c_mat.shape,-1e8)
     u_mat[c_mat>0] = u(c_mat[c_mat>0])
     V_mat = u_mat + beta*cp.expand_dims(EV_on_sgrid,0)
     
     i_opt = V_mat.argmax(axis=1)    
     s = sgrid[i_opt]
     c = money - s
-    V = u(c) + beta*EV_on_sgrid[i_opt]    
-    return V, c, s
+    V = u(c) + beta*EV_on_sgrid[i_opt] 
+
+    
+    return cp.asnumpy(V), cp.asnumpy(c), cp.asnumpy(s)
 
 
 def v_optimize_gpu(money,sgrid,EV_on_sgrid,umult,sigma,beta,uadd):

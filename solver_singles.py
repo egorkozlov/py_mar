@@ -8,7 +8,7 @@ import numpy as np
 from scipy.optimize import fminbound
 
 from opt_test import build_s_grid, sgrid_on_agrid, get_EV
-from opt_test import v_optimize_np as v_optimize
+from opt_test import v_optimize_cp as v_optimize
 
 def v_period_zero_grid(setup,a0,EV,female):
     EVT = np.float32(EV.T)

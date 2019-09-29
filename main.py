@@ -12,7 +12,7 @@ from timeit import default_timer
 from setup import ModelSetup
 
 
-from platform import system
+#from platform import system
 
 
 #if system() != 'Darwin':

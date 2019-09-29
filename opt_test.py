@@ -150,6 +150,66 @@ def v_optimize_cpu_a(money,sgrid,EV_on_sgrid,umult,sigma,beta,uadd):
     return V, c, s
 
 
+#@jit(nopython=True)
+
+def v_optimize_np(money,sgrid,EV_on_sgrid,umult,sigma,beta,uadd):
+    
+    V, c, s = np.empty(money.size,np.float64), np.empty(money.size,np.float64), np.empty(money.size,np.float64)
+    
+    
+    assert money.ndim == 1
+    
+    
+    oms = 1-sigma
+    
+    # does not allow for logs yet
+    def u(c): return umult*(c**(oms))/(oms)
+    
+    
+    
+    
+    c_mat = np.expand_dims(money,1) - np.expand_dims(sgrid,0)
+    u_mat = np.full_like(c_mat,-np.inf)
+    u_mat[c_mat>0] = u(c_mat[c_mat>0])
+    V_mat = u_mat + beta*np.expand_dims(EV_on_sgrid,0)
+    
+    i_opt = V_mat.argmax(axis=1)    
+    s = sgrid[i_opt]
+    c = money - s
+    V = u(c) + beta*EV_on_sgrid[i_opt]
+    
+    return V, c, s
+
+import cupy as cp
+
+def v_optimize_cp(money,sgrid,EV_on_sgrid,umult,sigma,beta,uadd):
+    
+    V, c, s = cp.empty(money.size,cp.float64), cp.empty(money.size,cp.float64), cp.empty(money.size,cp.float64)
+    
+    
+    assert money.ndim == 1
+    
+    
+    oms = 1-sigma
+    
+    # does not allow for logs yet
+    def u(c): return umult*(c**(oms))/(oms)
+    
+    
+    
+    
+    c_mat = cp.expand_dims(money,1) - cp.expand_dims(sgrid,0)
+    u_mat = cp.full_like(c_mat,-cp.inf)
+    u_mat[c_mat>0] = u(c_mat[c_mat>0])
+    V_mat = u_mat + beta*cp.expand_dims(EV_on_sgrid,0)
+    
+    i_opt = V_mat.argmax(axis=1)    
+    s = sgrid[i_opt]
+    c = money - s
+    V = u(c) + beta*EV_on_sgrid[i_opt]    
+    return V, c, s
+
+
 def v_optimize_gpu(money,sgrid,EV_on_sgrid,umult,sigma,beta,uadd):
     
     V, c, s = cuda.device_array(money.shape,np.float64), cuda.device_array(money.shape,np.float64), cuda.device_array(money.shape,np.float64)

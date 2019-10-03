@@ -6,8 +6,27 @@ This is integrator for couples
 """
 
 import numpy as np
+from renegotiation import v_last_period_renegotiated
+    
 
-def ev_couple_after_savings(setup,Vren,use_sparse=True):
+def ev_couple_after_savings(setup,Vpostren,use_sparse=True,return_vren=False):
+    # this takes post-renegotiation values as input, conducts negotiation
+    # and then intergates
+    
+    _Vren = v_last_period_renegotiated(setup,Vpostren)
+    Vren = {'M':{'V':_Vren[0],'VF':_Vren[1],'VM':_Vren[2]},
+            'SF':Vpostren['SF'],
+            'SM':Vpostren['SM']}
+    
+    EV, EVf, EVm = ev_couple_after_savings_preren(setup,Vren['M'],use_sparse)
+    
+    if return_vren:
+        return EV, EVf, EVm, Vren
+    else:
+        return EV, EVf, EVm
+
+
+def ev_couple_after_savings_preren(setup,Vren,use_sparse=True):
     # takes renegotiated values as input
     
     # this does dot product along 3rd dimension

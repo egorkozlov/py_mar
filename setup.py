@@ -107,6 +107,7 @@ class ModelSetup(object):
         return ind, izf, izm, ipsi
 
     
+    # functions u_mult and c_mult are meant to be shape-perservings
     
     def u_mult(self,theta):
         assert np.all(theta > 0) and np.all(theta < 1)
@@ -114,7 +115,11 @@ class ModelSetup(object):
         tf = theta
         tm = 1-theta
         ces = (tf**powr + tm**powr)**(1/powr)
-        return (self.pars['A']**(1-self.pars['crra_power']))*ces
+        umult = (self.pars['A']**(1-self.pars['crra_power']))*ces
+        
+        assert umult.shape == theta.shape
+        
+        return umult
     
     
     def c_mult(self,theta):
@@ -128,12 +133,18 @@ class ModelSetup(object):
         
         kf = self.pars['A']*(tf**(irs))/bottom
         km = self.pars['A']*(tm**(irs))/bottom
+        
+        assert kf.shape == theta.shape
+        assert km.shape == theta.shape
+        
         return kf, km
     
     def u(self,c):
         return u_aux(c,self.pars['crra_power'])#(c**(1-self.pars['crra_power']))/(1-self.pars['crra_power'])
     
-    
+    def u_part(self,c,theta): # this returns utility of each partner out of some c
+        kf, km = self.c_mult(theta)        
+        return self.u(kf*c), self.u(km*c)
     
     
     def vm_last(self,s,zm,zf,psi,theta):

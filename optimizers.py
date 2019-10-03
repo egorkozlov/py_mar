@@ -90,7 +90,7 @@ def get_EVM(ind,p,EVin,use_cp=False):
     return EVout
 
 
-def v_optimize(money,sgrid,EV,sigma,beta,use_cp=ucp):
+def v_optimize(money,sgrid,EV,sigma,beta,use_cp=ucp,return_ind=False):
     # this is the optimizer for value functions
     # 1. It can use cuda arrays (cupy) if use_cp=True
     # 2. It can accept few shapes of money array and EV
@@ -179,5 +179,8 @@ def v_optimize(money,sgrid,EV,sigma,beta,use_cp=ucp):
     else:
         ret = lambda x : x
     
-    return ret(V), ret(c), ret(s)
+    if not return_ind:
+        return ret(V), ret(c), ret(s)
+    else:
+        return ret(V), ret(c), ret(s), ret(i_opt)
 

@@ -25,8 +25,7 @@ from solver_couples import vm_period_zero_grid_massive as vm_period_zero_grid
 if __name__ == '__main__':
     
     
-    run_exact = False
-    run_exact_with_int = False
+    
     
     
     plt.figure()
@@ -35,57 +34,32 @@ if __name__ == '__main__':
     
     setup = ModelSetup()
     
-    # relevant for plotting
-    a0 = 2
-    zgrid = setup.exogrid.zf_t[0]
-    z0 = setup.exogrid.zf_t[0][4]
     
     print('Setting up done at {}'.format(default_timer()-start))
     
-    if run_exact:
-        from main_exact import exact_solution
-        savings_rate = exact_solution(setup,setup.agrid,np.array([z0]),ireturn=2)
-        plt.plot(setup.agrid,savings_rate,label="exact") # these are exact savings on the grid
-        print('Exact solution done at {}'.format(default_timer()-start))
-    
-    
-    if run_exact_with_int:
-        from main_exact import exact_solution_with_interpolated_ev
-        savings_rate_int = exact_solution_with_interpolated_ev(setup,setup.agrid,np.array([z0]),ireturn=2)
-        plt.plot(setup.agrid,savings_rate_int,label="interpolation-dumb")
-        print('Exact solution with interpolated EV done at {}'.format(default_timer()-start))
-    
     
     # compute terminal values
+    
     Vval_postren, VFval_postren, VMval_postren = setup.vm_last_grid()
     VFval_single, VMval_single = setup.vs_last_grid()
     
     print('Computing on grid done at {}'.format(default_timer()-start))
     
     # assemble them to V structure
-    V0 = { 'M':  {'V':Vval_postren,'VF':VFval_postren,'VM':VMval_postren},
+    V_last = { 'M':  {'V':Vval_postren,'VF':VFval_postren,'VM':VMval_postren},
           'SF': {'V':VFval_single},
           'SM': {'V':VMval_single}
          }
+    
     
     from integrator_singles import ev_after_savings_grid_all_z
     from renegotiation import v_last_period_renegotiated
     from integrator_couples import ev_couple_after_savings
     
     
-    vv = v_last_period_renegotiated(setup,V0)
-    print('Renegotiation for period 1 done at {}'.format(default_timer()-start))
-    
-    
-    V1 = { 'M':  {'V':vv[0],'VF':vv[1],'VM':vv[2]},
-          'SF': {'V':VFval_single},
-          'SM': {'V':VMval_single}
-         }
-    
-    
     
     solution = list()    
-    V = V0
+    V = V_last
     
     from solver_singles import v_period_zero_grid
     
@@ -97,32 +71,51 @@ if __name__ == '__main__':
         solution.append(v_period_zero_grid(setup,setup.agrid,EV_integrated,female))
         print('Optimization singles for period 0 done at {}'.format(default_timer()-start))
         
+    evc = ev_couple_after_savings(setup,V_last)
+    evc = tuple(np.float32(x) for x in evc) # type conversion
     
-    evc = ev_couple_after_savings(setup,V1['M'])
     print('Integration for couples done at {}'.format(default_timer()-start))
     
-    vv_coup = vm_period_zero_grid(setup,setup.agrid,np.float32(evc[0]))
+    (V_couple,c_couple,s_couple) = vm_period_zero_grid(setup,setup.agrid,evc)
+    print('Optimization for couples done at {}'.format(default_timer()-start))
+    
+    # one more period
+    
+    
+    V_more = {'M': V_couple, 'SF': {'V':solution[0][0]}, 'SM': {'V':solution[1][0]}}
+    
+    print('Renegotiation for couples done at {}'.format(default_timer()-start))
+    
+    
+    solution_more = list()
+    for female in [True,False]:
+        
+        EV_integrated = ev_after_savings_grid_all_z(setup,V_more,setup.agrid,female)
+        print('Integration done at {}'.format(default_timer()-start))        
+        
+        solution_more.append(v_period_zero_grid(setup,setup.agrid,EV_integrated,female))
+        print('Optimization singles for period 0 done at {}'.format(default_timer()-start))
+    
+    
+    evc_more = ev_couple_after_savings(setup,V_more)    
+    evc_more = tuple(np.float32(x) for x in evc_more) # type conversion
+    
+    print('Integration for couples done at {}'.format(default_timer()-start))
+    
+    
+    (V_couple_more,c_couple_more,s_couple_more) = vm_period_zero_grid(setup,setup.agrid,evc_more)
     print('Optimization for couples done at {}'.format(default_timer()-start))
     
     
-    # let's test if still ok
     
+    plt.plot(setup.agrid,solution_more[0][2][:,4],label="female, 0")
+    plt.plot(setup.agrid,solution_more[1][2][:,4],label="male, 0")
     
-
-    
-    plt.plot(setup.agrid,solution[0][2][:,4],label="female")
-    plt.plot(setup.agrid,solution[1][2][:,4],label="male")
-    
-    #from main_exact import v_period_zero_exact
-    #solution_exact_fem = [v_period_zero_exact(setup,a,setup.exogrid.zf_t[0][4])[2]
-    #                      for a in setup.agrid]
-    #plt.plot(setup.agrid,solution_exact_fem,label="female-exact")
+    plt.plot(setup.agrid,solution[0][2][:,4],label="female, 1")
+    plt.plot(setup.agrid,solution[1][2][:,4],label="male, 1")
     
     
     plt.legend()
     print('Time elapsed is {}'.format(default_timer()-start))
     
-
-
-
 

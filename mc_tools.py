@@ -60,7 +60,7 @@ def trim_matrix(M,level=0.001):
      
     return Mout
 
-@jit
+#@jit
 def trim_one_matrix(M,level=0.001):
     
     Mout = M
@@ -83,7 +83,7 @@ def combine_matrices(a,b,Pia,Pib,check=True,trim=True,trim_level=0.001):
     
     return grid, Pi
   
-@jit
+#@jit
 def combine_matrices_list(alist,b,Pialist,Pib,check=True,trim=True,trim_level=0.001):
     # this combines each element of Pialist and Pib
     # they assumed to be independent (i.e. Pialist and Pib can be combined in any order)
@@ -101,7 +101,7 @@ def combine_matrices_list(alist,b,Pialist,Pib,check=True,trim=True,trim_level=0.
     return grid, Pi
 
 
-@jit
+#@jit
 def combine_matrices_two_lists(alist,blist,Pialist,Piblist,check=True,trim=True,trim_level=0.001):
     # this combines each element of Pialist and Pib
     # they assumed to be independent (i.e. Pialist and Pib can be combined in any order)
@@ -183,6 +183,16 @@ def vec_combine(a,b):
 def ind_combine(ia,ib,na,nb):
     return ia*nb + ib
     
+
+def ind_combine_3(ia,ib,ic,na,nb,nc):
+    return ia*nb*nc + ib*nc + ic
+        
+def ind_combine_m(ilist,nlist):
+    out = 0
+    for (pos,ind) in enumerate(ilist):
+        out = np.int32( out + ind*np.prod(nlist[pos+1:]) ) 
+    return out
+    
     
 
 
@@ -238,3 +248,7 @@ if __name__ == "__main__":
     vec = [-2,-1.8,-0.75,0,1,1.5,2]
     print(int_prob(vec,-1,1))
     
+    
+    i = ind_combine_m((1,2,4),(10,10,10))
+    i2  = ind_combine_3(1,2,4,10,10,10)    
+    print((i,i2))

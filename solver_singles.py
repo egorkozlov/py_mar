@@ -14,7 +14,7 @@ from optimizers import v_optimize
 
 
 def v_period_zero_grid(setup,a0,EV,female):
-    EVT = np.float32(EV.T)
+    #EVT = np.float32(EV.T)
     
     agrid = setup.agrid
     sgrid = build_s_grid(agrid,10,0.001,0.1)
@@ -27,15 +27,18 @@ def v_period_zero_grid(setup,a0,EV,female):
     
     
     money = a0[:,None] + np.exp(zvals[None,:])
+    shp = (a0.size,zvals.size)
     
     
-    V_ret, c_opt, s_opt = np.empty_like(money), np.empty_like(money), np.empty_like(money)
+    V_ret, c_opt, s_opt = np.empty_like(shp), np.empty_like(shp), np.empty_like(shp)
     
     
-    EV_all = get_EVM(ind,p,EV)
+    money_t = (a0,np.exp(zvals))
     
-    for i, (EVi, mi) in enumerate(zip(EVT,money.T)):
-        V_ret[:,i], c_opt[:,i], s_opt[:,i] = v_optimize(mi,sgrid,EV_all[:,i],sigma,beta)
+    #EV_all = get_EVM(ind,p,EV)    
+    V_ret, c_opt, s_opt = v_optimize(money_t,sgrid,(ind,p,EV),sigma,beta)
+    
+    
     
     return V_ret, s_opt, s_opt/money
         

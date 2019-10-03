@@ -34,19 +34,23 @@ def vm_period_zero_grid_massive(setup,a0,EV,nbatch=nbatch_def,verbose=False):
     beta = setup.pars['beta']
     sigma = setup.pars['crra_power']
 
+    labor_income = np.exp(zf) + np.exp(zm)
     
-    money = a0[:,None] + np.exp(zf[None,:]) + np.exp(zm[None,:])
+    money = a0[:,None] + labor_income[None,:]
     
     shp = (setup.na,setup.nexo,setup.ntheta)
     
+    # type conversion to keep everything float32
     money,sgrid,EV,sigma,beta = (np.float32(x) for x in (money,sgrid,EV,sigma,beta))
     
     V_ret, c_opt, s_opt = np.empty(shp), np.empty(shp), np.empty(shp)
     
     umult_vec = setup.u_mult(setup.thetagrid)
     
-    MMEV = (1/umult_vec[None,None,:])*get_EVM(ind,p,EV)
+    #MMEV = (1/umult_vec[None,None,:])*get_EVM(ind,p,EV)
+    # this is required 
     
+    EV_resc = (1/umult_vec[None,None,:])*EV
     
     if verbose: print('MMEV computed after {} sec'.format(default_timer()-start))
     
@@ -56,9 +60,14 @@ def vm_period_zero_grid_massive(setup,a0,EV,nbatch=nbatch_def,verbose=False):
     # this natually splits everything onto slices
     
     for ibatch in range(int(np.floor(setup.nexo/nbatch))):
-        money_i = money[:,istart:ifinish]
-        MMEV_i = MMEV[:,istart:ifinish]
-        V_pure_i, c_opt_i, s_opt_i = v_optimizeM(money_i,sgrid,MMEV_i,sigma,beta)
+        #money_i = money[:,istart:ifinish]
+        
+        money_t = (a0,labor_income[istart:ifinish])
+        EV_t = (ind,p,EV_resc[:,istart:ifinish,:])
+        
+        #MMEV_i = MMEV[:,istart:ifinish]
+        #V_pure_i, c_opt_i, s_opt_i = v_optimizeM(money_i,sgrid,MMEV_i,sigma,beta)
+        V_pure_i, c_opt_i, s_opt_i = v_optimizeM(money_t,sgrid,EV_t,sigma,beta)
         V_ret_i = umult_vec[None,None,:]*V_pure_i + psi[None,istart:ifinish,None]
         
         

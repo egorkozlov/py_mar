@@ -43,7 +43,7 @@ def v_period_zero_grid(setup,a0,EV,female):
     return V_ret, s_opt, s_opt/money
         
         
-        
+
 
 
 def v_period_zero_grid_0(setup,a0,EV,female):
@@ -54,8 +54,10 @@ def v_period_zero_grid_0(setup,a0,EV,female):
     beta = setup.pars['beta']
     def u(c): return setup.u(c)
     
+    #assert False
     
     income = a0[:,None] + np.exp(zvals[None,:])
+    
     
     
     def neg_total_u(s,inc,EVg):

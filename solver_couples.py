@@ -16,7 +16,7 @@ if system() != 'Darwin':
     nbatch_def = 200
     use_cp = True
 else:
-    nbatch_def = 1
+    nbatch_def = 3
     use_cp = False
 
 
@@ -70,6 +70,7 @@ def vm_period_zero_grid_massive(setup,a0,EV_tuple,nbatch=nbatch_def,verbose=Fals
     
     for ibatch in range(int(np.floor(setup.nexo/nbatch))):
         #money_i = money[:,istart:ifinish]
+        assert ifinish > istart
         
         money_t = (a0,labor_income[istart:ifinish])
         EV_t = (ind,p,EV_resc[:,istart:ifinish,:])
@@ -99,13 +100,13 @@ def vm_period_zero_grid_massive(setup,a0,EV_tuple,nbatch=nbatch_def,verbose=Fals
         if verbose: print('Batch {} done at {} sec'.format(ibatch,default_timer()-start))
     
     
-    
+    assert np.all(c_opt > 0)
     
     # finally obtain value functions of partners
     uf, um = setup.u_part(c_opt,theta_val)
     EVf_all, EVm_all = (get_EVM(ind,p,x) for x in (EV_fem, EV_mal))
-    V_fem = uf# + beta*np.take_along_axis(EVf_all,i_opt,0)
-    V_mal = um# + beta*np.take_along_axis(EVm_all,i_opt,0)
+    V_fem = uf + beta*np.take_along_axis(EVf_all,i_opt,0)
+    V_mal = um + beta*np.take_along_axis(EVm_all,i_opt,0)
     
     V_out = {'V':V_couple,'VF':V_fem,'VM':V_mal}
     

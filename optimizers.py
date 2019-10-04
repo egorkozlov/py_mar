@@ -178,6 +178,8 @@ def v_optimize(money,sgrid,EV,sigma,beta,use_cp=ucp,return_ind=False):
         ret = lambda x : cp.asnumpy(x)
     else:
         ret = lambda x : x
+        
+    
     
     if not return_ind:
         return ret(V), ret(c), ret(s)

@@ -81,12 +81,12 @@ def vm_period_zero_grid_massive(setup,a0,EV_tuple,nbatch=nbatch_def,verbose=Fals
         V_ret_i = umult_vec[None,None,:]*V_pure_i + psi[None,istart:ifinish,None]
         
         
-        if use_cp:
-            V_pure_i0, c_opt_i0, s_opt_i0, i_opt_i0 = v_optimize(money_t,sgrid,EV_t,sigma,beta,return_ind=True,use_cp=False)
-            print('Max diff V: {}'.format(np.max(np.abs(V_pure_i0-V_pure_i))))
-            print('Max diff c: {}'.format(np.max(np.abs(c_opt_i0-c_opt_i))))
-            print('Max diff s: {}'.format(np.max(np.abs(s_opt_i0-s_opt_i))))
-            print('Max diff i: {}'.format(np.max(np.abs(i_opt_i0-i_opt_i))))
+        #if use_cp:
+        #    V_pure_i0, c_opt_i0, s_opt_i0, i_opt_i0 = v_optimize(money_t,sgrid,EV_t,sigma,beta,return_ind=True,use_cp=False)
+        #    print('Max diff V: {}'.format(np.max(np.abs(V_pure_i0-V_pure_i))))
+        #    print('Max diff c: {}'.format(np.max(np.abs(c_opt_i0-c_opt_i))))
+        #    print('Max diff s: {}'.format(np.max(np.abs(s_opt_i0-s_opt_i))))
+        #    print('Max diff i: {}'.format(np.max(np.abs(i_opt_i0-i_opt_i))))
             
         
         V_couple[:,istart:ifinish,:] = V_ret_i
@@ -103,10 +103,17 @@ def vm_period_zero_grid_massive(setup,a0,EV_tuple,nbatch=nbatch_def,verbose=Fals
     assert np.all(c_opt > 0)
     
     # finally obtain value functions of partners
-    uf, um = setup.u_part(c_opt,theta_val)
-    EVf_all, EVm_all = (get_EVM(ind,p,x) for x in (EV_fem, EV_mal))
+    uf, um = setup.u_part(c_opt,theta_val) + psi[None,:,None]
+    EVf_all, EVm_all, EV_all = (get_EVM(ind,p,x) for x in (EV_fem, EV_mal, EV))
     V_fem = uf + beta*np.take_along_axis(EVf_all,i_opt,0)
     V_mal = um + beta*np.take_along_axis(EVm_all,i_opt,0)
+    
+    # consistency check
+    V_all = setup.u_couple(c_opt,theta_val) + psi[None,:,None] + beta*np.take_along_axis(EV_all,i_opt,0)
+    md =  np.max(np.abs(V_all-V_couple))
+    #print('Max diff is {}'.format(md))
+    assert md < 1e-4
+    
     
     V_out = {'V':V_couple,'VF':V_fem,'VM':V_mal}
     

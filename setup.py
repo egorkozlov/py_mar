@@ -146,6 +146,11 @@ class ModelSetup(object):
         kf, km = self.c_mult(theta)        
         return self.u(kf*c), self.u(km*c)
     
+    def u_couple(self,c,theta): # this returns utility of each partner out of some c
+        umult = self.u_mult(theta)        
+        return umult*self.u(c)
+    
+    
     
     def vm_last(self,s,zm,zf,psi,theta):
         # this is the value function for couple that has savings s,
@@ -194,7 +199,7 @@ class ModelSetup(object):
 #@jit(nopython=True)
 def u_aux(c,sigma):
     if sigma!=1:
-        return (c**(1-sigma) - 1)/(1-sigma)
+        return (c**(1-sigma))/(1-sigma)
     else:
         return np.log(c)
 

@@ -16,7 +16,7 @@ if system() != 'Darwin':
     nbatch_def = 200
     use_cp = True
 else:
-    nbatch_def = 3
+    nbatch_def = 17
     use_cp = False
 
 
@@ -68,7 +68,7 @@ def vm_period_zero_grid_massive(setup,a0,EV_tuple,nbatch=nbatch_def,verbose=Fals
     
     # this natually splits everything onto slices
     
-    for ibatch in range(int(np.floor(setup.nexo/nbatch))):
+    for ibatch in range(int(np.ceil(setup.nexo/nbatch))):
         #money_i = money[:,istart:ifinish]
         assert ifinish > istart
         

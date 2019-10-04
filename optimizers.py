@@ -173,9 +173,8 @@ def v_optimize(money,sgrid,EV,sigma,beta,use_cp=ucp,return_ind=False):
     tal = cp_take_along_axis if use_cp else np.take_along_axis
     
     V = u(c) + beta*tal(EV,i_opt,0)
-    V2 = V_arr.max(axis=1)
-    
-    print('Maximum difference is {}'.format(np.max(np.abs(V2-V))))
+    #V2 = V_arr.max(axis=1)
+    #print('Maximum difference is {}'.format(np.max(np.abs(V2-V))))
     
     
     

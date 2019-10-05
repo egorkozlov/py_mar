@@ -18,8 +18,8 @@ def v_last_period_renegotiated(setup,V,kappa=0.45,return_all=False):
     ind, izf, izm, ipsi = setup.all_indices()
     
     
-    VMval_single, VFval_single = V['SM']['V'], V['SF']['V']
-    Vval_postren, VMval_postren, VFval_postren = V['M']['V'], V['M']['VM'], V['M']['VF']
+    VMval_single, VFval_single = V['Male, single']['V'], V['Female, single']['V']
+    Vval_postren, VMval_postren, VFval_postren = V['Couple']['V'], V['Couple']['VM'], V['Couple']['VF']
     
     
     Vm_divorce = (VMval_single[ism,:]*psm[:,None] + VMval_single[ism+1,:]*(1-psm[:,None]))[:,izm,None]

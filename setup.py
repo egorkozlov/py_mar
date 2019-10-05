@@ -19,7 +19,7 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self): 
         p = dict()        
-        p['T']         = 2
+        p['T']         = 3
         p['sig_zf_0']  = 0.15
         p['sig_zf']    = 0.05
         p['n_zf']      = 9
@@ -152,7 +152,7 @@ class ModelSetup(object):
     
     
     
-    def vm_last(self,s,zm,zf,psi,theta):
+    def vm_last(self,s,zm,zf,psi,theta,return_cs=False):
         # this is the value function for couple that has savings s,
         # Z = (zm,zf,psi) and bargaining power theta after all decisions are made
         
@@ -166,32 +166,37 @@ class ModelSetup(object):
         VM = u_m + psi
         VF = u_f + psi
         
-        #res = namedtuple('res',['V','VF','VM'])
-        #return res(V, VF, VM)
-        return V, VF, VM
+        if return_cs:
+            return V, VF, VM, income, np.zeros_like(income)
+        else:
+            return V, VF, VM
 
-    def vm_last_grid(self):
+    def vm_last_grid(self,return_cs=False):
         # this returns value of vm on the grid corresponding to vm
         s_in = self.agrid[:,None,None]
         zm_in = self.exogrid.all_t[-1][:,1][None,:,None]
         zf_in = self.exogrid.all_t[-1][:,0][None,:,None]
         psi_in = self.exogrid.all_t[-1][:,2][None,:,None]
-        theta_in = self.thetagrid[None,None,:]        
-        return self.vm_last(s_in,zm_in,zf_in,psi_in,theta_in)
+        theta_in = self.thetagrid[None,None,:]
+                
+        return self.vm_last(s_in,zm_in,zf_in,psi_in,theta_in,return_cs)
         
     
     
 
-    def vs_last(self,s,z):    
+    def vs_last(self,s,z,return_cs=False):  
         # generic last period utility for single agent
-        return self.u(s+np.exp(z))
+        income = s+np.exp(z)
+        if return_cs:
+            return self.u(income), income, np.zeros_like(income)
+        else:
+            return self.u(income)
     
-    def vs_last_grid(self):
+    def vs_last_grid(self,female,return_cs=False):
         # this returns value of vs on the grid corresponding to vs
         s_in = self.agrid[:,None]
-        zf_in = self.exogrid.zf_t[-1][None,:]
-        zm_in = self.exogrid.zm_t[-1][None,:]
-        return self.vs_last(s_in,zf_in), self.vs_last(s_in,zm_in)
+        z_in = self.exogrid.zf_t[-1][None,:] if female else self.exogrid.zm_t[-1][None,:]
+        return self.vs_last(s_in,z_in,return_cs)
         
     
 

@@ -15,8 +15,8 @@ def v_after_mar_grid(setup,V,sf,sm,ind_or_inds):
     # setting up
     agrid = setup.agrid
     gamma = setup.pars['m_bargaining_weight']    
-    VMval_single, VFval_single = V['SM']['V'], V['SF']['V']
-    VMval_postren, VFval_postren = V['M']['VM'], V['M']['VF']
+    VMval_single, VFval_single = V['Male, single']['V'], V['Female, single']['V']
+    VMval_postren, VFval_postren = V['Couple']['VM'], V['Couple']['VF']
     
     
     # substantial part
@@ -58,7 +58,7 @@ def v_after_mar_grid(setup,V,sf,sm,ind_or_inds):
     return Vout_f, Vout_m
     
 
-def ev_after_savings_grid_all_z(setup,V,sown,female,trim_lvl=0.01):
+def ev_after_savings_grid_all_z(setup,V,sown,female,t,trim_lvl=0.01):
     # this takes gender as argument so should be called twice
     
     nexo = setup.pars['nexo']
@@ -73,20 +73,20 @@ def ev_after_savings_grid_all_z(setup,V,sown,female,trim_lvl=0.01):
     
     
     if female:
-        nz_single = setup.exogrid.zf_t[0].shape[0]
+        nz_single = setup.exogrid.zf_t[t].shape[0]
         p_mat = np.empty((nexo,nz_single))
-        z_own = setup.exogrid.zf_t[0]
+        z_own = setup.exogrid.zf_t[t]
         n_zown = z_own.shape[0]
-        z_partner = setup.exogrid.zm_t[-1]
-        zmat_own = setup.exogrid.zf_t_mat[0]
+        z_partner = setup.exogrid.zm_t[t+1]
+        zmat_own = setup.exogrid.zf_t_mat[t]
         i_vnext = 0
     else:
-        nz_single = setup.exogrid.zm_t[0].shape[0]
+        nz_single = setup.exogrid.zm_t[t].shape[0]
         p_mat = np.empty((nexo,nz_single))
-        z_own = setup.exogrid.zm_t[0]
+        z_own = setup.exogrid.zm_t[t]
         n_zown = z_own.shape[0]
-        z_partner = setup.exogrid.zf_t[-1]
-        zmat_own = setup.exogrid.zm_t_mat[0]    
+        z_partner = setup.exogrid.zf_t[t+1]
+        zmat_own = setup.exogrid.zm_t_mat[t]    
         i_vnext = 1
         
     

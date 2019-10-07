@@ -17,7 +17,7 @@ from scipy import sparse
 
 
 class ModelSetup(object):
-    def __init__(self): 
+    def __init__(self,nogrid=False,**kwargs): 
         p = dict()        
         p['T']         = 3
         p['sig_zf_0']  = 0.15
@@ -33,12 +33,18 @@ class ModelSetup(object):
         p['A'] = 1.2
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.0       
-        p['nexo'] = p['n_zf']*p['n_zm']*p['n_psi']
         p['sig_partner_a'] = 0.1
         p['sig_partner_z'] = 0.2
         p['m_bargaining_weight'] = 0.5
-        self.pars = p
         
+        
+        for key, value in kwargs.items():
+            assert (key in p), 'wrong name?'
+            p[key] = value
+        
+        
+        p['nexo'] = p['n_zf']*p['n_zm']*p['n_psi']
+        self.pars = p
         
         p_int = dict()
         
@@ -50,29 +56,29 @@ class ModelSetup(object):
         p_int['nodes_couple'] = norm.ppf(sobol_seq.i4_sobol_generate(3,p_int['num_partners']))
         p_int['num_z_nodes'] = 7
         p_int['z_nodes'] = norm.ppf(sobol_seq.i4_sobol_generate(1,p_int['num_z_nodes']))
+        p_int['large_3dim'] = norm.ppf(sobol_seq.i4_sobol_generate(3,20)) # generate many draws from normal
         self.integration = p_int
         
+        if not nogrid:
         
-        exogrid = dict()
-        
-        
-        
-        
-        # let's approximate three Markov chains
-        # this sets up exogenous grid
-        exogrid['zf_t'],  exogrid['zf_t_mat'] = rouw_nonst(p['T'],p['sig_zf'],p['sig_zf_0'],p['n_zf'])
-        exogrid['zm_t'],  exogrid['zm_t_mat'] = rouw_nonst(p['T'],p['sig_zm'],p['sig_zm_0'],p['n_zm'])
-        exogrid['psi_t'], exogrid['psi_t_mat'] = rouw_nonst(p['T'],p['sigma_psi'],p['sigma_psi_init'],p['n_psi'])
-        
-        zfzm, zfzmmat = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], exogrid['zf_t_mat'], exogrid['zm_t_mat'])
-        exogrid['all_t'], exogrid['all_t_mat'] = combine_matrices_two_lists(zfzm,exogrid['psi_t'],zfzmmat,exogrid['psi_t_mat'])
-        exogrid['all_t_mat_sparse_T'] = [sparse.csc_matrix(D.T) if D is not None else None for D in exogrid['all_t_mat']]
-        
-        
-        Exogrid_nt = namedtuple('Exogrid_nt',exogrid.keys())
-        
-        self.nexo = p['nexo']
-        self.exogrid = Exogrid_nt(**exogrid)
+            exogrid = dict()
+            
+            
+            # let's approximate three Markov chains
+            # this sets up exogenous grid
+            exogrid['zf_t'],  exogrid['zf_t_mat'] = rouw_nonst(p['T'],p['sig_zf'],p['sig_zf_0'],p['n_zf'])
+            exogrid['zm_t'],  exogrid['zm_t_mat'] = rouw_nonst(p['T'],p['sig_zm'],p['sig_zm_0'],p['n_zm'])
+            exogrid['psi_t'], exogrid['psi_t_mat'] = rouw_nonst(p['T'],p['sigma_psi'],p['sigma_psi_init'],p['n_psi'])
+            
+            zfzm, zfzmmat = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], exogrid['zf_t_mat'], exogrid['zm_t_mat'])
+            exogrid['all_t'], exogrid['all_t_mat'] = combine_matrices_two_lists(zfzm,exogrid['psi_t'],zfzmmat,exogrid['psi_t_mat'])
+            exogrid['all_t_mat_sparse_T'] = [sparse.csc_matrix(D.T) if D is not None else None for D in exogrid['all_t_mat']]
+            
+            
+            Exogrid_nt = namedtuple('Exogrid_nt',exogrid.keys())
+            
+            self.nexo = p['nexo']
+            self.exogrid = Exogrid_nt(**exogrid)
 
 
         self.na = 60
@@ -203,6 +209,8 @@ class ModelSetup(object):
 #from numba import jit
 #@jit(nopython=True)
 def u_aux(c,sigma):
+    # this is pretty important not to have (c^sigma - 1) here as it is hard to 
+    # keep everywhere and occasionally this generates nasty mistakes
     if sigma!=1:
         return (c**(1-sigma))/(1-sigma)
     else:

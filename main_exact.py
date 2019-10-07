@@ -116,7 +116,6 @@ def ev_after_savings_exact(setup,sf,zf):
     
     
 
-
 def v_period_zero_exact(setup,a0,z0):
     income = a0 + np.exp(z0)
     z_next = z0 + setup.pars['sig_zf']*setup.integration['z_nodes']
@@ -150,6 +149,11 @@ def exact_solution(setup,a_values,z_values,ireturn=1):
 
     return np.array(result)
     
+
+
+
+
+
 
 # this part stretches future value function on grid instead of direct implementation
 # this part is pretty useless: it replaces optimization with precomputation of EVnext]
@@ -191,4 +195,10 @@ def exact_solution_with_interpolated_ev(setup,a_values,z_values,ireturn=1):
     return np.array(result)
     
 
+
+if __name__ == '__main__':
+    from setup import ModelSetup
+    setup = ModelSetup()
+    result = exact_solution(setup,np.array([2.0]),np.array([0.0]))
+    
     

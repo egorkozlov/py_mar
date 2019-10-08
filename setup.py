@@ -30,7 +30,7 @@ class ModelSetup(object):
         p['sigma_psi']   = 0.03
         p['n_psi']     = 15
         p['beta'] = 0.95
-        p['A'] = 1.2
+        p['A'] = 1.2 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.0       
         p['sig_partner_a'] = 0.1
@@ -56,7 +56,7 @@ class ModelSetup(object):
         p_int['nodes_couple'] = norm.ppf(sobol_seq.i4_sobol_generate(3,p_int['num_partners']))
         p_int['num_z_nodes'] = 7
         p_int['z_nodes'] = norm.ppf(sobol_seq.i4_sobol_generate(1,p_int['num_z_nodes']))
-        p_int['large_3dim'] = norm.ppf(sobol_seq.i4_sobol_generate(3,20)) # generate many draws from normal
+        p_int['large_3dim'] = norm.ppf(sobol_seq.i4_sobol_generate(3,30)) # generate many draws from normal
         self.integration = p_int
         
         if not nogrid:

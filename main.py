@@ -70,7 +70,7 @@ class Model(object):
                     V_d = self.iterator(desc,t,Vnext)                    
                 Vnow.update(V_d)
             
-            self.V.append(Vnow)
+            self.V = [Vnow] + self.V
             
             
         
@@ -107,9 +107,6 @@ def v_integrator(setup,desc,t,V_next):
     return EV
     
         
-
-
-
 
 
 if __name__ == '__main__':

@@ -6,14 +6,20 @@ This is integrator for couples
 """
 
 import numpy as np
-from renegotiation import v_last_period_renegotiated
+from renegotiation import v_last_period_renegotiated, v_renegotiated_loop
     
 
 def ev_couple_after_savings(setup,Vpostren,t,use_sparse=True,return_vren=False):
     # this takes post-renegotiation values as input, conducts negotiation
     # and then intergates
     
-    _Vren = v_last_period_renegotiated(setup,Vpostren)
+    #_Vren2 = v_last_period_renegotiated(setup,Vpostren)
+    
+    _Vren = v_renegotiated_loop(setup,Vpostren)
+    
+    #assert np.all(np.abs(_Vren[0] - _Vren2[0]) < 1e-5)
+    #assert np.all(np.abs(_Vren[1] - _Vren2[1]) < 1e-5)
+    #assert np.all(np.abs(_Vren[2] - _Vren2[2]) < 1e-5)
     Vren = {'M':{'V':_Vren[0],'VF':_Vren[1],'VM':_Vren[2]},
             'SF':Vpostren['Female, single'],
             'SM':Vpostren['Male, single']}

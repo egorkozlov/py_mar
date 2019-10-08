@@ -99,10 +99,10 @@ def v_couple_t1(setup,a,zf,zm,psi,theta,div_costs,assets_share_f,theta_step=0.00
     
     
     a_f = k_f*a - dc.money_lost_f - dc.money_lost_f_ez*np.exp(zf)
-    a_m = k_m*a - dc.money_lost_m - dc.money_lost_m_ez*np.exp(zf)
+    a_m = k_m*a - dc.money_lost_m - dc.money_lost_m_ez*np.exp(zm)
     
     VF_s = v_single_t1(setup,a_f,zf) - dc.u_lost_f
-    VM_s = v_single_t1(setup,a_m,zm) - dc.u_lost_f
+    VM_s = v_single_t1(setup,a_m,zm) - dc.u_lost_m
     
     if VF > VF_s and VM > VM_s: # if no renegotiation is needed
         if verbose: print('no renegotiation is needed')
@@ -271,22 +271,23 @@ def v_partners_t0(setup,af0,am0,zf0,zm0,psi0,div_costs,income_based_share=False,
 if __name__ == '__main__':
     from setup import ModelSetup
     
-    setup = ModelSetup(nogrid=True,sig_zf=0.1,sig_zm=0.1,sigma_psi=0.1)
-    v, c, s = v_single_t0(setup,4.0,0.0,True)
     
-    div_costs_mar = DivorceCosts(unilateral_divorce=False,u_lost_m=0.0,u_lost_f=0.0)
+    setup = ModelSetup(nogrid=True,sig_zf=1.2,sig_zm=1.2,sigma_psi=0.0)
+    
+    div_costs_mar = DivorceCosts(unilateral_divorce=True,u_lost_m=0.5,u_lost_f=0.5)
     div_costs_coh = DivorceCosts(unilateral_divorce=True,u_lost_m=0.0,u_lost_f=0.0)
+    
     
     
     #v, vf, vm, c, s = v_couple_t0_postmar(setup,2.0,0.0,0.0,+0.1,0.4,div_costs)
     
-    am = 1.0
-    af = 2.0
-    zm = 1.5
-    zf = 0.0
-    psi = 0.2
+    am = 0.0 #1.0
+    af = 0.0 #2.0
+    zm = 0.5 #1.5
+    zf = 0.0 #0.0
+    psi = -0.2 #0.2
     
-    
+    VF_s, VM_s = v_single_t0(setup,af,zf,True)[0], v_single_t0(setup,am,zm,False)[0]
     
     V_m, VF_m, VM_m, theta_m = v_partners_t0(setup,af,am,zf,zm,psi,div_costs_mar,income_based_share=False)
     V_c, VF_c, VM_c, theta_c = v_partners_t0(setup,af,am,zf,zm,psi,div_costs_coh,income_based_share=True)
@@ -295,6 +296,8 @@ if __name__ == '__main__':
     print((V_m, VF_m, VM_m, theta_m))
     print('Cohabitation:')
     print((V_c, VF_c, VM_c, theta_c))
+    print('Single:')
+    print(('n/a',VF_s,VM_s))
     
     if V_c > V_m: print('couple prefers cohabitation')
     if V_m > V_c: print('couple prefers marriage')

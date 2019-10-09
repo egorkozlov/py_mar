@@ -87,7 +87,7 @@ class ModelSetup(object):
         self.agrid = np.linspace(self.amin,self.amax,self.na)
 
         # grid for theta
-        self.ntheta = 70
+        self.ntheta = 15
         self.thetamin = 0.01
         self.thetamax = 0.99
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta)

@@ -9,7 +9,7 @@ from aux_routines import first_true, last_true
 from numba import jit
 
 
-def v_last_period_renegotiated(setup,V,kappa=0.45,return_all=False,interpolate=False):
+def v_last_period_renegotiated(setup,V,kappa=0.45,interpolate=False):
     # this returns value functions for couple that entered the last period with
     # (s,Z,theta) from the grid and is allowed to renegotiate them or breakup
     
@@ -33,7 +33,6 @@ def v_last_period_renegotiated(setup,V,kappa=0.45,return_all=False,interpolate=F
     
     I_f = np.array(S_f > 0) # whether female agrees at this gridpoint
     I_m = np.array(S_m > 0) # whether male agrees at this gridpoint
-    
     
     
     sq = (I_f & I_m)
@@ -70,10 +69,6 @@ def v_last_period_renegotiated(setup,V,kappa=0.45,return_all=False,interpolate=F
     NM_ok = np.array(NM != -1)
     NM[~NM_ok] = 0
     NM_sc = (NM_ok & ~NM_fix)
-    
-    
-    
-    
     
     
     # rf is theta grid poisition to the right of point where female surplus intersects zero
@@ -207,10 +202,7 @@ def v_last_period_renegotiated(setup,V,kappa=0.45,return_all=False,interpolate=F
     assert np.all(VM_out >= Vm_divorce - 1e-4)
     
     
-    if not return_all:
-        return V_out, VF_out, VM_out
-    else:
-        return V_out, VF_out, VM_out, (S_f, S_m, together, f_ren, m_ren, nf, nm)
+    return V_out, VF_out, VM_out
     
     
     

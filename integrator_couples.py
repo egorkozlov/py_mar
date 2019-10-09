@@ -7,20 +7,21 @@ This is integrator for couples
 
 import numpy as np
 from renegotiation import v_last_period_renegotiated, v_renegotiated_loop
+from ren_mar import v_ren
     
 
 def ev_couple_after_savings(setup,Vpostren,t,use_sparse=True,return_vren=False):
     # this takes post-renegotiation values as input, conducts negotiation
     # and then intergates
     
-    _Vren = v_last_period_renegotiated(setup,Vpostren,interpolate=True)
+    _Vren  = v_last_period_renegotiated(setup,Vpostren,interpolate=True)
     
-    #_Vren2 = v_renegotiated_loop(setup,Vpostren,interpolate=True)
+    _Vren2 = v_ren(setup,Vpostren,interpolate=True)
     
     
-    #assert np.all(np.abs(_Vren[0] - _Vren2[0]) < 1e-4)
-    #assert np.all(np.abs(_Vren[1] - _Vren2[1]) < 1e-4)
-    #assert np.all(np.abs(_Vren[2] - _Vren2[2]) < 1e-4)
+    assert np.all(np.abs(_Vren[0] - _Vren2[0]) < 1e-4)
+    assert np.all(np.abs(_Vren[1] - _Vren2[1]) < 1e-4)
+    assert np.all(np.abs(_Vren[2] - _Vren2[2]) < 1e-4)
     
         
     Vren = {'M':{'V':_Vren[0],'VF':_Vren[1],'VM':_Vren[2]},

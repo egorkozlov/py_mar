@@ -9,7 +9,7 @@ from trans_unif import transition_uniform
 from mc_tools import int_prob
 
 
-def v_after_mar_grid(setup,V,sf,sm,ind_or_inds):
+def v_after_mar_grid(setup,V,sf,sm,ind_or_inds,interpolate=False):
     # this is generinc and does not depend on gender
     
     # setting up
@@ -43,19 +43,28 @@ def v_after_mar_grid(setup,V,sf,sm,ind_or_inds):
     
     nbs = -np.inf*np.ones_like(s_m)
     
-    i_pos = ((s_m > 0) & (s_f>0) )
-    nbs[i_pos] = s_m[i_pos]**(gamma) * s_f[i_pos]**(1-gamma)
+    I_m = np.array(s_m > 0)
+    I_f = np.array(s_f > 0)
     
-    ismar = np.any(nbs>0,axis=2)
-    Vout_m, Vout_f = np.empty_like(Vms), np.empty_like(Vfs)
+    
+    
+    if not interpolate:
+        i_pos = (I_m & I_f)
+        nbs[i_pos] = s_m[i_pos]**(gamma) * s_f[i_pos]**(1-gamma)
+        ismar = np.any(nbs>0,axis=2)
+        Vout_m, Vout_f = np.empty_like(Vms), np.empty_like(Vfs)
+        i_theta  = nbs[ismar,:].argmax(axis=1) - 1
+        wn_theta = np.ones_like(i_theta,dtype=np.float32)
+    else:
+        raise Exception('not implemented')
     
     Vout_m[~ismar] = Vms[~ismar]
-    Vout_m[ismar]  = Vmm[ismar,nbs[ismar,:].argmax(axis=1)]
+    Vout_m[ismar]  = Vmm[ismar,i_theta]*(1-wn_theta) + Vmm[ismar,i_theta+1]*wn_theta
     Vout_f[~ismar] = Vfs[~ismar]
-    Vout_f[ismar]  =  Vfm[ismar,nbs[ismar,:].argmax(axis=1)]
+    Vout_f[ismar]  = Vfm[ismar,i_theta]*(1-wn_theta) + Vfm[ismar,i_theta+1]*wn_theta
     
     
-    return Vout_f, Vout_m
+    return Vout_f, Vout_m 
     
 
 def ev_after_savings_grid_all_z(setup,V,sown,female,t,trim_lvl=0.01):
@@ -106,13 +115,15 @@ def ev_after_savings_grid_all_z(setup,V,sown,female,t,trim_lvl=0.01):
         p_vec = np.zeros(nexo)
         
         for izf, p_zf_i in enumerate(p_zf):
+            if p_zf_i < trim_lvl: continue
             for izm, p_zm_i in enumerate(p_zm):
+                if p_zf_i*p_zm_i < trim_lvl: continue
                 for ipsi, p_psi_i in enumerate(p_psi):
                     p = p_zf_i*p_zm_i*p_psi_i
                     if p > trim_lvl:
                         p_vec[ind_conv(izf,izm,ipsi)] = p    
                         
-                        
+        assert np.any(p_vec>trim_lvl), 'Everything is zero?'              
         p_vec = p_vec / np.sum(p_vec)
         p_mat[:,iz] = p_vec
         

@@ -8,6 +8,8 @@ import numpy as np
 from trans_unif import transition_uniform
 from mc_tools import int_prob
 
+from ren_mar import v_mar
+
 
 def v_after_mar_grid(setup,V,sf,sm,ind_or_inds,interpolate=False):
     # this is generinc and does not depend on gender
@@ -135,7 +137,11 @@ def ev_after_savings_grid_all_z(setup,V,sown,female,t,trim_lvl=0.01):
     
     for ipart in range(npart):
         sm = sown*np.exp(sig_a_partner*eps_a_partner[ipart])
-        V_next[:,inds] = v_after_mar_grid(setup,V,sown,sm,inds)[i_vnext]
+        vout = v_after_mar_grid(setup,V,sown,sm,inds)[i_vnext]
+        V_next[:,inds] = vout
+        vout2 = v_mar(setup,V,sown,sm,inds)[i_vnext]
+        #print(np.max(np.abs(vout-vout2)))
+        
         EV += (1/npart)*np.dot(V_next,p_mat)
         
     

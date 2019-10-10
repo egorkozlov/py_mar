@@ -19,7 +19,7 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,**kwargs): 
         p = dict()        
-        p['T']         = 3
+        p['T']         = 20
         p['sig_zf_0']  = 0.15
         p['sig_zf']    = 0.05
         p['n_zf']      = 9
@@ -122,6 +122,8 @@ class ModelSetup(object):
         tm = 1-theta
         ces = (tf**powr + tm**powr)**(1/powr)
         umult = (self.pars['A']**(1-self.pars['crra_power']))*ces
+        
+        
         
         assert umult.shape == theta.shape
         

@@ -13,7 +13,7 @@ from optimizers import v_optimize
 from platform import system
 
 if system() != 'Darwin':    
-    nbatch_def = 200
+    nbatch_def = 400
     use_cp = True
 else:
     nbatch_def = 17

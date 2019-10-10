@@ -29,9 +29,44 @@ class Model(object):
         self.setup = ModelSetup()
         self.iterator, self.initializer = self._get_iterator(iterator_name)
         self.start = default_timer()
+        self.last = default_timer()
+        self.time_dict = dict()
         
     def time(self,whatisdone):
-        print('{} is done at {}'.format(whatisdone,default_timer() - self.start))
+        
+        total_time = default_timer() - self.start
+        last_time = default_timer() - self.last
+        
+        def r(x): return round(x,2)
+        
+        print('{} is done in {} sec, total {} sec'.format(whatisdone,r(last_time),r(total_time)))
+        self.last = default_timer()
+    
+        if whatisdone in self.time_dict:
+            self.time_dict[whatisdone] = self.time_dict[whatisdone] + [last_time]
+        else:
+            self.time_dict[whatisdone] = [last_time]
+        
+    def time_statistics(self,remove_worst=True,remove_single=True):
+        for what, timelist in self.time_dict.items():
+            
+            if remove_single and len(timelist) == 1: continue
+            
+            time_arr = np.array(timelist)
+            
+            extra = ''
+            if remove_worst:
+                time_worst = time_arr.max()
+                time_arr = time_arr[time_arr<time_worst]
+                extra = ' (excl the worst)'
+                
+            av_time = round(np.mean(time_arr),2)            
+            print('On average {} took {} sec{}'.format(what,av_time,extra))
+            
+            
+            
+    
+    
     
     def _get_iterator(self,name='default'):
         
@@ -113,6 +148,7 @@ if __name__ == '__main__':
     
     mdl = Model(iterator_name='default-timed')
     mdl.solve()
+    mdl.time_statistics()
     
     
 

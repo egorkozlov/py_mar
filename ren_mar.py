@@ -66,7 +66,6 @@ def v_mar(setup,V,sf,sm,ind_or_inds,interpolate=True):
     Vcm = Vval_postren[isc,ind,:]*(psc[:,:,None])  +  Vval_postren[isc+1,ind,:]*(1-psc[:,:,None])
     
     
-    
     outs = v_prepare(Vfm,Vmm,Vcm,Vfs,Vms,setup.thetagrid,interpolate=interpolate)
     # this is syntactically dirty but efficient
     return v_newmar_core(*outs,interpolate=interpolate,gamma=gamma)
@@ -351,7 +350,7 @@ def v_newmar_core(VF_t,VM_t,VC_t,kr_t,N_t,I_t,yes_t,no_t,together,thetagrid,shp,
         wn_theta = np.ones_like(i_theta,dtype=np.float32)
     
     else:
-        # mixing boolean indexing with : produces 2-dimensional array instead
+        # mixing boolean indexing waaaaith : produces 2-dimensional array instead
         # of 3-dimensional: first dimension is Matlab-ordered version
         # of boolean variable. 
         
@@ -362,11 +361,17 @@ def v_newmar_core(VF_t,VM_t,VC_t,kr_t,N_t,I_t,yes_t,no_t,together,thetagrid,shp,
         iwn_theta = np.full(any_good.shape,np.nan,dtype=np.float32)
         iwn_theta[fixed_good] = ((kr_f*(1-gamma) + kr_m*gamma).squeeze())[fixed_good]
         ii_theta[fixed_good] = NF.squeeze()[fixed_good]
-        sm_res = s_m[any_good,:]
-        sf_res = s_f[any_good,:]
+        sm_res = s_m.copy()[any_good,:]
+        sf_res = s_f.copy()[any_good,:]
         
         #i_theta, wn_theta, nbsv = max_nbs_interp(sf_res,sm_res,thetagrid,gamma)
+        #i_theta, wn_theta, nbsv = max_nbs_loop(sf_res,sm_res,gamma)
         i_theta, wn_theta, nbsv = max_nbs_loop(sf_res,sm_res,gamma)
+        
+        #print(wn_theta-wn_theta2)
+        #assert np.all(i_theta==i_theta2)
+        #assert np.all(np.abs(wn_theta-wn_theta2)<1e-3)
+        #assert np.all(np.abs(nbsv-nbsv2)<1e-5)
         
         ismar = any_good
             
@@ -402,9 +407,173 @@ def max_nbs_interp(sf,sm,theta_grid,gamma):
     wntheta = p[io]
     return itheta, wntheta, nbsv
     
-   
+
+        
+# this is a vectorized version
+def max_nbs_mat(sf,sm,gamma):
+    # this is vectorized version of max_nbs
+    
+    assert np.all(sf!=0.0) # it's hard to get exactly 0 right
+    assert np.all(sm!=0.0) # some parts break in this case
+    
+    assert sf.shape == sm.shape
+    assert sf.ndim == 2
+    
+    # the code operates using "now" and "before" points so last dimension is 
+    # decreased by 1
+    
+    shp = (sf.shape[0],sf.shape[1]-1)
+    
+    nbs_mat, nbs_bef, nbs_now = (np.full(shp,-np.inf,dtype=np.float64) for _ in (0,1,2))
+    ws_mat  = np.empty(shp, dtype=np.float64)
+    
+    sf_bef = sf[:,:-1]
+    sf_now = sf[:,1:]
+    sm_bef = sm[:,:-1]
+    sm_now = sm[:,1:]
+    
+    dsf     = sf_now - sf_bef
+    neg_dsm = sm_bef - sm_now
+    
+    kf = sf_bef / (-dsf)
+    km = sm_bef / (neg_dsm)
+    
+    assert np.all(dsf>0) and np.all(neg_dsm>0),     'check monotonicity'
+    
+    
+    i_both_pos_now = (sf_now>0) & (sm_now>0)
+    i_both_pos_bef = (sf_bef>0) & (sm_bef>0)
+
+    
+    nbs_now[i_both_pos_now] = (sf_now[i_both_pos_now])**(gamma) * (sm_now[i_both_pos_now])**(1-gamma)
+    nbs_bef[i_both_pos_bef] = (sf_bef[i_both_pos_bef])**(gamma) * (sm_bef[i_both_pos_bef])**(1-gamma)
+    
+    #assert np.all(nbs_now[i_both_pos_now]>0) and np.all(nbs_bef[i_both_pos_bef]>0)
+    
+    # we will need this later
+    # this is numpy fix as it does not handle two bool indices nicely
+    # here m1 and m2 are boolean masks. basically a[tm(m1,m2)] is a[m1][m2],
+    # but the former a[m1][m2] = b does not change values of a b/c of numpy
+    # practice to make copies of the data for the case of boolean indexing
+    tm = lambda m1, m2 : tuple([a[m2] for a in np.where(m1)])
+    
+    
+    
+    # there are five cases conceptually
+    
+    
+    
+    i_no_hope    = (sf_now < 0) | (sm_bef < 0) # negotiation is impossible, notice |
+    i_both_happy = (sf_bef > 0) & (sm_now > 0)    
+    i_both_edge  = (sf_bef < 0) & (sf_now > 0) & (sm_now < 0) & (sm_bef > 0)
+    i_fem_edge   = (sf_bef < 0) & (sf_now > 0) & (sm_now > 0) & (sm_bef > 0)
+    i_mal_edge   = (sf_bef > 0) & (sf_now > 0) & (sm_now < 0) & (sm_bef > 0)
+    
+    
+    alpha = np.full(shp,np.nan,dtype=np.float64)
+    
+    # both happy - just find alanlytical solutuion
+    
+    i = i_both_happy
+    alpha[i] = (gamma*(sm_bef[i]/neg_dsm[i]) - (1-gamma)*(sf_bef[i]/dsf[i]))    
+    #assert np.all(~np.isinf(nbs_bef[i]))        
+    #assert np.all(~np.isinf(nbs_now[i]))
+    
+    # both unhappy - same
+    i = i_both_edge
+    alpha[i] = gamma*km[i] + (1-gamma)*kf[i]
+    #assert np.all(kf[i]<=km[i])
+    #assert np.all(np.isinf(nbs_bef[i]))        
+    #assert np.all(np.isinf(nbs_now[i]))
+    #assert np.all(alpha[i]>0)
+    #assert np.all(alpha[i]<1)
+    
+    # here we need to define few extra objects. vs refers to variable size 
+    # so they are not the same size as sm and sf
+    # the double indexing below if hard to digest but this is probably the most
+    # elegant repersentation of nested if statements and it works
+    i = i_fem_edge # just an alias
+    vs_sm_hit = ((1-kf[i])*sm_bef[i] + kf[i]*sm_now[i])
+    vs_prop = gamma*vs_sm_hit / (vs_sm_hit - sm_now[i]) # 
+    vs_i = (vs_prop <= 1)
+    alpha[tm(i, vs_i)] = (1-vs_prop[vs_i])*kf[i][vs_i] + vs_prop[vs_i] #alpha[i][vs_i] = ...
+    alpha[tm(i,~vs_i)] = 1.0 #alpha[i][~vs_i] = 1.0    
+    #assert np.all( np.abs( ((1-kf[i])*sf_bef[i] + kf[i]*sf_now[i]) ) < 1e-5 )
+    #assert np.all( alpha[i][vs_i] >= kf[i][vs_i] )
+    #assert np.all(np.isinf(nbs_bef[i]))        
+    #assert np.all(~np.isinf(nbs_now[i]))
+    #assert np.all(alpha[i] > 0)
+    
+    
+    
+    i = i_mal_edge  # just an alias
+    vs_sf_hit = (1-km[i])*sf_bef[i] + km[i]*sf_now[i]
+    vs_prop = gamma - (1-gamma) * sf_bef[i] / (vs_sf_hit - sf_bef[i]) 
+    vs_i = (vs_prop >= 0)
+    alpha[tm(i, vs_i)] = vs_prop[vs_i]*km[i][vs_i] #alpha[i][vs_i]  = ...
+    alpha[tm(i, ~vs_i)] = 0.0 #alpha[i][~vs_i] = 0.0
+    alpha[tm(i, vs_i)]  = vs_prop[vs_i]*km[i][vs_i]
+    
+    #assert np.all(alpha[i] < 1)
+    #assert np.all(~np.isinf(nbs_bef[i]))        
+    #assert np.all(np.isinf(nbs_now[i]))
+    
+    # extra checks
+    
+    #assert np.all( np.abs( ((1-km[i])*sm_bef[i] + km[i]*sm_now[i]) ) < 1e-5 )
+    #assert np.all( alpha[i] <= km[i] )
+    #assert np.all( (i_no_hope) | (i_both_happy) | (i_both_edge) | (i_fem_edge) | (i_mal_edge))
+    #assert np.all(i_no_hope ==  np.isnan(alpha))
+    
+    
+    
+    
+    i = ~i_no_hope
+    i_a_neg = np.full_like(alpha,False,dtype=np.bool)    
+    i_a_neg[i] = (alpha[i] <= 0)
+    i_a_big = np.full_like(alpha,False,dtype=np.bool)
+    i_a_big[i] = (alpha[i] >= 1)
+    i_a_good = np.full_like(alpha,False,dtype=np.bool)
+    i_a_good[i] =  (alpha[i] > 0) & (alpha[i] < 1)
+    i_a_nan = np.isnan(alpha)
+    
+    
+    #assert np.all(~i_a_nan[~i_no_hope])
+    
+    nbs_mat[i_a_neg] = nbs_bef[i_a_neg]
+    assert np.all(~np.isinf(nbs_bef[i_a_neg]))
+    nbs_mat[i_a_big] = nbs_now[i_a_big]
+    assert np.all(~np.isinf(nbs_now[i_a_big]))
+    
+    # this can really be optimized we do not need nbs_bef and nbs_aft
+    vs_sm_a = alpha[i_a_good]*sm_now[i_a_good] + (1-alpha[i_a_good])*sm_bef[i_a_good]
+    vs_sf_a = alpha[i_a_good]*sf_now[i_a_good] + (1-alpha[i_a_good])*sf_bef[i_a_good]
+    nbs_mat[i_a_good] = (vs_sf_a**gamma) * (vs_sm_a**(1-gamma))
+    
+    ws_mat[~i_a_nan] = np.maximum(np.minimum(alpha[~i_a_nan],1.0),0.0)
+    
+    assert np.all(np.max(nbs_mat,axis=1)>0)
+    
+    
+    
+    i_theta = np.argmax(nbs_mat,axis=1)
+    inds = np.arange(sf.shape[0])
+    
+    
+    w_theta = ws_mat[inds,i_theta]#np.take_along_axis(ws_mat,i_theta[:,None],1).squeeze() # note that there are no +1
+    nbsv = nbs_mat[inds,i_theta]#np.take_along_axis(nbs_mat,i_theta[:,None],1).squeeze()
+    
+    return i_theta, w_theta, nbsv
+
+
+
 @njit#(parallel=True)
 def max_nbs_loop(sf,sm,gamma):
+    # this aims to maximize Nash Bargaining surplus that is 
+    # gamma*log(sf) + (1-gamma)*log(sm) if sf, sm>0
+    # this assumes that sf and sm are piecewise linear functions defined on the
+    # same grid, therefore it interpolates them, obtains exact mathematical
+    # solution each piece of the grid and finds the best out of them
     
     nbsv   = np.empty((sf.shape[0],),dtype=np.float64)
     itheta = np.empty((sf.shape[0],),dtype=np.int32)
@@ -451,6 +620,9 @@ def max_nbs_loop(sf,sm,gamma):
                 assert sf_now >= 0 and sm_bef >= 0
                 # lots of agreement
                 alpha = gamma*(sm_bef/neg_dsm) - (1-gamma)*(sf_bef/dsf)
+                alpha2 = gamma*km + (1-gamma)*kf
+                assert np.abs(alpha-alpha2) < 1e-5
+            
             elif sf_bef < 0 and sf_now > 0 and sm_now < 0 and sm_bef > 0:
                 # edge case
                 assert kf<= km # this should be taken care of externally
@@ -483,14 +655,17 @@ def max_nbs_loop(sf,sm,gamma):
             # we got alpha, so the resolution is    
                 
             if alpha <= 0:
+                assert ~np.isinf(nbs_bef)
                 nbs[j] = nbs_bef
                 ws[j] = 0.0
                 
             elif alpha >= 1:
+                assert ~np.isinf(nbs_now)
                 nbs[j] = nbs_now
                 ws[j] = 1.0
                 
             else:
+                # TODO: check this
                 sf_a = alpha*sf_now + (1-alpha)*sf_bef
                 sm_a = alpha*sm_now + (1-alpha)*sm_bef
                 nbs[j] = sf_a**(gamma) * sm_a**(1-gamma) 
@@ -507,6 +682,5 @@ def max_nbs_loop(sf,sm,gamma):
         nbsv[ii] = nbs[it_best]
     
     return itheta, wntheta, nbsv
-        
-        
-            
+    
+          

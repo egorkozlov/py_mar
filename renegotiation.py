@@ -23,7 +23,7 @@ def v_last_period_renegotiated(setup,V,kappa=0.45,interpolate=False):
     
     VMval_single, VFval_single = V['Male, single']['V'], V['Female, single']['V']
     Vval_postren, VMval_postren, VFval_postren = V['Couple']['V'], V['Couple']['VM'], V['Couple']['VF']
-    
+   
     
     Vm_divorce = (VMval_single[ism,:]*psm[:,None] + VMval_single[ism+1,:]*(1-psm[:,None]))[:,izm,None]
     Vf_divorce = (VFval_single[isf,:]*psf[:,None] + VFval_single[isf+1,:]*(1-psf[:,None]))[:,izf,None]
@@ -289,7 +289,7 @@ def v_ren_core_noint(VF_m,VM_m,V_m,VF_s,VM_s,thetagrid):
     return V_out, VF_out, VM_out
 
 
-#@jit(nopython=True)
+@jit(nopython=True)
 def v_ren_core_int(VF_m,VM_m,V_m,VF_s,VM_s,thetagrid):
     
     

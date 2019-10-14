@@ -17,9 +17,9 @@ from scipy import sparse
 
 
 class ModelSetup(object):
-    def __init__(self,nogrid=False,**kwargs): 
+    def __init__(self,nogrid=False,divorce_costs='Default',**kwargs): 
         p = dict()        
-        p['T']         = 20
+        p['T']         = 3
         p['sig_zf_0']  = 0.15
         p['sig_zf']    = 0.05
         p['n_zf']      = 9
@@ -36,6 +36,7 @@ class ModelSetup(object):
         p['sig_partner_a'] = 0.1
         p['sig_partner_z'] = 0.2
         p['m_bargaining_weight'] = 0.5
+        
         
         
         for key, value in kwargs.items():
@@ -58,6 +59,20 @@ class ModelSetup(object):
         p_int['z_nodes'] = norm.ppf(sobol_seq.i4_sobol_generate(1,p_int['num_z_nodes']))
         p_int['large_3dim'] = norm.ppf(sobol_seq.i4_sobol_generate(3,30)) # generate many draws from normal
         self.integration = p_int
+        
+        
+        if divorce_costs == 'Default':
+            # by default the costs are set in the bottom
+            self.div_costs = DivorceCosts()
+        else:
+            if isinstance(divorce_costs,dict):
+                # you can feed in arguments to DivorceCosts
+                self.div_costs = DivorceCosts(**divorce_costs)
+            else:
+                # or just the output of DivorceCosts
+                assert isinstance(divorce_costs,DivorceCosts)
+                self.div_costs = divorce_costs
+            
         
         if not nogrid:
         
@@ -92,7 +107,6 @@ class ModelSetup(object):
         self.thetamax = 0.99
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta)
 
-        
 
 
     def all_indices(self,ind_or_inds=None):
@@ -219,3 +233,24 @@ def u_aux(c,sigma):
         return np.log(c)
 
     
+
+
+class DivorceCosts(object):
+    # this is something that regulates divorce costs
+    # it aims to be fully flexible
+    def __init__(self, 
+                 unilateral_divorce=True, # whether to allow for unilateral divorce
+                 assets_kept = 0.9, # how many assets of couple are splited (the rest disappears)
+                 u_lost_m=0.0,u_lost_f=0.0, # pure utility losses b/c of divorce
+                 money_lost_m=0.0,money_lost_f=0.0, # pure money (asset) losses b/c of divorce
+                 money_lost_m_ez=0.0,money_lost_f_ez=0.0 # money losses proportional to exp(z) b/c of divorce
+                 ): # 
+        
+        self.unilateral_divorce = unilateral_divorce # w
+        self.assets_kept = assets_kept
+        self.u_lost_m = u_lost_m
+        self.u_lost_f = u_lost_f
+        self.money_lost_m = money_lost_m
+        self.money_lost_f = money_lost_f
+        self.money_lost_m_ez = money_lost_m_ez
+        self.money_lost_f_ez = money_lost_f_ez

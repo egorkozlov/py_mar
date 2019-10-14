@@ -20,13 +20,14 @@ from solver_couples import vm_period_zero_grid_massive as vm_period_zero_grid
 from solver_singles import v_period_zero_grid
 from integrator_singles import ev_after_savings_grid_all_z
 from integrator_couples import ev_couple_after_savings
+
 #else:
 #    from solver_couples import vm_period_zero_grid_loop as vm_period_zero_grid
 
 
 class Model(object):
-    def __init__(self,iterator_name='default'):
-        self.setup = ModelSetup()
+    def __init__(self,iterator_name='default',**kwargs):
+        self.setup = ModelSetup(**kwargs)
         self.iterator, self.initializer = self._get_iterator(iterator_name)
         self.start = default_timer()
         self.last = default_timer()
@@ -107,7 +108,22 @@ class Model(object):
             
             self.V = [Vnow] + self.V
             
-            
+    def solve_marriage(self,sf,sm,izf,izm,ipsi,t=0):
+        # sf, sm, izf, izm are 1-dim np.arrays 
+        # the result is of shape (sf.size,izf.size) (so it is computed for all
+        # combinations of sf/sm and izf/izm/ipsi)
+        
+        # so far it is stable only when izf/izm/ipsi and sf and sm have more 
+        # than one element due to shape issues
+        
+        from ren_mar import v_mar
+        inds_tuple = (izf,izm,ipsi)
+        V = self.V[t]
+        Vout_f, Vout_m, ismar, thetaout, technical = \
+            v_mar(self.setup,V,sf,sm,inds_tuple,return_all=True)
+        return Vout_f, Vout_m, ismar, thetaout
+    
+        
         
 # this is not the best organization but kind of works
 def v_iterator(setup,desc,t,EV=None):
@@ -146,9 +162,35 @@ def v_integrator(setup,desc,t,V_next):
 
 if __name__ == '__main__':
     
-    mdl = Model(iterator_name='default-timed')
+    mdl = Model(iterator_name='default-timed',
+                divorce_costs={'unilateral_divorce':True})
     mdl.solve()
     mdl.time_statistics()
     
+    s = mdl.setup
     
-
+    
+    sf = np.array([1.0,4.0])
+    sm = np.array([1.0,4.0])
+    
+    t = 0 # at what
+    
+    
+    izf = np.array([4,5],dtype=np.int32) # asset position out of setup.pars['nf']
+    izm = np.array([4,2],dtype=np.int32) # asset position
+    ipsi = np.array([5,6],dtype=np.int32) # psi
+    
+    print( 'zf value is {}'.format( s.exogrid.zf_t[0][izf]) )
+    print( 'zm value is {}'.format( s.exogrid.zm_t[0][izm]) )
+    print('psi value is {}'.format( s.exogrid.psi_t[0][ipsi]) )
+    
+    Vout_f, Vout_m, ismar, thetaout = mdl.solve_marriage(sf,sm,izf,izm,ipsi)
+    print(thetaout)
+    
+    
+    mdl2 = Model(iterator_name='default-timed',
+                 divorce_costs={'unilateral_divorce':False})
+    
+    mdl2.solve()
+    Vout_f2, Vout_m2, ismar2, thetaout2 = mdl2.solve_marriage(sf,sm,izf,izm,ipsi)
+    print(thetaout2)

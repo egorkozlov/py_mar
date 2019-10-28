@@ -6,19 +6,29 @@ This is integrator for couples
 """
 
 import numpy as np
-from renegotiation import v_last_period_renegotiated
+#from renegotiation import v_last_period_renegotiated, v_renegotiated_loop
+from ren_mar import v_ren
     
 
-def ev_couple_after_savings(setup,Vpostren,use_sparse=True,return_vren=False):
+def ev_couple_after_savings(setup,Vpostren,t,use_sparse=True,return_vren=False):
     # this takes post-renegotiation values as input, conducts negotiation
     # and then intergates
     
-    _Vren = v_last_period_renegotiated(setup,Vpostren)
-    Vren = {'M':{'V':_Vren[0],'VF':_Vren[1],'VM':_Vren[2]},
-            'SF':Vpostren['SF'],
-            'SM':Vpostren['SM']}
+    #_Vren2  = v_last_period_renegotiated(setup,Vpostren,interpolate=True)
     
-    EV, EVf, EVm = ev_couple_after_savings_preren(setup,Vren['M'],use_sparse)
+    _Vren = v_ren(setup,Vpostren,interpolate=True)
+    
+    
+    #assert np.all(np.abs(_Vren[0] - _Vren2[0]) < 1e-4)
+    #assert np.all(np.abs(_Vren[1] - _Vren2[1]) < 1e-4)
+    #assert np.all(np.abs(_Vren[2] - _Vren2[2]) < 1e-4)
+    
+        
+    Vren = {'M':{'V':_Vren[0],'VF':_Vren[1],'VM':_Vren[2]},
+            'SF':Vpostren['Female, single'],
+            'SM':Vpostren['Male, single']}
+    
+    EV, EVf, EVm = ev_couple_after_savings_preren(setup,Vren['M'],t,use_sparse)
     
     if return_vren:
         return EV, EVf, EVm, Vren
@@ -26,7 +36,7 @@ def ev_couple_after_savings(setup,Vpostren,use_sparse=True,return_vren=False):
         return EV, EVf, EVm
 
 
-def ev_couple_after_savings_preren(setup,Vren,use_sparse=True):
+def ev_couple_after_savings_preren(setup,Vren,t,use_sparse=True):
     # takes renegotiated values as input
     
     # this does dot product along 3rd dimension
@@ -36,7 +46,7 @@ def ev_couple_after_savings_preren(setup,Vren,use_sparse=True):
     
     if use_sparse:
         
-        M = setup.exogrid.all_t_mat_sparse_T[0]      
+        M = setup.exogrid.all_t_mat_sparse_T[t]      
         def integrate_array(x):
             xout = np.zeros_like(x)
             for itheta in range(x.shape[2]):
@@ -44,7 +54,7 @@ def ev_couple_after_savings_preren(setup,Vren,use_sparse=True):
             return xout
     else:
         
-        M = setup.exogrid.all_t_mat[0].T        
+        M = setup.exogrid.all_t_mat[t].T        
         def integrate_array(x):
             xout = np.zeros_like(x)
             for itheta in range(x.shape[2]):

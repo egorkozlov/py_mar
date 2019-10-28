@@ -8,20 +8,29 @@ Some code is meant to be reused
 """
 
 
-from trans_unif import transition_uniform
+#from trans_unif import transition_uniform
+from interp_np import interp
 import numpy as np
 from aux_routines import first_true, last_true, zero_hit_mat
 from numba import njit
 
 # this is renegotiator
 # this accounts for divorce protocol
-def v_ren(setup,V,interpolate=True):
+def v_ren(setup,V,sc=None,ind_or_inds=None,interpolate=True,combine=True,return_all=False):
     # this returns value functions for couple that entered the last period with
     # (s,Z,theta) from the grid and is allowed to renegotiate them or breakup
+     
     
     dc = setup.div_costs
     
-    sc = setup.agrid # savings of couple are given by the agrid
+    
+    if sc is None:
+        sc = setup.agrid # savings of couple are given by the agrid
+    
+    if ind_or_inds is not None:
+        ind, izf, izm, ipsi = setup.all_indices(ind_or_inds)
+    else:
+        ind, izf, izm, ipsi = setup.all_indices()
     
     
     assert (dc.money_lost_f_ez == 0 and dc.money_lost_m_ez == 0), 'not implemented yet'
@@ -29,12 +38,20 @@ def v_ren(setup,V,interpolate=True):
     sf = dc.assets_kept*0.5*sc - dc.money_lost_f
     sm = dc.assets_kept*0.5*sc - dc.money_lost_m
     
-    ism, psm = transition_uniform(setup.agrid,sm)
-    isf, psf = transition_uniform(setup.agrid,sf)
+    ism, psm = interp(setup.agrid,sm,return_wnext=False,trim=True)
+    isf, psf = interp(setup.agrid,sf,return_wnext=False,trim=True)
+    isc, psc = interp(setup.agrid,sc,return_wnext=False,trim=True)
     
-    psm, psf = (x[:,None] for x in (psm, psf))
     
-    ind, izf, izm, ipsi = setup.all_indices()
+    
+    if combine:
+        psm, psf, psc, ism, isf, isc = (x[:,None] for x in (psm, psf, psc, ism, isf, isc))
+        
+    
+    if not combine:
+        assert ind.size == sc.size, 'should be of the same sizes!'
+    
+    
     
     
     VMval_single, VFval_single = V['Male, single']['V'], V['Female, single']['V']
@@ -43,16 +60,26 @@ def v_ren(setup,V,interpolate=True):
     
     is_unil = dc.unilateral_divorce # whether to do unilateral divorce at all
     
-    Vm_divorce = (VMval_single[ism,:]*psm + VMval_single[ism+1,:]*(1-psm))[:,izm] - dc.u_lost_m
-    Vf_divorce = (VFval_single[isf,:]*psf + VFval_single[isf+1,:]*(1-psf))[:,izf] - dc.u_lost_f
+    
+    Vm_divorce = (VMval_single[ism,izm]*psm + VMval_single[ism+1,izm]*(1-psm)) - dc.u_lost_m
+    Vf_divorce = (VFval_single[isf,izf]*psf + VFval_single[isf+1,izf]*(1-psf)) - dc.u_lost_f
+    
+    
+    Vval_postren, VMval_postren, VFval_postren = \
+        ( v[isc,ind,:]*psc[...,None] + v[isc+1,ind,:]*(1-psc[...,None]) 
+                        for v in (Vval_postren,VMval_postren,VFval_postren) )
+        
+    
+    #Vval_postren, Mval_postren, VFval_postren = (v[])
+    
     
     assert Vval_postren.shape[:-1] == Vm_divorce.shape
     
     outs = v_prepare(VFval_postren,VMval_postren,Vval_postren,Vf_divorce,Vm_divorce,setup.thetagrid,interpolate=interpolate)
     # this is syntactically dirty but efficient
-    return v_ren_core(*outs,interpolate=interpolate,unilateral=is_unil)
+    return v_ren_core(*outs,interpolate=interpolate,unilateral=is_unil,return_tht=return_all)
 
-def v_mar(setup,V,sf,sm,ind_or_inds,interpolate=True,return_all=False):
+def v_mar(setup,V,sf,sm,ind_or_inds,interpolate=True,return_all=False,combine=True):
     # this returns value functions for couple that entered the last period with
     # (s,Z,theta) from the grid and is allowed to renegotiate them or breakup
     
@@ -63,14 +90,24 @@ def v_mar(setup,V,sf,sm,ind_or_inds,interpolate=True,return_all=False):
     # tuple technical contains less usable stuff (check v_newmar_core for it)
     
     
+    # import objects
     agrid = setup.agrid
     gamma = setup.pars['m_bargaining_weight']    
     VMval_single, VFval_single = V['Male, single']['V'], V['Female, single']['V']
     Vval_postren, VMval_postren, VFval_postren = V['Couple']['V'], V['Couple']['VM'], V['Couple']['VF']
     
     
+    
     # substantial part
     ind, izf, izm, ipsi = setup.all_indices(ind_or_inds)
+    
+    if not combine:
+        assert ind.size == sf.size == sm.size, 'different sizes?'
+    
+    
+        
+        
+        
     
     
     sc = sf+sm # savings of couple
@@ -79,18 +116,25 @@ def v_mar(setup,V,sf,sm,ind_or_inds,interpolate=True,return_all=False):
     # note that transition_uniform implicitly trims things on top,
     # so if sf is 0.75*amax and sm is 0.75*amax then sc is 1*amax and not 1.5
     
-    isf, psf = transition_uniform(agrid,sf)
-    ism, psm = transition_uniform(agrid,sm)
-    isc, psc = transition_uniform(agrid,sc)
+    isf, psf = interp(agrid,sf,return_wnext=False,trim=True)
+    ism, psm = interp(agrid,sm,return_wnext=False,trim=True)
+    isc, psc = interp(agrid,sc,return_wnext=False,trim=True)
     
-    ism, isf, isc, psf, psm, psc = (x[:,None] for x in (ism,isf,isc,psf, psm, psc))
+    if combine:
+        ism, isf, isc, psf, psm, psc = (x[:,None] for x in (ism,isf,isc,psf, psm, psc))
+       
     
     
     Vms = VMval_single[ism,izm]*psm + VMval_single[ism+1,izm]*(1-psm)
     Vfs = VFval_single[isf,izf]*psf + VFval_single[isf+1,izf]*(1-psf)
-    Vmm = VMval_postren[isc,ind,:]*(psc[:,:,None]) + VMval_postren[isc+1,ind,:]*(1-psc[:,:,None])
-    Vfm = VFval_postren[isc,ind,:]*(psc[:,:,None]) + VFval_postren[isc+1,ind,:]*(1-psc[:,:,None])
-    Vcm = Vval_postren[isc,ind,:]*(psc[:,:,None])  +  Vval_postren[isc+1,ind,:]*(1-psc[:,:,None])
+    
+    
+    Vmm, Vfm, Vcm = (v[isc,ind,:]*psc[...,None] + v[isc+1,ind,:]*(1-psc[...,None]) 
+                        for v in (VMval_postren,VFval_postren,Vval_postren))
+    
+    #Vmm = VMval_postren[isc,ind,:]*(psc[...,None]) + VMval_postren[isc+1,ind,:]*(1-psc[...,None])
+    #Vfm = VFval_postren[isc,ind,:]*(psc[...,None]) + VFval_postren[isc+1,ind,:]*(1-psc[...,None])
+    #Vcm = Vval_postren[isc,ind,:]*(psc[...,None])  +  Vval_postren[isc+1,ind,:]*(1-psc[...,None])
     
     
     outs = v_prepare(Vfm,Vmm,Vcm,Vfs,Vms,setup.thetagrid,interpolate=interpolate)
@@ -139,7 +183,34 @@ def v_prepare(VF_yes,VM_yes,VC_yes,VF_no,VM_no,thetagrid,interpolate=False):
     nf = first_true(I_f,axis=ax)
     nm = last_true(I_m,axis=ax)
     
+    
+    tht_fem = np.full(I_f.shape[:-1],np.nan,dtype=np.float32)
+    tht_mal = np.full(I_m.shape[:-1],np.nan,dtype=np.float32)
+    
+    tmin = thetagrid[0]
+    tmax = thetagrid[-1]
+    
+    tht_fem[(nf==-1)] = 0.5*(1+tmax)
+    tht_mal[(nm==-1)] = 0.5*tmin
+    
+    tht_fem[(nf==0)] = tmin
+    tht_mal[(nm==nt-1)] == tmax
+    
+    tht_fem = tht_fem.reshape(shp)
+    tht_mal = tht_mal.reshape(shp)
+    
+    '''
+    i_nf_good = np.array( (nf !=-1)  & (nf!=0) )
+    i_nm_good = np.array( (nm!=nt-1) & (nm!=-1) )
+    
+    nf_m = np.maximum(0,nf-1)
+    nm_p = np.minimum(nt-1,nm+1)
+    
+    '''
+    
     together = np.any(sq,axis=ax)
+    
+    
     
     
     
@@ -184,7 +255,7 @@ def v_prepare(VF_yes,VM_yes,VC_yes,VF_no,VM_no,thetagrid,interpolate=False):
     VF_rf, VF_lf, VF_rm, VF_lm  = (np.take_along_axis(VF_yes,x,ax) for x in (rf, lf, rm, lm))
     VM_rf, VM_lf, VM_rm, VM_lm =  (np.take_along_axis(VM_yes,x,ax) for x in (rf, lf, rm, lm))
     VC_rf, VC_lf, VC_rm, VC_lm =  (np.take_along_axis(VC_yes,x,ax) for x in (rf, lf, rm, lm))
-    
+    th_rf, th_lf, th_rm, th_lm =  (thetagrid[x] for x in (rf, lf, rm, lm))   
 
     A_l, A_r = VF_lf - VF_no_r, VF_rf - VF_no_r
     B_l, B_r = VM_lm - VM_no_r, VM_rm - VM_no_r
@@ -200,7 +271,11 @@ def v_prepare(VF_yes,VM_yes,VC_yes,VF_no,VM_no,thetagrid,interpolate=False):
     kr_f[NF_fix] = 0.0
     kr_m[NF_fix] = 1.0
     
+    tht_fem[NF_sc] = (thetagrid[lf]*(1-kr_f) + thetagrid[rf]*kr_f)[NF_sc]
+    tht_mal[NM_sc] = (thetagrid[lm]*(1-kr_m) + thetagrid[rm]*kr_m)[NM_sc]
     
+    assert not np.any(np.isnan(tht_fem))
+    assert not np.any(np.isnan(tht_mal)) 
     #Kf, loc, kf = zero_hit_mat(S_f, return_loc=True)
     #print(kf-kr_f)
     #assert np.all(kf==kr_f)
@@ -223,9 +298,12 @@ def v_prepare(VF_yes,VM_yes,VC_yes,VF_no,VM_no,thetagrid,interpolate=False):
         assert np.all( (A_l*(1-kr_m) + A_r*kr_m)[on_the_edge_y] >= 0 )
         
     
+    tht_fem = tht_fem.reshape(shp[:-1])
+    tht_mal = tht_mal.reshape(shp[:-1])
     
     if interpolate:
         together = (together | on_the_edge_y.squeeze())
+        assert np.all(together == (tht_fem<=tht_mal))
         
         
     ### this part computes things relevant for bilateral divorce
@@ -247,6 +325,7 @@ def v_prepare(VF_yes,VM_yes,VC_yes,VF_no,VM_no,thetagrid,interpolate=False):
     VF_t = (VF_rf, VF_lf, VF_rm, VF_lm) 
     VM_t = (VM_rf, VM_lf, VM_rm, VM_lm)
     VC_t = (VC_rf, VC_lf, VC_rm, VC_lm)
+    th_t = (th_rf, th_lf, th_rm, th_lm,tht_fem,tht_mal)
     kr_t  = (kr_f, kr_m)
     N_t   = (NF_sc,NM_sc,NF_ok,NM_ok,NF,NM)
     I_t   = (I_f, I_m)
@@ -257,10 +336,10 @@ def v_prepare(VF_yes,VM_yes,VC_yes,VF_no,VM_no,thetagrid,interpolate=False):
     
     
     # this seems to return too much
-    return VF_t, VM_t, VC_t, kr_t, N_t, I_t, yes_t, no_t, BD_t, together, thetagrid, shp
+    return VF_t, VM_t, VC_t, th_t, kr_t, N_t, I_t, yes_t, no_t, BD_t, together, thetagrid, shp
 
     
-def v_ren_core(VF_t,VM_t,VC_t,kr_t,N_t,I_t,yes_t,no_t,BD_t,together,thetagrid,shp, interpolate=True, unilateral=True):
+def v_ren_core(VF_t,VM_t,VC_t,th_t,kr_t,N_t,I_t,yes_t,no_t,BD_t,together,thetagrid,shp, interpolate=True, unilateral=True, return_tht=False):
     # this takes output of v_prepare as input and returns the results of renegotiation
     # The results are of the same shape as VF_yes, VM_yes, VC_yes that we feed
     # to v_prepare.
@@ -271,6 +350,7 @@ def v_ren_core(VF_t,VM_t,VC_t,kr_t,N_t,I_t,yes_t,no_t,BD_t,together,thetagrid,sh
     (VM_rf, VM_lf, VM_rm, VM_lm) = VM_t
     (VC_rf, VC_lf, VC_rm, VC_lm) = VC_t
     (kr_f, kr_m) = kr_t
+    (th_rf, th_lf, th_rm, th_lm,tht_fem,tht_mal) = th_t
     (NF_sc,NM_sc,NF_ok,NM_ok,NF,NM) = N_t
     (I_f, I_m) = I_t
     (VF_no, VM_no) = no_t
@@ -293,26 +373,32 @@ def v_ren_core(VF_t,VM_t,VC_t,kr_t,N_t,I_t,yes_t,no_t,BD_t,together,thetagrid,sh
     
     
     if not interpolate:
-        Vf_ifren_f = VF_rf
-        Vf_ifren_m = VF_lm
+        Vf_ifren_f = VF_rf 
         Vm_ifren_f = VM_rf
-        Vm_ifren_m = VM_lm
         V_ifren_f  = VC_rf
+        th_ifren_f = th_rf
+        
+        Vf_ifren_m = VF_lm
+        Vm_ifren_m = VM_lm
         V_ifren_m  = VC_lm
-    
+        th_ifren_m = th_lm
+        
     else:
         
         # when no agreement kr_f and kr_m are bullshit
         # this is alright as we do use only those that
         # are in f_ren and m_ren regions where there is an agreement
         
+        
         Vf_ifren_f = (1-kr_f)*VF_lf + kr_f*VF_rf
         Vm_ifren_f = (1-kr_f)*VM_lf + kr_f*VM_rf
         V_ifren_f  = (1-kr_f)*VC_lf + kr_f*VC_rf
+        th_ifren_f = (1-kr_f)*th_lf + kr_f*th_rf
         
         Vf_ifren_m = (1-kr_m)*VF_lm + kr_m*VF_rm
         Vm_ifren_m = (1-kr_m)*VM_lm + kr_m*VM_rm
         V_ifren_m  = (1-kr_m)*VC_lm + kr_m*VC_rm
+        th_ifren_m = (1-kr_m)*th_lm + kr_m*th_rm
         
         
         
@@ -330,7 +416,7 @@ def v_ren_core(VF_t,VM_t,VC_t,kr_t,N_t,I_t,yes_t,no_t,BD_t,together,thetagrid,sh
     
     t_stretch = bt(thetagrid.reshape(tshape))
     
-    
+    th_out = t_stretch.copy()
     
     
     if unilateral:
@@ -345,13 +431,18 @@ def v_ren_core(VF_t,VM_t,VC_t,kr_t,N_t,I_t,yes_t,no_t,BD_t,together,thetagrid,sh
         V_out[bool_divorce] = t_stretch[bool_divorce]*VF_out[bool_divorce] + \
                           (1-t_stretch[bool_divorce])*VM_out[bool_divorce] # check me please
         
+        th_out[bool_divorce] = np.nan        
+        
         VF_out[f_ren] = bt(Vf_ifren_f)[f_ren]
         VM_out[f_ren] = bt(Vm_ifren_f)[f_ren]
-        V_out[f_ren]  = bt( V_ifren_f)[f_ren]
+        V_out[f_ren]  = bt( V_ifren_f)[f_ren]        
+        th_out[f_ren] = bt(th_ifren_f)[f_ren]
+        
         
         VF_out[m_ren] = bt(Vf_ifren_m)[m_ren]
         VM_out[m_ren] = bt(Vm_ifren_m)[m_ren]
         V_out[m_ren]  = bt( V_ifren_m)[m_ren]
+        th_out[m_ren] = bt(th_ifren_m)[m_ren]
         
         assert np.all(VF_out >= VF_no_r - 1e-4)
         assert np.all(VM_out >= VM_no_r - 1e-4)
@@ -366,12 +457,15 @@ def v_ren_core(VF_t,VM_t,VC_t,kr_t,N_t,I_t,yes_t,no_t,BD_t,together,thetagrid,sh
         VF_out[i] = bVF_no[i]
         VM_out[i] = bVM_no[i]
         V_out[i]  = t_stretch[i]*bVF_no[i] + (1-t_stretch[i])*bVM_no[i]
-        
+        th_out[i] = np.nan
     
-    return V_out, VF_out, VM_out
+    if not return_tht:
+        return V_out, VF_out, VM_out
+    else:
+        return V_out, VF_out, VM_out, th_out, tht_fem, tht_mal
 
 
-def v_newmar_core(VF_t,VM_t,VC_t,kr_t,N_t,I_t,yes_t,no_t,BD_t,together,thetagrid,shp,gamma=0.5,interpolate=False,return_all=False):
+def v_newmar_core(VF_t,VM_t,VC_t,th_t,kr_t,N_t,I_t,yes_t,no_t,BD_t,together,thetagrid,shp,gamma=0.5,interpolate=False,return_all=False):
     # this takes output of v_prepare and computes value function that is obtained
     # in new marriage. The result is of the same shape as VF_no or VM_no
     # 
@@ -405,14 +499,14 @@ def v_newmar_core(VF_t,VM_t,VC_t,kr_t,N_t,I_t,yes_t,no_t,BD_t,together,thetagrid
     
     i_pos = (I_m & I_f)
     nbs[i_pos] = s_m[i_pos]**(gamma) * s_f[i_pos]**(1-gamma)
-    nbs_best_g = nbs.max(axis=2)
+    nbs_best_g = nbs.max(axis=-1)
     nbs_best_g = nbs_best_g[nbs_best_g>0]
     
     
     if not interpolate:
         i_pos = (I_m & I_f)
         nbs[i_pos] = s_m[i_pos]**(gamma) * s_f[i_pos]**(1-gamma)
-        ismar = np.any(nbs>0,axis=2)
+        ismar = np.any(nbs>0,axis=-1)
         i_theta  = nbs[ismar,:].argmax(axis=1) - 1
         wn_theta = np.ones_like(i_theta,dtype=np.float32)
     
@@ -490,9 +584,8 @@ def max_nbs_interp(sf,sm,theta_grid,gamma):
     
 
         
-# this is a vectorized version
 def max_nbs_mat(sf,sm,gamma):
-    # this is vectorized version of max_nbs
+    # this is vectorized version of max_nbs_loop
     
     assert np.all(sf!=0.0) # it's hard to get exactly 0 right
     assert np.all(sm!=0.0) # some parts break in this case

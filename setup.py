@@ -7,7 +7,7 @@ This contains things relevant for setting up the model
 import numpy as np
 
 from rw_approximations import rouw_nonst
-from mc_tools import combine_matrices_two_lists
+from mc_tools import combine_matrices_two_lists, int_prob
 from scipy.stats import norm
 import sobol_seq
 from collections import namedtuple
@@ -19,7 +19,7 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',**kwargs): 
         p = dict()        
-        p['T']         = 3
+        p['T']         = 7
         p['sig_zf_0']  = 0.15
         p['sig_zf']    = 0.05
         p['n_zf']      = 9
@@ -27,8 +27,8 @@ class ModelSetup(object):
         p['sig_zm']    = 0.075
         p['n_zm']      = 5
         p['sigma_psi_init'] = 0.12
-        p['sigma_psi']   = 0.03
-        p['n_psi']     = 15
+        p['sigma_psi']   = 2*0.03
+        p['n_psi']     = 12
         p['beta'] = 0.95
         p['A'] = 1.2 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
@@ -61,6 +61,9 @@ class ModelSetup(object):
         self.integration = p_int
         
         
+        self.state_names = ['Female, single','Male, single','Couple']
+        
+        
         if divorce_costs == 'Default':
             # by default the costs are set in the bottom
             self.div_costs = DivorceCosts()
@@ -73,7 +76,7 @@ class ModelSetup(object):
                 assert isinstance(divorce_costs,DivorceCosts)
                 self.div_costs = divorce_costs
             
-        
+        # exogrid should be deprecated
         if not nogrid:
         
             exogrid = dict()
@@ -98,7 +101,7 @@ class ModelSetup(object):
 
         self.na = 60
         self.amin = 0
-        self.amax = 4
+        self.amax = 20
         self.agrid = np.linspace(self.amin,self.amax,self.na)
 
         # grid for theta
@@ -107,8 +110,90 @@ class ModelSetup(object):
         self.thetamax = 0.99
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta)
 
-
-
+        self.exo_grids = {'Female, single':exogrid['zf_t'],
+                          'Male, single':exogrid['zm_t'],
+                          'Couple':exogrid['all_t']}
+        self.exo_mats = {'Female, single':exogrid['zf_t_mat'],
+                          'Male, single':exogrid['zm_t_mat'],
+                          'Couple':exogrid['all_t_mat']} # sparse version?
+        
+        
+        # this pre-computes transition matrices for meeting a partner
+        zf_t_partmat = [self.mar_mats(t,female=True) if t < p['T'] - 1 else None 
+                            for t in range(p['T'])]
+        zm_t_partmat = [self.mar_mats(t,female=False) if t < p['T'] - 1 else None 
+                            for t in range(p['T'])]
+        
+        self.part_mats = {'Female, single':zf_t_partmat,
+                          'Male, single':  zm_t_partmat,
+                          'Couple': None} # last is added for consistency
+        
+        
+    
+    
+    def mar_mats(self,t,female=True,trim_lvl=0.001):
+        # TODO: check timing
+        # this returns transition matrix for single agents into possible couples
+        # rows are single's states
+        # columnts are couple's states
+        # you have to transpose it if you want to use it for integration
+        setup = self
+        
+        nexo = setup.pars['nexo']
+        sigma_psi_init = setup.pars['sigma_psi_init']
+        sig_z_partner = setup.pars['sig_partner_z']
+        psi_couple = setup.exogrid.psi_t[t+1]
+        
+        
+        if female:
+            nz_single = setup.exogrid.zf_t[t].shape[0]
+            p_mat = np.empty((nexo,nz_single))
+            z_own = setup.exogrid.zf_t[t]
+            n_zown = z_own.shape[0]
+            z_partner = setup.exogrid.zm_t[t+1]
+            zmat_own = setup.exogrid.zf_t_mat[t]
+        else:
+            nz_single = setup.exogrid.zm_t[t].shape[0]
+            p_mat = np.empty((nexo,nz_single))
+            z_own = setup.exogrid.zm_t[t]
+            n_zown = z_own.shape[0]
+            z_partner = setup.exogrid.zf_t[t+1]
+            zmat_own = setup.exogrid.zm_t_mat[t]    
+            
+        def ind_conv(a,b,c): return setup.all_indices((a,b,c))[0]
+        
+        
+        for iz in range(n_zown):
+            p_psi = int_prob(psi_couple,mu=0,sig=sigma_psi_init)
+            if female:
+                p_zm  = int_prob(z_partner, mu=z_own[iz],sig=sig_z_partner)
+                p_zf  = zmat_own[iz,:]
+            else:
+                p_zf  = int_prob(z_partner, mu=z_own[iz],sig=sig_z_partner)
+                p_zm  = zmat_own[iz,:]
+            #sm = sf
+        
+            p_vec = np.zeros(nexo)
+            
+            for izf, p_zf_i in enumerate(p_zf):
+                if p_zf_i < trim_lvl: continue
+            
+                for izm, p_zm_i in enumerate(p_zm):
+                    if p_zf_i*p_zm_i < trim_lvl: continue
+                
+                    for ipsi, p_psi_i in enumerate(p_psi):                    
+                        p = p_zf_i*p_zm_i*p_psi_i
+                        
+                        if p > trim_lvl:
+                            p_vec[ind_conv(izf,izm,ipsi)] = p    
+                            
+            assert np.any(p_vec>trim_lvl), 'Everything is zero?'              
+            p_vec = p_vec / np.sum(p_vec)
+            p_mat[:,iz] = p_vec
+            
+        return p_mat.T # I
+    
+    
     def all_indices(self,ind_or_inds=None):
         
         # just return ALL indices if no argument is called
@@ -220,6 +305,11 @@ class ModelSetup(object):
         z_in = self.exogrid.zf_t[-1][None,:] if female else self.exogrid.zm_t[-1][None,:]
         return self.vs_last(s_in,z_in,return_cs)
         
+    
+    
+    
+    
+    
     
 
 #from numba import jit

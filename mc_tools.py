@@ -7,11 +7,14 @@ from scipy.stats import norm
 def mc_simulate(statein,Piin,shocks=None):
     # this simulates transition one period ahead for a Markov chain
     import numpy as np
-    assert(np.max(statein) < Piin.shape[1] )
+    assert(np.max(statein) < Piin.shape[0] )
     assert statein.ndim == 1
     n_in = statein.size
     Picum = np.cumsum(Piin,axis=1)
     Pi_state = Picum[statein,:]
+    
+    assert np.all( np.abs(1 - Picum[:,-1]) < 1e-5) 
+    
     #print(Pi_state)
     
     if shocks is None:

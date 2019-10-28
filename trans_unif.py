@@ -39,6 +39,7 @@ def transition_uniform_looped(grid,xnew):
     
 
 def transition_uniform(grid,xnew):
+    raise Exception('this is deprecated')
     import numpy as np
 
     if not isinstance(xnew,np.ndarray): xnew = np.array([xnew])
@@ -62,6 +63,8 @@ def transition_uniform(grid,xnew):
     
     return j_to, p_to
     
+
+
 
 
 

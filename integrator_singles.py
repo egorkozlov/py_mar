@@ -5,8 +5,8 @@ This contains routines for intergation for singles
 """
 
 import numpy as np
-from trans_unif import transition_uniform
-from mc_tools import int_prob
+from interp_np import interp
+#from mc_tools import int_prob
 
 from ren_mar import v_mar
 
@@ -24,9 +24,9 @@ def v_after_mar_grid(setup,V,sf,sm,ind_or_inds,interpolate=False):
     # substantial part
     ind, izf, izm, ipsi = setup.all_indices(ind_or_inds)
     
-    isf, psf = transition_uniform(agrid,sf)
-    ism, psm = transition_uniform(agrid,sm)
-    isc, psc = transition_uniform(agrid,sf+sm)
+    isf, psf = interp(agrid,sf,return_wnext=False,trim=True)
+    ism, psm = interp(agrid,sm,return_wnext=False,trim=True)
+    isc, psc = interp(agrid,sf+sm,return_wnext=False,trim=True) # finds indices and weights
     
     #assert np.all(setup.exogrid.all_t[-1][ind,0] == setup.exogrid.zf_t[-1][izf])
     #assert np.all(setup.exogrid.all_t[-1][ind,1] == setup.exogrid.zm_t[-1][izm])
@@ -73,73 +73,26 @@ def ev_after_savings_grid_all_z(setup,V,sown,female,t,trim_lvl=0.01):
     # this takes gender as argument so should be called twice
     
     nexo = setup.pars['nexo']
-    sigma_psi_init = setup.pars['sigma_psi_init']
-    sig_z_partner = setup.pars['sig_partner_z']
     sig_a_partner = setup.pars['sig_partner_a']
     ns = sown.size
     eps_a_partner = setup.integration['nodes_couple'][:,0]
     npart = setup.integration['num_partners']    
-    psi_couple = setup.exogrid.psi_t[-1]
     
     
-    
-    if female:
-        nz_single = setup.exogrid.zf_t[t].shape[0]
-        p_mat = np.empty((nexo,nz_single))
-        z_own = setup.exogrid.zf_t[t]
-        n_zown = z_own.shape[0]
-        z_partner = setup.exogrid.zm_t[t+1]
-        zmat_own = setup.exogrid.zf_t_mat[t]
-        i_vnext = 0
-    else:
-        nz_single = setup.exogrid.zm_t[t].shape[0]
-        p_mat = np.empty((nexo,nz_single))
-        z_own = setup.exogrid.zm_t[t]
-        n_zown = z_own.shape[0]
-        z_partner = setup.exogrid.zf_t[t+1]
-        zmat_own = setup.exogrid.zm_t_mat[t]    
-        i_vnext = 1
+    p_mat = setup.part_mats['Female, single'][t].T if female else setup.part_mats['Male, single'][t].T
+    i_vnext = 0 if female else 1
         
     
-    def ind_conv(a,b,c): return setup.all_indices((a,b,c))[0]
-    
-    
-    for iz in range(n_zown):
-        p_psi = int_prob(psi_couple,mu=0,sig=sigma_psi_init)
-        if female:
-            p_zm  = int_prob(z_partner, mu=z_own[iz],sig=sig_z_partner)
-            p_zf  = zmat_own[iz,:]
-        else:
-            p_zf  = int_prob(z_partner, mu=z_own[iz],sig=sig_z_partner)
-            p_zm  = zmat_own[iz,:]
-        #sm = sf
-    
-        p_vec = np.zeros(nexo)
-        
-        for izf, p_zf_i in enumerate(p_zf):
-            if p_zf_i < trim_lvl: continue
-            for izm, p_zm_i in enumerate(p_zm):
-                if p_zf_i*p_zm_i < trim_lvl: continue
-                for ipsi, p_psi_i in enumerate(p_psi):
-                    p = p_zf_i*p_zm_i*p_psi_i
-                    if p > trim_lvl:
-                        p_vec[ind_conv(izf,izm,ipsi)] = p    
-                        
-        assert np.any(p_vec>trim_lvl), 'Everything is zero?'              
-        p_vec = p_vec / np.sum(p_vec)
-        p_mat[:,iz] = p_vec
-        
-    
-    V_next = np.ones((ns,nexo))*(-1e-10)
+    V_next = np.ones((ns,nexo))*(-1e10)
     inds = np.where( np.any(p_mat>0,axis=1 ) )[0]
     
     EV = 0.0
     
     for ipart in range(npart):
         sm = sown*np.exp(sig_a_partner*eps_a_partner[ipart])
-        vout = v_after_mar_grid(setup,V,sown,sm,inds)[i_vnext]
+        #vout2 = v_after_mar_grid(setup,V,sown,sm,inds)[i_vnext]        
+        vout = v_mar(setup,V,sown,sm,inds,interpolate=False)[i_vnext]
         V_next[:,inds] = vout
-        vout2 = v_mar(setup,V,sown,sm,inds)[i_vnext]
         #print(np.max(np.abs(vout-vout2)))
         
         EV += (1/npart)*np.dot(V_next,p_mat)

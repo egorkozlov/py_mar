@@ -37,7 +37,7 @@ def interp_np(grid,xnew,return_wnext=True,trim=False):
     
     if trim: xnew = np.minimum(grid[-1], np.maximum(grid[0],xnew) )
     
-    j = np.searchsorted(grid,xnew,side='left')-1
+    j = np.minimum( np.searchsorted(grid,xnew,side='left')-1, grid.size-2 )
     wnext = (xnew - grid[j])/(grid[j+1] - grid[j])
     
     return j, (wnext if return_wnext else 1-wnext) 

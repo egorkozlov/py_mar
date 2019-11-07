@@ -24,9 +24,10 @@ def v_period_zero_grid(setup,a0,EV,female):
     zvals = setup.exogrid.zf_t[0] if female else setup.exogrid.zm_t[0]
     sigma = setup.pars['crra_power']
     beta = setup.pars['beta']
+    R = setup.pars['R']
     
     
-    money = a0[:,None] + np.exp(zvals[None,:])
+    money = R*a0[:,None] + np.exp(zvals[None,:])
     shp = (a0.size,zvals.size)
     
     
@@ -52,11 +53,12 @@ def v_period_zero_grid_0(setup,a0,EV,female):
     agrid = setup.agrid
     zvals = setup.exogrid.zf_t[0] if female else setup.exogrid.zm_t[0]
     beta = setup.pars['beta']
+    R = setup.pars['R']
     def u(c): return setup.u(c)
     
     #assert False
     
-    income = a0[:,None] + np.exp(zvals[None,:])
+    income = R*a0[:,None] + np.exp(zvals[None,:])
     
     
     

@@ -13,15 +13,21 @@ from interp_np import interp
 import numpy as np
 from aux_routines import first_true, last_true, zero_hit_mat
 from numba import njit
+from gridvec import VecOnGrid
 
 # this is renegotiator
 # this accounts for divorce protocol
 def v_ren(setup,V,sc=None,ind_or_inds=None,interpolate=True,combine=True,return_all=False):
-    # this returns value functions for couple that entered the last period with
+    # this returns value functions for couple that entered the period with
     # (s,Z,theta) from the grid and is allowed to renegotiate them or breakup
+    # 
+    # combine = True creates matrix (n_sc-by-n_inds)
+    # combine = False assumed that n_sc is the same shape as n_inds and creates
+    # a flat array.
      
     
     dc = setup.div_costs
+    is_unil = dc.unilateral_divorce # whether to do unilateral divorce at all
     
     
     if sc is None:
@@ -35,42 +41,22 @@ def v_ren(setup,V,sc=None,ind_or_inds=None,interpolate=True,combine=True,return_
     
     assert (dc.money_lost_f_ez == 0 and dc.money_lost_m_ez == 0), 'not implemented yet'
     
+    # this if how assets are divided
     sf = dc.assets_kept*0.5*sc - dc.money_lost_f
     sm = dc.assets_kept*0.5*sc - dc.money_lost_m
     
-    ism, psm = interp(setup.agrid,sm,return_wnext=False,trim=True)
-    isf, psf = interp(setup.agrid,sf,return_wnext=False,trim=True)
-    isc, psc = interp(setup.agrid,sc,return_wnext=False,trim=True)
+    # this creates interpolators
+    sm_v = VecOnGrid(setup.agrid,sm,trim=True)
+    sf_v = VecOnGrid(setup.agrid,sf,trim=True)
+    sc_v = VecOnGrid(setup.agrid,sc,trim=True)
     
-    
-    
-    if combine:
-        psm, psf, psc, ism, isf, isc = (x[:,None] for x in (psm, psf, psc, ism, isf, isc))
-        
-    
-    if not combine:
-        assert ind.size == sc.size, 'should be of the same sizes!'
-    
-    
-    
-    
-    VMval_single, VFval_single = V['Male, single']['V'], V['Female, single']['V']
-    Vval_postren, VMval_postren, VFval_postren = V['Couple']['V'], V['Couple']['VM'], V['Couple']['VF']
-    
-    
-    is_unil = dc.unilateral_divorce # whether to do unilateral divorce at all
-    
-    
-    Vm_divorce = (VMval_single[ism,izm]*psm + VMval_single[ism+1,izm]*(1-psm)) - dc.u_lost_m
-    Vf_divorce = (VFval_single[isf,izf]*psf + VFval_single[isf+1,izf]*(1-psf)) - dc.u_lost_f
-    
+    # this applies the interpolators
+    Vm_divorce = sm_v.apply(V['Male, single']['V'],  axis=0,take=(1,izm),reshape_i=combine)
+    Vf_divorce = sf_v.apply(V['Female, single']['V'],axis=0,take=(1,izf),reshape_i=combine)
     
     Vval_postren, VMval_postren, VFval_postren = \
-        ( v[isc,ind,:]*psc[...,None] + v[isc+1,ind,:]*(1-psc[...,None]) 
-                        for v in (Vval_postren,VMval_postren,VFval_postren) )
-        
-    
-    #Vval_postren, Mval_postren, VFval_postren = (v[])
+        (sc_v.apply(v,axis=0,take=(1,ind),reshape_i=combine)
+            for v in (V['Couple']['V'], V['Couple']['VM'], V['Couple']['VF']))
     
     
     assert Vval_postren.shape[:-1] == Vm_divorce.shape
@@ -78,6 +64,7 @@ def v_ren(setup,V,sc=None,ind_or_inds=None,interpolate=True,combine=True,return_
     outs = v_prepare(VFval_postren,VMval_postren,Vval_postren,Vf_divorce,Vm_divorce,setup.thetagrid,interpolate=interpolate)
     # this is syntactically dirty but efficient
     return v_ren_core(*outs,interpolate=interpolate,unilateral=is_unil,return_tht=return_all)
+
 
 def v_mar(setup,V,sf,sm,ind_or_inds,interpolate=True,return_all=False,combine=True):
     # this returns value functions for couple that entered the last period with
@@ -88,6 +75,10 @@ def v_mar(setup,V,sf,sm,ind_or_inds,interpolate=True,return_all=False,combine=Tr
     # if return_all==True returns (Vout_f, Vout_m, ismar, thetaout, technical)
     # where ismar is marriage decision, thetaout is resulting theta and 
     # tuple technical contains less usable stuff (check v_newmar_core for it)
+    #
+    # combine = True creates matrix (n_s-by-n_inds)
+    # combine = False assumed that n_s is the same shape as n_inds and creates
+    # a flat array.
     
     
     # import objects
@@ -97,7 +88,6 @@ def v_mar(setup,V,sf,sm,ind_or_inds,interpolate=True,return_all=False,combine=Tr
     Vval_postren, VMval_postren, VFval_postren = V['Couple']['V'], V['Couple']['VM'], V['Couple']['VF']
     
     
-    
     # substantial part
     ind, izf, izm, ipsi = setup.all_indices(ind_or_inds)
     
@@ -105,36 +95,23 @@ def v_mar(setup,V,sf,sm,ind_or_inds,interpolate=True,return_all=False,combine=Tr
         assert ind.size == sf.size == sm.size, 'different sizes?'
     
     
-        
-        
-        
     
+    # using trim = True implicitly trims things on top
+    # so if sf is 0.75*amax and sm is 0.75*amax then sc is 1*amax and not 1.5
     
     sc = sf+sm # savings of couple
     
-    # this finds weight and indices for interpolation of sf, sm and sc on agrid
-    # note that transition_uniform implicitly trims things on top,
-    # so if sf is 0.75*amax and sm is 0.75*amax then sc is 1*amax and not 1.5
+    # this creates interpolators
+    sf_v = VecOnGrid(agrid,sf,trim=True) 
+    sm_v = VecOnGrid(agrid,sm,trim=True)
+    sc_v = VecOnGrid(agrid,sc,trim=True)
     
-    isf, psf = interp(agrid,sf,return_wnext=False,trim=True)
-    ism, psm = interp(agrid,sm,return_wnext=False,trim=True)
-    isc, psc = interp(agrid,sc,return_wnext=False,trim=True)
+    # this applies them
+    Vms = sm_v.apply(VMval_single,axis=0,take=(1,izm),reshape_i=combine)
+    Vfs = sf_v.apply(VFval_single,axis=0,take=(1,izf),reshape_i=combine)
     
-    if combine:
-        ism, isf, isc, psf, psm, psc = (x[:,None] for x in (ism,isf,isc,psf, psm, psc))
-       
-    
-    
-    Vms = VMval_single[ism,izm]*psm + VMval_single[ism+1,izm]*(1-psm)
-    Vfs = VFval_single[isf,izf]*psf + VFval_single[isf+1,izf]*(1-psf)
-    
-    
-    Vmm, Vfm, Vcm = (v[isc,ind,:]*psc[...,None] + v[isc+1,ind,:]*(1-psc[...,None]) 
+    Vmm, Vfm, Vcm = (sc_v.apply(v,axis=0,take=(1,ind),reshape_i=combine) 
                         for v in (VMval_postren,VFval_postren,Vval_postren))
-    
-    #Vmm = VMval_postren[isc,ind,:]*(psc[...,None]) + VMval_postren[isc+1,ind,:]*(1-psc[...,None])
-    #Vfm = VFval_postren[isc,ind,:]*(psc[...,None]) + VFval_postren[isc+1,ind,:]*(1-psc[...,None])
-    #Vcm = Vval_postren[isc,ind,:]*(psc[...,None])  +  Vval_postren[isc+1,ind,:]*(1-psc[...,None])
     
     
     outs = v_prepare(Vfm,Vmm,Vcm,Vfs,Vms,setup.thetagrid,interpolate=interpolate)
@@ -156,7 +133,7 @@ def v_prepare(VF_yes,VM_yes,VC_yes,VF_no,VM_no,thetagrid,interpolate=False):
     # thetagrid, hence most of the outputs are actually useless. 
     
     
-    ax = VC_yes.ndim - 1 # axis where theta is
+    ax = VC_yes.ndim - 1 # axis where theta is is assumed to be the last one
     nt = VC_yes.shape[ax] # number of thetas
     
     assert nt==thetagrid.size

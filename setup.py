@@ -19,7 +19,7 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',**kwargs): 
         p = dict()        
-        p['T']         = 7
+        p['T']         = 5
         p['sig_zf_0']  = 0.15
         p['sig_zf']    = 0.05
         p['n_zf']      = 9
@@ -27,7 +27,8 @@ class ModelSetup(object):
         p['sig_zm']    = 0.075
         p['n_zm']      = 5
         p['sigma_psi_init'] = 0.12
-        p['sigma_psi']   = 2*0.03
+        p['sigma_psi']   = 0.03
+        p['R'] = 1.2
         p['n_psi']     = 12
         p['beta'] = 0.95
         p['A'] = 1.2 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
@@ -263,7 +264,7 @@ class ModelSetup(object):
         # this is the value function for couple that has savings s,
         # Z = (zm,zf,psi) and bargaining power theta after all decisions are made
         
-        income = s + np.exp(zm) +  np.exp(zf)
+        income = self.pars['R']*s + np.exp(zm) +  np.exp(zf)
         kf, km = self.c_mult(theta)
         cf, cm = kf*income, km*income
         u_couple = self.u_mult(theta)*self.u(income)        
@@ -293,7 +294,7 @@ class ModelSetup(object):
 
     def vs_last(self,s,z,return_cs=False):  
         # generic last period utility for single agent
-        income = s+np.exp(z)
+        income = self.pars['R']*s+np.exp(z)
         if return_cs:
             return self.u(income), income, np.zeros_like(income)
         else:

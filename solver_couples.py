@@ -40,10 +40,11 @@ def vm_period_zero_grid_massive(setup,a0,EV_tuple,nbatch=nbatch_def,verbose=Fals
     psi = setup.exogrid.all_t[0][:,2]
     beta = setup.pars['beta']
     sigma = setup.pars['crra_power']
+    R = setup.pars['R']
 
     labor_income = np.exp(zf) + np.exp(zm)
     
-    money = a0[:,None] + labor_income[None,:]
+    money = R*a0[:,None] + labor_income[None,:]
     
     shp = (setup.na,setup.nexo,setup.ntheta)
     

@@ -20,46 +20,35 @@ class Agents:
             T = M.setup.pars['T']
             
             
+        np.random.seed(18) # TODO: this should be replaced by explicitly supplying shocks  
             
+        # take the stuff from the model and arguments
+        # note that this does not induce any copying just creates links
         self.M = M
         self.V = M.V
         self.setup = M.setup
         self.state_names = self.setup.state_names
         self.N = N
         self.T = T
-            
         self.verbose = verbose
-        
-        np.random.seed(18)    
-        
         self.timer = M.time
         
         
-        self.gassets = [VecOnGrid(self.setup.agrid,0.01*np.ones(N,dtype=np.float32),trim=True)
+        
+        # initialize assets
+        self.gassets = [VecOnGrid(self.setup.agrid,np.zeros(N,dtype=np.float32),trim=True)
+                            for _ in range(T)] 
+        # initialize theta
+        self.gtheta = [VecOnGrid(self.setup.thetagrid,-1*np.ones(N,dtype=np.float32),trim=True)
                             for _ in range(T)]
         
-        self._iassets = np.zeros((N,T),np.int32)            
-        self._wnassets = np.zeros((N,T),np.float32)
-        
-        self._itheta  = np.zeros((N,T),dtype=np.int32)           
-        self._wntheta  = np.zeros((N,T),dtype=np.float32)
-        
-        
-        self.assets = 0.01*np.ones((N,T),dtype=np.float32)
-        self._iassets[:,0], self._wnassets[:,0] = \
-            interp(self.setup.agrid,self.assets[:,0],return_wnext=True,trim=True)
-        
-        
-        self.theta = np.full((N,T),np.nan,dtype=np.float32)
+        # initialize iexo
         self.iexo = np.zeros((N,T),np.int32)
-        self.iexo[:,0] = np.random.randint(0,self.setup.pars['n_zf'],size=N)
-        #self.iassets[:,0] = np.random.randint(0,100,size=N)
+        self.iexo[:,0] = np.random.randint(0,self.setup.pars['n_zf'],size=N) # initialize iexo
         
-        self.state = np.full((N,T),np.nan,dtype=np.int32)
-        #self.state[:,0] = np.random.randint(0,2,size=N,dtype=np.int32)
-        
-        
-        
+        # initialize state
+        self.state = np.zeros((N,T),dtype=np.int32)       
+        self.state[:,0] = 0  # everyone starts as female
         
         self.state_codes = dict()
         self.has_theta = list()
@@ -67,8 +56,6 @@ class Agents:
             self.state_codes[name] = i
             self.has_theta.append((name=='Couple'))
         
-        
-        self.state[:,0] = 0
         
         self.timer('Simulations, creation')
     
@@ -86,144 +73,58 @@ class Agents:
         
         for ist, sname in enumerate(self.state_codes):
             
-            is_state = (self.state[:,t]==ist)
-            
-            use_theta = self.has_theta[ist]
-            
+            is_state = (self.state[:,t]==ist)            
+            use_theta = self.has_theta[ist]            
             nst = np.sum(is_state)
             if nst==0:
                 continue
             
-            ind = np.where(is_state)
-            
-            agrid = self.setup.agrid
-            
-            
-            w_i = self._wnassets[ind,t].reshape(nst)  
+            ind = np.where(is_state)[0]
             
             if not use_theta:
-                s_i  = self.V[t][sname]['s'][self._iassets[ind,t],  self.iexo[ind,t]].reshape(nst)
-                s_ip = self.V[t][sname]['s'][self._iassets[ind,t]+1,self.iexo[ind,t]].reshape(nst)
                 
-                anext_val =  (1-w_i)*s_i + w_i*s_ip 
-                
-                
-                
-                q = self.gassets[t].apply( self.V[t][sname]['s'], take = [(1,self.iexo[ind,t])], 
-                            pick = ind[0], reshape_i = False).squeeze()
-                
-                assert np.all( np.abs(anext_val-q) < 1e-5 )
-                
-                
+                anext = self.gassets[t].apply( self.V[t][sname]['s'], take = [(1,self.iexo[ind,t])], 
+                            pick = ind, reshape_i = False)
                 
             else:
-                wt_p = self._wntheta[ind,t].reshape(nst)                
-                # bilinear interpolation                
-                s_i_t0 = self.V[t][sname]['s'][self._iassets[ind,t],  self.iexo[ind,t], self._itheta[ind,t]].reshape(nst)
-                s_i_tp = self.V[t][sname]['s'][self._iassets[ind,t],  self.iexo[ind,t], self._itheta[ind,t]+1].reshape(nst)
-                s_ip_t0 = self.V[t][sname]['s'][self._iassets[ind,t]+1,  self.iexo[ind,t], self._itheta[ind,t]].reshape(nst)
-                s_ip_tp = self.V[t][sname]['s'][self._iassets[ind,t]+1,  self.iexo[ind,t], self._itheta[ind,t]+1].reshape(nst)
+                
+                # interpolate in both assets and theta
+                # function apply_2dim is experimental but I checked it at this setup
+                
+                anext = self.gassets[t].apply_2dim(self.V[t][sname]['s'],
+                                                     apply_first=self.gtheta[t],
+                                                     axis_first=2,
+                                                     axis_this=0,
+                                                     take = [(1,self.iexo[ind,t])],
+                                                     pick = ind,
+                                                     reshape_i = False
+                                                    )
                 
                 
-                s_i = (1-wt_p)*s_i_t0 + wt_p*s_i_tp
-                s_ip = (1-wt_p)*s_ip_t0 + wt_p*s_ip_tp
+                '''
+                # This is a consistency check about what if we interpolate
+                # in different order
                 
-                anext_val =  (1-w_i)*s_i + w_i*s_ip 
-                
-                
-                aq0 = agrid[self._iassets[ind,t]]*(1-w_i) + agrid[self._iassets[ind,t]+1]*w_i
-                aq1 = self.gassets[t].val[ind]
-                
-                try:
-                    assert np.all(np.abs( aq0 -  aq1  ) < 1e-5)
-                except:
-                    print((t,sname))
-                    #print(aq0)
-                    print((aq0-aq1))
-                    #print(aq1)
-                    
-                    assert False, 'aq are not equal'
-                
-                s_t0 = self.gassets[t].apply( self.V[t][sname]['s'], take = [(1,self.iexo[ind,t]),(2,self._itheta[ind,t])], 
-                            pick = ind[0], reshape_i = False).squeeze()
-                
-                assert np.all( np.abs(  s_t0 - (1-w_i)*s_i_t0 - w_i*s_ip_t0  ) < 1e-5 )
-                
-                s_tp = self.gassets[t].apply( self.V[t][sname]['s'], take = [(1,self.iexo[ind,t]),(2,self._itheta[ind,t]+1)], 
-                            pick = ind[0], reshape_i = False).squeeze()
-                
-                assert np.all( np.abs(  s_tp - (1-w_i)*s_i_tp - w_i*s_ip_tp  ) < 1e-5 )
+                anext_alt = self.gtheta[t].apply_2dim(self.V[t][sname]['s'],
+                                                     apply_first=self.gassets[t],
+                                                     axis_first=0,
+                                                     axis_this=2,
+                                                     take = [(1,self.iexo[ind,t])],
+                                                     pick = ind,
+                                                     reshape_i = False
+                                                    )
                 
                 
-                s2 = self.gassets[t].apply( self.V[t][sname]['s'], take = [(1,self.iexo[ind,t])], 
-                            pick = ind[0], reshape_i = False).squeeze()
+                assert np.allclose(anext,anext_alt)
                 
-                # try to do different indexing schemes
-                s2_t0 = s2[list(range(s2.shape[0])), self._itheta[ind,t].squeeze()]                
-                assert np.all( np.abs( s_t0 - s2_t0) < 1e-5 )                
-                s2_tp = s2[list(range(s2.shape[0])),self._itheta[ind,t].squeeze()+1]                
-                assert np.all( np.abs( s_tp - s2_tp) < 1e-5 )
+                '''
                 
                 
                 
-                
-                
-                q = (1-wt_p)*s_t0 + wt_p*s_tp                
-                tht = VecOnGrid(self.setup.thetagrid, self.theta[:,t],trim=True)                
-                
-                q3 = tht.apply(s2,axis=1,pick=ind[0],take=(0, list(range(s2.shape[0])) ),reshape_i=False).squeeze()
-                thetagrid = self.setup.thetagrid
-                
-                thetacheck = (thetagrid[self._itheta[ind,t]]*(1-self._wntheta[ind,t]) + \
-                               thetagrid[self._itheta[ind,t]+1]*self._wntheta[ind,t]).squeeze()
-                iseq = ( np.abs(thetacheck - self.theta[ind,t].squeeze()) < 1e-5 )
-                                    
-                                 
-                try:
-                    assert np.all(iseq)
-                except:
-                    print((t,sname))
-                    print(thetacheck.shape)
-                    print(thetacheck[np.where(~(iseq))])
-                    print(self.theta[ind,t].squeeze()[np.where(~(iseq))])
-                    assert False
-                    
-                    
-                
-                q2 = ( (1-wt_p)*s2_t0 + wt_p*s2_tp ).squeeze()
-                
-                try:
-                    assert np.all( np.abs(q3-q2) < 1e-5 )
-                except:
-                    print('q3 is not q2')
-                    print(q3-q2)
-                    print((q3.shape,q2.shape))                    
-                    assert False
-                    
-                    
-                try:
-                    assert np.all( np.abs(anext_val - q2) < 1e-5)
-                except:
-                    #print(anext_val)
-                    print('anext is not q2')
-                    print(anext_val - q2)
-                    assert False
-                    
-                
-                
-                
-                
-              
+            assert np.all(anext >= 0)
             
-            assert np.all(anext_val >= 0)
+            self.gassets[t+1].update(ind,anext) 
             
-            self.assets[ind,t+1] = anext_val
-            self.gassets[t+1].update(ind[0],anext_val) 
-            
-            
-            # ok what do I do for interpolation now?
-            # this is performed when updating the state but do it anyways
-            self._iassets[ind,t+1], self._wnassets[ind,t+1] = interp(agrid,anext_val,trim=True)
             
     def iexonext(self,t):
         
@@ -251,8 +152,6 @@ class Agents:
     def statenext(self,t):
         
         setup = self.setup
-        agrid = setup.agrid
-        thetagrid = setup.thetagrid
         
         for ist,sname in enumerate(self.state_names):
             is_state = (self.state[:,t]==ist)
@@ -262,8 +161,6 @@ class Agents:
             if not np.any(is_state):
                 continue
             
-            
-            #Vnext = dict().fromkeys(self.state_names,None)        
             ind = np.where(is_state)[0]
             
             if sname == "Female, single":
@@ -271,103 +168,78 @@ class Agents:
                 # meet a partner
                 pmat = self.setup.part_mats['Female, single'][t]
                 ic_out = mc_simulate(self.iexo[ind,t],pmat,shocks=None)
-                sf = self.assets[ind,t+1] # note that timing is slightly inconsistent
+                sf = self.gassets[t+1].val[ind] # note that timing is slightly inconsistent
                 # we use iexo from t and savings from t+1
                 # TODO: fix the seed
+                
                 mult_a = np.exp(np.random.normal()*setup.pars['sig_partner_a'])
                 sm = mult_a*sf
-                iall, izf, izm, ipsi = setup.all_indices(ic_out)
                 
+                iall, izf, izm, ipsi = setup.all_indices(ic_out)
                 vf, vm, ismar, tht, _ = v_mar(setup,self.V[t+1],sf,sm,iall,combine=False,return_all=True)
                 
-                
                 i_disagree = np.isnan(tht)
-                
                 i_agree = ~np.array(i_disagree)
                 
                 print('{} agreed, {} disagreed'.format(np.sum(i_agree),np.sum(i_disagree)))
-
-                
                 assert np.all(ismar==i_agree)
                 
                 if np.any(i_agree):
                     
-                    self.theta[ind[i_agree],t+1] = tht[i_agree] # mad indexing
-                    self._itheta[ind[i_agree],t+1], self._wntheta[ind[i_agree],t+1] = interp(thetagrid,tht[i_agree],trim=True)
-                    
-                    self.assets[ind[i_agree],t+1] = sf[i_agree] + sm[i_agree]
-                    self._iassets[ind[i_agree],t+1], self._wnassets[ind[i_agree],t+1] = interp(agrid,self.assets[ind[i_agree],t+1],trim=True)
-                
+                    self.gtheta[t+1].update(ind[i_agree],tht[i_agree])
                     self.iexo[ind[i_agree],t+1] = iall[i_agree]
                     self.state[ind[i_agree],t+1] = self.state_codes['Couple']
-                    
                     self.gassets[t+1].update(ind[i_agree],sf[i_agree] + sm[i_agree])
                     
                 if np.any(i_disagree):
-                    #self.theta[ind[i_disagree],t+1] = np.nan
-                    #_self._itheta[ind[i_disagree],t+1], _self._wntheta[ind[i_disagree],t+1] = 0, 0.0
                     # do not touch assets
                     self.iexo[ind[i_disagree],t+1] = izf[i_disagree]
                     self.state[ind[i_disagree],t+1] = self.state_codes['Female, single']
                     
-                
             elif sname == "Couple":
                 
                 # by default keep the same theta and weights
-                self.theta[ind,t+1] = self.theta[ind,t]
-                self._itheta[ind,t+1], self._wntheta[ind,t+1] = self._itheta[ind,t], self._wntheta[ind,t]
+                thetanow = self.gtheta[t].val[ind]
+                self.gtheta[t+1].update(ind,thetanow)
                 
                 # initiate renegotiation
-                sc = self.assets[ind,t+1]
+                sc = self.gassets[t+1].val[ind]
                 iall, izf, izm, ipsi = self.setup.all_indices(self.iexo[ind,t+1])
                 
                 v, vf, vm, thetaout, tht_fem, tht_mal = v_ren(setup,self.V[t+1],sc=sc,ind_or_inds=iall,combine=False,return_all=True)
-                #print((tht_fem,tht_mal))
+                
                 
                 # same size as ind
+                # categorizes couples
                 i_div = np.array(tht_fem > tht_mal)
-                i_ren = np.array(~(i_div) & ((self.theta[ind,t] < tht_fem) | (self.theta[ind,t] > tht_mal)))
-                i_renf = np.array(i_ren & (self.theta[ind,t] < tht_fem))
-                i_renm = np.array(i_ren & (self.theta[ind,t] > tht_mal))
+                i_ren = np.array(~(i_div) & ((thetanow < tht_fem) | (thetanow > tht_mal)))
+                i_renf = np.array(i_ren & (thetanow < tht_fem))
+                i_renm = np.array(i_ren & (thetanow > tht_mal))
                 i_sq  = np.array(~(i_div) & ~(i_ren))
                 
-                
                 assert np.all(i_ren == ((i_renf) | (i_renm)))
-                
-                print('{} divorce, {} ren-f, {} ren-m, {} sq'.format(np.sum(i_div),np.sum(i_renf),np.sum(i_renm),np.sum(i_sq)))
+                print('{} divorce, {} ren-f, {} ren-m, {} sq'.format(np.sum(i_div),np.sum(i_renf),np.sum(i_renm),np.sum(i_sq))                     )
                 
                 
                 if np.any(i_div):
-                    # TODO: this should replicate the divorce protocol
-                    self.assets[ind[i_div],t+1] = 0.5*sc[i_div] 
-                    self.theta[ind[i_div],t+1], self._wntheta[ind[i_div],t+1], self._itheta[ind[i_div],t+1] = np.nan, 0.0, 0
+                    # TODO: this should replicate the divorce protocol                    
+                    self.gassets[t+1].update(ind[i_div],0.5*sc[i_div])                    
+                    self.gtheta[t+1].update(ind[i_div],-1.0)
                     self.iexo[ind[i_div],t+1] = izf[i_div]
                     self.state[ind[i_div],t+1] = self.state_codes['Female, single']
                 
-                    self.gassets[t+1].update(ind[i_div],0.5*sc[i_div])
-                    
                 if np.any(i_ren):
-                    
-                    self.assets[ind[i_ren],t+1] = sc[i_ren]
                     if np.any(i_renf): 
-                        self.theta[ind[i_renf],t+1] = tht_fem[i_renf]
-                        self._itheta[ind[i_renf],t+1], self._wntheta[ind[i_renf],t+1] = interp(thetagrid,self.theta[ind[i_renf],t+1],trim=True)
+                        self.gtheta[t+1].update(ind[i_renf],tht_fem[i_renf])
                     if np.any(i_renm):
-                        self.theta[ind[i_renm],t+1] = tht_mal[i_renm]
-                        self._itheta[ind[i_renm],t+1], self._wntheta[ind[i_renm],t+1] = interp(thetagrid,self.theta[ind[i_renm],t+1],trim=True)
-                    
-                    
+                        self.gtheta[t+1].update(ind[i_renm],tht_mal[i_renm])
                     self.state[ind[i_ren],t+1] = self.state_codes['Couple']
                     
                 if np.any(i_sq):
                     self.state[ind[i_sq],t+1] = self.state_codes['Couple']
-                    
+                    # do not touch theta as already updated
                 
-                self._iassets[ind[i_div],t+1], self._wnassets[ind[i_div],t+1] = interp(agrid,self.assets[ind[i_div],t+1],trim=True)
-                    
-                
-                
-                
+            
             else:
                 raise Exception('unsupported state?')
         

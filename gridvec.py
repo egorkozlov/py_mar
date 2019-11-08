@@ -7,10 +7,14 @@ Created on Mon Oct 28 20:13:57 2019
 """
 
 from interp_np import interp            
+from aux_routines import num_to_nparray
+import numpy as np
 
 # this is griddend linear interpolant that uses interpolation routines from
 # interp_np. It can be applied to arrays specifying values of function to get
 # their interpolated values along an arbitrary dimesnion (see method apply)
+
+# TODO: this should have nan-like values and throw errors
 
 class VecOnGrid(object):
     def __init__(self,grid,values,trim=True):
@@ -36,8 +40,6 @@ class VecOnGrid(object):
         
         ithis = [slice(None)]*nd
         inext = [slice(None)]*nd
-        
-        
         
         
         if pick is None:        
@@ -74,7 +76,6 @@ class VecOnGrid(object):
                 ithis[d] = i
                 inext[d] = i
                 
-                
             if not reshape_i: # remove one dimension from w
                 # if reshape_i is false it assumes that each index in interpolant
                 # corresponds to each index in take[1], and therefore the
@@ -91,15 +92,55 @@ class VecOnGrid(object):
         wthis = wthis.reshape(shp_w)
         wnext = wnext.reshape(shp_w)
         
+        out = wthis*xin[tuple(ithis)] + wnext*xin[tuple(inext)]
         
-        return wthis*xin[tuple(ithis)] + wnext*xin[tuple(inext)]
+        # TODO: check if this hurts dimensionality
+        return out.squeeze() 
+    
+    
+    def apply_2dim(self,xin,*,apply_first,axis_first,axis_this=0,take=None,pick=None,reshape_i=True):
+        # this is experimental, use at your own risk        
+        # may not react on some options nicely
+        
+        assert not reshape_i, 'This does not work'            
+        assert isinstance(apply_first,VecOnGrid)
+        
+        
+        # this first applies apply_first and then applies current VecOnGrid
+        
+        if pick is None: raise Exception('not working')
+        if take is None: take = list()
+        if type(take) is not list: take = list(take)
+        
+        _ithis = self.i if pick is None else self.i[pick]
+        _inext = self.i+1 if pick is None else self.i[pick] + 1
+        _wthis = self.wthis if pick is None else self.wthis[pick]
+        _wnext = self.wnext if pick is None else self.wnext[pick]
+        
+        take_this = take + [(axis_this,_ithis)]
+        take_next = take + [(axis_this,_inext)]
+        
+        xthis = apply_first.apply(xin,axis=axis_first,take=take_this,pick=pick,reshape_i=reshape_i)
+        xnext = apply_first.apply(xin,axis=axis_first,take=take_next,pick=pick,reshape_i=reshape_i)
+        
+        return _wthis*xthis + _wnext*xnext
+        
+        
+        
+            
+        
     
     
     def update(self,where,values):
         # this replaces values at positions where with values passed to the
         # function and recomputes interpolation weights
         
-        assert where.size == values.size
+        where, values = num_to_nparray(where,values) # safety check in case of singletons
+        
+        assert ( where.size == values.size ) or (values.size == 1)
+        
+        if values.size == 1:
+            values = values*np.ones(where.shape)
         
         self.val[where] = values
         self.i[where], self.wnext[where] = \

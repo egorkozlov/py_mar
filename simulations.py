@@ -20,18 +20,17 @@ class Agents:
             T = M.setup.pars['T']
             
             
+        np.random.seed(18) # TODO: this should be replaced by explicitly supplying shocks  
             
+        # take the stuff from the model and arguments
+        # note that this does not induce any copying just creates links
         self.M = M
         self.V = M.V
         self.setup = M.setup
         self.state_names = self.setup.state_names
         self.N = N
         self.T = T
-            
         self.verbose = verbose
-        
-        np.random.seed(18)    
-        
         self.timer = M.time
         
         
@@ -39,21 +38,13 @@ class Agents:
         # initialize assets
         self.gassets = [VecOnGrid(self.setup.agrid,np.zeros(N,dtype=np.float32),trim=True)
                             for _ in range(T)] 
-        
-        
         # initialize theta
-        self.gtheta = [VecOnGrid(self.setup.thetagrid,np.zeros(N,dtype=np.float32),trim=True)
+        self.gtheta = [VecOnGrid(self.setup.thetagrid,-1*np.ones(N,dtype=np.float32),trim=True)
                             for _ in range(T)]
-       
-        self.theta = np.full((N,T),np.nan,dtype=np.float32)
-        self._itheta  = np.zeros((N,T),dtype=np.int32)           
-        self._wntheta  = np.zeros((N,T),dtype=np.float32)
-        
         
         # initialize iexo
         self.iexo = np.zeros((N,T),np.int32)
         self.iexo[:,0] = np.random.randint(0,self.setup.pars['n_zf'],size=N) # initialize iexo
-        
         
         # initialize state
         self.state = np.zeros((N,T),dtype=np.int32)       
@@ -64,7 +55,6 @@ class Agents:
         for i, name in enumerate(self.setup.state_names):
             self.state_codes[name] = i
             self.has_theta.append((name=='Couple'))
-        
         
         
         self.timer('Simulations, creation')
@@ -89,41 +79,51 @@ class Agents:
             if nst==0:
                 continue
             
-            ind = np.where(is_state)
-            
-            
+            ind = np.where(is_state)[0]
             
             if not use_theta:
                 
-                anext_val = self.gassets[t].apply( self.V[t][sname]['s'], take = [(1,self.iexo[ind,t])], 
-                            pick = ind[0], reshape_i = False).squeeze()
+                anext = self.gassets[t].apply( self.V[t][sname]['s'], take = [(1,self.iexo[ind,t])], 
+                            pick = ind, reshape_i = False)
                 
             else:
                 
-                # at this theta
-                s_t0 = self.gassets[t].apply( self.V[t][sname]['s'], take = [(1,self.iexo[ind,t]),(2,self._itheta[ind,t])], 
-                            pick = ind[0], reshape_i = False).squeeze()
+                # interpolate in both assets and theta
+                # function apply_2dim is experimental but I checked it at this setup
                 
-                # at next theta
-                s_tp = self.gassets[t].apply( self.V[t][sname]['s'], take = [(1,self.iexo[ind,t]),(2,self._itheta[ind,t]+1)], 
-                            pick = ind[0], reshape_i = False).squeeze()
-                # wegiht of the next theta
-                wt_p = self._wntheta[ind,t].reshape(nst)                
-                anext_val = (1-wt_p)*s_t0 + wt_p*s_tp                
+                anext = self.gassets[t].apply_2dim(self.V[t][sname]['s'],
+                                                     apply_first=self.gtheta[t],
+                                                     axis_first=2,
+                                                     axis_this=0,
+                                                     take = [(1,self.iexo[ind,t])],
+                                                     pick = ind,
+                                                     reshape_i = False
+                                                    )
                 
-                #tht = VecOnGrid(self.setup.thetagrid, self.theta[:,t],trim=True)                
                 
-                #q3 = tht.apply(s2,axis=1,pick=ind[0],take=(0, list(range(s2.shape[0])) ),reshape_i=False).squeeze()
-                #thetagrid = self.setup.thetagrid
+                '''
+                # This is a consistency check about what if we interpolate
+                # in different order
                 
-                #thetacheck = (thetagrid[self._itheta[ind,t]]*(1-self._wntheta[ind,t]) + \
-                #               thetagrid[self._itheta[ind,t]+1]*self._wntheta[ind,t]).squeeze()
+                anext_alt = self.gtheta[t].apply_2dim(self.V[t][sname]['s'],
+                                                     apply_first=self.gassets[t],
+                                                     axis_first=0,
+                                                     axis_this=2,
+                                                     take = [(1,self.iexo[ind,t])],
+                                                     pick = ind,
+                                                     reshape_i = False
+                                                    )
                 
-                #iseq = np.isclose(thetacheck,self.theta[ind,t].squeeze())
                 
-            assert np.all(anext_val >= 0)
+                assert np.allclose(anext,anext_alt)
+                
+                '''
+                
+                
+                
+            assert np.all(anext >= 0)
             
-            self.gassets[t+1].update(ind[0],anext_val) 
+            self.gassets[t+1].update(ind,anext) 
             
             
     def iexonext(self,t):
@@ -152,8 +152,6 @@ class Agents:
     def statenext(self,t):
         
         setup = self.setup
-        agrid = setup.agrid
-        thetagrid = setup.thetagrid
         
         for ist,sname in enumerate(self.state_names):
             is_state = (self.state[:,t]==ist)
@@ -163,8 +161,6 @@ class Agents:
             if not np.any(is_state):
                 continue
             
-            
-            #Vnext = dict().fromkeys(self.state_names,None)        
             ind = np.where(is_state)[0]
             
             if sname == "Female, single":
@@ -190,67 +186,58 @@ class Agents:
                 
                 if np.any(i_agree):
                     
-                    self.theta[ind[i_agree],t+1] = tht[i_agree] # mad indexing
-                    self._itheta[ind[i_agree],t+1], self._wntheta[ind[i_agree],t+1] = interp(thetagrid,tht[i_agree],trim=True)
-                    
+                    self.gtheta[t+1].update(ind[i_agree],tht[i_agree])
                     self.iexo[ind[i_agree],t+1] = iall[i_agree]
                     self.state[ind[i_agree],t+1] = self.state_codes['Couple']
-                    
                     self.gassets[t+1].update(ind[i_agree],sf[i_agree] + sm[i_agree])
                     
                 if np.any(i_disagree):
-                    #self.theta[ind[i_disagree],t+1] = np.nan
-                    #_self._itheta[ind[i_disagree],t+1], _self._wntheta[ind[i_disagree],t+1] = 0, 0.0
                     # do not touch assets
                     self.iexo[ind[i_disagree],t+1] = izf[i_disagree]
                     self.state[ind[i_disagree],t+1] = self.state_codes['Female, single']
                     
-                
             elif sname == "Couple":
                 
                 # by default keep the same theta and weights
-                self.theta[ind,t+1] = self.theta[ind,t]
-                self._itheta[ind,t+1], self._wntheta[ind,t+1] = self._itheta[ind,t], self._wntheta[ind,t]
+                thetanow = self.gtheta[t].val[ind]
+                self.gtheta[t+1].update(ind,thetanow)
                 
                 # initiate renegotiation
                 sc = self.gassets[t+1].val[ind]
                 iall, izf, izm, ipsi = self.setup.all_indices(self.iexo[ind,t+1])
                 
                 v, vf, vm, thetaout, tht_fem, tht_mal = v_ren(setup,self.V[t+1],sc=sc,ind_or_inds=iall,combine=False,return_all=True)
-                #print((tht_fem,tht_mal))
+                
                 
                 # same size as ind
+                # categorizes couples
                 i_div = np.array(tht_fem > tht_mal)
-                i_ren = np.array(~(i_div) & ((self.theta[ind,t] < tht_fem) | (self.theta[ind,t] > tht_mal)))
-                i_renf = np.array(i_ren & (self.theta[ind,t] < tht_fem))
-                i_renm = np.array(i_ren & (self.theta[ind,t] > tht_mal))
+                i_ren = np.array(~(i_div) & ((thetanow < tht_fem) | (thetanow > tht_mal)))
+                i_renf = np.array(i_ren & (thetanow < tht_fem))
+                i_renm = np.array(i_ren & (thetanow > tht_mal))
                 i_sq  = np.array(~(i_div) & ~(i_ren))
                 
                 assert np.all(i_ren == ((i_renf) | (i_renm)))
-                print('{} divorce, {} ren-f, {} ren-m, {} sq'.format(np.sum(i_div),np.sum(i_renf),np.sum(i_renm),np.sum(i_sq)))
+                print('{} divorce, {} ren-f, {} ren-m, {} sq'.format(np.sum(i_div),np.sum(i_renf),np.sum(i_renm),np.sum(i_sq))                     )
                 
                 
                 if np.any(i_div):
-                    # TODO: this should replicate the divorce protocol
+                    # TODO: this should replicate the divorce protocol                    
                     self.gassets[t+1].update(ind[i_div],0.5*sc[i_div])                    
-                    self.theta[ind[i_div],t+1], self._wntheta[ind[i_div],t+1], self._itheta[ind[i_div],t+1] = np.nan, 0.0, 0
+                    self.gtheta[t+1].update(ind[i_div],-1.0)
                     self.iexo[ind[i_div],t+1] = izf[i_div]
                     self.state[ind[i_div],t+1] = self.state_codes['Female, single']
                 
-                
                 if np.any(i_ren):
                     if np.any(i_renf): 
-                        self.theta[ind[i_renf],t+1] = tht_fem[i_renf]
-                        self._itheta[ind[i_renf],t+1], self._wntheta[ind[i_renf],t+1] = interp(thetagrid,self.theta[ind[i_renf],t+1],trim=True)
+                        self.gtheta[t+1].update(ind[i_renf],tht_fem[i_renf])
                     if np.any(i_renm):
-                        self.theta[ind[i_renm],t+1] = tht_mal[i_renm]
-                        self._itheta[ind[i_renm],t+1], self._wntheta[ind[i_renm],t+1] = interp(thetagrid,self.theta[ind[i_renm],t+1],trim=True)
+                        self.gtheta[t+1].update(ind[i_renm],tht_mal[i_renm])
                     self.state[ind[i_ren],t+1] = self.state_codes['Couple']
                     
-                
                 if np.any(i_sq):
                     self.state[ind[i_sq],t+1] = self.state_codes['Couple']
-                    
+                    # do not touch theta as already updated
                 
             
             else:

@@ -35,31 +35,34 @@ class Agents:
         self.timer = M.time
         
         
-        self.gassets = [VecOnGrid(self.setup.agrid,0.01*np.ones(N,dtype=np.float32),trim=True)
-                            for _ in range(T)]
         
+        # initialize assets
+        self.gassets = [VecOnGrid(self.setup.agrid,np.zeros(N,dtype=np.float32),trim=True)
+                            for _ in range(T)] 
+        self.assets = np.zeros((N,T),dtype=np.float32)
         self._iassets = np.zeros((N,T),np.int32)            
         self._wnassets = np.zeros((N,T),np.float32)
-        
-        self._itheta  = np.zeros((N,T),dtype=np.int32)           
-        self._wntheta  = np.zeros((N,T),dtype=np.float32)
-        
-        
-        self.assets = 0.01*np.ones((N,T),dtype=np.float32)
         self._iassets[:,0], self._wnassets[:,0] = \
             interp(self.setup.agrid,self.assets[:,0],return_wnext=True,trim=True)
         
         
+        # initialize theta
+        self.gtheta = [VecOnGrid(self.setup.thetagrid,np.zeros(N,dtype=np.float32),trim=True)
+                            for _ in range(T)]
+       
         self.theta = np.full((N,T),np.nan,dtype=np.float32)
+        self._itheta  = np.zeros((N,T),dtype=np.int32)           
+        self._wntheta  = np.zeros((N,T),dtype=np.float32)
+        
+        
+        # initialize iexo
         self.iexo = np.zeros((N,T),np.int32)
-        self.iexo[:,0] = np.random.randint(0,self.setup.pars['n_zf'],size=N)
-        #self.iassets[:,0] = np.random.randint(0,100,size=N)
-        
-        self.state = np.full((N,T),np.nan,dtype=np.int32)
-        #self.state[:,0] = np.random.randint(0,2,size=N,dtype=np.int32)
+        self.iexo[:,0] = np.random.randint(0,self.setup.pars['n_zf'],size=N) # initialize iexo
         
         
-        
+        # initialize state
+        self.state = np.zeros((N,T),dtype=np.int32)       
+        self.state[:,0] = 0  # everyone starts as female
         
         self.state_codes = dict()
         self.has_theta = list()
@@ -68,7 +71,6 @@ class Agents:
             self.has_theta.append((name=='Couple'))
         
         
-        self.state[:,0] = 0
         
         self.timer('Simulations, creation')
     
@@ -86,10 +88,8 @@ class Agents:
         
         for ist, sname in enumerate(self.state_codes):
             
-            is_state = (self.state[:,t]==ist)
-            
-            use_theta = self.has_theta[ist]
-            
+            is_state = (self.state[:,t]==ist)            
+            use_theta = self.has_theta[ist]            
             nst = np.sum(is_state)
             if nst==0:
                 continue
@@ -108,11 +108,10 @@ class Agents:
                 anext_val =  (1-w_i)*s_i + w_i*s_ip 
                 
                 
-                
                 q = self.gassets[t].apply( self.V[t][sname]['s'], take = [(1,self.iexo[ind,t])], 
                             pick = ind[0], reshape_i = False).squeeze()
                 
-                assert np.all( np.abs(anext_val-q) < 1e-5 )
+                assert np.allclose(anext_val,q)
                 
                 
                 
@@ -135,7 +134,7 @@ class Agents:
                 aq1 = self.gassets[t].val[ind]
                 
                 try:
-                    assert np.all(np.abs( aq0 -  aq1  ) < 1e-5)
+                    assert np.allclose(aq0,aq1)
                 except:
                     print((t,sname))
                     #print(aq0)
@@ -147,12 +146,12 @@ class Agents:
                 s_t0 = self.gassets[t].apply( self.V[t][sname]['s'], take = [(1,self.iexo[ind,t]),(2,self._itheta[ind,t])], 
                             pick = ind[0], reshape_i = False).squeeze()
                 
-                assert np.all( np.abs(  s_t0 - (1-w_i)*s_i_t0 - w_i*s_ip_t0  ) < 1e-5 )
+                assert np.allclose(s_t0, (1-w_i)*s_i_t0 + w_i*s_ip_t0)
                 
                 s_tp = self.gassets[t].apply( self.V[t][sname]['s'], take = [(1,self.iexo[ind,t]),(2,self._itheta[ind,t]+1)], 
                             pick = ind[0], reshape_i = False).squeeze()
                 
-                assert np.all( np.abs(  s_tp - (1-w_i)*s_i_tp - w_i*s_ip_tp  ) < 1e-5 )
+                assert np.allclose(s_tp,(1-w_i)*s_i_tp + w_i*s_ip_tp)
                 
                 
                 s2 = self.gassets[t].apply( self.V[t][sname]['s'], take = [(1,self.iexo[ind,t])], 
@@ -160,11 +159,9 @@ class Agents:
                 
                 # try to do different indexing schemes
                 s2_t0 = s2[list(range(s2.shape[0])), self._itheta[ind,t].squeeze()]                
-                assert np.all( np.abs( s_t0 - s2_t0) < 1e-5 )                
+                assert np.allclose(s_t0,s2_t0)        
                 s2_tp = s2[list(range(s2.shape[0])),self._itheta[ind,t].squeeze()+1]                
-                assert np.all( np.abs( s_tp - s2_tp) < 1e-5 )
-                
-                
+                assert np.allclose(s_tp,s2_tp)
                 
                 
                 
@@ -176,7 +173,8 @@ class Agents:
                 
                 thetacheck = (thetagrid[self._itheta[ind,t]]*(1-self._wntheta[ind,t]) + \
                                thetagrid[self._itheta[ind,t]+1]*self._wntheta[ind,t]).squeeze()
-                iseq = ( np.abs(thetacheck - self.theta[ind,t].squeeze()) < 1e-5 )
+                
+                iseq = np.isclose(thetacheck,self.theta[ind,t].squeeze())
                                     
                                  
                 try:
@@ -193,7 +191,7 @@ class Agents:
                 q2 = ( (1-wt_p)*s2_t0 + wt_p*s2_tp ).squeeze()
                 
                 try:
-                    assert np.all( np.abs(q3-q2) < 1e-5 )
+                    assert np.allclose(q3,q2)
                 except:
                     print('q3 is not q2')
                     print(q3-q2)
@@ -202,7 +200,7 @@ class Agents:
                     
                     
                 try:
-                    assert np.all( np.abs(anext_val - q2) < 1e-5)
+                    assert np.allclose(anext_val,q2)
                 except:
                     #print(anext_val)
                     print('anext is not q2')
@@ -365,9 +363,7 @@ class Agents:
                 
                 self._iassets[ind[i_div],t+1], self._wnassets[ind[i_div],t+1] = interp(agrid,self.assets[ind[i_div],t+1],trim=True)
                     
-                
-                
-                
+            
             else:
                 raise Exception('unsupported state?')
         

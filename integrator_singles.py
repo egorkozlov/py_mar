@@ -11,6 +11,25 @@ from ren_mar import v_mar
     
 
 
+
+def ev_single(setup,V,sown,female,t,trim_lvl=0.001):
+    # expected value of single person meeting a partner with a chance pmeet
+    pmeet = setup.pars['pmeet']
+    
+    EV_meet = ev_single_meet(setup,V,sown,female,t,trim_lvl=trim_lvl)
+    
+    if female:
+        M = setup.exogrid.zf_t_mat[t].T
+        EV_nomeet =  np.dot(V['Female, single']['V'],M)
+    else:
+        M = setup.exogrid.zm_t_mat[t].T
+        EV_nomeet =  np.dot(V['Male, single']['V'],M)
+    
+    return (1-pmeet)*EV_nomeet + pmeet*EV_meet
+    
+
+
+
 def ev_single_meet(setup,V,sown,female,t,trim_lvl=0.001):
     # computes expected value of single person meeting a partner
     
@@ -33,12 +52,15 @@ def ev_single_meet(setup,V,sown,female,t,trim_lvl=0.001):
     
     EV = 0.0
     
-    for ipart in range(npart):
-        sm = sown*np.exp(sig_a_partner*eps_a_partner[ipart])
-        #vout2 = v_after_mar_grid(setup,V,sown,sm,inds)[i_vnext]        
-        vout = v_mar(setup,V,sown,sm,inds,interpolate=False)[i_vnext]
+    for eps in eps_a_partner:
+        
+        spart = sown*np.exp(sig_a_partner*eps)
+        if female: # TODO: this can be done better with keywords
+            vout = v_mar(setup,V,sown,spart,inds,interpolate=False)[i_vnext]
+        else:
+            vout = v_mar(setup,V,spart,sown,inds,interpolate=False)[i_vnext]
+            
         V_next[:,inds] = vout
-        #print(np.max(np.abs(vout-vout2)))
         
         EV += (1/npart)*np.dot(V_next,p_mat)
         

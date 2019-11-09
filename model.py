@@ -22,7 +22,7 @@ from setup import ModelSetup
 from simulations import Agents
 from solver_couples import v_iter_couple
 from solver_singles import v_iter_single
-from integrator_singles import ev_single_meet
+from integrator_singles import ev_single
 from integrator_couples import ev_couple
 
 
@@ -103,7 +103,7 @@ class Model(object):
             
             if desc == 'Female, single' or desc == 'Male, single':
                 female = (desc == 'Female, single')
-                EV = ev_single_meet(setup,V_next,setup.agrid,female,t)
+                EV = ev_single(setup,V_next,setup.agrid,female,t)
             elif desc == 'Couple':
                 EV = ev_couple(setup,V_next,t)
             return EV

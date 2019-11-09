@@ -38,6 +38,7 @@ class ModelSetup(object):
         p['sig_partner_a'] = 0.1
         p['sig_partner_z'] = 0.2
         p['m_bargaining_weight'] = 0.5
+        p['pmeet'] = 0.5
         
         
         

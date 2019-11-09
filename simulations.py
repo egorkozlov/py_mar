@@ -163,11 +163,21 @@ class Agents:
             
             ind = np.where(is_state)[0]
             
+            nind = ind.size
+            
+            
+            
             if sname == "Female, single":
+                # TODO: this is temporary version, it computes partners for
+                # everyone and after that imposes meet / no meet, this should
+                # not happen.
                 
                 # meet a partner
                 pmat = self.setup.part_mats['Female, single'][t]
+                pmeet = self.setup.pars['pmeet']
                 ic_out = mc_simulate(self.iexo[ind,t],pmat,shocks=None)
+                iall, izf, izm, ipsi = setup.all_indices(ic_out)
+                
                 sf = self.gassets[t+1].val[ind] # note that timing is slightly inconsistent
                 # we use iexo from t and savings from t+1
                 # TODO: fix the seed
@@ -175,14 +185,17 @@ class Agents:
                 mult_a = np.exp(np.random.normal()*setup.pars['sig_partner_a'])
                 sm = mult_a*sf
                 
-                iall, izf, izm, ipsi = setup.all_indices(ic_out)
+                # compute for everyone
                 vf, vm, ismar, tht, _ = v_mar(setup,self.V[t+1],sf,sm,iall,combine=False,return_all=True)
                 
-                i_disagree = np.isnan(tht)
-                i_agree = ~np.array(i_disagree)
+                i_nomeet =  np.array( np.random.rand(nind) > pmeet )
                 
-                print('{} agreed, {} disagreed'.format(np.sum(i_agree),np.sum(i_disagree)))
-                assert np.all(ismar==i_agree)
+                i_disagree = np.isnan(tht)
+                i_disagree_or_nomeet = (np.isnan(tht)) | (i_nomeet)
+                i_agree = ~np.array(i_disagree_or_nomeet)
+                
+                print('{} agreed, {} disagreed, {} did not meet'.format(np.sum(i_agree),np.sum(i_disagree),np.sum(i_nomeet)))
+                #assert np.all(ismar==(i_agree )
                 
                 if np.any(i_agree):
                     
@@ -191,10 +204,10 @@ class Agents:
                     self.state[ind[i_agree],t+1] = self.state_codes['Couple']
                     self.gassets[t+1].update(ind[i_agree],sf[i_agree] + sm[i_agree])
                     
-                if np.any(i_disagree):
+                if np.any(i_disagree_or_nomeet):
                     # do not touch assets
-                    self.iexo[ind[i_disagree],t+1] = izf[i_disagree]
-                    self.state[ind[i_disagree],t+1] = self.state_codes['Female, single']
+                    self.iexo[ind[i_disagree_or_nomeet],t+1] = izf[i_disagree_or_nomeet]
+                    self.state[ind[i_disagree_or_nomeet],t+1] = self.state_codes['Female, single']
                     
             elif sname == "Couple":
                 

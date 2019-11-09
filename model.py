@@ -20,10 +20,10 @@ from timeit import default_timer
 #if system() != 'Darwin':
 from setup import ModelSetup
 from simulations import Agents
-from solver_couples import vm_period_zero_grid_massive as vm_period_zero_grid
-from solver_singles import v_period_zero_grid
-from integrator_singles import ev_after_savings_grid_all_z
-from integrator_couples import ev_couple_after_savings
+from solver_couples import v_iter_couple
+from solver_singles import v_iter_single
+from integrator_singles import ev_single_meet
+from integrator_couples import ev_couple
 
 
 class Model(object):
@@ -88,14 +88,14 @@ class Model(object):
                 if EV is None:            
                     V, c, s = setup.vs_last_grid(female,return_cs=True)
                 else:
-                    V, c, s = v_period_zero_grid(setup,setup.agrid,EV,female)             
+                    V, c, s = v_iter_single(setup,EV,female)             
                 return {desc: {'V':V,'c':c,'s':s}}   
              
             elif desc == 'Couple':
                 if EV is None:
                     V, VF, VM, c, s = setup.vm_last_grid(return_cs=True)
                 else:
-                    V, VF, VM, c, s = vm_period_zero_grid(setup,setup.agrid,EV)            
+                    V, VF, VM, c, s = v_iter_couple(setup,EV)            
                 return {desc: {'V':V,'VF':VF,'VM':VM,'c':c,'s':s}}
             
         # and the integrator   
@@ -103,9 +103,9 @@ class Model(object):
             
             if desc == 'Female, single' or desc == 'Male, single':
                 female = (desc == 'Female, single')
-                EV = ev_after_savings_grid_all_z(setup,V_next,setup.agrid,female,t)
+                EV = ev_single_meet(setup,V_next,setup.agrid,female,t)
             elif desc == 'Couple':
-                EV = ev_couple_after_savings(setup,V_next,t)
+                EV = ev_couple(setup,V_next,t)
             return EV
             
         

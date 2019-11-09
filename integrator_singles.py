@@ -10,8 +10,13 @@ import numpy as np
 from ren_mar import v_mar
     
 
-def ev_after_savings_grid_all_z(setup,V,sown,female,t,trim_lvl=0.01):
-    # this takes gender as argument so should be called twice
+
+def ev_single_meet(setup,V,sown,female,t,trim_lvl=0.001):
+    # computes expected value of single person meeting a partner
+    
+    # this creates potential partners and integrates over them
+    # this also removes unlikely combinations of future z and partner's 
+    # characteristics so we have to do less bargaining
     
     nexo = setup.pars['nexo']
     sig_a_partner = setup.pars['sig_partner_a']

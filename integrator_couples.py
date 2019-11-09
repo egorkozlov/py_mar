@@ -10,25 +10,19 @@ import numpy as np
 from ren_mar import v_ren
     
 
-def ev_couple_after_savings(setup,Vpostren,t,use_sparse=True,return_vren=False):
-    # this takes post-renegotiation values as input, conducts negotiation
-    # and then intergates
-    
-    #_Vren2  = v_last_period_renegotiated(setup,Vpostren,interpolate=True)
-    
-    _Vren = v_ren(setup,Vpostren,interpolate=True)
+def ev_couple(setup,Vpostren,t,use_sparse=True,return_vren=False):
+    # computes expected value of couple entering the next period with an option
+    # to renegotiate or to break up
     
     
-    #assert np.all(np.abs(_Vren[0] - _Vren2[0]) < 1e-4)
-    #assert np.all(np.abs(_Vren[1] - _Vren2[1]) < 1e-4)
-    #assert np.all(np.abs(_Vren[2] - _Vren2[2]) < 1e-4)
-    
+    _Vren = v_ren(setup,Vpostren,interpolate=True) # does renegotiation
         
     Vren = {'M':{'V':_Vren[0],'VF':_Vren[1],'VM':_Vren[2]},
             'SF':Vpostren['Female, single'],
             'SM':Vpostren['Male, single']}
     
-    EV, EVf, EVm = ev_couple_after_savings_preren(setup,Vren['M'],t,use_sparse)
+    # accounts for exogenous transitions
+    EV, EVf, EVm = ev_couple_exo(setup,Vren['M'],t,use_sparse)
     
     if return_vren:
         return EV, EVf, EVm, Vren
@@ -36,12 +30,12 @@ def ev_couple_after_savings(setup,Vpostren,t,use_sparse=True,return_vren=False):
         return EV, EVf, EVm
 
 
-def ev_couple_after_savings_preren(setup,Vren,t,use_sparse=True):
-    # takes renegotiated values as input
+def ev_couple_exo(setup,Vren,t,use_sparse=True):
     
+ 
     # this does dot product along 3rd dimension
     # this takes V that already accounts for renegotiation (so that is e
-    # expected pre-negotiation V)
+    # expected pre-negotiation V) and takes expectations wrt exogenous shocks
     
     
     if use_sparse:

@@ -108,14 +108,13 @@ class VecOnGrid(object):
         
         # this first applies apply_first and then applies current VecOnGrid
         
-        if pick is None: raise Exception('not working')
         if take is None: take = list()
         if type(take) is not list: take = list(take)
         
-        _ithis = self.i if pick is None else self.i[pick]
-        _inext = self.i+1 if pick is None else self.i[pick] + 1
-        _wthis = self.wthis if pick is None else self.wthis[pick]
-        _wnext = self.wnext if pick is None else self.wnext[pick]
+        _ithis = self.i     if pick is None else  self.i[pick]
+        _inext = self.i+1   if pick is None else  self.i[pick] + 1
+        _wthis = self.wthis if pick is None else  self.wthis[pick]
+        _wnext = self.wnext if pick is None else  self.wnext[pick]
         
         take_this = take + [(axis_this,_ithis)]
         take_next = take + [(axis_this,_inext)]

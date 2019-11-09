@@ -7,7 +7,7 @@ import numpy as np
 from timeit import default_timer
 
 
-from optimizers import build_s_grid, sgrid_on_agrid, get_EVM
+from optimizers import get_EVM
 from optimizers import v_optimize
 
 from platform import system
@@ -19,15 +19,13 @@ else:
     nbatch_def = 17
     use_cp = False
 
-
-#@jit(nopython=True)
-def vm_period_zero_grid_massive(setup,a0,EV_tuple,nbatch=nbatch_def,verbose=False):
+def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
     
     if verbose: start = default_timer()
     
     agrid = setup.agrid
-    sgrid = build_s_grid(agrid,10,0.001,0.1)
-    ind, p = sgrid_on_agrid(sgrid,agrid)
+    sgrid = setup.sgrid
+    ind, p = setup.s_ind, setup.s_p
     
     EV = EV_tuple[0]
     
@@ -44,7 +42,7 @@ def vm_period_zero_grid_massive(setup,a0,EV_tuple,nbatch=nbatch_def,verbose=Fals
 
     labor_income = np.exp(zf) + np.exp(zm)
     
-    money = R*a0[:,None] + labor_income[None,:]
+    money = R*agrid[:,None] + labor_income[None,:]
     
     shp = (setup.na,setup.nexo,setup.ntheta)
     
@@ -55,6 +53,10 @@ def vm_period_zero_grid_massive(setup,a0,EV_tuple,nbatch=nbatch_def,verbose=Fals
     
     theta_val = np.float32(setup.thetagrid[None,None,:])
     umult_vec = setup.u_mult(theta_val)
+    
+    # the original problem is max{umult*u(c) + beta*EV}
+    # we need to rescale the problem to max{u(c) + beta*EV_resc}
+    
     
     EV_resc = (1/umult_vec)*EV # we mutiply back later
     
@@ -69,7 +71,7 @@ def vm_period_zero_grid_massive(setup,a0,EV_tuple,nbatch=nbatch_def,verbose=Fals
         #money_i = money[:,istart:ifinish]
         assert ifinish > istart
         
-        money_t = (a0,labor_income[istart:ifinish])
+        money_t = (R*agrid,labor_income[istart:ifinish])
         EV_t = (ind,p,EV_resc[:,istart:ifinish,:])
         
         V_pure_i, c_opt_i, s_opt_i, i_opt_i = \
@@ -103,7 +105,6 @@ def vm_period_zero_grid_massive(setup,a0,EV_tuple,nbatch=nbatch_def,verbose=Fals
     uc = setup.u_couple(c_opt,theta_val)
     V_all = uc + psi_r + beta*np.take_along_axis(EV_all,i_opt,0)
     md =  np.max(np.abs(V_all-V_couple))
-    #print('Max diff is {}'.format(md))
     assert md < 1e-4
     
     

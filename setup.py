@@ -11,6 +11,7 @@ from mc_tools import combine_matrices_two_lists, int_prob
 from scipy.stats import norm
 import sobol_seq
 from collections import namedtuple
+from optimizers import build_s_grid, sgrid_on_agrid
 
 from scipy import sparse
 
@@ -104,6 +105,15 @@ class ModelSetup(object):
         self.amin = 0
         self.amax = 20
         self.agrid = np.linspace(self.amin,self.amax,self.na)
+        
+        
+        # this builds finer grid for potential savings
+        s_between = 10 # default numer of points between poitns on agrid
+        s_da_min = 0.001 # minimal step (does not create more points)
+        s_da_max = 0.1 # maximal step (creates more if not enough)
+        
+        self.sgrid = build_s_grid(self.agrid,s_between,s_da_min,s_da_max)
+        self.s_ind, self.s_p = sgrid_on_agrid(self.sgrid,self.agrid)
 
         # grid for theta
         self.ntheta = 20

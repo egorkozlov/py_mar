@@ -58,6 +58,7 @@ class VecOnGrid(object):
             
         
         shp_i = (1,)*axis + (n,) + (1-axis)*(1,)
+        
         # TODO: this is not general but let's see if we need more
         # this creates 2-dimensional thing
         shp_w = (1,)*axis + (n,) + (nd-1-axis)*(1,)
@@ -72,7 +73,9 @@ class VecOnGrid(object):
             
             dimextra = [t[0] for t in take]
             iextra = [t[1] for t in take]
+            
             for d, i in zip(dimextra,iextra):
+                
                 ithis[d] = i
                 inext[d] = i
                 

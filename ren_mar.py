@@ -11,9 +11,11 @@ Some code is meant to be reused
 #from trans_unif import transition_uniform
 from interp_np import interp
 import numpy as np
+from setup import ModelSetup
 from aux_routines import first_true, last_true, zero_hit_mat
 from numba import njit
 from gridvec import VecOnGrid
+import dill as pickle
 
 # this is renegotiator
 # this accounts for divorce protocol
@@ -38,7 +40,7 @@ def v_ren(setup,V,sc=None,ind_or_inds=None,interpolate=True,combine=True,return_
     else:
         ind, izf, izm, ipsi = setup.all_indices()
     
-    
+
     assert (dc.money_lost_f_ez == 0 and dc.money_lost_m_ez == 0), 'not implemented yet'
     
     # this if how assets are divided
@@ -53,10 +55,73 @@ def v_ren(setup,V,sc=None,ind_or_inds=None,interpolate=True,combine=True,return_
     # this applies the interpolators
     Vm_divorce = sm_v.apply(V['Male, single']['V'],  axis=0,take=(1,izm),reshape_i=combine)
     Vf_divorce = sf_v.apply(V['Female, single']['V'],axis=0,take=(1,izf),reshape_i=combine)
-    
+
+
     Vval_postren, VMval_postren, VFval_postren = \
         (sc_v.apply(v,axis=0,take=(1,ind),reshape_i=combine)
             for v in (V['Couple']['V'], V['Couple']['VM'], V['Couple']['VF']))
+    
+    
+    assert Vval_postren.shape[:-1] == Vm_divorce.shape
+    
+    outs = v_prepare(VFval_postren,VMval_postren,Vval_postren,Vf_divorce,Vm_divorce,setup.thetagrid,interpolate=interpolate)
+    # this is syntactically dirty but efficient
+    return v_ren_core(*outs,interpolate=interpolate,unilateral=is_unil,return_tht=return_all)
+
+
+def v_ren2(setup,V,marriage,t,sc=None,ind_or_inds=None,interpolate=True,combine=True,return_all=False):
+    # this returns value functions for couple that entered the period with
+    # (s,Z,theta) from the grid and is allowed to renegotiate them or breakup
+    # 
+    # combine = True creates matrix (n_sc-by-n_inds)
+    # combine = False assumed that n_sc is the same shape as n_inds and creates
+    # a flat array.
+     
+    #Get Divorce or Separation Costs
+    if marriage:
+        dc = setup.div_costs
+        is_unil = dc.unilateral_divorce # whether to do unilateral divorce at all
+        des='Couple, M'
+    else:
+        dc = setup.sep_costs
+        is_unil = dc.unilateral_divorce # whether to do unilateral divorce at all
+        des='Couple, C'
+    
+    
+    if sc is None:
+        sc = setup.agrid # savings of couple are given by the agrid
+    
+    if ind_or_inds is not None:
+        ind, izf, izm, ipsi = setup.all_indices(ind_or_inds)
+    else:
+        ind, izf, izm, ipsi = setup.all_indices()
+    
+    
+    assert (dc.money_lost_f_ez == 0 and dc.money_lost_m_ez == 0), 'not implemented yet'
+
+        
+    # this if how assets are divided
+    fr=0.5#*dc.equalit_assets+(1-dc.equalit_assets)*np.exp(zf)/(np.exp(zf)+np.exp(zm))
+    sf = dc.assets_kept*fr*sc - dc.money_lost_f#- dc.money_lost_f_ez*np.exp(zf)
+    sm = dc.assets_kept*(1.0-fr)*sc - dc.money_lost_m#- dc.money_lost_f_ez*np.exp(zf)
+    
+    #Create temporary Value Functions for Couple,F,M
+
+    # this creates interpolators
+    sm_v = VecOnGrid(setup.agrid,sm,trim=True)
+    sf_v = VecOnGrid(setup.agrid,sf,trim=True)
+    sc_v = VecOnGrid(setup.agrid,sc,trim=True)
+   
+    # this applies the interpolators
+    
+    Vm_divorce = sm_v.apply(V['Male, single']['V'],  axis=0,take=(1,izm),reshape_i=combine)- dc.u_lost_m
+    Vf_divorce = sf_v.apply(V['Female, single']['V'],axis=0,take=(1,izf),reshape_i=combine)- dc.u_lost_f
+    
+
+    
+    Vval_postren, VMval_postren, VFval_postren = \
+        (sc_v.apply(v,axis=0,take=(1,ind),reshape_i=combine)
+            for v in (V[des]['V'], V[des]['VM'], V[des]['VF']))
     
     
     assert Vval_postren.shape[:-1] == Vm_divorce.shape
@@ -115,8 +180,70 @@ def v_mar(setup,V,sf,sm,ind_or_inds,interpolate=True,return_all=False,combine=Tr
     
     
     outs = v_prepare(Vfm,Vmm,Vcm,Vfs,Vms,setup.thetagrid,interpolate=interpolate)
+
     # this is syntactically dirty but efficient
     return v_newmar_core(*outs,interpolate=interpolate,gamma=gamma,return_all=return_all)
+
+
+def v_mar2(setup,V,marriage,sf,sm,ind_or_inds,interpolate=True,return_all=False,combine=True):
+    # this returns value functions for couple that entered the last period with
+    # (s,Z,theta) from the grid and is allowed to renegotiate them or breakup
+    
+    # if return_all==False returns Vout_f, Vout_m, that are value functions
+    # of male and female from entering this union
+    # if return_all==True returns (Vout_f, Vout_m, ismar, thetaout, technical)
+    # where ismar is marriage decision, thetaout is resulting theta and 
+    # tuple technical contains less usable stuff (check v_newmar_core for it)
+    #
+    # combine = True creates matrix (n_s-by-n_inds)
+    # combine = False assumed that n_s is the same shape as n_inds and creates
+    # a flat array.
+    
+    #Get Divorce or Separation Costs
+    if marriage:
+        desc_cop='Couple, M'
+    else:
+        desc_cop='Couple, C'
+        
+    # import objects
+    agrid = setup.agrid
+    gamma = setup.pars['m_bargaining_weight']    
+    VMval_single, VFval_single = V['Male, single']['V'], V['Female, single']['V']
+    Vval_postren, VMval_postren, VFval_postren = V[desc_cop]['V'], V[desc_cop]['VM'], V[desc_cop]['VF']
+    
+    
+    # substantial part
+    ind, izf, izm, ipsi = setup.all_indices(ind_or_inds)
+    
+    if not combine:
+        assert ind.size == sf.size == sm.size, 'different sizes?'
+    
+    
+    
+    # using trim = True implicitly trims things on top
+    # so if sf is 0.75*amax and sm is 0.75*amax then sc is 1*amax and not 1.5
+    
+    sc = sf+sm # savings of couple
+    
+    # this creates interpolators
+    sf_v = VecOnGrid(agrid,sf,trim=True) 
+    sm_v = VecOnGrid(agrid,sm,trim=True)
+    sc_v = VecOnGrid(agrid,sc,trim=True)
+    
+    # this applies them
+    Vms = sm_v.apply(VMval_single,axis=0,take=(1,izm),reshape_i=combine)
+    Vfs = sf_v.apply(VFval_single,axis=0,take=(1,izf),reshape_i=combine)
+    
+    Vmm, Vfm, Vcm = (sc_v.apply(v,axis=0,take=(1,ind),reshape_i=combine) 
+                        for v in (VMval_postren,VFval_postren,Vval_postren))
+    
+
+    outs = v_prepare(Vfm,Vmm,Vcm,Vfs,Vms,setup.thetagrid,interpolate=interpolate)
+
+   
+    # this is syntactically dirty but efficient
+    outcome=v_newmar_core(*outs,interpolate=interpolate,gamma=gamma,return_all=return_all)
+    return outcome,(outcome[0]-Vfs)**(1.0-gamma)*(outcome[1]-Vms)**gamma
 
 
 def v_prepare(VF_yes,VM_yes,VC_yes,VF_no,VM_no,thetagrid,interpolate=False):

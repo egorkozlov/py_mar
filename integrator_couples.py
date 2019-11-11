@@ -7,7 +7,7 @@ This is integrator for couples
 
 import numpy as np
 #from renegotiation import v_last_period_renegotiated, v_renegotiated_loop
-from ren_mar import v_ren
+from ren_mar import v_ren,v_ren2
     
 
 def ev_couple(setup,Vpostren,t,use_sparse=True,return_vren=False):
@@ -16,6 +16,25 @@ def ev_couple(setup,Vpostren,t,use_sparse=True,return_vren=False):
     
     
     _Vren = v_ren(setup,Vpostren,interpolate=True) # does renegotiation
+        
+    Vren = {'M':{'V':_Vren[0],'VF':_Vren[1],'VM':_Vren[2]},
+            'SF':Vpostren['Female, single'],
+            'SM':Vpostren['Male, single']}
+    
+    # accounts for exogenous transitions
+    EV, EVf, EVm = ev_couple_exo(setup,Vren['M'],t,use_sparse)
+    
+    if return_vren:
+        return EV, EVf, EVm, Vren
+    else:
+        return EV, EVf, EVm
+    
+def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True,return_vren=False):
+    # computes expected value of couple entering the next period with an option
+    # to renegotiate or to break up
+    
+    
+    _Vren = v_ren2(setup,Vpostren,marriage,t,interpolate=True) # does renegotiation
         
     Vren = {'M':{'V':_Vren[0],'VF':_Vren[1],'VM':_Vren[2]},
             'SF':Vpostren['Female, single'],

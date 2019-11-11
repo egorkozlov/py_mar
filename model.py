@@ -23,7 +23,7 @@ from simulations import Agents
 from solver_couples import v_iter_couple
 from solver_singles import v_iter_single
 from integrator_singles import ev_single
-from integrator_couples import ev_couple
+from integrator_couples import ev_couple_m_c, ev_couple
 
 
 class Model(object):
@@ -91,12 +91,13 @@ class Model(object):
                     V, c, s = v_iter_single(setup,EV,female)             
                 return {desc: {'V':V,'c':c,'s':s}}   
              
-            elif desc == 'Couple':
+            elif desc== 'Couple, M' or desc == 'Couple, C':
                 if EV is None:
                     V, VF, VM, c, s = setup.vm_last_grid(return_cs=True)
                 else:
                     V, VF, VM, c, s = v_iter_couple(setup,EV)            
                 return {desc: {'V':V,'VF':VF,'VM':VM,'c':c,'s':s}}
+          
             
         # and the integrator   
         def v_integrator(setup,desc,t,V_next):
@@ -104,8 +105,10 @@ class Model(object):
             if desc == 'Female, single' or desc == 'Male, single':
                 female = (desc == 'Female, single')
                 EV = ev_single(setup,V_next,setup.agrid,female,t)
-            elif desc == 'Couple':
-                EV = ev_couple(setup,V_next,t)
+            elif desc == 'Couple, M':
+                EV = ev_couple_m_c(setup,V_next,t,True)
+            elif desc == 'Couple, C':
+                EV = ev_couple_m_c(setup,V_next,t,False)
             return EV
             
         
@@ -155,9 +158,13 @@ class Model(object):
             
             
     def solve_sim(self):
+
+        #Solve the model
         self.solve()
-        self.agents = Agents(self)
-        self.agents.simulate()
+        
+        #Simulate the model
+        #self.agents = Agents(self)
+        #self.agents.simulate()
         
             
     def solve_marriage(self,sf,sm,izf,izm,ipsi,t=0):

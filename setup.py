@@ -18,7 +18,7 @@ from scipy import sparse
 
 
 class ModelSetup(object):
-    def __init__(self,nogrid=False,divorce_costs='Default',**kwargs): 
+    def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()        
         p['T']         = 5
         p['sig_zf_0']  = 0.15
@@ -64,9 +64,12 @@ class ModelSetup(object):
         self.integration = p_int
         
         
-        self.state_names = ['Female, single','Male, single','Couple']
+        #self.state_names = ['Female, single','Male, single','Couple']
+        self.state_names = ['Female, single','Male, single','Couple, M', 'Couple, C']
         
         
+        #Cost of Divorce
+        divorce_costs=DivorceCosts(unilateral_divorce=True,u_lost_m=0.05,u_lost_f=0.05)
         if divorce_costs == 'Default':
             # by default the costs are set in the bottom
             self.div_costs = DivorceCosts()
@@ -78,6 +81,20 @@ class ModelSetup(object):
                 # or just the output of DivorceCosts
                 assert isinstance(divorce_costs,DivorceCosts)
                 self.div_costs = divorce_costs
+                
+        #Cost of Separation
+        separation_costs=DivorceCosts(unilateral_divorce=True,u_lost_m=0.0,u_lost_f=0.0)
+        if separation_costs == 'Default':
+            # by default the costs are set in the bottom
+            self.sep_costs = DivorceCosts()
+        else:
+            if isinstance(separation_costs,dict):
+                # you can feed in arguments to DivorceCosts
+                self.sep_costs = DivorceCosts(**divorce_costs)
+            else:
+                # or just the output of DivorceCosts
+                assert isinstance(separation_costs,DivorceCosts)
+                self.sep_costs = separation_costs
             
         # exogrid should be deprecated
         if not nogrid:
@@ -124,10 +141,12 @@ class ModelSetup(object):
 
         self.exo_grids = {'Female, single':exogrid['zf_t'],
                           'Male, single':exogrid['zm_t'],
-                          'Couple':exogrid['all_t']}
+                          'Couple, M':exogrid['all_t'],
+                          'Couple, C':exogrid['all_t']}
         self.exo_mats = {'Female, single':exogrid['zf_t_mat'],
                           'Male, single':exogrid['zm_t_mat'],
-                          'Couple':exogrid['all_t_mat']} # sparse version?
+                          'Couple, M':exogrid['all_t_mat'],
+                          'Couple, C':exogrid['all_t_mat']} # sparse version?
         
         
         # this pre-computes transition matrices for meeting a partner
@@ -138,7 +157,8 @@ class ModelSetup(object):
         
         self.part_mats = {'Female, single':zf_t_partmat,
                           'Male, single':  zm_t_partmat,
-                          'Couple': None} # last is added for consistency
+                          'Couple, M': None,
+                          'Couple, C': None} # last is added for consistency
         
         
     
@@ -345,7 +365,8 @@ class DivorceCosts(object):
                  assets_kept = 0.9, # how many assets of couple are splited (the rest disappears)
                  u_lost_m=0.0,u_lost_f=0.0, # pure utility losses b/c of divorce
                  money_lost_m=0.0,money_lost_f=0.0, # pure money (asset) losses b/c of divorce
-                 money_lost_m_ez=0.0,money_lost_f_ez=0.0 # money losses proportional to exp(z) b/c of divorce
+                 money_lost_m_ez=0.0,money_lost_f_ez=0.0, # money losses proportional to exp(z) b/c of divorce
+                 equalit_assets=0.0 #The more of less equal way assets are split within divorce
                  ): # 
         
         self.unilateral_divorce = unilateral_divorce # w
@@ -356,3 +377,4 @@ class DivorceCosts(object):
         self.money_lost_f = money_lost_f
         self.money_lost_m_ez = money_lost_m_ez
         self.money_lost_f_ez = money_lost_f_ez
+        self.equalit_assets = equalit_assets

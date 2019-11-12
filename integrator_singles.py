@@ -87,6 +87,7 @@ def ev_single_meet2(setup,V,sown,female,t,trim_lvl=0.001):
         
     V_next = np.ones((ns,nexo))*(-1e10)
     inds = np.where( np.any(p_mat>0,axis=1 ) )[0]
+   
     
     EV = 0.0
     
@@ -99,9 +100,8 @@ def ev_single_meet2(setup,V,sown,female,t,trim_lvl=0.001):
             voutc,nprc = v_mar2(setup,V,False,sown,spart,inds,interpolate=False)[0:2]
             
             #Cohabitation-Marriage Choice 
-            i_mar = (nprm>=nprc)
-            with open('name_model.pkl', 'wb') as file:
-                pickle.dump((i_mar,nprm,nprc), file)  
+            i_mar = (nprm>=nprc) 
+            
             vout = i_mar*voutm[0] + (1.0-i_mar)*voutc[0]
            
         else:

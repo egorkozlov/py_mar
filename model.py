@@ -12,13 +12,15 @@ Created on Tue Oct 29 17:01:07 2019
 #from platform import system
 
 import numpy as np
+import dill as pickle
 from timeit import default_timer
-
+import gzip
 
 
 
 #if system() != 'Darwin':
 from setup import ModelSetup
+from graph import graphs
 from simulations import Agents
 from solver_couples import v_iter_couple
 from solver_singles import v_iter_single
@@ -154,6 +156,10 @@ class Model(object):
             
             self.V = [Vnow] + self.V
             
+        #For Graphs
+        with gzip.open('name_model.pkl', 'wb') as file:
+            pickle.dump(self.V, file) 
+            
             
             
             
@@ -165,6 +171,14 @@ class Model(object):
         #Simulate the model
         #self.agents = Agents(self)
         #self.agents.simulate()
+        
+        
+    def graph(self,ai,zfi,zmi,psii,ti,thi):
+        
+        #Draw some graph of Value and Policy Functions
+        V=graphs(self.setup,ai,zfi,zmi,psii,ti,thi)
+        
+        return V
         
             
     def solve_marriage(self,sf,sm,izf,izm,ipsi,t=0):

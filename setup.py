@@ -23,9 +23,9 @@ class ModelSetup(object):
         p['T']         = 5
         p['sig_zf_0']  = 0.15
         p['sig_zf']    = 0.05
-        p['n_zf']      = 9
-        p['sig_zm_0']  = 0.2
-        p['sig_zm']    = 0.075
+        p['n_zf']      = 5
+        p['sig_zm_0']  = 0.15
+        p['sig_zm']    = 0.05
         p['n_zm']      = 5
         p['sigma_psi_init'] = 0.12
         p['sigma_psi']   = 0.03
@@ -147,7 +147,7 @@ class ModelSetup(object):
 
 
         # grid for theta
-        self.ntheta = 20
+        self.ntheta = 21
         self.thetamin = 0.01
         self.thetamax = 0.99
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta)

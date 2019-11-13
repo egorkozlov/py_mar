@@ -29,8 +29,8 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
    
     Vfs,cfs,sfs=np.empty([3,len(agrids), len(zfg),T])
     Vms,cms,sms=np.empty([3,len(agrids), len(zmg),T])
-    Vfm,Vmm,cm,sm=np.empty([4,len(agrid), len(zfg),len(zmg),len(psig),T,setup.ntheta])
-    Vfc,Vmc,cc,sc=np.empty([4,len(agrid), len(zfg),len(zmg),len(psig),T,setup.ntheta])
+    Vm,Vfm,Vmm,cm,sm=np.empty([5,len(agrid), len(zfg),len(zmg),len(psig),T,setup.ntheta])
+    Vc,Vfc,Vmc,cc,sc=np.empty([5,len(agrid), len(zfg),len(zmg),len(psig),T,setup.ntheta])
     
     #Single Women
     for t in range(T):
@@ -57,6 +57,7 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
                 zf,zm,psi=setup.all_indices(i)[1:4]
                 
                 #Marriage
+                Vm[j,zf,zm,psi,t,]=Packed[t]['Couple, M']['V'][j,i,]
                 Vmm[j,zf,zm,psi,t,]=Packed[t]['Couple, M']['VM'][j,i,]
                 Vfm[j,zf,zm,psi,t,]=Packed[t]['Couple, M']['VF'][j,i,]
                 cm[j,zf,zm,psi,t,]=Packed[t]['Couple, M']['c'][j,i,]
@@ -64,6 +65,7 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
                 
                 
                 #Cohabitation
+                Vc[j,zf,zm,psi,t,]=Packed[t]['Couple, C']['V'][j,i,]
                 Vmc[j,zf,zm,psi,t,]=Packed[t]['Couple, C']['VM'][j,i,]
                 Vfc[j,zf,zm,psi,t,]=Packed[t]['Couple, C']['VF'][j,i,]
                 cc[j,zf,zm,psi,t,]=Packed[t]['Couple, C']['c'][j,i,]
@@ -100,6 +102,8 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
     ########################################## 
     fig = plt.figure()
     f1=fig.add_subplot(2,1,1)
+    plt.plot(psig, Vm[ai,zfi,zmi,0:len(psig),ti,thi],'k',markersize=6, label='Couple Marriage')
+    #plt.plot(psig, Vc[ai,zfi,zmi,0:len(psig),ti,thi],'k',markersize=6, label='Couple Cohabitation')
     plt.plot(psig, Vmm[ai,zfi,zmi,0:len(psig),ti,thi],'bo',markersize=6, label='Man, Marriage')
     plt.plot(psig, Vmc[ai,zfi,zmi,0:len(psig),ti,thi],'b',linewidth=0.4, label='Man, Cohabitation')
     plt.plot(psig, Vfc[ai,zfi,zmi,0:len(psig),ti,thi],'r',linewidth=0.4, label='Women, Cohabitation')

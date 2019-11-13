@@ -100,6 +100,16 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
     V_fem = uf + psi_r + beta*np.take_along_axis(EVf_all,i_opt,0)
     V_mal = um + psi_r + beta*np.take_along_axis(EVm_all,i_opt,0)
     
+    #TODO check below for monotonicity
+#    psi_broadcast = np.broadcast_to(psi_r,V_fem.shape)
+#    d_psi = np.diff(psi_broadcast,axis=1)
+#    d_Vfem = np.diff(V_fem,axis=1)
+#    npsi = setup.pars['n_psi']
+#    nexo = setup.pars['nexo']
+  #  for i in range(round(nexo/npsi)):
+ #    assert np.all(np.diff(V_couple[:,i:(npsi+i*npsi),:],axis=1)>0)
+    #assert np.allclose(np.sign(d_psi),np.sign(d_Vfem))
+    
     # consistency check
     EV_all = get_EVM(ind,p,EV)
     uc = setup.u_couple(c_opt,theta_val)

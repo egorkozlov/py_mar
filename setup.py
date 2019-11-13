@@ -20,7 +20,7 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()        
-        p['T']         = 15
+        p['T']         = 5
         p['sig_zf_0']  = 0.15
         p['sig_zf']    = 0.05
         p['n_zf']      = 9
@@ -118,12 +118,13 @@ class ModelSetup(object):
             self.nexo = p['nexo']
             self.exogrid = Exogrid_nt(**exogrid)
 
-
+        #Grid Couple
         self.na = 60
         self.amin = 0
         self.amax = 20
         self.agrid = np.linspace(self.amin,self.amax,self.na)
-        
+        tune=1.5
+        self.agrid = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         
         # this builds finer grid for potential savings
         s_between = 10 # default numer of points between poitns on agrid
@@ -132,6 +133,18 @@ class ModelSetup(object):
         
         self.sgrid = build_s_grid(self.agrid,s_between,s_da_min,s_da_max)
         self.s_ind, self.s_p = sgrid_on_agrid(self.sgrid,self.agrid)
+        
+        #Grid Single
+        self.amins = 0
+        self.amaxs = self.amax/2.0
+        self.agrids = np.linspace(self.amins,self.amaxs,self.na)
+        tunes=1.5
+        self.agrids = np.geomspace(self.amins+tunes,self.amaxs+tunes,num=self.na)-tunes
+        
+        self.sgrids = build_s_grid(self.agrids,s_between,s_da_min,s_da_max)
+        self.s_inds, self.s_ps = sgrid_on_agrid(self.sgrids,self.agrids)
+        
+
 
         # grid for theta
         self.ntheta = 20
@@ -333,7 +346,7 @@ class ModelSetup(object):
     
     def vs_last_grid(self,female,return_cs=False):
         # this returns value of vs on the grid corresponding to vs
-        s_in = self.agrid[:,None]
+        s_in = self.agrids[:,None]
         z_in = self.exogrid.zf_t[-1][None,:] if female else self.exogrid.zm_t[-1][None,:]
         return self.vs_last(s_in,z_in,return_cs)
         

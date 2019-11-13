@@ -71,7 +71,7 @@ def trim_one_matrix(M,level=0.001):
     Mout = Mout / np.sum(Mout,axis=1)[:,np.newaxis]
     return Mout
 
-def combine_matrices(a,b,Pia,Pib,check=True,trim=True,trim_level=0.001):
+def combine_matrices(a,b,Pia,Pib,check=True,trim=True,trim_level=0.00001):
     # this combines INDEPENDENT transition matrices Pia and Pib
     grid = mat_combine(a,b)
     
@@ -87,7 +87,7 @@ def combine_matrices(a,b,Pia,Pib,check=True,trim=True,trim_level=0.001):
     return grid, Pi
   
 #@jit
-def combine_matrices_list(alist,b,Pialist,Pib,check=True,trim=True,trim_level=0.001):
+def combine_matrices_list(alist,b,Pialist,Pib,check=True,trim=True,trim_level=0.00001):
     # this combines each element of Pialist and Pib
     # they assumed to be independent (i.e. Pialist and Pib can be combined in any order)
     grid, Pi = (list(), list())
@@ -105,7 +105,7 @@ def combine_matrices_list(alist,b,Pialist,Pib,check=True,trim=True,trim_level=0.
 
 
 #@jit
-def combine_matrices_two_lists(alist,blist,Pialist,Piblist,check=True,trim=True,trim_level=0.001):
+def combine_matrices_two_lists(alist,blist,Pialist,Piblist,check=True,trim=True,trim_level=0.00001):
     # this combines each element of Pialist and Pib
     # they assumed to be independent (i.e. Pialist and Pib can be combined in any order)
     grid, Pi = (list(), list())
@@ -199,7 +199,7 @@ def ind_combine_m(ilist,nlist):
     
 
 
-def int_prob_standard(vec,trim=True,trim_level=0.01):
+def int_prob_standard(vec,trim=True,trim_level=0.001):
     # given ordered vector vec [x_0,...,x_{n-1}] this returns probabilities
     # [p0,...,p_{n-1}] such that p_i = P[d(Z,x_i) is minimal among i], where
     # Z is standard normal ranodm variable
@@ -225,7 +225,7 @@ def int_prob_standard(vec,trim=True,trim_level=0.01):
     return p#, ap, p[ap[-2]], p[ap[-1]]
 
 
-def int_prob(vec,mu=0,sig=1,trim=True,trim_level=0.01):
+def int_prob(vec,mu=0,sig=1,trim=True,trim_level=0.001):
     # this works like int_prob_standard, but assumes that Z = mu + sig*N(0,1)
     vec_adj = (np.array(vec)-mu)/sig
     return int_prob_standard(vec_adj,trim,trim_level)

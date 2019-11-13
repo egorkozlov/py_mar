@@ -22,19 +22,20 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
     ################################################
     T = setup.pars['T']
     agrid = setup.agrid
+    agrids = setup.agrids
     zfg = setup.exogrid.zf_t[ti]
     zmg = setup.exogrid.zm_t[ti]
     psig = setup.exogrid.psi_t[ti]
    
-    Vfs,cfs,sfs=np.empty([3,len(agrid), len(zfg),T])
-    Vms,cms,sms=np.empty([3,len(agrid), len(zmg),T])
+    Vfs,cfs,sfs=np.empty([3,len(agrids), len(zfg),T])
+    Vms,cms,sms=np.empty([3,len(agrids), len(zmg),T])
     Vfm,Vmm,cm,sm=np.empty([4,len(agrid), len(zfg),len(zmg),len(psig),T,setup.ntheta])
     Vfc,Vmc,cc,sc=np.empty([4,len(agrid), len(zfg),len(zmg),len(psig),T,setup.ntheta])
     
     #Single Women
     for t in range(T):
         for i in range(len(zfg)):
-            for j in range(len(agrid)):
+            for j in range(len(agrids)):
                 Vfs[j,i,t]=Packed[t]['Female, single']['V'][j,i]
                 cfs[j,i,t]=Packed[t]['Female, single']['c'][j,i]
                 sfs[j,i,t]=Packed[t]['Female, single']['s'][j,i]
@@ -42,7 +43,7 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
     #Single Men
     for t in range(T):
         for i in range(len(zmg)):
-            for j in range(len(agrid)):
+            for j in range(len(agrids)):
                 Vms[j,i,t]=Packed[t]['Male, single']['V'][j,i]
                 cms[j,i,t]=Packed[t]['Male, single']['c'][j,i]
                 sms[j,i,t]=Packed[t]['Male, single']['s'][j,i]
@@ -84,7 +85,7 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
             
     tre=min(trem,trec)
     if tre>50.0:
-        tre=None
+        tre=max(psig)
     
     
     #####################################
@@ -136,7 +137,7 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
     legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
     plt.xlabel('Love')
     plt.ylabel('Marriage Surplus wrt Cohab.')
-    
+    print(333,surpM,surpW)
     
     
     ##########################################
@@ -185,11 +186,11 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
     ########################################## 
     fig = plt.figure()
     f5=fig.add_subplot(2,1,1)
-    plt.plot(agrid, cm[0:len(agrid),zfi,zmi,psii,ti,thi],'ko',markersize=6,markevery=5, label='Marriage')
-    plt.plot(agrid, cc[0:len(agrid),zfi,zmi,psii,ti,thi],'r*',markersize=6,markevery=5, label='Cohabitation')
+    plt.plot(agrid, cm[0:len(agrid),zfi,zmi,psii,ti,thi],'ko',markersize=6,markevery=1, label='Marriage')
+    plt.plot(agrid, cc[0:len(agrid),zfi,zmi,psii,ti,thi],'r*',markersize=6,markevery=1, label='Cohabitation')
     #plt.plot(agrid, sc[0:len(agrid),zfi,zmi,psii,ti,thi],'k',linewidth=2.0,linestyle='--', label='Cohabitation')
-    plt.plot(agrid, cms[0:len(agrid),zmi,ti],'b',linewidth=2.0,label='Men, Single')
-    plt.plot(agrid, cfs[0:len(agrid),zfi,ti],'r',linewidth=2.0,linestyle='--', label='Women, Single')
+    plt.plot(agrids, cms[0:len(agrids),zmi,ti],'b',linewidth=2.0,label='Men, Single')
+    plt.plot(agrids, cfs[0:len(agrids),zfi,ti],'r',linewidth=2.0,linestyle='--', label='Women, Single')
     #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral')
     plt.ylabel('Consumption')
     plt.xlabel('Assets')
@@ -202,11 +203,11 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
     ########################################## 
     fig = plt.figure()
     f6=fig.add_subplot(2,1,1)
-    #plt.plot(agrid, sm[0:len(agrid),zfi,zmi,psii,ti,thi],'ko',markersize=6,markevery=5, label='Marriage')
-    #plt.plot(agrid, sc[0:len(agrid),zfi,zmi,psii,ti,thi],'r*',markersize=6,markevery=5, label='Cohabitation')
-    #plt.plot(agrid, sc[0:len(agrid),zfi,zmi,psii,ti,thi],'k',linewidth=1.0,linestyle='--')
-    plt.plot(agrid, sms[0:len(agrid),zmi,ti],'b',linewidth=2.0,label='Men, Single')
-    plt.plot(agrid, sfs[0:len(agrid),zfi,ti],'r',linewidth=2.0,linestyle='--', label='Women, Single')
+    plt.plot(agrid, sm[0:len(agrid),zfi,zmi,psii,ti,thi],'ko',markersize=6,markevery=1, label='Marriage')
+    plt.plot(agrid, sc[0:len(agrid),zfi,zmi,psii,ti,thi],'r*',markersize=6,markevery=1, label='Cohabitation')
+    plt.plot(agrid, agrid,'k',linewidth=1.0,linestyle='--')
+    plt.plot(agrids, sms[0:len(agrids),zmi,ti],'b',linewidth=2.0,label='Men, Single')
+    plt.plot(agrids, sfs[0:len(agrids),zfi,ti],'r',linewidth=2.0,linestyle='--', label='Women, Single')
     #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral')
     plt.ylabel('Savings')
     plt.xlabel('Assets')

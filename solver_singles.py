@@ -15,10 +15,10 @@ from optimizers import v_optimize
 def v_iter_single(setup,EV,female):
     #EVT = np.float32(EV.T)
     
-    agrid = setup.agrid
-    sgrid = setup.sgrid
+    agrid = setup.agrids
+    sgrid = setup.sgrids
     
-    ind, p = setup.s_ind, setup.s_p
+    ind, p = setup.s_inds, setup.s_ps
     
     
     zvals = setup.exogrid.zf_t[0] if female else setup.exogrid.zm_t[0]

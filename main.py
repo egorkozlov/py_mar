@@ -29,7 +29,7 @@ if __name__ == '__main__':
     zmi=3
     psii=6
     ti=0
-    thi=11
+    thi=10
     
     #Actual Graphs
     Packed,cfs=mdl.graph(ai,zfi,zmi,psii,ti,thi)

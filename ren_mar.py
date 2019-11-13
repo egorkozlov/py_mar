@@ -48,8 +48,8 @@ def v_ren(setup,V,sc=None,ind_or_inds=None,interpolate=True,combine=True,return_
     sm = dc.assets_kept*0.5*sc - dc.money_lost_m
     
     # this creates interpolators
-    sm_v = VecOnGrid(setup.agrid,sm,trim=True)
-    sf_v = VecOnGrid(setup.agrid,sf,trim=True)
+    sm_v = VecOnGrid(setup.agrids,sm,trim=True)
+    sf_v = VecOnGrid(setup.agrids,sf,trim=True)
     sc_v = VecOnGrid(setup.agrid,sc,trim=True)
     
     # this applies the interpolators
@@ -108,8 +108,8 @@ def v_ren2(setup,V,marriage,t,sc=None,ind_or_inds=None,interpolate=True,combine=
     #Create temporary Value Functions for Couple,F,M
 
     # this creates interpolators
-    sm_v = VecOnGrid(setup.agrid,sm,trim=True)
-    sf_v = VecOnGrid(setup.agrid,sf,trim=True)
+    sm_v = VecOnGrid(setup.agrids,sm,trim=True)
+    sf_v = VecOnGrid(setup.agrids,sf,trim=True)
     sc_v = VecOnGrid(setup.agrid,sc,trim=True)
    
     # this applies the interpolators
@@ -148,6 +148,7 @@ def v_mar(setup,V,sf,sm,ind_or_inds,interpolate=True,return_all=False,combine=Tr
     
     # import objects
     agrid = setup.agrid
+    agrids = setup.agrids
     gamma = setup.pars['m_bargaining_weight']    
     VMval_single, VFval_single = V['Male, single']['V'], V['Female, single']['V']
     Vval_postren, VMval_postren, VFval_postren = V['Couple']['V'], V['Couple']['VM'], V['Couple']['VF']
@@ -167,8 +168,8 @@ def v_mar(setup,V,sf,sm,ind_or_inds,interpolate=True,return_all=False,combine=Tr
     sc = sf+sm # savings of couple
     
     # this creates interpolators
-    sf_v = VecOnGrid(agrid,sf,trim=True) 
-    sm_v = VecOnGrid(agrid,sm,trim=True)
+    sf_v = VecOnGrid(agrids,sf,trim=True) 
+    sm_v = VecOnGrid(agrids,sm,trim=True)
     sc_v = VecOnGrid(agrid,sc,trim=True)
     
     # this applies them
@@ -207,6 +208,7 @@ def v_mar2(setup,V,marriage,sf,sm,ind_or_inds,interpolate=True,return_all=False,
         
     # import objects
     agrid = setup.agrid
+    agrids = setup.agrids
     gamma = setup.pars['m_bargaining_weight']    
     VMval_single, VFval_single = V['Male, single']['V'], V['Female, single']['V']
     Vval_postren, VMval_postren, VFval_postren = V[desc_cop]['V'], V[desc_cop]['VM'], V[desc_cop]['VF']
@@ -226,8 +228,8 @@ def v_mar2(setup,V,marriage,sf,sm,ind_or_inds,interpolate=True,return_all=False,
     sc = sf+sm # savings of couple
     
     # this creates interpolators
-    sf_v = VecOnGrid(agrid,sf,trim=True) 
-    sm_v = VecOnGrid(agrid,sm,trim=True)
+    sf_v = VecOnGrid(agrids,sf,trim=True) 
+    sm_v = VecOnGrid(agrids,sm,trim=True)
     sc_v = VecOnGrid(agrid,sc,trim=True)
     
     # this applies them
@@ -244,7 +246,7 @@ def v_mar2(setup,V,marriage,sf,sm,ind_or_inds,interpolate=True,return_all=False,
     # this is syntactically dirty but efficient
     outcome=v_newmar_core(*outs,interpolate=interpolate,gamma=gamma,return_all=return_all)
     return outcome,(outcome[0]-Vfs)**(1.0-gamma)*(outcome[1]-Vms)**gamma
-
+    
 
 def v_prepare(VF_yes,VM_yes,VC_yes,VF_no,VM_no,thetagrid,interpolate=False):
     # this takes value functions of females, males and couples in case of being 

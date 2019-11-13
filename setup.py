@@ -27,8 +27,8 @@ class ModelSetup(object):
         p['sig_zm_0']  = 0.15
         p['sig_zm']    = 0.05
         p['n_zm']      = 5
-        p['sigma_psi_init'] = 0.12
-        p['sigma_psi']   = 0.03
+        p['sigma_psi_init'] = 0.24
+        p['sigma_psi']   = 0.06
         p['R'] = 1.2
         p['n_psi']     = 12
         p['beta'] = 0.95

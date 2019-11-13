@@ -98,7 +98,9 @@ class VecOnGrid(object):
         out = wthis*xin[tuple(ithis)] + wnext*xin[tuple(inext)]
         
         # TODO: check if this hurts dimensionality
-        return out.squeeze() 
+        # FIXME: yes it does
+        
+        return (out.squeeze() if (out.ndim > 1 and out.shape[0] > 1) else out)
     
     
     def apply_2dim(self,xin,*,apply_first,axis_first,axis_this=0,take=None,pick=None,reshape_i=True):

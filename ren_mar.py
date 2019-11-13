@@ -129,7 +129,12 @@ def v_ren2(setup,V,marriage,t,sc=None,ind_or_inds=None,interpolate=True,combine=
         
         Vm_divorce = sm_v.apply(V['Male, single']['V'],  axis=0,take=(1,izm),reshape_i=combine)- dc.u_lost_m
         Vf_divorce = sf_v.apply(V['Female, single']['V'],axis=0,take=(1,izf),reshape_i=combine)- dc.u_lost_f
-        assert Vm_divorce.ndim == Vf_divorce.ndim == 1
+        
+        try:
+            assert Vm_divorce.ndim == Vf_divorce.ndim == 1
+        except:
+            print((Vm_divorce.ndim, Vm_divorce, Vf_divorce.ndim, Vf_divorce))
+            assert False
     
     
     
@@ -140,8 +145,10 @@ def v_ren2(setup,V,marriage,t,sc=None,ind_or_inds=None,interpolate=True,combine=
         (sc_v.apply(v,axis=0,take=(1,ind),reshape_i=combine)
             for v in (V[des]['V'], V[des]['VM'], V[des]['VF']))
     
-    
-    assert Vval_postren.shape[:-1] == Vm_divorce.shape
+    try:
+        assert Vval_postren.shape[:-1] == Vm_divorce.shape
+    except:
+        print(Vval_postren.shape,Vm_divorce.shape)
     
     outs = v_prepare(VFval_postren,VMval_postren,Vval_postren,Vf_divorce,Vm_divorce,setup.thetagrid,interpolate=interpolate)
     # this is syntactically dirty but efficient
@@ -354,7 +361,7 @@ def v_prepare(VF_yes,VM_yes,VC_yes,VF_no,VM_no,thetagrid,interpolate=False):
     
     
     nf = first_true(I_f,axis=ax)
-    nm = last_true(I_m,axis=ax)
+    nm =  last_true(I_m,axis=ax)
     
     
     tht_fem = np.full(I_f.shape[:-1],np.nan,dtype=np.float32)
@@ -367,7 +374,7 @@ def v_prepare(VF_yes,VM_yes,VC_yes,VF_no,VM_no,thetagrid,interpolate=False):
     tht_mal[(nm==-1)] = 0.5*tmin
     
     tht_fem[(nf==0)] = tmin
-    tht_mal[(nm==nt-1)] == tmax
+    tht_mal[(nm==nt-1)] = tmax
     
     tht_fem = tht_fem.reshape(shp)
     tht_mal = tht_mal.reshape(shp)
@@ -397,19 +404,26 @@ def v_prepare(VF_yes,VM_yes,VC_yes,VF_no,VM_no,thetagrid,interpolate=False):
     
     NF = nf.reshape(shp)
     NF_fix = np.array( NF == 0 ) # when first true is zero
-    NF[NF_fix] = 1
     NF_ok = np.array( NF != -1 ) # when there is at least some true value
-    NF_sc = (NF_ok & ~NF_fix) # whether it corresponds to sign change
-    NF[~NF_ok] = nt-1
+    NF[~(NF_ok)] = nt-1
+    NF[NF_fix] = 1
+    NF_sc = (NF_ok & ~(NF_fix)) # whether it corresponds to sign change
     
+    
+    assert np.all(NF[NF_sc]>=1)
+    assert np.all(NF[NF_sc]<=nt-1)
+
     
     
     NM = nm.reshape(shp)
     NM_fix = np.array( NM == nt-1)
-    NM[NM_fix] = nt-2
     NM_ok = np.array(NM != -1)
-    NM[~NM_ok] = 0
-    NM_sc = (NM_ok & ~NM_fix)
+    NM[NM_fix] = nt-2    
+    NM[~(NM_ok)] = 0
+    NM_sc = (NM_ok & ~(NM_fix))
+    
+    assert np.all(NM[NM_sc]>=0)
+    assert np.all(NM[NM_sc]<=nt-2)
     
     
     # rf is theta grid poisition to the right of point where female surplus intersects zero
@@ -442,7 +456,7 @@ def v_prepare(VF_yes,VM_yes,VC_yes,VF_no,VM_no,thetagrid,interpolate=False):
     kr_f = -A_l/(A_r - A_l)    
     kr_m = B_l/(B_l - B_r) 
     kr_f[NF_fix] = 0.0
-    kr_m[NF_fix] = 1.0
+    kr_m[NM_fix] = 1.0
     
     tht_fem[NF_sc] = (thetagrid[lf]*(1-kr_f) + thetagrid[rf]*kr_f)[NF_sc]
     tht_mal[NM_sc] = (thetagrid[lm]*(1-kr_m) + thetagrid[rm]*kr_m)[NM_sc]
@@ -457,8 +471,8 @@ def v_prepare(VF_yes,VM_yes,VC_yes,VF_no,VM_no,thetagrid,interpolate=False):
     # out of NF_sc these values do not make much sense
     
     assert np.max(np.abs( (A_l*(1-kr_f) + A_r*kr_f)[NF_sc] )) < 1e-4
-    assert np.max(np.abs( (B_l*(1-kr_m) + B_r*kr_m)[NM_sc] )) < 1e-4
     
+    assert np.max(np.abs( (B_l*(1-kr_m) + B_r*kr_m)[NM_sc] )) < 1e-4
     assert np.all(kr_f[NF_sc]>=0) and np.all(kr_f[NF_sc]<=1)
     assert np.all(kr_m[NM_sc]>=0) and np.all(kr_m[NM_sc]<=1)
     

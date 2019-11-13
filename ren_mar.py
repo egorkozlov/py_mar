@@ -99,26 +99,45 @@ def v_ren2(setup,V,marriage,t,sc=None,ind_or_inds=None,interpolate=True,combine=
     
     assert (dc.money_lost_f_ez == 0 and dc.money_lost_m_ez == 0), 'not implemented yet'
 
+    
+    zfgrid = setup.exo_grids['Female, single'][t]
+    zmgrid = setup.exo_grids['Male, single'][t]
+    
+    
+    
+    income_share = (np.exp(zfgrid[izf]) / ( np.exp(zmgrid[izm]) + np.exp(zfgrid[izf]) ) ).squeeze()
+    
+    
+    share_f = income_share
+    share_m = 1-income_share
+    
+    
+    
+    if combine:
+        # call separate routine for finding divorce outcomes depending on grid
+        # position
+        Vf_divorce, Vm_divorce = v_div_byshare(
+            setup, dc, t, sc, share_f, share_m,
+            V['Male, single']['V'], V['Female, single']['V'],
+            izf, izm, cost_fem=dc.money_lost_f, cost_mal=dc.money_lost_m)
         
-    # this if how assets are divided
-    fr=0.5#*dc.equalit_assets+(1-dc.equalit_assets)*np.exp(zf)/(np.exp(zf)+np.exp(zm))
-    sf = dc.assets_kept*fr*sc - dc.money_lost_f#- dc.money_lost_f_ez*np.exp(zf)
-    sm = dc.assets_kept*(1.0-fr)*sc - dc.money_lost_m#- dc.money_lost_f_ez*np.exp(zf)
+        assert Vf_divorce.ndim == Vm_divorce.ndim == 2
+        
+    else:
+        # literally compute how assets are divided and apply
+        # everything is 1-dimensional so no need for sophisticated things
+        sm_v = VecOnGrid(setup.agrid,share_m*sc - dc.money_lost_m ,trim=True)
+        sf_v = VecOnGrid(setup.agrid,share_f*sc - dc.money_lost_f ,trim=True)
+        
+        Vm_divorce = sm_v.apply(V['Male, single']['V'],  axis=0,take=(1,izm),reshape_i=combine)- dc.u_lost_m
+        Vf_divorce = sf_v.apply(V['Female, single']['V'],axis=0,take=(1,izf),reshape_i=combine)- dc.u_lost_f
+        assert Vm_divorce.ndim == Vf_divorce.ndim == 1
     
-    #Create temporary Value Functions for Couple,F,M
-
-    # this creates interpolators
-    sm_v = VecOnGrid(setup.agrid,sm,trim=True)
-    sf_v = VecOnGrid(setup.agrid,sf,trim=True)
+    
+    
+    
     sc_v = VecOnGrid(setup.agrid,sc,trim=True)
-   
-    # this applies the interpolators
-    
-    Vm_divorce = sm_v.apply(V['Male, single']['V'],  axis=0,take=(1,izm),reshape_i=combine)- dc.u_lost_m
-    Vf_divorce = sf_v.apply(V['Female, single']['V'],axis=0,take=(1,izf),reshape_i=combine)- dc.u_lost_f
-    
 
-    
     Vval_postren, VMval_postren, VFval_postren = \
         (sc_v.apply(v,axis=0,take=(1,ind),reshape_i=combine)
             for v in (V[des]['V'], V[des]['VM'], V[des]['VF']))
@@ -129,6 +148,55 @@ def v_ren2(setup,V,marriage,t,sc=None,ind_or_inds=None,interpolate=True,combine=
     outs = v_prepare(VFval_postren,VMval_postren,Vval_postren,Vf_divorce,Vm_divorce,setup.thetagrid,interpolate=interpolate)
     # this is syntactically dirty but efficient
     return v_ren_core(*outs,interpolate=interpolate,unilateral=is_unil,return_tht=return_all)
+
+
+def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,Vmale,Vfemale,izf,izm,cost_fem=0.0,cost_mal=0.0):
+    # this produces value of divorce for gridpoints given possibly different
+    # shares of how assets are divided. 
+    # Returns Vf_divorce, Vm_divorce -- values of singles in case of divorce
+    # matched to the gridpionts for couples
+    
+    # optional cost_fem and cost_mal are monetary costs of divorce
+    
+    
+    shrs = [0.2,0.35,0.5,0.65,0.8]  # grid on possible assets divisions    
+    shp  =  (sc.size,izm.size,len(shrs))  
+    Vm_divorce_M = np.zeros(shp) 
+    Vf_divorce_M = np.zeros(shp)
+    
+    # find utilities of divorce for different divisions of assets
+    for i, shr in enumerate(shrs):
+        sv_m = VecOnGrid(setup.agrid, shr*sc - cost_mal)
+        sv_f = sv_m if cost_fem == cost_mal else VecOnGrid(setup.agrid,shr*sc - cost_fem)
+        
+        Vm_divorce_M[...,i] = sv_m.apply(Vmale,    axis=0,take=(1,izm),reshape_i=True) - dc.u_lost_m
+        Vf_divorce_M[...,i] = sv_f.apply(Vfemale,  axis=0,take=(1,izf),reshape_i=True) - dc.u_lost_f
+    
+    # share of assets that goes to the female
+    # this has many repetative values but it turns out it does not matter much
+    
+    fem_gets = VecOnGrid(np.array(shrs),share_fem)
+    mal_gets = VecOnGrid(np.array(shrs),share_mal)
+    
+    
+    i_fem = fem_gets.i
+    wn_fem = fem_gets.wnext
+    
+    i_mal = mal_gets.i
+    wn_mal = mal_gets.wnext
+    
+    inds_exo = np.arange(setup.pars['nexo'])
+    
+    Vf_divorce = (1-wn_fem[None,:])*Vf_divorce_M[:,inds_exo,i_fem] + \
+                wn_fem[None,:]*Vf_divorce_M[:,inds_exo,i_fem+1]
+    
+    Vm_divorce = (1-wn_mal[None,:])*Vm_divorce_M[:,inds_exo,i_mal] + \
+                wn_mal[None,:]*Vm_divorce_M[:,inds_exo,i_mal+1]
+                
+    
+                
+    return Vf_divorce, Vm_divorce
+    
 
 
 def v_mar(setup,V,sf,sm,ind_or_inds,interpolate=True,return_all=False,combine=True):
@@ -183,6 +251,11 @@ def v_mar(setup,V,sf,sm,ind_or_inds,interpolate=True,return_all=False,combine=Tr
 
     # this is syntactically dirty but efficient
     return v_newmar_core(*outs,interpolate=interpolate,gamma=gamma,return_all=return_all)
+
+
+
+
+
 
 
 def v_mar2(setup,V,marriage,sf,sm,ind_or_inds,interpolate=True,return_all=False,combine=True):

@@ -41,4 +41,4 @@ def v_iter_single(setup,EV,female):
     
     
     
-    return V_ret, s_opt, s_opt/money
+    return V_ret, c_opt, s_opt#, s_opt/money

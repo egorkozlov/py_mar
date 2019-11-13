@@ -100,6 +100,10 @@ def ev_single_meet2(setup,V,sown,female,t,trim_lvl=0.001):
             
             #Cohabitation-Marriage Choice 
             i_mar = (nprm>=nprc)
+            
+            
+            
+            
             with open('name_model.pkl', 'wb') as file:
                 pickle.dump((i_mar,nprm,nprc), file)  
             vout = i_mar*voutm[0] + (1.0-i_mar)*voutc[0]

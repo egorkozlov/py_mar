@@ -19,6 +19,7 @@ if __name__ == '__main__':
     mdl.solve_sim()
     mdl.time_statistics()
     
-    with open('name_model.pkl', 'rb') as file:
-        M_C_Choice = pickle.load(file)
+    
+    #with open('name_model.pkl', 'rb') as file:
+    #    M_C_Choice = pickle.load(file)
     

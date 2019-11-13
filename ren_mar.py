@@ -105,11 +105,9 @@ def v_ren2(setup,V,marriage,t,sc=None,ind_or_inds=None,interpolate=True,combine=
     
     
     
-    income_share = (np.exp(zfgrid[izf]) / ( np.exp(zmgrid[izm]) + np.exp(zfgrid[izf]) ) ).squeeze()
+    income_share_f = (np.exp(zfgrid[izf]) / ( np.exp(zmgrid[izm]) + np.exp(zfgrid[izf]) ) ).squeeze()
     
-    
-    share_f = income_share
-    share_m = 1-income_share
+    share_f, share_m = dc.shares_if_split(income_share_f)
     
     
     
@@ -314,7 +312,7 @@ def v_mar2(setup,V,marriage,sf,sm,ind_or_inds,interpolate=True,return_all=False,
    
     # this is syntactically dirty but efficient
     outcome=v_newmar_core(*outs,interpolate=interpolate,gamma=gamma,return_all=return_all)
-    return outcome,(outcome[0]-Vfs)**(1.0-gamma)*(outcome[1]-Vms)**gamma
+    return outcome, (outcome[0]-Vfs)**(1.0-gamma)*(outcome[1]-Vms)**gamma
     
 
 def v_prepare(VF_yes,VM_yes,VC_yes,VF_no,VM_no,thetagrid,interpolate=False):

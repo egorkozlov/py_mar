@@ -20,7 +20,7 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()        
-        p['T']         = 5
+        p['T']         = 10
         p['sig_zf_0']  = 0.15
         p['sig_zf']    = 0.05
         p['n_zf']      = 5
@@ -379,7 +379,7 @@ class DivorceCosts(object):
                  u_lost_m=0.0,u_lost_f=0.0, # pure utility losses b/c of divorce
                  money_lost_m=0.0,money_lost_f=0.0, # pure money (asset) losses b/c of divorce
                  money_lost_m_ez=0.0,money_lost_f_ez=0.0, # money losses proportional to exp(z) b/c of divorce
-                 equalit_assets=0.0 #The more of less equal way assets are split within divorce
+                 eq_split=0.0 #The more of less equal way assets are split within divorce
                  ): # 
         
         self.unilateral_divorce = unilateral_divorce # w
@@ -390,4 +390,15 @@ class DivorceCosts(object):
         self.money_lost_f = money_lost_f
         self.money_lost_m_ez = money_lost_m_ez
         self.money_lost_f_ez = money_lost_f_ez
-        self.equalit_assets = equalit_assets
+        self.eq_split = eq_split
+        
+    def shares_if_split(self,income_share_f):
+        
+        income_share_m = 1-income_share_f
+        
+        share_f = self.assets_kept*(0.5*self.eq_split + income_share_f*(1-self.eq_split)) - self.money_lost_f
+        share_m = self.assets_kept*(0.5*self.eq_split + income_share_m*(1-self.eq_split)) - self.money_lost_m
+        
+        return share_f, share_m
+        
+        

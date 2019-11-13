@@ -9,7 +9,7 @@ import numpy as np
 
 from interp_np import interp            
 from mc_tools import mc_simulate
-from ren_mar import v_mar, v_ren
+from ren_mar import v_mar2, v_ren2
 from gridvec import VecOnGrid
 
 class Agents:
@@ -54,7 +54,7 @@ class Agents:
         self.has_theta = list()
         for i, name in enumerate(self.setup.state_names):
             self.state_codes[name] = i
-            self.has_theta.append((name=='Couple'))
+            self.has_theta.append((name=='Couple, C' or name=='Couple, M'))
         
         
         self.timer('Simulations, creation')
@@ -186,30 +186,64 @@ class Agents:
                 sm = mult_a*sf
                 
                 # compute for everyone
-                vf, vm, ismar, tht, _ = v_mar(setup,self.V[t+1],sf,sm,iall,combine=False,return_all=True)
+                
+                
+                # cohabitation
+                (vf_c, vm_c, iscoh, tht_c, _), nbs_c = v_mar2(setup,self.V[t+1],False,sf,sm,iall,combine=False,return_all=True)
+                # marriage
+                (vf_m, vm_m, ismar, tht_m, _), nbs_m = v_mar2(setup,self.V[t+1],True,sf,sm,iall,combine=False,return_all=True)
+                
                 
                 i_nomeet =  np.array( np.random.rand(nind) > pmeet )
                 
-                i_disagree = np.isnan(tht)
-                i_disagree_or_nomeet = (np.isnan(tht)) | (i_nomeet)
+                
+                i_pot_mar = ~np.isnan(tht_m)
+                
+                assert np.all( i_pot_mar == (nbs_m>0) )
+                
+                i_pot_coh = ~np.isnan(tht_c)
+                
+                assert np.all( i_pot_coh == (nbs_c > 0) )
+                
+                
+                i_disagree = (~i_pot_mar) & (~i_pot_coh)
+                i_disagree_or_nomeet = (i_disagree) | (i_nomeet)
                 i_agree = ~np.array(i_disagree_or_nomeet)
                 
-                print('{} agreed, {} disagreed, {} did not meet'.format(np.sum(i_agree),np.sum(i_disagree),np.sum(i_nomeet)))
+                i_agree_mar = (i_agree) & (nbs_m>=nbs_c) 
+                i_agree_coh = (i_agree) & (nbs_c> nbs_m)
+                
+                assert np.all(~i_nomeet[i_agree])
+                
+                
+                nmar, ncoh, ndis, nnom = np.sum(i_agree_mar),np.sum(i_agree_coh),np.sum(i_disagree_or_nomeet),np.sum(i_nomeet)
+                ntot = sum((nmar, ncoh, ndis, nnom))
+                
+                print('{} mar, {} coh,  {} disagreed, {} did not meet ({} total)'.format(nmar,ncoh,ndis,nnom,ntot))
                 #assert np.all(ismar==(i_agree )
                 
-                if np.any(i_agree):
+                if np.any(i_agree_mar):
                     
-                    self.gtheta[t+1].update(ind[i_agree],tht[i_agree])
-                    self.iexo[ind[i_agree],t+1] = iall[i_agree]
-                    self.state[ind[i_agree],t+1] = self.state_codes['Couple']
-                    self.gassets[t+1].update(ind[i_agree],sf[i_agree] + sm[i_agree])
+                    self.gtheta[t+1].update(ind[i_agree_mar],tht_m[i_agree_mar])
+                    self.iexo[ind[i_agree_mar],t+1] = iall[i_agree_mar]
+                    self.state[ind[i_agree_mar],t+1] = self.state_codes['Couple, M']
+                    self.gassets[t+1].update(ind[i_agree_mar],sf[i_agree_mar] + sm[i_agree_mar])
+                    
+                if np.any(i_agree_coh):
+                    
+                    self.gtheta[t+1].update(ind[i_agree_coh],tht_c[i_agree_coh])
+                    self.iexo[ind[i_agree_coh],t+1] = iall[i_agree_coh]
+                    self.state[ind[i_agree_coh],t+1] = self.state_codes['Couple, C']
+                    self.gassets[t+1].update(ind[i_agree_coh],sf[i_agree_coh] + sm[i_agree_coh])
+                    
+                
                     
                 if np.any(i_disagree_or_nomeet):
                     # do not touch assets
                     self.iexo[ind[i_disagree_or_nomeet],t+1] = izf[i_disagree_or_nomeet]
                     self.state[ind[i_disagree_or_nomeet],t+1] = self.state_codes['Female, single']
                     
-            elif sname == "Couple":
+            elif sname == "Couple, M" or sname == "Couple, C":
                 
                 # by default keep the same theta and weights
                 thetanow = self.gtheta[t].val[ind]
@@ -219,7 +253,7 @@ class Agents:
                 sc = self.gassets[t+1].val[ind]
                 iall, izf, izm, ipsi = self.setup.all_indices(self.iexo[ind,t+1])
                 
-                v, vf, vm, thetaout, tht_fem, tht_mal = v_ren(setup,self.V[t+1],sc=sc,ind_or_inds=iall,combine=False,return_all=True)
+                v, vf, vm, thetaout, tht_fem, tht_mal = v_ren2(setup,self.V[t+1],True,t,sc=sc,ind_or_inds=iall,combine=False,return_all=True)
                 
                 
                 # same size as ind
@@ -234,9 +268,26 @@ class Agents:
                 print('{} divorce, {} ren-f, {} ren-m, {} sq'.format(np.sum(i_div),np.sum(i_renf),np.sum(i_renm),np.sum(i_sq))                     )
                 
                 
+                
+                zf_grid = self.setup.exo_grids['Female, single'][t]
+                zm_grid = self.setup.exo_grids['Male, single'][t]
+                
+                
+                
                 if np.any(i_div):
-                    # TODO: this should replicate the divorce protocol                    
-                    self.gassets[t+1].update(ind[i_div],0.5*sc[i_div])                    
+                    
+                    income_fem = np.exp(zf_grid[izf[i_div]])
+                    income_mal = np.exp(zm_grid[izm[i_div]])
+                    
+                    income_share_fem = income_fem / (income_fem + income_mal)
+                    
+                    costs = self.setup.div_costs if sname == 'Couple, M' else self.setup.sep_costs
+                               
+                    share_f, share_m = costs.shares_if_split(income_share_fem)
+                    
+                    sf = share_f*sc[i_div]
+                    
+                    self.gassets[t+1].update(ind[i_div],sf)                    
                     self.gtheta[t+1].update(ind[i_div],-1.0)
                     self.iexo[ind[i_div],t+1] = izf[i_div]
                     self.state[ind[i_div],t+1] = self.state_codes['Female, single']
@@ -246,10 +297,10 @@ class Agents:
                         self.gtheta[t+1].update(ind[i_renf],tht_fem[i_renf])
                     if np.any(i_renm):
                         self.gtheta[t+1].update(ind[i_renm],tht_mal[i_renm])
-                    self.state[ind[i_ren],t+1] = self.state_codes['Couple']
+                    self.state[ind[i_ren],t+1] = self.state_codes[sname]
                     
                 if np.any(i_sq):
-                    self.state[ind[i_sq],t+1] = self.state_codes['Couple']
+                    self.state[ind[i_sq],t+1] = self.state_codes[sname]
                     # do not touch theta as already updated
                 
             

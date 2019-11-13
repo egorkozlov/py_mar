@@ -12,7 +12,6 @@ import os
 
 
 
-
 if __name__ == '__main__':
     
     #Solve the model
@@ -23,6 +22,7 @@ if __name__ == '__main__':
     
     #Graphs Here
     
+    '''
     #Indexes for the graphs
     ai=1
     zfi=3
@@ -38,4 +38,5 @@ if __name__ == '__main__':
     #os.remove('name_model.pkl') 
     
 
+    '''
     

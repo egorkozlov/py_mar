@@ -56,10 +56,10 @@ def ev_single_meet(setup,V,sown,female,t,trim_lvl=0.001):
         spart = sown*np.exp(sig_a_partner*eps)
         if female: # TODO: this can be done better with keywords
             #TODO vmar_choice here
-            vout = v_mar(setup,V,sown,spart,inds,interpolate=False)[i_vnext]
+            vout = v_mar(setup,V,sown,spart,inds,interpolate=True)[i_vnext]
             
         else:
-            vout = v_mar(setup,V,spart,sown,inds,interpolate=False)[i_vnext]
+            vout = v_mar(setup,V,spart,sown,inds,interpolate=True)[i_vnext]
             
         V_next[:,inds] = vout
         
@@ -96,8 +96,8 @@ def ev_single_meet2(setup,V,sown,female,t,trim_lvl=0.001):
         spart = sown*np.exp(sig_a_partner*eps)
         if female: # TODO: this can be done better with keywords
            
-            voutm,nprm= v_mar2(setup,V,True,sown,spart,inds,interpolate=False)[0:2]
-            voutc,nprc = v_mar2(setup,V,False,sown,spart,inds,interpolate=False)[0:2]
+            voutm,nprm= v_mar2(setup,V,True,sown,spart,inds,interpolate=True)[0:2]
+            voutc,nprc = v_mar2(setup,V,False,sown,spart,inds,interpolate=True)[0:2]
             
             #Cohabitation-Marriage Choice 
             i_mar = (nprm>=nprc) 
@@ -106,8 +106,8 @@ def ev_single_meet2(setup,V,sown,female,t,trim_lvl=0.001):
            
         else:
             
-            voutm,nprm= v_mar2(setup,V,True,spart,sown,inds,interpolate=False)[0:2]
-            voutc,nprc= v_mar2(setup,V,False,spart,sown,inds,interpolate=False)[0:2]
+            voutm,nprm= v_mar2(setup,V,True,spart,sown,inds,interpolate=True)[0:2]
+            voutc,nprc= v_mar2(setup,V,False,spart,sown,inds,interpolate=True)[0:2]
             
             #Cohabitation-Marriage Choice            
             i_mar = (nprm>=nprc)

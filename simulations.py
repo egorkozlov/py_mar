@@ -269,8 +269,8 @@ class Agents:
                 
                 
                 
-                zf_grid = self.setup.exo_grids['Female, single'][t]
-                zm_grid = self.setup.exo_grids['Male, single'][t]
+                zf_grid = self.setup.exo_grids['Female, single'][t+1]
+                zm_grid = self.setup.exo_grids['Male, single'][t+1]
                 
                 
                 

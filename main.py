@@ -25,7 +25,7 @@ if __name__ == '__main__':
     '''
     #Indexes for the graphs
     ai=1
-    zfi=3
+    zfi=2
     zmi=3
     psii=6
     ti=0

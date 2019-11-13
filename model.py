@@ -169,8 +169,8 @@ class Model(object):
         self.solve()
         
         #Simulate the model
-        #self.agents = Agents(self)
-        #self.agents.simulate()
+        self.agents = Agents(self)
+        self.agents.simulate()
         
         
     def graph(self,ai,zfi,zmi,psii,ti,thi):

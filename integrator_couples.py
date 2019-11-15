@@ -7,7 +7,8 @@ This is integrator for couples
 
 import numpy as np
 #from renegotiation import v_last_period_renegotiated, v_renegotiated_loop
-from ren_mar import v_ren,v_ren2
+from ren_mar import v_ren, v_ren2
+from ren_mar_alt import v_ren_new
     
 
 def ev_couple(setup,Vpostren,t,use_sparse=True,return_vren=False):
@@ -17,6 +18,8 @@ def ev_couple(setup,Vpostren,t,use_sparse=True,return_vren=False):
     
     _Vren = v_ren(setup,Vpostren,interpolate=True) # does renegotiation
         
+    
+    
     Vren = {'M':{'V':_Vren[0],'VF':_Vren[1],'VM':_Vren[2]},
             'SF':Vpostren['Female, single'],
             'SM':Vpostren['Male, single']}
@@ -35,13 +38,28 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True,return_vren=False):
     
     
     _Vren = v_ren2(setup,Vpostren,marriage,t,interpolate=True) # does renegotiation
-        
+    
+    
+    _Vren2 = v_ren_new(setup,Vpostren,marriage,t,interpolate=True)['Values']
+    
+    
+    
     Vren = {'M':{'V':_Vren[0],'VF':_Vren[1],'VM':_Vren[2]},
+            'SF':Vpostren['Female, single'],
+            'SM':Vpostren['Male, single']}
+    
+    
+    
+    Vren2 = {'M':{'V':_Vren2[0],'VF':_Vren2[1],'VM':_Vren2[2]},
             'SF':Vpostren['Female, single'],
             'SM':Vpostren['Male, single']}
     
     # accounts for exogenous transitions
     EV, EVf, EVm = ev_couple_exo(setup,Vren['M'],t,use_sparse)
+    EV2, EVf2, EVm2 = ev_couple_exo(setup,Vren2['M'],t,use_sparse)
+    
+    
+    print('Max diff in EV = {}'.format(np.max(np.abs(EV2-EV))))
     
     if return_vren:
         return EV, EVf, EVm, Vren

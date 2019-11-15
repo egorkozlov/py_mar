@@ -12,6 +12,7 @@ from scipy.stats import norm
 import sobol_seq
 from collections import namedtuple
 from optimizers import build_s_grid, sgrid_on_agrid
+from gridvec import VecOnGrid
 
 from scipy import sparse
 
@@ -20,9 +21,9 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()        
-        p['T']         = 11
-        p['sig_zf_0']  = 0.25
-        p['sig_zf']    = 0.25
+        p['T']         = 6
+        p['sig_zf_0']  = 0.15
+        p['sig_zf']    = 0.05
         p['n_zf']      = 5
         p['sig_zm_0']  = 0.25
         p['sig_zm']    = 0.25
@@ -122,27 +123,27 @@ class ModelSetup(object):
         self.na = 60
         self.amin = 0
         self.amax = 20
-        self.agrid = np.linspace(self.amin,self.amax,self.na)
+        #self.agrid_c = np.linspace(self.amin,self.amax,self.na)
         tune=1.5
-        self.agrid = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
+        self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         
         # this builds finer grid for potential savings
         s_between = 10 # default numer of points between poitns on agrid
         s_da_min = 0.001 # minimal step (does not create more points)
         s_da_max = 0.1 # maximal step (creates more if not enough)
         
-        self.sgrid = build_s_grid(self.agrid,s_between,s_da_min,s_da_max)
-        self.s_ind, self.s_p = sgrid_on_agrid(self.sgrid,self.agrid)
+        self.sgrid_c = build_s_grid(self.agrid_c,s_between,s_da_min,s_da_max)
+        self.s_ind_c, self.s_p_c = sgrid_on_agrid(self.sgrid_c,self.agrid_c)
         
         #Grid Single
-        self.amins = 0
-        self.amaxs = self.amax/2.0
-        self.agrids = np.linspace(self.amins,self.amaxs,self.na)
-        tunes=1.5
-        self.agrids = np.geomspace(self.amins+tunes,self.amaxs+tunes,num=self.na)-tunes
+        self.amin_s = 0
+        self.amax_s = self.amax/2.0
+        self.agrid_s = np.linspace(self.amin_s,self.amax_s,self.na)
+        tune_s=1.5
+        self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
         
-        self.sgrids = build_s_grid(self.agrids,s_between,s_da_min,s_da_max)
-        self.s_inds, self.s_ps = sgrid_on_agrid(self.sgrids,self.agrids)
+        self.sgrid_s = build_s_grid(self.agrid_s,s_between,s_da_min,s_da_max)
+        self.s_ind_s, self.s_p_s = sgrid_on_agrid(self.sgrid_s,self.agrid_s)
         
 
 
@@ -151,6 +152,30 @@ class ModelSetup(object):
         self.thetamin = 0.01
         self.thetamax = 0.99
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta)
+        
+        
+        # construct finer grid for bargaining
+        ntheta_fine = 10*self.ntheta # actual number may be a bit bigger
+        self.thetagrid_fine = np.unique(np.concatenate( (self.thetagrid,np.linspace(self.thetamin,self.thetamax,ntheta_fine)) ))
+        self.ntheta_fine = self.thetagrid_fine.size
+        
+        i_orig = list()
+        
+        for theta in self.thetagrid:
+            assert theta in self.thetagrid_fine
+            i_orig.append(np.where(self.thetagrid_fine==theta)[0])
+            
+        assert len(i_orig) == self.thetagrid.size
+        # allows to recover original gird points on the fine grid        
+        self.theta_orig_on_fine = np.array(i_orig).flatten()
+        self.v_thetagrid_fine = VecOnGrid(self.thetagrid,self.thetagrid_fine)
+        # precomputed object for interpolation
+
+            
+        
+        
+        
+
 
         self.exo_grids = {'Female, single':exogrid['zf_t'],
                           'Male, single':exogrid['zm_t'],
@@ -325,7 +350,7 @@ class ModelSetup(object):
 
     def vm_last_grid(self,return_cs=False):
         # this returns value of vm on the grid corresponding to vm
-        s_in = self.agrid[:,None,None]
+        s_in = self.agrid_c[:,None,None]
         zm_in = self.exogrid.all_t[-1][:,1][None,:,None]
         zf_in = self.exogrid.all_t[-1][:,0][None,:,None]
         psi_in = self.exogrid.all_t[-1][:,2][None,:,None]
@@ -346,7 +371,7 @@ class ModelSetup(object):
     
     def vs_last_grid(self,female,return_cs=False):
         # this returns value of vs on the grid corresponding to vs
-        s_in = self.agrids[:,None]
+        s_in = self.agrid_s[:,None]
         z_in = self.exogrid.zf_t[-1][None,:] if female else self.exogrid.zm_t[-1][None,:]
         return self.vs_last(s_in,z_in,return_cs)
         

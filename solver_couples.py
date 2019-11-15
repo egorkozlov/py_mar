@@ -23,9 +23,9 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
     
     if verbose: start = default_timer()
     
-    agrid = setup.agrid
-    sgrid = setup.sgrid
-    ind, p = setup.s_ind, setup.s_p
+    agrid = setup.agrid_c
+    sgrid = setup.sgrid_c
+    ind, p = setup.s_ind_c, setup.s_p_c
     
     EV = EV_tuple[0]
     

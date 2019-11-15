@@ -106,7 +106,7 @@ class Model(object):
             
             if desc == 'Female, single' or desc == 'Male, single':
                 female = (desc == 'Female, single')
-                EV = ev_single(setup,V_next,setup.agrids,female,t)
+                EV = ev_single(setup,V_next,setup.agrid_s,female,t)
             elif desc == 'Couple, M':
                 EV = ev_couple_m_c(setup,V_next,t,True)
             elif desc == 'Couple, C':

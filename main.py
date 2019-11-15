@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Sep 17 19:14:08 2019
+aCreated on Tue Sep 17 19:14:08 2019
 
 @author: Egor Kozlov
 """

@@ -17,12 +17,12 @@ if __name__ == '__main__':
     #Solve the model
     mdl = Model(iterator_name='default-timed',
                 divorce_costs={'unilateral_divorce':True})
-    mdl.solve_sim()
+    gassets,iexo,state,gtheta=mdl.solve_sim()
     mdl.time_statistics()
     
     #Graphs Here
     
-    '''
+    
     #Indexes for the graphs
     ai=1
     zfi=3
@@ -38,5 +38,5 @@ if __name__ == '__main__':
     #os.remove('name_model.pkl') 
     
 
-    '''
+    
     

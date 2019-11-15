@@ -96,19 +96,29 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
     
     # finally obtain value functions of partners
     uf, um = setup.u_part(c_opt,theta_val)
-    EVf_all, EVm_all  = (get_EVM(ind,p,x) for x in (EV_fem, EV_mal))
+    EVf_all, EVm_all,EV_all  = (get_EVM(ind,p,x) for x in (EV_fem, EV_mal,EV))
     V_fem = uf + psi_r + beta*np.take_along_axis(EVf_all,i_opt,0)
     V_mal = um + psi_r + beta*np.take_along_axis(EVm_all,i_opt,0)
     
-    #TODO check below for monotonicity
+    #TODO check below for monotonicity: it is driven by uf!!
 #    psi_broadcast = np.broadcast_to(psi_r,V_fem.shape)
 #    d_psi = np.diff(psi_broadcast,axis=1)
 #    d_Vfem = np.diff(V_fem,axis=1)
 #    npsi = setup.pars['n_psi']
 #    nexo = setup.pars['nexo']
-  #  for i in range(round(nexo/npsi)):
- #    assert np.all(np.diff(V_couple[:,i:(npsi+i*npsi),:],axis=1)>0)
-    #assert np.allclose(np.sign(d_psi),np.sign(d_Vfem))
+#    for i in range(round(nexo)):
+#        for j in range(len(agrid)):
+#            for h in range(len(setup.thetagrid)):
+#       
+#                if not np.all(np.diff(V_couple[j,(i*npsi):(npsi+i*npsi),h],axis=0)>0):
+#                    print('Time utility of Female is {}'.format(uf[j,(i*npsi):(npsi+i*npsi),h]+psi_r[j,(i*npsi):(npsi+i*npsi),h]))
+#                    print('Couple consumption is {}'.format(c_opt[j,(i*npsi):(npsi+i*npsi),h]))
+#                    print('Female Expected Value is {}'.format(np.take_along_axis(EVf_all,i_opt,0)[j,(i*npsi):(npsi+i*npsi),h]))
+#                    print('Male expected value is {}'.format(np.take_along_axis(EVm_all,i_opt,0)[j,(i*npsi):(npsi+i*npsi),h]))
+#                    print('Couple value is {}'.format(V_couple[j,(i*npsi):(npsi+i*npsi),h]))
+#                    assert np.all(np.diff(V_couple[j,(i*npsi):(npsi+i*npsi),h],axis=0)>0)
+                    
+                    
     
     # consistency check
     EV_all = get_EVM(ind,p,EV)

@@ -38,6 +38,7 @@ class Agents:
         # initialize assets
         self.gassets = [VecOnGrid(self.setup.agrid,np.zeros(N,dtype=np.float32),trim=True)
                             for _ in range(T)] 
+        
         # initialize theta
         self.gtheta = [VecOnGrid(self.setup.thetagrid,-1*np.ones(N,dtype=np.float32),trim=True)
                             for _ in range(T)]
@@ -61,14 +62,18 @@ class Agents:
     
     def simulate(self):
         
+        #Create Variables that stores varibles of interest
+        
+        
         for t in range(self.T-1):
-            
+         
             self.anext(t)            
             self.iexonext(t)            
             self.statenext(t)
             self.timer('Simulations, iteration')
         
         
+        return self.gassets,self.iexo,self.state,self.gtheta
     def anext(self,t):
         
         for ist, sname in enumerate(self.state_codes):
@@ -76,6 +81,7 @@ class Agents:
             is_state = (self.state[:,t]==ist)            
             use_theta = self.has_theta[ist]            
             nst = np.sum(is_state)
+            
             if nst==0:
                 continue
             
@@ -119,11 +125,14 @@ class Agents:
                 
                 '''
                 
-                
+               
                 
             assert np.all(anext >= 0)
             
             self.gassets[t+1].update(ind,anext) 
+            
+      
+            
             
             
     def iexonext(self,t):

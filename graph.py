@@ -8,6 +8,7 @@ This file creates Graphs based on Policy and Value Functions
 import numpy as np
 import dill as pickle
 import matplotlib.pyplot as plt 
+from ren_mar import v_mar2, v_ren2
 import gzip
 
 
@@ -26,11 +27,56 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
     zfg = setup.exogrid.zf_t[ti]
     zmg = setup.exogrid.zm_t[ti]
     psig = setup.exogrid.psi_t[ti]
+    vtoutf=np.zeros([T,len(setup.agrids),len(psig)])
+    thetf=np.zeros([T,len(setup.agrids),len(psig)])
+    thetf_c=np.zeros([T,len(setup.agrids),len(psig)])
+    vtoutm=np.zeros([T,len(setup.agrids),len(psig)])
+    thetm=np.zeros([T,len(setup.agrids),len(psig)])
+    thetm_c=np.zeros([T,len(setup.agrids),len(psig)])
+    vtoutf_c=np.zeros([T,len(setup.agrids),len(psig)])
+    vtoutm_c=np.zeros([T,len(setup.agrids),len(psig)])
+    inds=np.zeros(len(psig))
+    
+  
+    # Here I get the renegotiated values
+    for t in range(T):
+        for i in range(len(psig)):
+        
+           
+            #p_mat = setup.part_mats['Female, single'][t].T 
+            #inds = np.where( np.any(p_mat>-1,axis=1 ) )[0]
+            inds[i]=setup.all_indices((zfi,zmi,i))[0]
+        inds=np.array(inds,np.int64)
+        # cohabitation
+        (vf_c, vm_c, iscoh, tht_c, s_), nbs_c = v_mar2(setup,Packed[t],False,setup.agrids,setup.agrids,inds,combine=True,return_all=True)
+        # marriage
+        (vf_m, vm_m, ismar, tht_m, ss_), nbs_m = v_mar2(setup,Packed[t],True,setup.agrids,setup.agrids,inds,combine=True,return_all=True)
+    
+        #Cohabitation-Marriage Choice 
+        i_mar = (nbs_m>=nbs_c) 
+            
+        vout_ft = i_mar*vf_m + (1.0-i_mar)*vf_c
+        thet_ft = i_mar*tht_m + (1.0-i_mar)*tht_c
+        vout_mt = i_mar*vm_m + (1.0-i_mar)*vm_c
+ 
+        
+        vtoutf[t,:,:]=vout_ft
+        vtoutf_c[t,:,:]=vf_c
+        thetf[t,:,:]=thet_ft
+        thetf_c[t,:,:]=tht_c
+        vtoutm[t,:,:]=vout_mt
+        vtoutm_c[t,:,:]=vm_c
+        #thetm[t,:]=1.0-thet_ft
+        #thetm_c[t,:]=1.0-tht_c
+            
+        
+        
+
    
     Vfs,cfs,sfs=np.empty([3,len(agrids), len(zfg),T])
     Vms,cms,sms=np.empty([3,len(agrids), len(zmg),T])
-    Vm,Vfm,Vmm,cm,sm=np.empty([5,len(agrid), len(zfg),len(zmg),len(psig),T,setup.ntheta])
-    Vc,Vfc,Vmc,cc,sc=np.empty([5,len(agrid), len(zfg),len(zmg),len(psig),T,setup.ntheta])
+    Vm,Vfm,Vmm,cm,sm=np.empty([5,len(agrid), len(zfg),len(zmg),len(psig),T,setup.ntheta])# RVfm,RVmm,thfm,thmm,
+    Vc,Vfc,Vmc,cc,sc=np.empty([5,len(agrid), len(zfg),len(zmg),len(psig),T,setup.ntheta])#RVfc,RVmc,thfc,thmc,
     
     #Single Women
     for t in range(T):
@@ -62,6 +108,10 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
                 Vfm[j,zf,zm,psi,t,]=Packed[t]['Couple, M']['VF'][j,i,]
                 cm[j,zf,zm,psi,t,]=Packed[t]['Couple, M']['c'][j,i,]
                 sm[j,zf,zm,psi,t,]=Packed[t]['Couple, M']['s'][j,i,]
+                #RVmm[j,zf,zm,psi,t]=vtoutm[t][j,i]
+                #RVfm[j,zf,zm,psi,t]=vtoutf[t][j,i]
+                #thmm[j,zf,zm,psi,t]=thetm[t][j,i]
+                #thfm[j,zf,zm,psi,t]=thetf[t][j,i]
                 
                 
                 #Cohabitation
@@ -70,6 +120,10 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
                 Vfc[j,zf,zm,psi,t,]=Packed[t]['Couple, C']['VF'][j,i,]
                 cc[j,zf,zm,psi,t,]=Packed[t]['Couple, C']['c'][j,i,]
                 sc[j,zf,zm,psi,t,]=Packed[t]['Couple, C']['s'][j,i,]
+                #RVmc[j,zf,zm,psi,t]=vtoutm_c[t][j,i]
+                #RVfc[j,zf,zm,psi,t]=vtoutf_c[t][j,i]
+                #thmc[j,zf,zm,psi,t]=thetm_c[t][j,i]
+                #thfc[j,zf,zm,psi,t]=thetf_c[t][j,i]
     
     
     #########################################
@@ -79,10 +133,10 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
     #Account for Single-Marriage and Single-Cohabit thresholds
     trem=np.array([100.0])
     trec=np.array([100.0])
-    for i in range(len(psig)):
-        if((Vfm[ai,zfi,zmi,i,ti,thi]-Vfs[ai,zfi,ti]>0.001) and (Vmm[ai,zfi,zmi,i,ti,thi]-Vms[ai,zmi,ti]>0.001) and trem>50.0):
+    for i in reversed(range(len(psig))):
+        if(not np.isnan(thetf[ti,ai,i])):
             trem=psig[i]
-        if((Vfc[ai,zfi,zmi,i,ti,thi]-Vfs[ai,zfi,ti]>0.001) and (Vmc[ai,zfi,zmi,i,ti,thi]-Vms[ai,zmi,ti]>0.001) and trec>50.0):
+        if(not np.isnan(thetf_c[ti,ai,i])):
             trec=psig[i]
             
     tre=min(trem,trec)
@@ -258,6 +312,62 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
     legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
     plt.xlabel('Time')
     plt.ylabel('Marriage Surplus wrt Cohab.')
+    
+    ##########################################
+    # Rebargained Surplus
+    ########################################## 
+    
+    #Generate Marriage Surplus wrt cohabitation + Value Functions
+    surpM = [None] * len(psig)
+    surpW = [None] * len(psig)
+   
+    for i in range(len(psig)):
+        surpM[i]=max(vtoutm[ti,ai,i]-vtoutm_c[ti,ai,i],0.0)
+        surpW[i]=max(vtoutf[ti,ai,i]-vtoutf_c[ti,ai,i],0.0)
+
+    
+    #Graph for the Surplus
+    zero = np.array([0.0] * psig)
+    fig9 = plt.figure()
+    plt.plot(psig, zero,'k',linewidth=1)
+    plt.plot(psig, surpM,'b',linewidth=1.5, label='Man')
+    plt.plot(psig, surpW,'r',linewidth=1.5, label='Women')
+    plt.axvline(x=tre, color='b', linestyle='--', label='Treshold Single-Couple')
+    #plt.axvline(x=treb, color='b', label='Tresh Bilateral')
+    #plt.axvline(x=treu, color='r', linestyle='--', label='Tresh Unilateral')
+    plt.ylim(-0.1*max(max(surpM),max(surpW),max(surpM),max(surpW)),1.1*max(max(surpM),max(surpW)))
+    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    plt.xlabel('Love')
+    plt.ylabel('Marriage Surplus wrt Cohab.')
+    print(333,surpM,surpW)
+    
+    ##########################################
+    # Initial thetas
+    ########################################## 
+    
+    #Generate Marriage Surplus wrt cohabitation + Value Functions
+    surpM = [None] * len(psig)
+    surpW = [None] * len(psig)
+   
+    for i in range(len(psig)):
+        surpM[i]=max(vtoutm[ti,ai,i]-vtoutm_c[ti,ai,i],0.0)
+        surpW[i]=max(vtoutf[ti,ai,i]-vtoutf_c[ti,ai,i],0.0)
+
+    
+    #Graph for the Surplus
+    zero = np.array([0.0] * psig)
+    fig9 = plt.figure()
+    plt.plot(psig, zero,'k',linewidth=1)
+    plt.plot(psig,  thetf[ti,ai,0:len(psig)],'b',linewidth=1.5, label='Theta Marriage')
+    plt.plot(psig,  thetf_c[ti,ai,0:len(psig)],'r', linestyle='--',linewidth=1.5, label='Theta Cohabitation')
+    plt.axvline(x=tre, color='k', linestyle='--', label='Treshold Single-Couple')
+    #plt.axvline(x=treb, color='b', label='Tresh Bilateral')
+    #plt.axvline(x=treu, color='r', linestyle='--', label='Tresh Unilateral')
+    #plt.ylim(-0.1*max(max(surpM),max(surpW),max(surpM),max(surpW)),1.1*max(max(surpM),max(surpW)))
+    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    plt.xlabel('Love')
+    plt.ylabel('Theta')
+    print(444,thetf[ti,ai,1:len(psig)],thetf_c[ti,ai,1:len(psig)])
     
     ##########################################
     # Consumption over the Life Cycle

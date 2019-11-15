@@ -17,10 +17,10 @@ from timeit import default_timer
 import gzip
 
 
-
 #if system() != 'Darwin':
 from setup import ModelSetup
 from graph import graphs
+from moments import moment
 from simulations import Agents
 from solver_couples import v_iter_couple
 from solver_singles import v_iter_single
@@ -170,8 +170,11 @@ class Model(object):
         
         #Simulate the model
         self.agents = Agents(self)
-        self.agents.simulate()
+        gassets,iexo,state,gtheta=self.agents.simulate()
+        moment(self.setup,gassets,iexo,state,gtheta,True)
         
+        
+        return gassets,iexo,state,gtheta
         
     def graph(self,ai,zfi,zmi,psii,ti,thi):
         

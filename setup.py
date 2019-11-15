@@ -20,25 +20,25 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()        
-        p['T']         = 10
-        p['sig_zf_0']  = 0.15
-        p['sig_zf']    = 0.05
+        p['T']         = 11
+        p['sig_zf_0']  = 0.25
+        p['sig_zf']    = 0.25
         p['n_zf']      = 5
-        p['sig_zm_0']  = 0.15
-        p['sig_zm']    = 0.05
+        p['sig_zm_0']  = 0.25
+        p['sig_zm']    = 0.25
         p['n_zm']      = 5
-        p['sigma_psi_init'] = 0.24
-        p['sigma_psi']   = 0.06
+        p['sigma_psi_init'] = 0.28
+        p['sigma_psi']   = 0.11
         p['R'] = 1.2
         p['n_psi']     = 12
         p['beta'] = 0.95
         p['A'] = 1.2 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
-        p['couple_rts'] = 0.0       
+        p['couple_rts'] = 0.4      
         p['sig_partner_a'] = 0.1
         p['sig_partner_z'] = 0.2
         p['m_bargaining_weight'] = 0.5
-        p['pmeet'] = 0.5
+        p['pmeet'] = 0.4
         
         
         
@@ -69,7 +69,7 @@ class ModelSetup(object):
         
         
         #Cost of Divorce
-        divorce_costs=DivorceCosts(unilateral_divorce=True,u_lost_m=0.05,u_lost_f=0.05)
+        divorce_costs=DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.02,u_lost_f=0.02,eq_split=0.0)
         if divorce_costs == 'Default':
             # by default the costs are set in the bottom
             self.div_costs = DivorceCosts()
@@ -83,7 +83,7 @@ class ModelSetup(object):
                 self.div_costs = divorce_costs
                 
         #Cost of Separation
-        separation_costs=DivorceCosts(unilateral_divorce=True,u_lost_m=0.0,u_lost_f=0.0)
+        separation_costs=DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.00,u_lost_f=0.00)
         if separation_costs == 'Default':
             # by default the costs are set in the bottom
             self.sep_costs = DivorceCosts()
@@ -375,7 +375,7 @@ class DivorceCosts(object):
     # it aims to be fully flexible
     def __init__(self, 
                  unilateral_divorce=True, # whether to allow for unilateral divorce
-                 assets_kept = 0.9, # how many assets of couple are splited (the rest disappears)
+                 assets_kept = 1.0, # how many assets of couple are splited (the rest disappears)
                  u_lost_m=0.0,u_lost_f=0.0, # pure utility losses b/c of divorce
                  money_lost_m=0.0,money_lost_f=0.0, # pure money (asset) losses b/c of divorce
                  money_lost_m_ez=0.0,money_lost_f_ez=0.0, # money losses proportional to exp(z) b/c of divorce

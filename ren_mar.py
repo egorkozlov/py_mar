@@ -260,7 +260,7 @@ def v_mar(setup,V,sf,sm,ind_or_inds,interpolate=True,return_all=False,combine=Tr
     return v_newmar_core(*outs,interpolate=interpolate,gamma=gamma,return_all=return_all)
 
 
-def v_mar2(setup,V,marriage,sf,sm,ind_or_inds,interpolate=True,return_all=False,combine=True):
+def v_mar2(setup,V,marriage,sf,sm,ind_or_inds,*,interpolate=True,return_all=False,combine=True):
     # this returns value functions for couple that entered the last period with
     # (s,Z,theta) from the grid and is allowed to renegotiate them or breakup
     
@@ -290,7 +290,7 @@ def v_mar2(setup,V,marriage,sf,sm,ind_or_inds,interpolate=True,return_all=False,
     
     # substantial part
     ind, izf, izm, ipsi = setup.all_indices(ind_or_inds)
-    
+   
     if not combine:
         assert ind.size == sf.size == sm.size, 'different sizes?'
     
@@ -322,7 +322,7 @@ def v_mar2(setup,V,marriage,sf,sm,ind_or_inds,interpolate=True,return_all=False,
     return outcome, (outcome[0]-Vfs)**(1.0-gamma)*(outcome[1]-Vms)**gamma
     
 
-def v_prepare(VF_yes,VM_yes,VC_yes,VF_no,VM_no,thetagrid,interpolate=False):
+def v_prepare(VF_yes,VM_yes,VC_yes,VF_no,VM_no,thetagrid,interpolate=True):
     # this takes value functions of females, males and couples in case of being 
     # together and divorce and looks for their values around the points where
     # outside options are hit (VF_t,VM_t,V_t), positions between gridpoints 
@@ -652,7 +652,7 @@ def v_ren_core(VF_t,VM_t,VC_t,th_t,kr_t,N_t,I_t,yes_t,no_t,BD_t,together,thetagr
         return V_out, VF_out, VM_out, th_out, tht_fem, tht_mal
 
 
-def v_newmar_core(VF_t,VM_t,VC_t,th_t,kr_t,N_t,I_t,yes_t,no_t,BD_t,together,thetagrid,shp,gamma=0.5,interpolate=False,return_all=False):
+def v_newmar_core(VF_t,VM_t,VC_t,th_t,kr_t,N_t,I_t,yes_t,no_t,BD_t,together,thetagrid,shp,gamma=0.5,interpolate=True,return_all=False):
     # this takes output of v_prepare and computes value function that is obtained
     # in new marriage. The result is of the same shape as VF_no or VM_no
     # 
@@ -799,7 +799,7 @@ def max_nbs_mat(sf,sm,gamma):
     kf = sf_bef / (-dsf)
     km = sm_bef / (neg_dsm)
     
-    assert np.all(dsf>0) and np.all(neg_dsm>0),     'check monotonicity'
+#    assert np.all(dsf>0) and np.all(neg_dsm>0),     'check monotonicity'
     
     
     i_both_pos_now = (sf_now>0) & (sm_now>0)

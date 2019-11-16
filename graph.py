@@ -21,8 +21,8 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
     # Unpack Stuff to Make it easier to Visualize
     ################################################
     T = setup.pars['T']
-    agrid = setup.agrid
-    agrids = setup.agrids
+    agrid = setup.agrid_c
+    agrids = setup.agrid_s
     zfg = setup.exogrid.zf_t[ti]
     zmg = setup.exogrid.zm_t[ti]
     psig = setup.exogrid.psi_t[ti]

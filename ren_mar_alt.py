@@ -170,6 +170,20 @@ def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
     
     
     
+    vy, vfy, vmy = (tgf.apply(x,axis=sf.ndim-1) for x in (v_y,vf_y,vm_y) )
+    vfn = vf_n[...,None]
+    vmn = vm_n[...,None]
+    thtgrid = setup.v_thetagrid_fine.val
+    
+    '''
+    vout_tst, vfout_tst, vmout_tst, thetaout_tst = \
+            ren_loop(vy,vfy,vmy,vfn,vmn,thtgrid)
+    '''
+    
+    
+    
+    
+    
     
     
     
@@ -273,12 +287,85 @@ def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
     assert np.all(theta_out[yes,:] > 0)
     assert not np.any(yes_nsc), 'Single crossing does not hold!' # FIXME: remove this later
     
+    '''
+    v_out_check = vout_tst[:,:,setup.theta_orig_on_fine]#, vfout_tst, vmout_tst
+    vf_out_check = vfout_tst[:,:,setup.theta_orig_on_fine]#, vfout_tst, vmout_tst
+    vm_out_check = vmout_tst[:,:,setup.theta_orig_on_fine]#, vfout_tst, vmout_tst
+   
     
+    print('Max diff v = {}'.format(np.max(np.abs(v_out_check-v_out))))
+    print('Max diff vf = {}'.format(np.max(np.abs(vf_out_check-vf_out))))
+    print('Max diff vm = {}'.format(np.max(np.abs(vm_out_check-vm_out))))
+    '''
     
     return {'Decision': yes, 'thetas': (theta_out, i_theta_out, wn_theta_out),
-                'Values': (v_out, vf_out,vm_out)}
+                'Values': (v_out, vf_out, vm_out)}
 
 
+@njit
+def ren_loop(vy,vfy,vmy,vfn,vmn,thtgrid):
+    print('hi!')
+
+    sf = vfy - vfn
+    sm = vmy - vmn
+    
+    na, nexo, nt = vy.shape
+    
+    vout = vy.copy()
+    vfout = vfy.copy()
+    vmout = vmy.copy()
+    
+    thetaout = -1*np.zeros(vout.shape,dtype=np.float32)
+    
+    for ia in range(na):
+        for iexo in range(nexo):
+            sf_i = sf[ia,iexo,:]
+            sm_i = sm[ia,iexo,:]
+            
+            both = (sf_i >= 0) & (sm_i >= 0)
+            
+            
+            if not np.any(both):
+                # divorce
+                vfout[ia,iexo,:] = vfn[ia,iexo,0]
+                vmout[ia,iexo,:] = vmn[ia,iexo,0]
+                for itheta in range(nt):
+                    th = thtgrid[itheta]
+                    vout[ia,iexo,itheta] = th*vfn[ia,iexo,0] + (1-th)*vmn[ia,iexo,0]
+            
+            else:
+                # renegotiate
+                
+                numbers = np.nonzero(both)[0]
+                
+                for itheta in range(nt):
+                    if both[itheta]:
+                        # status quo
+                        thetaout[ia,iexo,itheta] = thtgrid[itheta]
+                        continue
+                    # if not both
+                    in_closest = np.argmin(np.abs(numbers - itheta))
+                    i_closest = numbers[in_closest]
+                    thetaout[ia,iexo,itheta] = thtgrid[i_closest]
+                    vout[ia,iexo,itheta] = vy[ia,iexo,i_closest]
+                    vfout[ia,iexo,itheta] = vfy[ia,iexo,i_closest]
+                    vmout[ia,iexo,itheta] = vmy[ia,iexo,i_closest]
+                    
+    
+    return vout, vfout, vmout, thetaout
+                    
+                    
+                    
+                    
+            
+            
+            
+            
+            
+    
+
+
+ 
 
 
 def ind_sc(i_pos):

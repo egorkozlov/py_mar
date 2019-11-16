@@ -17,7 +17,9 @@ if __name__ == '__main__':
     #Solve the model
     mdl = Model(iterator_name='default-timed',
                 divorce_costs={'unilateral_divorce':True})
-    gassets,iexo,state,gtheta=mdl.solve_sim()
+    #gassets,iexo,state,gtheta=mdl.solve_sim()
+    mdl.solve_sim()
+    gassets, iexo, state, gtheta = mdl.agents.gsavings_c, mdl.agents.iexo, mdl.agents.state, mdl.agents.gtheta
     mdl.time_statistics()
     
     #Graphs Here

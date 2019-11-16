@@ -170,11 +170,11 @@ class Model(object):
         
         #Simulate the model
         self.agents = Agents(self)
-        gassets,iexo,state,gtheta=self.agents.simulate()
-        moment(self.setup,gassets,iexo,state,gtheta,True)
+        self.agents.simulate()
+        #moment(self.setup,gassets,iexo,state,gtheta,True)
         
         
-        return gassets,iexo,state,gtheta
+        #return gassets,iexo,state,gtheta
         
     def graph(self,ai,zfi,zmi,psii,ti,thi):
         

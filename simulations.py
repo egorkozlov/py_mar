@@ -36,10 +36,13 @@ class Agents:
         
         
         # initialize assets
-        self.gassets_s = [VecOnGrid(self.setup.agrid_s,np.zeros(N,dtype=np.float32),trim=True)
+        
+        self.iassets = np.zeros((N,T),np.int32)
+        
+        self.gsavings_s = [VecOnGrid(self.setup.agrid_s,np.zeros(N,dtype=np.float32),trim=True)
                             for _ in range(T)] 
         
-        self.gassets_c = [VecOnGrid(self.setup.agrid_c,np.zeros(N,dtype=np.float32),trim=True)
+        self.gsavings_c = [VecOnGrid(self.setup.agrid_c,np.zeros(N,dtype=np.float32),trim=True)
                             for _ in range(T)] 
         
         # initialize theta
@@ -70,14 +73,35 @@ class Agents:
         
         for t in range(self.T-1):
          
-            self.anext(t)            
+            self.snext(t)            
             self.iexonext(t)            
             self.statenext(t)
+            self.anext(t)
             self.timer('Simulations, iteration')
         
         
-        return self.gassets,self.iexo,self.state,self.gtheta
+        #return self.gsavings, self.iexo, self.state,self.gtheta
+    
     def anext(self,t):
+        for ist, sname in enumerate(self.state_codes):
+            is_state = (self.state[:,t]==ist)            
+            use_theta = self.has_theta[ist]            
+            nst = np.sum(is_state)
+            
+            if nst==0:
+                continue
+            
+            ind = np.where(is_state)[0]
+            
+            
+            if not use_theta:
+                self.iassets[ind,t+1] = self.gsavings_s[t+1].roll()[ind]
+            else:
+                self.iassets[ind,t+1] = self.gsavings_c[t+1].roll()[ind]
+    
+    
+    def snext(self,t):
+        # finds savings (potenitally off-grid)
         
         for ist, sname in enumerate(self.state_codes):
             
@@ -93,8 +117,7 @@ class Agents:
             if not use_theta:
                 
                 # apply for singles
-                anext = self.gassets_s[t].apply( self.V[t][sname]['s'], take = [(1,self.iexo[ind,t])], 
-                            pick = ind, reshape_i = False)
+                anext = self.V[t][sname]['s'][self.iassets[ind,t],self.iexo[ind,t]]
                 
             else:
                 
@@ -102,43 +125,17 @@ class Agents:
                 # function apply_2dim is experimental but I checked it at this setup
                 
                 # apply for couples
-                anext = self.gassets_c[t].apply_2dim(self.V[t][sname]['s'],
-                                                     apply_first=self.gtheta[t],
-                                                     axis_first=2,
-                                                     axis_this=0,
-                                                     take = [(1,self.iexo[ind,t])],
-                                                     pick = ind,
-                                                     reshape_i = False
-                                                    )
                 
-                
-                '''
-                # This is a consistency check about what if we interpolate
-                # in different order
-                
-                anext_alt = self.gtheta[t].apply_2dim(self.V[t][sname]['s'],
-                                                     apply_first=self.gassets[t],
-                                                     axis_first=0,
-                                                     axis_this=2,
-                                                     take = [(1,self.iexo[ind,t])],
-                                                     pick = ind,
-                                                     reshape_i = False
-                                                    )
-                
-                
-                assert np.allclose(anext,anext_alt)
-                
-                '''
-                
-               
-                
+                anext = self.gtheta[t].apply(self.V[t][sname]['s'],axis=2,
+                                       take = [(0,self.iassets[ind,t]),(1,self.iexo[ind,t])], 
+                                       pick = ind, reshape_i = False)
                 
                 
                 
             assert np.all(anext >= 0)
             
-            self.gassets_c[t+1].update(ind,anext) 
-            self.gassets_s[t+1].update(ind,anext) 
+            self.gsavings_c[t+1].update(ind,anext) 
+            self.gsavings_s[t+1].update(ind,anext) 
             
       
             
@@ -196,7 +193,7 @@ class Agents:
                 ic_out = mc_simulate(self.iexo[ind,t],pmat,shocks=None)
                 iall, izf, izm, ipsi = setup.all_indices(ic_out)
                 
-                sf = self.gassets_s[t+1].val[ind] # note that timing is slightly inconsistent
+                sf = self.gsavings_s[t+1].val[ind] # note that timing is slightly inconsistent
                 # we use iexo from t and savings from t+1
                 # TODO: fix the seed
                 
@@ -246,16 +243,16 @@ class Agents:
                     self.gtheta[t+1].update(ind[i_agree_mar],tht_m[i_agree_mar])
                     self.iexo[ind[i_agree_mar],t+1] = iall[i_agree_mar]
                     self.state[ind[i_agree_mar],t+1] = self.state_codes['Couple, M']
-                    self.gassets_s[t+1].update(ind[i_agree_mar],sf[i_agree_mar] + sm[i_agree_mar])
-                    self.gassets_c[t+1].update(ind[i_agree_mar],sf[i_agree_mar] + sm[i_agree_mar])
+                    self.gsavings_s[t+1].update(ind[i_agree_mar],sf[i_agree_mar] + sm[i_agree_mar])
+                    self.gsavings_c[t+1].update(ind[i_agree_mar],sf[i_agree_mar] + sm[i_agree_mar])
                     
                 if np.any(i_agree_coh):
                     
                     self.gtheta[t+1].update(ind[i_agree_coh],tht_c[i_agree_coh])
                     self.iexo[ind[i_agree_coh],t+1] = iall[i_agree_coh]
                     self.state[ind[i_agree_coh],t+1] = self.state_codes['Couple, C']
-                    self.gassets_s[t+1].update(ind[i_agree_coh],sf[i_agree_coh] + sm[i_agree_coh])
-                    self.gassets_c[t+1].update(ind[i_agree_coh],sf[i_agree_coh] + sm[i_agree_coh])
+                    self.gsavings_s[t+1].update(ind[i_agree_coh],sf[i_agree_coh] + sm[i_agree_coh])
+                    self.gsavings_c[t+1].update(ind[i_agree_coh],sf[i_agree_coh] + sm[i_agree_coh])
                     
                 
                     
@@ -271,7 +268,7 @@ class Agents:
                 self.gtheta[t+1].update(ind,thetanow)
                 
                 # initiate renegotiation
-                sc = self.gassets_c[t+1].val[ind]
+                sc = self.gsavings_c[t+1].val[ind]
                 iall, izf, izm, ipsi = self.setup.all_indices(self.iexo[ind,t+1])
                 
                 v, vf, vm, thetaout, tht_fem, tht_mal = v_ren2(setup,self.V[t+1],True,t,sc=sc,ind_or_inds=iall,combine=False,return_all=True)
@@ -308,8 +305,8 @@ class Agents:
                     
                     sf = share_f*sc[i_div]
                     
-                    self.gassets_c[t+1].update(ind[i_div],sf)   
-                    self.gassets_s[t+1].update(ind[i_div],sf) 
+                    self.gsavings_c[t+1].update(ind[i_div],sf)   
+                    self.gsavings_s[t+1].update(ind[i_div],sf) 
                     self.gtheta[t+1].update(ind[i_div],-1.0)
                     self.iexo[ind[i_div],t+1] = izf[i_div]
                     self.state[ind[i_div],t+1] = self.state_codes['Female, single']

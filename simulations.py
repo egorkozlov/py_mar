@@ -36,9 +36,15 @@ class Agents:
         
         
         # initialize assets
-        self.gassets = [VecOnGrid(self.setup.agrid,np.zeros(N,dtype=np.float32),trim=True)
+        self.gassets_s = [VecOnGrid(self.setup.agrid_s,np.zeros(N,dtype=np.float32),trim=True)
                             for _ in range(T)] 
         
+<<<<<<< HEAD
+=======
+        self.gassets_c = [VecOnGrid(self.setup.agrid_c,np.zeros(N,dtype=np.float32),trim=True)
+                            for _ in range(T)] 
+        
+>>>>>>> f-cohab0
         # initialize theta
         self.gtheta = [VecOnGrid(self.setup.thetagrid,-1*np.ones(N,dtype=np.float32),trim=True)
                             for _ in range(T)]
@@ -89,7 +95,8 @@ class Agents:
             
             if not use_theta:
                 
-                anext = self.gassets[t].apply( self.V[t][sname]['s'], take = [(1,self.iexo[ind,t])], 
+                # apply for singles
+                anext = self.gassets_s[t].apply( self.V[t][sname]['s'], take = [(1,self.iexo[ind,t])], 
                             pick = ind, reshape_i = False)
                 
             else:
@@ -97,7 +104,8 @@ class Agents:
                 # interpolate in both assets and theta
                 # function apply_2dim is experimental but I checked it at this setup
                 
-                anext = self.gassets[t].apply_2dim(self.V[t][sname]['s'],
+                # apply for couples
+                anext = self.gassets_c[t].apply_2dim(self.V[t][sname]['s'],
                                                      apply_first=self.gtheta[t],
                                                      axis_first=2,
                                                      axis_this=0,
@@ -126,10 +134,20 @@ class Agents:
                 '''
                 
                
+<<<<<<< HEAD
+=======
+                
+                
+                
+>>>>>>> f-cohab0
                 
             assert np.all(anext >= 0)
             
-            self.gassets[t+1].update(ind,anext) 
+            self.gassets_c[t+1].update(ind,anext) 
+            self.gassets_s[t+1].update(ind,anext) 
+            
+      
+            
             
       
             
@@ -187,7 +205,7 @@ class Agents:
                 ic_out = mc_simulate(self.iexo[ind,t],pmat,shocks=None)
                 iall, izf, izm, ipsi = setup.all_indices(ic_out)
                 
-                sf = self.gassets[t+1].val[ind] # note that timing is slightly inconsistent
+                sf = self.gassets_s[t+1].val[ind] # note that timing is slightly inconsistent
                 # we use iexo from t and savings from t+1
                 # TODO: fix the seed
                 
@@ -217,6 +235,7 @@ class Agents:
                 
                 i_disagree = (~i_pot_mar) & (~i_pot_coh)
                 i_disagree_or_nomeet = (i_disagree) | (i_nomeet)
+                i_disagree_and_meet = (i_disagree) & ~(i_nomeet)
                 i_agree = ~np.array(i_disagree_or_nomeet)
                 
                 i_agree_mar = (i_agree) & (nbs_m>=nbs_c) 
@@ -225,7 +244,7 @@ class Agents:
                 assert np.all(~i_nomeet[i_agree])
                 
                 
-                nmar, ncoh, ndis, nnom = np.sum(i_agree_mar),np.sum(i_agree_coh),np.sum(i_disagree_or_nomeet),np.sum(i_nomeet)
+                nmar, ncoh, ndis, nnom = np.sum(i_agree_mar),np.sum(i_agree_coh),np.sum(i_disagree_and_meet),np.sum(i_nomeet)
                 ntot = sum((nmar, ncoh, ndis, nnom))
                 
                 print('{} mar, {} coh,  {} disagreed, {} did not meet ({} total)'.format(nmar,ncoh,ndis,nnom,ntot))
@@ -236,14 +255,16 @@ class Agents:
                     self.gtheta[t+1].update(ind[i_agree_mar],tht_m[i_agree_mar])
                     self.iexo[ind[i_agree_mar],t+1] = iall[i_agree_mar]
                     self.state[ind[i_agree_mar],t+1] = self.state_codes['Couple, M']
-                    self.gassets[t+1].update(ind[i_agree_mar],sf[i_agree_mar] + sm[i_agree_mar])
+                    self.gassets_s[t+1].update(ind[i_agree_mar],sf[i_agree_mar] + sm[i_agree_mar])
+                    self.gassets_c[t+1].update(ind[i_agree_mar],sf[i_agree_mar] + sm[i_agree_mar])
                     
                 if np.any(i_agree_coh):
                     
                     self.gtheta[t+1].update(ind[i_agree_coh],tht_c[i_agree_coh])
                     self.iexo[ind[i_agree_coh],t+1] = iall[i_agree_coh]
                     self.state[ind[i_agree_coh],t+1] = self.state_codes['Couple, C']
-                    self.gassets[t+1].update(ind[i_agree_coh],sf[i_agree_coh] + sm[i_agree_coh])
+                    self.gassets_s[t+1].update(ind[i_agree_coh],sf[i_agree_coh] + sm[i_agree_coh])
+                    self.gassets_c[t+1].update(ind[i_agree_coh],sf[i_agree_coh] + sm[i_agree_coh])
                     
                 
                     
@@ -259,7 +280,7 @@ class Agents:
                 self.gtheta[t+1].update(ind,thetanow)
                 
                 # initiate renegotiation
-                sc = self.gassets[t+1].val[ind]
+                sc = self.gassets_c[t+1].val[ind]
                 iall, izf, izm, ipsi = self.setup.all_indices(self.iexo[ind,t+1])
                 
                 v, vf, vm, thetaout, tht_fem, tht_mal = v_ren2(setup,self.V[t+1],True,t,sc=sc,ind_or_inds=iall,combine=False,return_all=True)
@@ -296,7 +317,8 @@ class Agents:
                     
                     sf = share_f*sc[i_div]
                     
-                    self.gassets[t+1].update(ind[i_div],sf)                    
+                    self.gassets_c[t+1].update(ind[i_div],sf)   
+                    self.gassets_s[t+1].update(ind[i_div],sf) 
                     self.gtheta[t+1].update(ind[i_div],-1.0)
                     self.iexo[ind[i_div],t+1] = izf[i_div]
                     self.state[ind[i_div],t+1] = self.state_codes['Female, single']

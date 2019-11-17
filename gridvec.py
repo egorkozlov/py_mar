@@ -17,13 +17,29 @@ import numpy as np
 # TODO: this should have nan-like values and throw errors
 
 class VecOnGrid(object):
-    def __init__(self,grid,values,trim=True):
+    def __init__(self,grid,values,iwn=None,trim=True):
+        # this assumes grid is strictly increasing o/w unpredictable
         self.val = values
+        self.val_trimmed = np.clip(values,grid[0],grid[-1])
         self.grid = grid
-        self.i, self.wnext = interp(self.grid,self.val,return_wnext=True,trim=trim)
+        if iwn is None:
+            self.i, self.wnext = interp(self.grid,self.val,return_wnext=True,trim=trim)
+        else:
+            self.i, self.wnext = iwn
+            
         self.n = self.i.size
         self.wthis = 1-self.wnext
         self.trim = trim
+        
+        
+        assert np.allclose(self.val_trimmed,self.apply_crude(grid))
+        
+    
+    def apply_crude(self,xin):
+        # crude version of apply
+        # has no options, assumes xin is 1-dimensional
+        return xin[self.i]*self.wthis + xin[self.i+1]*self.wnext
+        
         
     def apply(self,xin,axis=0,take=None,pick=None,reshape_i=True):
         # this applies interpolator to array xin along dimension axis
@@ -100,7 +116,7 @@ class VecOnGrid(object):
         # TODO: check if this hurts dimensionality
         # FIXME: yes it does
         
-        return (out.squeeze() if (out.ndim > 1 and out.shape[0] > 1) else out)
+        return (np.atleast_1d(out.squeeze()))
     
     
     def apply_2dim(self,xin,*,apply_first,axis_first,axis_this=0,take=None,pick=None,reshape_i=True):

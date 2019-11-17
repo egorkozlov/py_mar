@@ -15,10 +15,10 @@ from optimizers import v_optimize
 def v_iter_single(setup,EV,female):
     #EVT = np.float32(EV.T)
     
-    agrid = setup.agrids
-    sgrid = setup.sgrids
+    agrid_s = setup.agrid_s
+    sgrid_s = setup.sgrid_s
     
-    ind, p = setup.s_inds, setup.s_ps
+    ind, p = setup.s_ind_s, setup.s_p_s
     
     
     zvals = setup.exogrid.zf_t[0] if female else setup.exogrid.zm_t[0]
@@ -27,17 +27,17 @@ def v_iter_single(setup,EV,female):
     R = setup.pars['R']
     
     
-    money = R*agrid[:,None] + np.exp(zvals[None,:])
-    shp = (agrid.size,zvals.size)
+    #money = R*agrid_s[:,None] + np.exp(zvals[None,:])
+    shp = (agrid_s.size,zvals.size)
     
     
     V_ret, c_opt, s_opt = np.empty_like(shp), np.empty_like(shp), np.empty_like(shp)
     
     
-    money_t = (R*agrid,np.exp(zvals))
+    money_t = (R*agrid_s,np.exp(zvals))
     
     
-    V_ret, c_opt, s_opt = v_optimize(money_t,sgrid,(ind,p,EV),sigma,beta)
+    V_ret, c_opt, s_opt = v_optimize(money_t,sgrid_s,(ind,p,EV),sigma,beta)
     
     
     

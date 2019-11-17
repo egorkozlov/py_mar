@@ -8,7 +8,7 @@ Some code is meant to be reused
 """
 
 
-#from trans_unif import transition_uniform
+#frm trans_unif import transition_uniform
 from interp_np import interp
 import numpy as np
 from setup import ModelSetup
@@ -33,7 +33,7 @@ def v_ren(setup,V,sc=None,ind_or_inds=None,interpolate=True,combine=True,return_
     
     
     if sc is None:
-        sc = setup.agrid # savings of couple are given by the agrid
+        sc = setup.agrid_c # savings of couple are given by the agrid
     
     if ind_or_inds is not None:
         ind, izf, izm, ipsi = setup.all_indices(ind_or_inds)
@@ -48,9 +48,9 @@ def v_ren(setup,V,sc=None,ind_or_inds=None,interpolate=True,combine=True,return_
     sm = dc.assets_kept*0.5*sc - dc.money_lost_m
     
     # this creates interpolators
-    sm_v = VecOnGrid(setup.agrids,sm,trim=True)
-    sf_v = VecOnGrid(setup.agrids,sf,trim=True)
-    sc_v = VecOnGrid(setup.agrid,sc,trim=True)
+    sm_v = VecOnGrid(setup.agrid_s,sm,trim=True)
+    sf_v = VecOnGrid(setup.agrid_s,sf,trim=True)
+    sc_v = VecOnGrid(setup.agrid_c,sc,trim=True)
     
     # this applies the interpolators
     Vm_divorce = sm_v.apply(V['Male, single']['V'],  axis=0,take=(1,izm),reshape_i=combine)
@@ -89,7 +89,7 @@ def v_ren2(setup,V,marriage,t,sc=None,ind_or_inds=None,interpolate=True,combine=
     
     
     if sc is None:
-        sc = setup.agrid # savings of couple are given by the agrid
+        sc = setup.agrid_c # savings of couple are given by the agrid
     
     if ind_or_inds is not None:
         ind, izf, izm, ipsi = setup.all_indices(ind_or_inds)
@@ -124,8 +124,8 @@ def v_ren2(setup,V,marriage,t,sc=None,ind_or_inds=None,interpolate=True,combine=
     else:
         # literally compute how assets are divided and apply
         # everything is 1-dimensional so no need for sophisticated things
-        sm_v = VecOnGrid(setup.agrid,share_m*sc - dc.money_lost_m ,trim=True)
-        sf_v = VecOnGrid(setup.agrid,share_f*sc - dc.money_lost_f ,trim=True)
+        sm_v = VecOnGrid(setup.agrid_s,share_m*sc - dc.money_lost_m ,trim=True)
+        sf_v = VecOnGrid(setup.agrid_s,share_f*sc - dc.money_lost_f ,trim=True)
         
         Vm_divorce = sm_v.apply(V['Male, single']['V'],  axis=0,take=(1,izm),reshape_i=combine)- dc.u_lost_m
         Vf_divorce = sf_v.apply(V['Female, single']['V'],axis=0,take=(1,izf),reshape_i=combine)- dc.u_lost_f
@@ -139,7 +139,7 @@ def v_ren2(setup,V,marriage,t,sc=None,ind_or_inds=None,interpolate=True,combine=
     
     
     
-    sc_v = VecOnGrid(setup.agrid,sc,trim=True)
+    sc_v = VecOnGrid(setup.agrid_c,sc,trim=True)
 
     Vval_postren, VMval_postren, VFval_postren = \
         (sc_v.apply(v,axis=0,take=(1,ind),reshape_i=combine)
@@ -171,8 +171,8 @@ def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,Vmale,Vfemale,izf,izm,cost_f
     
     # find utilities of divorce for different divisions of assets
     for i, shr in enumerate(shrs):
-        sv_m = VecOnGrid(setup.agrid, shr*sc - cost_mal)
-        sv_f = sv_m if cost_fem == cost_mal else VecOnGrid(setup.agrid,shr*sc - cost_fem)
+        sv_m = VecOnGrid(setup.agrid_s, shr*sc - cost_mal)
+        sv_f = sv_m if cost_fem == cost_mal else VecOnGrid(setup.agrid_s,shr*sc - cost_fem)
         
         Vm_divorce_M[...,i] = sv_m.apply(Vmale,    axis=0,take=(1,izm),reshape_i=True) - dc.u_lost_m
         Vf_divorce_M[...,i] = sv_f.apply(Vfemale,  axis=0,take=(1,izf),reshape_i=True) - dc.u_lost_f
@@ -281,8 +281,8 @@ def v_mar2(setup,V,marriage,sf,sm,ind_or_inds,*,interpolate=True,return_all=Fals
         desc_cop='Couple, C'
         
     # import objects
-    agrid = setup.agrid
-    agrids = setup.agrids
+    agrid = setup.agrid_c
+    agrids = setup.agrid_s
     gamma = setup.pars['m_bargaining_weight']    
     VMval_single, VFval_single = V['Male, single']['V'], V['Female, single']['V']
     Vval_postren, VMval_postren, VFval_postren = V[desc_cop]['V'], V[desc_cop]['VM'], V[desc_cop]['VF']

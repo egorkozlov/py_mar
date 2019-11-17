@@ -198,8 +198,57 @@ class ModelSetup(object):
                           'Couple, M': None,
                           'Couple, C': None} # last is added for consistency
         
+        self.mar_mats_assets()
         
-    
+        
+    def mar_mats_assets(self,npoints=4,abar=0.1):
+        # for each grid point on single's grid it returns npoints positions
+        # on (potential) couple's grid's and assets of potential partner 
+        # (that can be off grid) and correpsonding probabilities. 
+        
+        
+        # a_partner = max(a_own,abar)*exp(e_a)
+        # a_couple = a_own + max(a_own,abar)*exp(e_a)
+        # log( (a_couple - a_own)/(max(a_own,abar)) ) = e_a
+        
+        
+        na = self.agrid_s.size
+        
+        agrid_s = self.agrid_s
+        agrid_c = self.agrid_c
+        
+        s_a_partner = self.pars['sig_partner_a']
+        
+        
+        prob_a_mat = np.zeros((na,npoints),dtype=np.float32)
+        i_a_mat = np.zeros((na,npoints),dtype=np.int16)
+        
+        
+        
+        for ia, a in enumerate(agrid_s):
+            lagrid_t = np.zeros_like(agrid_c)
+            
+            i_neg = (agrid_c < max(abar,a))
+            
+            lagrid_t[~i_neg] = np.log((agrid_c[~i_neg] - a)/max(abar,a))
+            lmin = lagrid_t[~i_neg].min()
+            # just fill with very negative values so this is never chosen
+            lagrid_t[i_neg] = lmin - s_a_partner*10 - \
+                s_a_partner*np.flip(np.arange(i_neg.sum())) 
+            
+            
+            p_a = int_prob(lagrid_t,mu=0,sig=s_a_partner,n_points=npoints)
+            i_pa = (-p_a).argsort()[:npoints] # this is more robust then nonzero
+            p_pa = p_a[i_pa]
+            prob_a_mat[ia,:] = p_pa
+            i_a_mat[ia,:] = i_pa
+            
+        self.prob_a_mat = prob_a_mat
+        self.i_a_mat = i_a_mat
+            
+            
+        
+        
     
     def mar_mats(self,t,female=True,trim_lvl=0.001):
         # TODO: check timing

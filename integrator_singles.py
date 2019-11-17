@@ -8,7 +8,8 @@ import numpy as np
 import dill as pickle
 #from mc_tools import int_prob
 
-from ren_mar import v_mar,v_mar2
+from ren_mar import v_mar,v_mar2#, v_mar_igrid
+from ren_mar_alt import v_mar_igrid
     
 
 
@@ -76,11 +77,7 @@ def ev_single_meet2(setup,V,sown,female,t,trim_lvl=0.001):
     # characteristics so we have to do less bargaining
     
     nexo = setup.pars['nexo']
-    sig_a_partner = setup.pars['sig_partner_a']
     ns = sown.size
-    eps_a_partner = setup.integration['nodes_couple'][:,0]
-    npart = setup.integration['num_partners']    
-    
     
     p_mat = setup.part_mats['Female, single'][t].T if female else setup.part_mats['Male, single'][t].T
    
@@ -91,31 +88,34 @@ def ev_single_meet2(setup,V,sown,female,t,trim_lvl=0.001):
     
     EV = 0.0
     
-    for eps in eps_a_partner:
+    i_assets_c, p_assets_c = setup.i_a_mat, setup.prob_a_mat
+    
+    npart = i_assets_c.shape[1]
+    
+    
+    for i in range(npart):
         
-        spart = sown*np.exp(sig_a_partner*eps)
-        if female: # TODO: this can be done better with keywords
-           
-            voutm,nprm= v_mar2(setup,V,True,sown,spart,inds,interpolate=False)[0:2]
-            voutc,nprc = v_mar2(setup,V,False,sown,spart,inds,interpolate=False)[0:2]
-            
-            #Cohabitation-Marriage Choice 
-            i_mar = (nprm>=nprc) 
-            
-            vout = i_mar*voutm[0] + (1.0-i_mar)*voutc[0]
-           
+        res_m = v_mar_igrid(setup,V,i_assets_c[:,i],inds,
+                                 female=female,marriage=True)
+        
+        (vfoutm,vmoutm), nprm = res_m['Values'], res_m['NBS']
+        
+        res_c = v_mar_igrid(setup,V,i_assets_c[:,i],inds,
+                                 female=female,marriage=True)
+        
+        
+        (vfoutc,vmoutc), nprc =  res_c['Values'], res_c['NBS']
+        
+        i_mar = (nprm>=nprc) 
+        
+        if female:
+            vout = i_mar*vfoutm + (1-i_mar)*vfoutc
         else:
-            
-            voutm,nprm= v_mar2(setup,V,True,spart,sown,inds,interpolate=False)[0:2]
-            voutc,nprc= v_mar2(setup,V,False,spart,sown,inds,interpolate=False)[0:2]
-            
-            #Cohabitation-Marriage Choice            
-            i_mar = (nprm>=nprc)
-            vout = i_mar*voutm[1] + (1.0-i_mar)*voutc[1]
+            vout = i_mar*vmoutm + (1-i_mar)*vmoutc
             
         V_next[:,inds] = vout
         
-        EV += (1/npart)*np.dot(V_next,p_mat)
+        EV += (p_assets_c[:,i][:,None])*np.dot(V_next,p_mat)
 
     
     return EV#, p_mat, VF_next

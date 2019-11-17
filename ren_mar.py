@@ -260,6 +260,71 @@ def v_mar(setup,V,sf,sm,ind_or_inds,interpolate=True,return_all=False,combine=Tr
     return v_newmar_core(*outs,interpolate=interpolate,gamma=gamma,return_all=return_all)
 
 
+
+
+def v_mar_igrid(setup,V,icouple,ind_or_inds,*,female,marriage,interpolate=True,return_all=False):
+    # this returns value functions for couple that entered the last period with
+    # (s,Z,theta) from the grid and is allowed to renegotiate them or breakup
+    
+    # if return_all==False returns Vout_f, Vout_m, that are value functions
+    # of male and female from entering this union
+    # if return_all==True returns (Vout_f, Vout_m, ismar, thetaout, technical)
+    # where ismar is marriage decision, thetaout is resulting theta and 
+    # tuple technical contains less usable stuff (check v_newmar_core for it)
+    #
+    # combine = True creates matrix (n_s-by-n_inds)
+    # combine = False assumed that n_s is the same shape as n_inds and creates
+    # a flat array.
+    
+    
+    if marriage:
+        coup ='Couple, M'
+    else:
+        coup='Couple, C'
+    
+    
+    
+    # import objects
+    agrid_c = setup.agrid_c
+    agrid_s = setup.agrid_s
+    gamma = setup.pars['m_bargaining_weight']    
+    VMval_single, VFval_single = V['Male, single']['V'], V['Female, single']['V']
+    Vval_postren, VMval_postren, VFval_postren = V[coup]['V'], V[coup]['VM'], V[coup]['VF']
+    
+    
+    # substantial part
+    ind, izf, izm, ipsi = setup.all_indices(ind_or_inds)
+    
+    
+    # using trim = True implicitly trims things on top
+    # so if sf is 0.75*amax and sm is 0.75*amax then sc is 1*amax and not 1.5
+    
+    #sc = sf+sm # savings of couple
+    s_partner = agrid_c[icouple] - agrid_s # we assume all points on grid
+    
+    
+    # this implicitly trims negative or too large values
+    s_partner_v = VecOnGrid(agrid_s,s_partner,trim=True) 
+    
+    
+    # this applies them
+    
+    if female:
+        Vfs = VFval_single[:,izf]
+        Vms = s_partner_v.apply(VMval_single,axis=0,take=(1,izm))
+    else:
+        Vms = VMval_single[:,izm]
+        Vfs = s_partner_v.apply(VFval_single,axis=0,take=(1,izf))
+        
+    Vmm, Vfm, Vcm = (x[:,ind,:] for x in 
+                     (VMval_postren,VFval_postren,Vval_postren))
+    
+    outs = v_prepare(Vfm,Vmm,Vcm,Vfs,Vms,setup.thetagrid,interpolate=interpolate)
+
+    # this is syntactically dirty but efficient
+    outcome = v_newmar_core(*outs,interpolate=interpolate,gamma=gamma,return_all=return_all)
+    return outcome, (outcome[0]-Vfs)**(1.0-gamma)*(outcome[1]-Vms)**gamma
+
 def v_mar2(setup,V,marriage,sf,sm,ind_or_inds,*,interpolate=True,return_all=False,combine=True):
     # this returns value functions for couple that entered the last period with
     # (s,Z,theta) from the grid and is allowed to renegotiate them or breakup

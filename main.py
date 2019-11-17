@@ -22,6 +22,7 @@ if __name__ == '__main__':
     gassets, iexo, state, gtheta = mdl.agents.gsavings_c, mdl.agents.iexo, mdl.agents.state, mdl.agents.gtheta
     mdl.time_statistics()
     
+    '''
     #Graphs Here
     
     
@@ -39,6 +40,6 @@ if __name__ == '__main__':
     #If you plan to use graphs only once, deselect below to save space on disk
     #os.remove('name_model.pkl') 
     
-
+    '''
     
     

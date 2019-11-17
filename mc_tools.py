@@ -199,12 +199,13 @@ def ind_combine_m(ilist,nlist):
     
 
 
-def int_prob_standard(vec,trim=True,trim_level=0.001):
+def int_prob_standard(vec,trim=True,trim_level=0.001,n_points=None):
     # given ordered vector vec [x_0,...,x_{n-1}] this returns probabilities
     # [p0,...,p_{n-1}] such that p_i = P[d(Z,x_i) is minimal among i], where
     # Z is standard normal ranodm variable
     
     assert np.all(np.diff(vec)>0), "vec must be ordered and increasing!"
+    
     
     vm = np.concatenate( ([-np.inf],vec[:-1]) )
     vp = np.concatenate( (vec[1:],[np.inf]) )
@@ -214,9 +215,22 @@ def int_prob_standard(vec,trim=True,trim_level=0.001):
     
     p = norm.cdf(v_up) - norm.cdf(v_down)
     
+    
+    
+    if n_points is not None:
+        trim = False # npoints overrides trim
+        i_keep = ((-p).argsort())[0:n_points]
+        pold = p.copy()
+        p = np.zeros(p.shape)
+        p[i_keep] = pold[i_keep]
+        assert np.any(p>0)
+        p = p / np.sum(p)
+    
     if trim:
         p[np.where(p<trim_level)] = 0
         p = p / np.sum(p)
+        
+        
     
     
     #ap = np.argpartition(p,[-1,-2])
@@ -225,13 +239,17 @@ def int_prob_standard(vec,trim=True,trim_level=0.001):
     return p#, ap, p[ap[-2]], p[ap[-1]]
 
 
-def int_prob(vec,mu=0,sig=1,trim=True,trim_level=0.001):
+def int_prob(vec,mu=0,sig=1,trim=True,trim_level=0.001,n_points=None):
     # this works like int_prob_standard, but assumes that Z = mu + sig*N(0,1)
     vec_adj = (np.array(vec)-mu)/sig
-    return int_prob_standard(vec_adj,trim,trim_level)
+    return int_prob_standard(vec_adj,trim,trim_level,n_points)
 
 
-    
+
+
+
+
+
 
 # this tests combining things
 if __name__ == "__main__":

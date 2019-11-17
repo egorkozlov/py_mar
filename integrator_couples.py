@@ -40,7 +40,7 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True,return_vren=False):
     _Vren = v_ren2(setup,Vpostren,marriage,t,interpolate=True) # does renegotiation
     
     
-    _Vren2 = v_ren_new(setup,Vpostren,marriage,t,interpolate=True)['Values']
+    _Vren2 = v_ren_new(setup,Vpostren,marriage,t)['Values']
     
     
     
@@ -49,8 +49,9 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True,return_vren=False):
             'SM':Vpostren['Male, single']}
     
     
+    tk = lambda x : x[:,:,setup.theta_orig_on_fine]
     
-    Vren2 = {'M':{'V':_Vren2[0],'VF':_Vren2[1],'VM':_Vren2[2]},
+    Vren2 = {'M':{'V':tk(_Vren2[0]),'VF':tk(_Vren2[1]),'VM':tk(_Vren2[2])},
             'SF':Vpostren['Female, single'],
             'SM':Vpostren['Male, single']}
     

@@ -65,7 +65,6 @@ def ev_single_meet2(setup,V,sown,female,t,trim_lvl=0.001):
     for i in range(npart):
         
         
-        
         res_m = v_mar_igrid(setup,V,i_assets_c[:,i],inds,
                                  female=female,marriage=True)
         

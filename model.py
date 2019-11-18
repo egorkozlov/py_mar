@@ -186,25 +186,5 @@ class Model(object):
         V=graphs(self.setup,ai,zfi,zmi,psii,ti,thi)
         
         return V
-        
-            
-    def solve_marriage(self,sf,sm,izf,izm,ipsi,t=0):
-        # this is a legacy code that is meant for comparison of unilateral
-        # and bilateral divorce
-        
-        # sf, sm, izf, izm are 1-dim np.arrays 
-        # the result is of shape (sf.size,izf.size) (so it is computed for all
-        # combinations of sf/sm and izf/izm/ipsi)
-        
-        # so far it is stable only when izf/izm/ipsi and sf and sm have more 
-        # than one element due to shape issues
-        
-        # this is value of a potential couple that is about to enter period t
-        
-        
-        inds_tuple = (izf,izm,ipsi)
-        V = self.V[t]
-        Vout_f, Vout_m, ismar, thetaout, technical = \
-            v_mar(self.setup,V,sf,sm,inds_tuple,return_all=True,combine=False)
-        return Vout_f, Vout_m, ismar, thetaout
+      
     

@@ -88,9 +88,9 @@ def v_mar_igrid(setup,V,icouple,ind_or_inds,*,female,marriage,interpolate=True,r
     
     
     if marriage:
-        coup ='Couple, M'
+        coup = 'Couple, M'
     else:
-        coup='Couple, C'
+        coup = 'Couple, C'
     
     
     

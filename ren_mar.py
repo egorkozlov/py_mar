@@ -7,6 +7,8 @@ Some code is meant to be reused
 
 """
 
+raise Exception('this file is deprecated')
+
 
 #frm trans_unif import transition_uniform
 from interp_np import interp
@@ -16,6 +18,8 @@ from aux_routines import first_true, last_true, zero_hit_mat
 from numba import njit
 from gridvec import VecOnGrid
 import dill as pickle
+
+
 
 # this is renegotiator
 # this accounts for divorce protocol

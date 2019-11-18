@@ -188,9 +188,9 @@ class ModelSetup(object):
         
         
         # this pre-computes transition matrices for meeting a partner
-        zf_t_partmat = [self.mar_mats(t,female=True) if t < p['T'] - 1 else None 
+        zf_t_partmat = [self.mar_mats_iexo(t,female=True) if t < p['T'] - 1 else None 
                             for t in range(p['T'])]
-        zm_t_partmat = [self.mar_mats(t,female=False) if t < p['T'] - 1 else None 
+        zm_t_partmat = [self.mar_mats_iexo(t,female=False) if t < p['T'] - 1 else None 
                             for t in range(p['T'])]
         
         self.part_mats = {'Female, single':zf_t_partmat,
@@ -200,6 +200,7 @@ class ModelSetup(object):
         
         self.mar_mats_assets()
         
+        self.mar_mats_combine()
         
     def mar_mats_assets(self,npoints=4,abar=0.1):
         # for each grid point on single's grid it returns npoints positions
@@ -250,7 +251,7 @@ class ModelSetup(object):
         
         
     
-    def mar_mats(self,t,female=True,trim_lvl=0.001):
+    def mar_mats_iexo(self,t,female=True,trim_lvl=0.001):
         # TODO: check timing
         # this returns transition matrix for single agents into possible couples
         # rows are single's states
@@ -310,7 +311,67 @@ class ModelSetup(object):
             p_vec = p_vec / np.sum(p_vec)
             p_mat[:,iz] = p_vec
             
-        return p_mat.T # I
+        return p_mat.T
+    
+    
+    def mar_mats_combine(self):
+        # for time moment and each position in grid for singles (ia,iz)
+        # it computes probability distribution over potential matches
+        # this is relevant for testing and simulations
+        
+        
+        pmat_a = self.prob_a_mat
+        imat_a = self.i_a_mat
+        
+        self.matches = dict()
+        
+        for female in [True,False]:
+            desc = 'Female, single' if female else 'Male, single'
+            nz = self.pars['n_zf'] if female else self.pars['n_zm']
+            pmats = self.part_mats[desc] 
+            
+            
+            match_matrix = list()
+            
+            
+            for t in range(self.pars['T']-1):
+                pmat_iexo = pmats[t] # nz X nexo
+                # note that here we do not use transpose
+                
+                inds = np.where( np.any(pmat_iexo>0,axis=0) )[0]
+                
+                npos_iexo = inds.size
+                npos_a = pmat_a.shape[1]
+                npos = npos_iexo*npos_a
+                pmatch = np.zeros((self.na,nz,npos))
+                iamatch = np.zeros((self.na,nz,npos),dtype=np.int32)
+                iexomatch = np.zeros((self.na,nz,npos),dtype=np.int32)
+                
+                i_conv = np.zeros((npos_iexo,npos_a),dtype=np.int32)
+                
+                for ia in range(npos_a):
+                    i_conv[:,ia] = np.arange(npos_iexo*ia,npos_iexo*(ia+1))
+                 
+                
+                for iz in range(self.pars['n_zf']):
+                    probs = pmat_iexo[iz,inds]
+                    
+                    for ia in range(npos_a):
+                        
+                        pmatch[:,iz,(npos_iexo*ia):(npos_iexo*(ia+1))] = \
+                            (pmat_a[:,ia][:,None])*(probs[None,:])
+                        iamatch[:,iz,(npos_iexo*ia):(npos_iexo*(ia+1))] = \
+                            imat_a[:,ia][:,None]
+                        iexomatch[:,iz,(npos_iexo*ia):(npos_iexo*(ia+1))] = \
+                            inds[None,:]
+                            
+                        
+                assert np.allclose(np.sum(pmatch,axis=2),1.0)
+                match_matrix.append({'p':pmatch,'ia':iamatch,'iexo':iexomatch,'iconv':i_conv})
+                    
+            self.matches[desc] = match_matrix
+         
+        
     
     
     def all_indices(self,ind_or_inds=None):

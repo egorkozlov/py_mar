@@ -7,9 +7,7 @@ This contains things relevant for simulations
 import numpy as np
 
 
-from interp_np import interp            
 from mc_tools import mc_simulate
-from ren_mar import v_mar2, v_ren2
 from gridvec import VecOnGrid
 
 class Agents:
@@ -34,20 +32,13 @@ class Agents:
         self.timer = M.time
         
         
-        
         # initialize assets
-        self.gassets_s = [VecOnGrid(self.setup.agrid_s,np.zeros(N,dtype=np.float32),trim=True)
-                            for _ in range(T)] 
         
-<<<<<<< HEAD
-=======
-        self.gassets_c = [VecOnGrid(self.setup.agrid_c,np.zeros(N,dtype=np.float32),trim=True)
-                            for _ in range(T)] 
+        self.iassets = np.zeros((N,T),np.int32)
         
 >>>>>>> f-cohab0
         # initialize theta
-        self.gtheta = [VecOnGrid(self.setup.thetagrid,-1*np.ones(N,dtype=np.float32),trim=True)
-                            for _ in range(T)]
+        self.itheta = -np.ones((N,T),np.int32)
         
         # initialize iexo
         self.iexo = np.zeros((N,T),np.int32)
@@ -73,14 +64,17 @@ class Agents:
         
         for t in range(self.T-1):
          
-            self.anext(t)            
+            self.anext(t) 
             self.iexonext(t)            
             self.statenext(t)
             self.timer('Simulations, iteration')
         
         
-        return self.gassets,self.iexo,self.state,self.gtheta
+        #return self.gsavings, self.iexo, self.state,self.gtheta
+    
+    
     def anext(self,t):
+        # finds savings (potenitally off-grid)
         
         for ist, sname in enumerate(self.state_codes):
             
@@ -96,8 +90,7 @@ class Agents:
             if not use_theta:
                 
                 # apply for singles
-                anext = self.gassets_s[t].apply( self.V[t][sname]['s'], take = [(1,self.iexo[ind,t])], 
-                            pick = ind, reshape_i = False)
+                anext = self.V[t][sname]['s'][self.iassets[ind,t],self.iexo[ind,t]]
                 
             else:
                 
@@ -105,46 +98,17 @@ class Agents:
                 # function apply_2dim is experimental but I checked it at this setup
                 
                 # apply for couples
-                anext = self.gassets_c[t].apply_2dim(self.V[t][sname]['s'],
-                                                     apply_first=self.gtheta[t],
-                                                     axis_first=2,
-                                                     axis_this=0,
-                                                     take = [(1,self.iexo[ind,t])],
-                                                     pick = ind,
-                                                     reshape_i = False
-                                                    )
                 
+                tk = lambda x : self.setup.v_thetagrid_fine.apply(x,axis=2)
                 
-                '''
-                # This is a consistency check about what if we interpolate
-                # in different order
+                anext = tk(self.V[t][sname]['s'])[self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
                 
-                anext_alt = self.gtheta[t].apply_2dim(self.V[t][sname]['s'],
-                                                     apply_first=self.gassets[t],
-                                                     axis_first=0,
-                                                     axis_this=2,
-                                                     take = [(1,self.iexo[ind,t])],
-                                                     pick = ind,
-                                                     reshape_i = False
-                                                    )
-                
-                
-                assert np.allclose(anext,anext_alt)
-                
-                '''
-                
-               
-<<<<<<< HEAD
-=======
-                
-                
-                
->>>>>>> f-cohab0
                 
             assert np.all(anext >= 0)
             
-            self.gassets_c[t+1].update(ind,anext) 
-            self.gassets_s[t+1].update(ind,anext) 
+            agrid = self.setup.agrid_c if use_theta else self.setup.agrid_s
+            
+            self.iassets[ind,t+1] = VecOnGrid(agrid,anext).roll(shocks=None) # TODO: add shocks
             
       
             
@@ -200,46 +164,53 @@ class Agents:
                 # not happen.
                 
                 # meet a partner
-                pmat = self.setup.part_mats['Female, single'][t]
-                pmeet = self.setup.pars['pmeet']
-                ic_out = mc_simulate(self.iexo[ind,t],pmat,shocks=None)
-                iall, izf, izm, ipsi = setup.all_indices(ic_out)
                 
-                sf = self.gassets_s[t+1].val[ind] # note that timing is slightly inconsistent
+                pmeet = self.setup.pars['pmeet']
+                
+                
+                matches = self.M.decisions[t]['Female, single']
+                
+                
+                ia = self.iassets[ind,t+1] # note that timing is slightly inconsistent                
                 # we use iexo from t and savings from t+1
                 # TODO: fix the seed
+                iznow = self.iexo[ind,t]
                 
-                mult_a = np.exp(np.random.normal()*setup.pars['sig_partner_a'])
-                sm = mult_a*sf
+                pmat = matches['p'][ia,iznow,:]
+                pmat_cum = pmat.cumsum(axis=1)
+                v = np.random.random_sample(ind.size) # draw uniform dist
+                
+                i_pmat = (v[:,None] > pmat_cum).sum(axis=1)  # index of the position in pmat
+                
+                ic_out = matches['iexo'][ia,iznow,i_pmat]
+                ia_out = matches['ia'][ia,iznow,i_pmat]
+                it_out = matches['theta'][ia,iznow,i_pmat]
+                
+                # potential assets position of couple
+                
+                iall, izf, izm, ipsi = setup.all_indices(ic_out)
+                
                 
                 # compute for everyone
                 
-                
-                # cohabitation
-                (vf_c, vm_c, iscoh, tht_c, _), nbs_c = v_mar2(setup,self.V[t+1],False,sf,sm,iall,combine=False,return_all=True)
-                # marriage
-                (vf_m, vm_m, ismar, tht_m, _), nbs_m = v_mar2(setup,self.V[t+1],True,sf,sm,iall,combine=False,return_all=True)
                 
                 
                 i_nomeet =  np.array( np.random.rand(nind) > pmeet )
                 
                 
-                i_pot_mar = ~np.isnan(tht_m)
                 
-                assert np.all( i_pot_mar == (nbs_m>0) )
+                i_pot_agree = matches['Decision'][ia,iznow,i_pmat]
+                i_m_preferred = matches['M or C'][ia,iznow,i_pmat]
                 
-                i_pot_coh = ~np.isnan(tht_c)
-                
-                assert np.all( i_pot_coh == (nbs_c > 0) )
-                
-                
-                i_disagree = (~i_pot_mar) & (~i_pot_coh)
+                i_disagree = (~i_pot_agree)
                 i_disagree_or_nomeet = (i_disagree) | (i_nomeet)
                 i_disagree_and_meet = (i_disagree) & ~(i_nomeet)
-                i_agree = ~np.array(i_disagree_or_nomeet)
                 
-                i_agree_mar = (i_agree) & (nbs_m>=nbs_c) 
-                i_agree_coh = (i_agree) & (nbs_c> nbs_m)
+                i_agree = ~i_disagree_or_nomeet
+
+                
+                i_agree_mar = (i_agree) & (i_m_preferred)
+                i_agree_coh = (i_agree) & (~i_m_preferred)
                 
                 assert np.all(~i_nomeet[i_agree])
                 
@@ -252,19 +223,17 @@ class Agents:
                 
                 if np.any(i_agree_mar):
                     
-                    self.gtheta[t+1].update(ind[i_agree_mar],tht_m[i_agree_mar])
+                    self.itheta[ind[i_agree_mar],t+1] = it_out[i_agree_mar]
                     self.iexo[ind[i_agree_mar],t+1] = iall[i_agree_mar]
                     self.state[ind[i_agree_mar],t+1] = self.state_codes['Couple, M']
-                    self.gassets_s[t+1].update(ind[i_agree_mar],sf[i_agree_mar] + sm[i_agree_mar])
-                    self.gassets_c[t+1].update(ind[i_agree_mar],sf[i_agree_mar] + sm[i_agree_mar])
+                    self.iassets[ind[i_agree_mar],t+1] = ia_out[i_agree_mar]
                     
                 if np.any(i_agree_coh):
                     
-                    self.gtheta[t+1].update(ind[i_agree_coh],tht_c[i_agree_coh])
+                    self.itheta[ind[i_agree_coh],t+1] = it_out[i_agree_coh]
                     self.iexo[ind[i_agree_coh],t+1] = iall[i_agree_coh]
                     self.state[ind[i_agree_coh],t+1] = self.state_codes['Couple, C']
-                    self.gassets_s[t+1].update(ind[i_agree_coh],sf[i_agree_coh] + sm[i_agree_coh])
-                    self.gassets_c[t+1].update(ind[i_agree_coh],sf[i_agree_coh] + sm[i_agree_coh])
+                    self.iassets[ind[i_agree_coh],t+1] = ia_out[i_agree_coh]
                     
                 
                     
@@ -275,26 +244,39 @@ class Agents:
                     
             elif sname == "Couple, M" or sname == "Couple, C":
                 
+                decision = self.M.decisions[t][sname]
+                
                 # by default keep the same theta and weights
-                thetanow = self.gtheta[t].val[ind]
-                self.gtheta[t+1].update(ind,thetanow)
+                
+                self.itheta[ind,t+1] = self.itheta[ind,t]
+                
+                nt = self.setup.ntheta_fine
+                
                 
                 # initiate renegotiation
-                sc = self.gassets_c[t+1].val[ind]
+                isc = self.iassets[ind,t+1]
                 iall, izf, izm, ipsi = self.setup.all_indices(self.iexo[ind,t+1])
                 
-                v, vf, vm, thetaout, tht_fem, tht_mal = v_ren2(setup,self.V[t+1],True,t,sc=sc,ind_or_inds=iall,combine=False,return_all=True)
+                itht = self.itheta[ind,t+1] 
+                agrid =  self.setup.agrid_c                
+                sc = agrid[isc] # needed only for dividing asssets               
+                
+                thts_all = decision['thetas']
+                thts_orig_all = np.broadcast_to(np.arange(nt)[None,None,:],thts_all.shape)
                 
                 
-                # same size as ind
-                # categorizes couples
-                i_div = np.array(tht_fem > tht_mal)
-                i_ren = np.array(~(i_div) & ((thetanow < tht_fem) | (thetanow > tht_mal)))
-                i_renf = np.array(i_ren & (thetanow < tht_fem))
-                i_renm = np.array(i_ren & (thetanow > tht_mal))
-                i_sq  = np.array(~(i_div) & ~(i_ren))
+                thts = thts_all[isc,iall,itht]
+                thts_orig = thts_orig_all[isc,iall,itht]
                 
-                assert np.all(i_ren == ((i_renf) | (i_renm)))
+                i_stay = decision['Decision'][isc,iall]
+                
+                
+                i_div = ~i_stay                
+                i_ren = (i_stay) & (thts_orig != thts)
+                i_renf = (i_stay) & (thts_orig > thts)
+                i_renm = (i_stay) & (thts_orig < thts)
+                i_sq = (i_stay) & (thts_orig == thts)
+                
                 print('{} divorce, {} ren-f, {} ren-m, {} sq'.format(np.sum(i_div),np.sum(i_renf),np.sum(i_renm),np.sum(i_sq))                     )
                 
                 
@@ -303,6 +285,7 @@ class Agents:
                 zm_grid = self.setup.exo_grids['Male, single'][t]
                 
                 
+                 
                 
                 if np.any(i_div):
                     
@@ -317,17 +300,14 @@ class Agents:
                     
                     sf = share_f*sc[i_div]
                     
-                    self.gassets_c[t+1].update(ind[i_div],sf)   
-                    self.gassets_s[t+1].update(ind[i_div],sf) 
-                    self.gtheta[t+1].update(ind[i_div],-1.0)
+                    self.iassets[ind[i_div],t+1] = VecOnGrid(agrid,sf).roll() # FIXME: this is temporary solution till we find a better organization
+                    self.itheta[ind[i_div],t+1] = -1
                     self.iexo[ind[i_div],t+1] = izf[i_div]
                     self.state[ind[i_div],t+1] = self.state_codes['Female, single']
                 
                 if np.any(i_ren):
-                    if np.any(i_renf): 
-                        self.gtheta[t+1].update(ind[i_renf],tht_fem[i_renf])
-                    if np.any(i_renm):
-                        self.gtheta[t+1].update(ind[i_renm],tht_mal[i_renm])
+                    
+                    self.itheta[ind[i_ren],t+1] = thts[i_ren]                    
                     self.state[ind[i_ren],t+1] = self.state_codes[sname]
                     
                 if np.any(i_sq):

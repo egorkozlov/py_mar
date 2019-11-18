@@ -167,3 +167,15 @@ class VecOnGrid(object):
             interp(self.grid,self.val[where],return_wnext=True,trim=self.trim)
         self.wthis[where] = 1 - self.wnext[where]
         
+        
+    def roll(self,shocks=None):
+        # this draws a random vector of grid poisitions such that probability
+        # of self.i is self.wthis and probability of self.i+1 is self.wnext
+        
+        if shocks is None:
+            shocks = np.random.random_sample(self.val.shape)
+            
+        out = self.i
+        out[shocks>self.wthis] += 1
+        return out
+        

@@ -25,7 +25,7 @@ from simulations import Agents
 from solver_couples import v_iter_couple
 from solver_singles import v_iter_single
 from integrator_singles import ev_single
-from integrator_couples import ev_couple_m_c, ev_couple
+from integrator_couples import ev_couple_m_c
 
 
 class Model(object):
@@ -106,12 +106,12 @@ class Model(object):
             
             if desc == 'Female, single' or desc == 'Male, single':
                 female = (desc == 'Female, single')
-                EV = ev_single(setup,V_next,setup.agrid_s,female,t)
+                EV, dec = ev_single(setup,V_next,setup.agrid_s,female,t)
             elif desc == 'Couple, M':
-                EV = ev_couple_m_c(setup,V_next,t,True)
+                EV, dec = ev_couple_m_c(setup,V_next,t,True)
             elif desc == 'Couple, C':
-                EV = ev_couple_m_c(setup,V_next,t,False)
-            return EV
+                EV, dec = ev_couple_m_c(setup,V_next,t,False)
+            return EV, dec
             
         
         
@@ -120,15 +120,15 @@ class Model(object):
         if name == 'default' or name == 'default-timed':
             timed = (name == 'default-timed')
             def iterate(desc,t,Vnext):
-                EV = v_integrator(self.setup,desc,t,Vnext)
+                EV, dec = v_integrator(self.setup,desc,t,Vnext)
                 if timed: self.time('Integration for {}'.format(desc))
                 vout = v_iterator(self.setup,desc,t,EV)
                 if timed: self.time('Optimization for {}'.format(desc))
-                return vout
+                return vout, dec
             def initialize(desc,t):
                 vout = v_iterator(self.setup,desc,None)
                 if timed: self.time('Initialization for {}'.format(desc))
-                return vout
+                return vout, None
         else:
             raise Exception('unsupported name')
             
@@ -140,21 +140,25 @@ class Model(object):
     def solve(self):
         T = self.setup.pars['T']
         self.V = list()
+        self.decisions = list()
         
         
         for t in reversed(range(T)):
             Vnow = dict()
+            decnow = dict()
             
             Vnext = self.V[0] if t<T-1 else None
             
             for desc in self.setup.state_names:
                 if t == T-1:
-                    V_d = self.initializer(desc,t)
+                    V_d, dec = self.initializer(desc,t)
                 else:
-                    V_d = self.iterator(desc,t,Vnext)                    
+                    V_d, dec = self.iterator(desc,t,Vnext)                    
                 Vnow.update(V_d)
+                decnow.update({desc:dec})
             
             self.V = [Vnow] + self.V
+            self.decisions = [decnow] + self.decisions
             
         #For Graphs
         with gzip.open('name_model.pkl', 'wb') as file:
@@ -170,11 +174,11 @@ class Model(object):
         
         #Simulate the model
         self.agents = Agents(self)
-        gassets,iexo,state,gtheta=self.agents.simulate()
-        moment(self.setup,gassets,iexo,state,gtheta,True)
+        self.agents.simulate()
+        #moment(self.setup,gassets,iexo,state,gtheta,True)
         
         
-        return gassets,iexo,state,gtheta
+        #return gassets,iexo,state,gtheta
         
     def graph(self,ai,zfi,zmi,psii,ti,thi):
         
@@ -182,25 +186,5 @@ class Model(object):
         V=graphs(self.setup,ai,zfi,zmi,psii,ti,thi)
         
         return V
-        
-            
-    def solve_marriage(self,sf,sm,izf,izm,ipsi,t=0):
-        # this is a legacy code that is meant for comparison of unilateral
-        # and bilateral divorce
-        
-        # sf, sm, izf, izm are 1-dim np.arrays 
-        # the result is of shape (sf.size,izf.size) (so it is computed for all
-        # combinations of sf/sm and izf/izm/ipsi)
-        
-        # so far it is stable only when izf/izm/ipsi and sf and sm have more 
-        # than one element due to shape issues
-        
-        # this is value of a potential couple that is about to enter period t
-        
-        
-        inds_tuple = (izf,izm,ipsi)
-        V = self.V[t]
-        Vout_f, Vout_m, ismar, thetaout, technical = \
-            v_mar(self.setup,V,sf,sm,inds_tuple,return_all=True,combine=False)
-        return Vout_f, Vout_m, ismar, thetaout
+      
     

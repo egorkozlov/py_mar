@@ -11,13 +11,15 @@ Possibly inefficient but very scalable is the goal
 #from trans_unif import transition_uniform
 import numpy as np
 from aux_routines import first_true, last_true
-from numba import njit
+from numba import njit, vectorize
 from gridvec import VecOnGrid
 
 
 # these are new routines for renegotiation
 
-def v_ren_new(setup,V,marriage,t,sc=None,ind_or_inds=None,interpolate=True,combine=True,return_all=False):
+##### main part
+
+def v_ren_new(setup,V,marriage,t):
     # this returns value functions for couple that entered the period with
     # (s,Z,theta) from the grid and is allowed to renegotiate them or breakup
     # 
@@ -35,75 +37,131 @@ def v_ren_new(setup,V,marriage,t,sc=None,ind_or_inds=None,interpolate=True,combi
         is_unil = dc.unilateral_divorce # whether to do unilateral divorce at all
         des='Couple, C'
     
+    assert is_unil, 'only unilateral divorce is implemented'
     
-    if sc is None:
-        sc = setup.agrid_c # savings of couple are given by the agrid
-    
-    if ind_or_inds is not None:
-        ind, izf, izm, ipsi = setup.all_indices(ind_or_inds)
-    else:
-        ind, izf, izm, ipsi = setup.all_indices()
-    
-    
-    assert (dc.money_lost_f_ez == 0 and dc.money_lost_m_ez == 0), 'not implemented yet'
-
+    ind, izf, izm, ipsi = setup.all_indices()
     
     zfgrid = setup.exo_grids['Female, single'][t]
     zmgrid = setup.exo_grids['Male, single'][t]
-    
-    
     
     income_share_f = (np.exp(zfgrid[izf]) / ( np.exp(zmgrid[izm]) + np.exp(zfgrid[izf]) ) ).squeeze()
     
     share_f, share_m = dc.shares_if_split(income_share_f)
     
+    sc = setup.agrid_c
     
     
-    if combine:
-        # call separate routine for finding divorce outcomes depending on grid
-        # position
-        Vf_divorce, Vm_divorce = v_div_byshare(
-            setup, dc, t, sc, share_f, share_m,
-            V['Male, single']['V'], V['Female, single']['V'],
-            izf, izm, cost_fem=dc.money_lost_f, cost_mal=dc.money_lost_m)
-        
-        assert Vf_divorce.ndim == Vm_divorce.ndim == 2
-        
-    else:
-        # literally compute how assets are divided and apply
-        # everything is 1-dimensional so no need for sophisticated things
-        sm_v = VecOnGrid(setup.agrid_s,share_m*sc - dc.money_lost_m ,trim=True)
-        sf_v = VecOnGrid(setup.agrid_s,share_f*sc - dc.money_lost_f ,trim=True)
-        
-        Vm_divorce = sm_v.apply(V['Male, single']['V'],  axis=0,take=(1,izm),reshape_i=combine)- dc.u_lost_m
-        Vf_divorce = sf_v.apply(V['Female, single']['V'],axis=0,take=(1,izf),reshape_i=combine)- dc.u_lost_f
-        
-        try:
-            assert Vm_divorce.ndim == Vf_divorce.ndim == 1
-        except:
-            print((Vm_divorce.ndim, Vm_divorce, Vf_divorce.ndim, Vf_divorce))
-            assert False
+    Vf_divorce, Vm_divorce = v_div_byshare(
+        setup, dc, t, sc, share_f, share_m,
+        V['Male, single']['V'], V['Female, single']['V'],
+        izf, izm, cost_fem=dc.money_lost_f, cost_mal=dc.money_lost_m)
+    
+    assert Vf_divorce.ndim == Vm_divorce.ndim == 2
     
     
+    Vval_postren, VMval_postren, VFval_postren = V[des]['V'], V[des]['VM'], V[des]['VF']
     
-    
-    sc_v = VecOnGrid(setup.agrid_c,sc,trim=True)
-
-    Vval_postren, VMval_postren, VFval_postren = \
-        (sc_v.apply(v,axis=0,take=(1,ind),reshape_i=combine)
-            for v in (V[des]['V'], V[des]['VM'], V[des]['VF']))
-    
-    try:
-        assert Vval_postren.shape[:-1] == Vm_divorce.shape
-    except:
-        print(Vval_postren.shape,Vm_divorce.shape)
-        assert False
+    assert Vval_postren.shape[:-1] == Vm_divorce.shape
     
     
     result  = v_ren_core_interp(setup,Vval_postren, VFval_postren, VMval_postren, Vf_divorce, Vm_divorce)
     
     
     return result
+
+
+
+
+def v_mar_igrid(setup,V,icouple,ind_or_inds,*,female,marriage,interpolate=True,return_all=False):
+    # this returns value functions for couple that entered the last period with
+    # (s,Z,theta) from the grid and is allowed to renegotiate them or breakup
+    
+    # if return_all==False returns Vout_f, Vout_m, that are value functions
+    # of male and female from entering this union
+    # if return_all==True returns (Vout_f, Vout_m, ismar, thetaout, technical)
+    # where ismar is marriage decision, thetaout is resulting theta and 
+    # tuple technical contains less usable stuff (check v_newmar_core for it)
+    #
+    # combine = True creates matrix (n_s-by-n_inds)
+    # combine = False assumed that n_s is the same shape as n_inds and creates
+    # a flat array.
+    
+    
+    if marriage:
+        coup = 'Couple, M'
+    else:
+        coup = 'Couple, C'
+    
+    
+    
+    # import objects
+    agrid_c = setup.agrid_c
+    agrid_s = setup.agrid_s
+    gamma = setup.pars['m_bargaining_weight']   
+    
+    
+    VMval_single, VFval_single = V['Male, single']['V'], V['Female, single']['V']
+    VMval_postren, VFval_postren = V[coup]['VM'], V[coup]['VF']
+    
+    # type conversion
+    #VMval_single, VFval_single, VMval_postren, VFval_postren = \
+    #    [np.float32(x) for x in  
+    #     (VMval_single, VFval_single, VMval_postren, VFval_postren)]
+    
+    
+    
+    # substantial part
+    ind, izf, izm, ipsi = setup.all_indices(ind_or_inds)
+    
+    
+    # using trim = True implicitly trims things on top
+    # so if sf is 0.75*amax and sm is 0.75*amax then sc is 1*amax and not 1.5
+    
+    #sc = sf+sm # savings of couple
+    s_partner = agrid_c[icouple] - agrid_s # we assume all points on grid
+    
+    
+    # this implicitly trims negative or too large values
+    s_partner_v = VecOnGrid(agrid_s,s_partner,trim=True) 
+    
+    
+    # this applies them
+    
+    if female:
+        Vfs = VFval_single[:,izf]
+        Vms = s_partner_v.apply(VMval_single,axis=0,take=(1,izm))
+    else:
+        Vms = VMval_single[:,izm]
+        Vfs = s_partner_v.apply(VFval_single,axis=0,take=(1,izf))
+        
+        
+        
+    
+    
+    expnd = lambda x : setup.v_thetagrid_fine.apply(x,axis=2)
+    
+    
+    Vmm, Vfm = (expnd(x[:,ind,:]) for x in 
+                     (VMval_postren,VFval_postren))
+    
+   
+    ins = [Vfm,Vmm,Vfs,Vms,gamma]
+    ins = [np.float32(x) for x in ins] # optional type conversion
+    vfout, vmout, nbsout, agree, ithetaout = mar_mat(*ins)
+    
+
+    #assert np.allclose(vfout,vfout2)
+    #assert np.allclose(vmout,vmout2)
+    #assert np.allclose(nbsout,nbsout2)
+    #assert np.allclose(ithetaout,ithetaout2)
+    
+    
+    
+    return {'Values': (vfout, vmout), 'NBS': nbsout, 'theta': ithetaout, 'Decision':agree}
+
+##### technical part
+    
+
 
 
 
@@ -135,7 +193,6 @@ def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,Vmale,Vfemale,izf,izm,cost_f
     fem_gets = VecOnGrid(np.array(shrs),share_fem)
     mal_gets = VecOnGrid(np.array(shrs),share_mal)
     
-    
     i_fem = fem_gets.i
     wn_fem = fem_gets.wnext
     
@@ -143,6 +200,8 @@ def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,Vmale,Vfemale,izf,izm,cost_f
     wn_mal = mal_gets.wnext
     
     inds_exo = np.arange(setup.pars['nexo'])
+    
+    
     
     Vf_divorce = (1-wn_fem[None,:])*Vf_divorce_M[:,inds_exo,i_fem] + \
                 wn_fem[None,:]*Vf_divorce_M[:,inds_exo,i_fem+1]
@@ -155,28 +214,25 @@ def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,Vmale,Vfemale,izf,izm,cost_f
     return Vf_divorce, Vm_divorce
 
 
-
-
 def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
     # compute the surplus
-    sf = vf_y - vf_n[...,None]
-    sm = vm_y - vm_n[...,None]
+    
     
     # interpolate it
     tgf = setup.v_thetagrid_fine
-    sf_expand = tgf.apply(sf,axis=sf.ndim-1)
-    sm_expand = tgf.apply(sm,axis=sm.ndim-1)
     
     
+    vy, vfy, vmy = (tgf.apply(x,axis=2) for x in (v_y,vf_y,vm_y) )
     
+    sf_expand = vfy - vf_n[...,None]
+    sm_expand = vmy - vm_n[...,None]
     
-    
+    exp_shape = sf_expand.shape
     
     
     # compute where each agent agrees
     i_sf_expand = (sf_expand >= 0)
     i_sm_expand = (sm_expand >= 0)
-    
     
     # check for single crossing
     # signle crossing from false to true
@@ -186,7 +242,6 @@ def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
     d_sm = np.sum(np.diff(i_sm_expand.astype(int),axis=-1),axis=-1)
     sc_m = (d_sm == -1) | (d_sm == 0)
     sc = (sc_f) & (sc_m)
-    
     
     # agreement for all theta
     agree = (i_sf_expand) & (i_sm_expand)
@@ -203,38 +258,33 @@ def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
     
     # these things still have nice shape
     
-    
-    full_shape = sf.shape
-    
-    
     # compute couple's value of divroce
     # make large arrays with values for each theta
-    tgrid = setup.thetagrid.reshape((1,)*(len(full_shape)-1) + (setup.ntheta,))
-    vf_div_full = np.broadcast_to(vf_n[...,None],full_shape)
-    vm_div_full = np.broadcast_to(vm_n[...,None],full_shape)
+    
+    tgrid = tgf.val[None,None,:]
+    vf_div_full = np.broadcast_to(vf_n[...,None],exp_shape)
+    vm_div_full = np.broadcast_to(vm_n[...,None],exp_shape)
     v_div_full = vf_div_full*tgrid + vm_div_full*(1-tgrid)
     #theta_full = np.broadcast_to(tgrid,full_shape)
     
     
-    v_out, vf_out, vm_out = v_y.copy(), vf_y.copy(), vm_y.copy()
+    v_out, vf_out, vm_out = vy.copy(), vfy.copy(), vmy.copy()
     
-    theta_out = -1*np.ones(full_shape,dtype=np.float32) # resulting thetas, can be off grid    
-    i_theta_out = -1*np.ones(full_shape,dtype=np.int16) # grid position 
-    wn_theta_out = np.zeros(full_shape,dtype=np.float32) # weight of the next point
+    i_theta_out = -1*np.ones(exp_shape,dtype=np.int16) # grid position 
     
     
     # fill disagreement
-    v_out[no,:] = v_div_full[no,:]
+    
+    v_out[no,:]  = v_div_full[no,:]
     vf_out[no,:] = vf_div_full[no,:]
     vm_out[no,:] = vm_div_full[no,:]
-    
     
     
     
     # renegotiation for single crossing points
     # note that this will be reshaped
     
-    for yes_i, solver_i, solver_j in zip([yes_sc,yes_nsc],[ind_sc,ind_no_sc],[ind_no_sc,ind_sc]):
+    for yes_i, solver_i in zip([yes_sc,yes_nsc],[ind_sc,ind_no_sc]):
         if not np.any(yes_i): continue
             
         agree_this = agree[yes_i,:] # this is large matrix (??? x ntheta)
@@ -245,40 +295,206 @@ def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
         #thetagrid_fine = setup.thetagrid_fine
         inds = solver_i(agree_this)  # finds indices of nearest positive element
                                     # on a fine grid for theta
-        inds2 = solver_j(agree_this)
-        assert np.allclose(inds,inds2)
-        # then converts them to indices on regular grid
-        theta_result = setup.v_thetagrid_fine.val[inds][:,setup.theta_orig_on_fine]
-        i = setup.v_thetagrid_fine.i[inds][:,setup.theta_orig_on_fine]
-        wn = setup.v_thetagrid_fine.wnext[inds][:,setup.theta_orig_on_fine]
-        # and write them to the objects we care about
+        #inds2 = solver_j(agree_this)
+        #assert np.allclose(inds,inds2)
         
-        theta_out[yes_i,:] = theta_result
-        i_theta_out[yes_i,:] = i # indexing is a bit mad :(
-        wn_theta_out[yes_i,:] = wn 
+        i_theta_out[yes_i,:] = inds # indexing is a bit mad :(
         
         
-        fout = lambda x : (1-wn)*np.take_along_axis(x[yes_i,:],i,1) + \
-                            wn*np.take_along_axis(x[yes_i,:],i+1,1)
-        
-        
-        v_out[yes_i,:] = fout(v_y)
-        vf_out[yes_i,:] = fout(vf_y)
-        vm_out[yes_i,:] = fout(vm_y)
+        v_out[yes_i,:] = np.take_along_axis(vy[yes_i,:],inds,axis=1)
+        vf_out[yes_i,:] = np.take_along_axis(vfy[yes_i,:],inds,axis=1)
+        vm_out[yes_i,:] = np.take_along_axis(vmy[yes_i,:],inds,axis=1)
         
         
         
     assert np.all(vf_out>=vf_div_full - 1e-4)
     assert np.all(vm_out>=vm_div_full - 1e-4)
-    assert np.all(theta_out[yes,:] > 0)
     assert not np.any(yes_nsc), 'Single crossing does not hold!' # FIXME: remove this later
     
     
+    return {'Decision': yes, 'thetas': i_theta_out,
+                'Values': (v_out, vf_out, vm_out)}
+
+
+
+@njit
+def ren_loop(vy,vfy,vmy,vfn,vmn,thtgrid):
+    print('hi!')
+
+    sf = vfy - vfn
+    sm = vmy - vmn
     
-    return {'Decision': yes, 'thetas': (theta_out, i_theta_out, wn_theta_out),
-                'Values': (v_out, vf_out,vm_out)}
+    na, nexo, nt = vy.shape
+    
+    vout = vy.copy()
+    vfout = vfy.copy()
+    vmout = vmy.copy()
+    
+    thetaout = -1*np.zeros(vout.shape,dtype=np.float32)
+    
+    for ia in range(na):
+        for iexo in range(nexo):
+            sf_i = sf[ia,iexo,:]
+            sm_i = sm[ia,iexo,:]
+            
+            both = (sf_i >= 0) & (sm_i >= 0)
+            
+            
+            if not np.any(both):
+                # divorce
+                vfout[ia,iexo,:] = vfn[ia,iexo,0]
+                vmout[ia,iexo,:] = vmn[ia,iexo,0]
+                for itheta in range(nt):
+                    th = thtgrid[itheta]
+                    vout[ia,iexo,itheta] = th*vfn[ia,iexo,0] + (1-th)*vmn[ia,iexo,0]
+            
+            else:
+                # renegotiate
+                
+                numbers = np.nonzero(both)[0]
+                
+                for itheta in range(nt):
+                    if both[itheta]:
+                        # status quo
+                        thetaout[ia,iexo,itheta] = thtgrid[itheta]
+                        continue
+                    # if not both
+                    in_closest = np.argmin(np.abs(numbers - itheta))
+                    i_closest = numbers[in_closest]
+                    thetaout[ia,iexo,itheta] = thtgrid[i_closest]
+                    vout[ia,iexo,itheta] = vy[ia,iexo,i_closest]
+                    vfout[ia,iexo,itheta] = vfy[ia,iexo,i_closest]
+                    vmout[ia,iexo,itheta] = vmy[ia,iexo,i_closest]
+                    
+    
+    return vout, vfout, vmout, thetaout
+                    
+                    
+                    
+                    
+
+@njit
+def mar_loop(vfy,vmy,vfn,vmn,gamma):
+
+    sf = vfy - np.expand_dims(vfn,vfn.ndim)
+    sm = vmy - np.expand_dims(vmn,vmn.ndim)
+    
+    na, nexo, nt = vfy.shape
+    
+    #vout = np.zeros((vy.shape[:-1]),np.float32)
+    vfout = vfn.copy()
+    vmout = vmn.copy()
+    nbsout = np.zeros(vfn.shape)
+    
+    ithetaout = -1*np.ones(vfout.shape,dtype=np.int32)
+    agree = np.zeros(vfout.shape,dtype=np.bool)
+    
+    ntheta = vfy.shape[-1]
+    
+    for ia in range(na):
+        for iexo in range(nexo):
+            sf_i = sf[ia,iexo,:]
+            sm_i = sm[ia,iexo,:]
+            
+            both = (sf_i > 0) & (sm_i > 0)
+            
+            good = np.any(both)
+             
+            agree[ia,iexo] = good
+            
+            
+            if good:
+                nbs = np.zeros(ntheta,dtype=np.float32)
+                nbs[both] = (sf_i[both]**gamma) * (sm_i[both]**(1-gamma))
+                i_best = nbs.argmax()
+                nbs_best = nbs[i_best]
+                assert nbs_best > 0
+                ithetaout[ia,iexo] = i_best
+                vfout[ia,iexo] = vfy[ia,iexo,i_best]
+                vmout[ia,iexo] = vmy[ia,iexo,i_best]
+                nbsout[ia,iexo] = nbs_best
+                
+    return vfout, vmout, nbsout, agree, ithetaout
+            
+            
+
+@vectorize('float32(float32,float32,float32)')  
+def nbs(x,y,gamma):
+    if x > 0 and y > 0:
+        return (x**gamma) * (y**(1-gamma))
+    else:
+        return 0
+                        
 
 
+def mar_mat(vfy,vmy,vfn,vmn,gamma):
+
+    sf = vfy - np.expand_dims(vfn,vfn.ndim)
+    sm = vmy - np.expand_dims(vmn,vmn.ndim)
+    
+    
+    
+    #vout = np.zeros((vy.shape[:-1]),np.float32)
+    vfout = vfn.copy()
+    vmout = vmn.copy()
+    
+    
+    agree = (sf>0) & (sm>0)
+    any_agree = np.any(agree,axis=-1)
+    
+    # this reshapes things
+    n_agree = np.sum(any_agree)
+    
+    nbsout = np.zeros(vfn.shape,dtype=np.float32)
+    ithetaout = -1*np.ones(vfn.shape,dtype=np.int32)
+    
+    
+    if n_agree > 0:       
+        
+        sf_a = sf[any_agree,:]
+        sm_a = sm[any_agree,:]
+        nbs_a = np.zeros(sf_a.shape,dtype=np.float32)
+        
+        a_pos = (sf_a>0) & (sm_a>0)
+        
+        nbs_a[a_pos] = (sf_a[a_pos]**gamma) * (sm_a[a_pos]**(1-gamma))
+        inds_best = np.argmax(nbs_a,axis=1)
+        
+        take = lambda x : np.take_along_axis(x,inds_best[:,None],axis=1).reshape((n_agree,))
+        
+        nbsout[any_agree] = take(nbs_a) 
+        assert np.all(nbsout[any_agree] > 0)
+        ithetaout[any_agree] = inds_best
+        vfout[any_agree] = take(vfy[any_agree,:])
+        vmout[any_agree] = take(vmy[any_agree,:])
+        
+        
+        
+        
+    return vfout, vmout, nbsout, any_agree, ithetaout
+        
+        
+        
+    
+    
+    
+    #nbsout = nbs(sf,sm,gamma)
+    
+    
+    
+    
+    
+    #ithetaout = -1*np.zeros(vfout.shape,dtype=np.float32)
+    
+    
+    
+                
+    
+    #return vfout, vmout, nbsout, ithetaout
+    
+
+
+ 
 
 
 def ind_sc(i_pos):

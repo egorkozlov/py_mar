@@ -306,9 +306,17 @@ def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
         vm_out[yes_i,:] = np.take_along_axis(vmy[yes_i,:],inds,axis=1)
         
         
+    try:
+        assert np.all(vf_out>=vf_div_full - 1e-4)
+    except:
+        print('Warning: broken is {} cases'.format(np.sum(vf_out<=vf_div_full - 1e-4)))
         
-    assert np.all(vf_out>=vf_div_full - 1e-4)
-    assert np.all(vm_out>=vm_div_full - 1e-4)
+    try:
+        assert np.all(vm_out>=vm_div_full - 1e-4)
+    except:
+        print('Warning: broken is {} cases'.format(np.sum(vm_out<=vm_div_full - 1e-4)))
+        
+    
     assert not np.any(yes_nsc), 'Single crossing does not hold!' # FIXME: remove this later
     
     

@@ -21,7 +21,7 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()        
-        p['T']         = 11
+        p['T']         =11
         p['sig_zf_0']  = 0.25
         p['sig_zf']    = 0.25
         p['n_zf']      = 5
@@ -29,8 +29,8 @@ class ModelSetup(object):
         p['sig_zm']    = 0.25
         p['n_zm']      = 5
         p['sigma_psi_init'] = 0.28
-        p['sigma_psi']   = 0.11
-        p['R'] = 1.2
+        p['sigma_psi']   = 0.21
+        p['R'] = 1.04
         p['n_psi']     = 12
         p['beta'] = 0.95
         p['A'] = 1.2 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
@@ -123,9 +123,9 @@ class ModelSetup(object):
         self.na = 60
         self.amin = 0
         self.amax = 20
-        #self.agrid_c = np.linspace(self.amin,self.amax,self.na)
+        self.agrid_c = np.linspace(self.amin,self.amax,self.na)
         tune=1.5
-        self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
+        #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         
         # this builds finer grid for potential savings
         s_between = 10 # default numer of points between poitns on agrid
@@ -140,7 +140,7 @@ class ModelSetup(object):
         self.amax_s = self.amax/2.0
         self.agrid_s = np.linspace(self.amin_s,self.amax_s,self.na)
         tune_s=1.5
-        self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
+        #self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
         
         self.sgrid_s = build_s_grid(self.agrid_s,s_between,s_da_min,s_da_max)
         self.s_ind_s, self.s_p_s = sgrid_on_agrid(self.sgrid_s,self.agrid_s)
@@ -229,7 +229,7 @@ class ModelSetup(object):
         for ia, a in enumerate(agrid_s):
             lagrid_t = np.zeros_like(agrid_c)
             
-            i_neg = (agrid_c < max(abar,a))
+            i_neg = (agrid_c <= max(abar,a) + 1e-3)
             
             lagrid_t[~i_neg] = np.log((agrid_c[~i_neg] - a)/max(abar,a))
             lmin = lagrid_t[~i_neg].min()
@@ -237,7 +237,7 @@ class ModelSetup(object):
             lagrid_t[i_neg] = lmin - s_a_partner*10 - \
                 s_a_partner*np.flip(np.arange(i_neg.sum())) 
             
-            
+            # TODO: this needs to be checked
             p_a = int_prob(lagrid_t,mu=0,sig=s_a_partner,n_points=npoints)
             i_pa = (-p_a).argsort()[:npoints] # this is more robust then nonzero
             p_pa = p_a[i_pa]

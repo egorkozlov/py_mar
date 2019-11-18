@@ -8,7 +8,7 @@ This file creates Graphs based on Policy and Value Functions
 import numpy as np
 import dill as pickle
 import matplotlib.pyplot as plt 
-from ren_mar import v_mar2, v_ren2
+from ren_mar_alt import v_mar_igrid
 import gzip
 
 
@@ -16,7 +16,7 @@ import gzip
 def graphs(setup,ai,zfi,zmi,psii,ti,thi):
     # Import Value Funcrtion previously saved on File
     with gzip.open('name_model.pkl', 'rb') as file:
-        Packed = pickle.load(file)
+        (Packed,dec) = pickle.load(file)
         
     ################################################
     # Unpack Stuff to Make it easier to Visualize
@@ -27,14 +27,14 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
     zfg = setup.exogrid.zf_t[ti]
     zmg = setup.exogrid.zm_t[ti]
     psig = setup.exogrid.psi_t[ti]
-    vtoutf=np.zeros([T,len(setup.agrids),len(psig)])
-    thetf=np.zeros([T,len(setup.agrids),len(psig)])
-    thetf_c=np.zeros([T,len(setup.agrids),len(psig)])
-    vtoutm=np.zeros([T,len(setup.agrids),len(psig)])
-    thetm=np.zeros([T,len(setup.agrids),len(psig)])
-    thetm_c=np.zeros([T,len(setup.agrids),len(psig)])
-    vtoutf_c=np.zeros([T,len(setup.agrids),len(psig)])
-    vtoutm_c=np.zeros([T,len(setup.agrids),len(psig)])
+    vtoutf=np.zeros([T,len(agrids),len(psig)])
+    thetf=np.zeros([T,len(agrids),len(psig)])
+    thetf_c=np.zeros([T,len(agrids),len(psig)])
+    vtoutm=np.zeros([T,len(agrids),len(psig)])
+    thetm=np.zeros([T,len(agrids),len(psig)])
+    thetm_c=np.zeros([T,len(agrids),len(psig)])
+    vtoutf_c=np.zeros([T,len(agrids),len(psig)])
+    vtoutm_c=np.zeros([T,len(agrids),len(psig)])
     inds=np.zeros(len(psig))
     
   
@@ -48,24 +48,38 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
             inds[i]=setup.all_indices((zfi,zmi,i))[0]
         inds=np.array(inds,np.int64)
         # cohabitation
-        (vf_c, vm_c, iscoh, tht_c, s_), nbs_c = v_mar2(setup,Packed[t],False,setup.agrids,setup.agrids,inds,combine=True,return_all=True)
+        resc = v_mar_igrid(setup,Packed[t],ai,inds,female=True,marriage=False)
+        (vf_c,vm_c), nbs_c, decm, tht_c = resc['Values'], resc['NBS'], resc['Decision'], resc['theta']
+        
+        is_state=(tht_c==-1)
+        inde = np.where(is_state)
+        tcv=setup.thetagrid_fine[tht_c]
+        tcv[inde[0],inde[1]]=None
+        
         # marriage
-        (vf_m, vm_m, ismar, tht_m, ss_), nbs_m = v_mar2(setup,Packed[t],True,setup.agrids,setup.agrids,inds,combine=True,return_all=True)
+        resm = v_mar_igrid(setup,Packed[t],ai,inds,female=True,marriage=True)
+        (vf_m,vm_m), nbs_m, decm, tht_m = resm['Values'], resm['NBS'], resm['Decision'], resm['theta']
+        
+        is_state2=(tht_m==-1)
+        inde2 = np.where(is_state2)
+        tcm=setup.thetagrid_fine[tht_m]
+        tcm[inde2[0],inde2[1]]=None
     
+      
         #Cohabitation-Marriage Choice 
         i_mar = (nbs_m>=nbs_c) 
             
         vout_ft = i_mar*vf_m + (1.0-i_mar)*vf_c
-        thet_ft = i_mar*tht_m + (1.0-i_mar)*tht_c
+        thet_ft = i_mar*tcm + (1.0-i_mar)*tcv
         vout_mt = i_mar*vm_m + (1.0-i_mar)*vm_c
  
         
         vtoutf[t,:,:]=vout_ft
         vtoutf_c[t,:,:]=vf_c
         thetf[t,:,:]=thet_ft
-        thetf_c[t,:,:]=tht_c
+        thetf_c[t,:,:]=tcv
         vtoutm[t,:,:]=vout_mt
-        vtoutm_c[t,:,:]=vm_c
+        #vtoutm_c[t,:,:]=vm_c
         #thetm[t,:]=1.0-thet_ft
         #thetm_c[t,:]=1.0-tht_c
             
@@ -77,6 +91,7 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
     Vms,cms,sms=np.empty([3,len(agrids), len(zmg),T])
     Vm,Vfm,Vmm,cm,sm=np.empty([5,len(agrid), len(zfg),len(zmg),len(psig),T,setup.ntheta])# RVfm,RVmm,thfm,thmm,
     Vc,Vfc,Vmc,cc,sc=np.empty([5,len(agrid), len(zfg),len(zmg),len(psig),T,setup.ntheta])#RVfc,RVmc,thfc,thmc,
+    thetam_R,thetac_R=np.empty([2,len(agrid), len(zfg),len(zmg),len(psig),T,len(setup.thetagrid_fine)])
     
     #Single Women
     for t in range(T):
@@ -124,6 +139,17 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
                 #RVfc[j,zf,zm,psi,t]=vtoutf_c[t][j,i]
                 #thmc[j,zf,zm,psi,t]=thetm_c[t][j,i]
                 #thfc[j,zf,zm,psi,t]=thetf_c[t][j,i]
+                
+                #Renegotiated thetas-exit
+                is_state=(dec[min(t,T-2)]['Couple, M']['thetas'][j,i,]==-1)
+                inde = np.where(is_state)[0]
+                thetam_R[j,zf,zm,psi,t,]=setup.thetagrid_fine[dec[min(t,T-2)]['Couple, M']['thetas'][j,i,]]
+                thetam_R[j,zf,zm,psi,t,inde]=None
+                
+                is_state=(dec[min(t,T-2)]['Couple, C']['thetas'][j,i,]==-1)
+                inde = np.where(is_state)[0]
+                thetac_R[j,zf,zm,psi,t,]=setup.thetagrid_fine[dec[min(t,T-2)]['Couple, C']['thetas'][j,i,]]
+                thetac_R[j,zf,zm,psi,t,inde]=None
     
     
     #########################################
@@ -368,6 +394,21 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
     plt.xlabel('Love')
     plt.ylabel('Theta')
     print(444,thetf[ti,ai,1:len(psig)],thetf_c[ti,ai,1:len(psig)])
+    
+    ##########################################
+    # Renegotiated Thetas-Possible Split
+    ########################################## 
+    zero = np.array([0.0] * psig)
+    fig10 = plt.figure()
+    plt.plot(psig, zero,'k',linewidth=1)
+    plt.plot(psig,  thetam_R[ai,zfi,zmi,0:len(psig),ti,0],'b',linewidth=1.5, label='Theta Marriage')
+    plt.plot(psig,  thetac_R[ai,zfi,zmi,0:len(psig),ti,0],'r', linestyle='--',linewidth=1.5, label='Theta Cohabitation')
+    for j in range(0, len(setup.thetagrid_fine), 10): 
+        plt.plot(psig,  thetam_R[ai,zfi,zmi,0:len(psig),ti,j],'b',linewidth=1.5)
+        plt.plot(psig,  thetam_R[ai,zfi,zmi,0:len(psig),ti,j],'r', linestyle='--',linewidth=1.5)
+    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    plt.xlabel('Love')
+    plt.ylabel('Theta')
     
     ##########################################
     # Consumption over the Life Cycle

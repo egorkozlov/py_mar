@@ -13,7 +13,7 @@ from gridvec import VecOnGrid
 class Agents:
     
     
-    def __init__(self,M,N=1000,T=None,verbose=True):
+    def __init__(self,M,N=7000,T=None,verbose=True):
         if T is None:
             T = M.setup.pars['T']
             
@@ -36,7 +36,7 @@ class Agents:
         
         self.iassets = np.zeros((N,T),np.int32)
         
->>>>>>> f-cohab0
+
         # initialize theta
         self.itheta = -np.ones((N,T),np.int32)
         

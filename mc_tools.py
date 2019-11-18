@@ -204,8 +204,11 @@ def int_prob_standard(vec,trim=True,trim_level=0.001,n_points=None):
     # [p0,...,p_{n-1}] such that p_i = P[d(Z,x_i) is minimal among i], where
     # Z is standard normal ranodm variable
     
-    assert np.all(np.diff(vec)>0), "vec must be ordered and increasing!"
-    
+    try:
+        assert np.all(np.diff(vec)>0), "vec must be ordered and increasing!"
+    except:
+        print(vec)
+        assert False
     
     vm = np.concatenate( ([-np.inf],vec[:-1]) )
     vp = np.concatenate( (vec[1:],[np.inf]) )

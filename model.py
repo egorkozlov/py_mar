@@ -137,7 +137,7 @@ class Model(object):
         return iterate, initialize
         
         
-    def solve(self):
+    def solve(self,graphs=False):
         T = self.setup.pars['T']
         self.V = list()
         self.decisions = list()
@@ -161,21 +161,23 @@ class Model(object):
             self.decisions = [decnow] + self.decisions
             
         #For Graphs
-        with gzip.open('name_model.pkl', 'wb') as file:
-            pickle.dump(self.V, file) 
+        
+        if graphs:
+            with gzip.open('name_model.pkl', 'wb') as file:
+                pickle.dump((self.V,self.decisions), file) 
+            self.time('pickling')    
             
             
             
-            
-    def solve_sim(self):
+    def solve_sim(self,graphs=False,simulate=True):
 
         #Solve the model
         self.solve()
-        
+        if not simulate: return
         #Simulate the model
         self.agents = Agents(self)
         self.agents.simulate()
-        #moment(self.setup,gassets,iexo,state,gtheta,True)
+        moment(self.agents,True)
         
         
         #return gassets,iexo,state,gtheta

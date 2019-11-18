@@ -11,34 +11,38 @@ plots some graphs
 import numpy as np
 import matplotlib.pyplot as plt 
 
-def moment(setup,gassets,iexo,state,gtheta,draw=True):
+def moment(agents,draw=True):
 #This function compute moments coming from the simulation
 #Optionally it can also plot graphs about them. It is feeded with
 #matrixes coming from simulations
 
+    #Import simulated values
+    assets_t=agents.setup.agrid_c[agents.iassets]
+    iexo=agents.iexo
+    state=agents.state
+    theta_t=agents.setup.thetagrid_fine[agents.itheta]
+   
     #As a first thing we unpack assets and theta
-    assets_t=np.array([gassets[t].val for t in range(setup.pars['T'])]).T
-    theta_t=np.array([gtheta[t].val for t in range(setup.pars['T'])]).T
     N=len(state)
     
     #Get states codes
-    state_codes = {name: i for i, name in enumerate(setup.state_names)}
+    state_codes = {name: i for i, name in enumerate(agents.setup.state_names)}
     
     ###########################################
     #Moments: Variables over Age
     ###########################################
     
-    relt=np.zeros((len(state_codes),setup.pars['T']))
-    ass_rel=np.zeros((len(state_codes),setup.pars['T']))
-    inc_rel=np.zeros((len(state_codes),setup.pars['T']))
+    relt=np.zeros((len(state_codes),agents.setup.pars['T']))
+    ass_rel=np.zeros((len(state_codes),agents.setup.pars['T']))
+    inc_rel=np.zeros((len(state_codes),agents.setup.pars['T']))
     
     for ist,sname in enumerate(state_codes):
-        for t in range(setup.pars['T']):
+        for t in range(agents.setup.pars['T']):
             
             #Arrays for preparation
             is_state = (state[:,t]==ist)
             ind = np.where(is_state)[0]
-            zf,zm,psi=setup.all_indices(iexo[ind,t])[1:4]
+            zf,zm,psi=agents.setup.all_indices(iexo[ind,t])[1:4]
             
             #Relationship over time
             relt[ist,t]=np.sum(is_state)
@@ -48,13 +52,13 @@ def moment(setup,gassets,iexo,state,gtheta,draw=True):
             
             #Income over time
             if sname=="Female, single":
-                inc_rel[ist,t]=np.mean(np.exp(setup.exogrid.zf_t[t][zf]))
+                inc_rel[ist,t]=np.mean(np.exp(agents.setup.exogrid.zf_t[t][zf]))
                 
             elif sname=="Male, single":
-                 inc_rel[ist,t]=np.mean(np.exp(setup.exogrid.zf_t[t][zm]))
+                 inc_rel[ist,t]=np.mean(np.exp(agents.setup.exogrid.zf_t[t][zm]))
                 
             elif sname=="Couple, C" or sname=="Couple, M":
-                 inc_rel[ist,t]=np.mean(np.exp(setup.exogrid.zf_t[t][zf])+np.exp(setup.exogrid.zf_t[t][zm]))
+                 inc_rel[ist,t]=np.mean(np.exp(agents.setup.exogrid.zf_t[t][zf])+np.exp(agents.setup.exogrid.zf_t[t][zm]))
     
             else:
             
@@ -70,7 +74,7 @@ def moment(setup,gassets,iexo,state,gtheta,draw=True):
     
     for n in range(N):
         for ist,sname in enumerate(state_codes):
-            for t in range(setup.pars['T']):
+            for t in range(agents.setup.pars['T']):
                 
                 if t==0:
                     leng=0
@@ -78,7 +82,7 @@ def moment(setup,gassets,iexo,state,gtheta,draw=True):
                 if (leng>=0) and (state[n,t]==ist): 
                     leng=leng+1
                 
-                if (leng>0 and state[n,t]!=ist) or (t==setup.pars['T']-1): 
+                if (leng>0 and state[n,t]!=ist) or (t==agents.setup.pars['T']-1): 
                    
                     spells_type=[ist] + spells_type
                     spells_length=[leng] + spells_length
@@ -112,7 +116,7 @@ def moment(setup,gassets,iexo,state,gtheta,draw=True):
     #Hazard of Divorce
     hazd=list()
     lgh=len(spells_CoupleM[:,0])
-    for t in range(setup.pars['T']):
+    for t in range(agents.setup.pars['T']):
         
         cond=spells_CoupleM[:,1]==t+1
         temp=spells_CoupleM[cond,2]
@@ -131,7 +135,7 @@ def moment(setup,gassets,iexo,state,gtheta,draw=True):
     #Hazard of Separation
     hazs=list()
     lgh=len(spells_CoupleC[:,0])
-    for t in range(setup.pars['T']):
+    for t in range(agents.setup.pars['T']):
         
         cond=spells_CoupleC[:,1]==t+1
         temp=spells_CoupleC[cond,2]
@@ -150,7 +154,7 @@ def moment(setup,gassets,iexo,state,gtheta,draw=True):
     #Hazard of Marriage (Cohabitation spells)
     hazm=list()
     lgh=len(spells_CoupleC[:,0])
-    for t in range(setup.pars['T']):
+    for t in range(agents.setup.pars['T']):
         
         cond=spells_CoupleC[:,1]==t+1
         temp=spells_CoupleC[cond,2]
@@ -178,9 +182,9 @@ def moment(setup,gassets,iexo,state,gtheta,draw=True):
         #Print something useful for debug and rest
         print('The share of singles choosing marriage is {0:.2f}'.format(sharem))
         cond=(state<2)
-        print('The max level of assets for singles is {:.2f}, the grid upper bound is {:.2f}'.format(np.amax(assets_t[cond]),max(setup.agrids)))
+        print('The max level of assets for singles is {:.2f}, the grid upper bound is {:.2f}'.format(np.amax(assets_t[cond]),max(agents.setup.agrid_s)))
         cond=(state>1)
-        print('The max level of assets for couples is {:.2f}, the grid upper bound is {:.2f}'.format(np.amax(assets_t[cond]),max(setup.agrid)))
+        print('The max level of assets for couples is {:.2f}, the grid upper bound is {:.2f}'.format(np.amax(assets_t[cond]),max(agents.setup.agrid_c)))
         
         #############################################
         # Hazard of Divorce, Separation and Marriage
@@ -188,9 +192,9 @@ def moment(setup,gassets,iexo,state,gtheta,draw=True):
         fig = plt.figure()
         f1=fig.add_subplot(2,1,1)
         
-        plt.plot(np.array(range(setup.pars['T'])), hazd,markersize=6, label='Hazard of Divorce')
-        plt.plot(np.array(range(setup.pars['T'])), hazs,markersize=6, label='Hazard of Separation')
-        plt.plot(np.array(range(setup.pars['T'])), hazm,markersize=6, label='Hazard of Marriage')
+        plt.plot(np.array(range(agents.setup.pars['T'])), hazd,markersize=6, label='Hazard of Divorce')
+        plt.plot(np.array(range(agents.setup.pars['T'])), hazs,markersize=6, label='Hazard of Separation')
+        plt.plot(np.array(range(agents.setup.pars['T'])), hazm,markersize=6, label='Hazard of Marriage')
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=3, fontsize='x-small')
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')
@@ -204,7 +208,7 @@ def moment(setup,gassets,iexo,state,gtheta,draw=True):
         f2=fig.add_subplot(2,1,1)
         
         for ist,sname in enumerate(state_codes):
-            plt.plot(np.array(range(setup.pars['T'])), ass_rel[ist,],color=print(ist/len(state_codes)),markersize=6, label=sname)
+            plt.plot(np.array(range(agents.setup.pars['T'])), ass_rel[ist,],color=print(ist/len(state_codes)),markersize=6, label=sname)
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')
@@ -219,7 +223,7 @@ def moment(setup,gassets,iexo,state,gtheta,draw=True):
         
         for ist,sname in enumerate(state_codes):
           
-            plt.plot(np.array(range(setup.pars['T'])), inc_rel[ist,],color=print(ist/len(state_codes)),markersize=6, label=sname)
+            plt.plot(np.array(range(agents.setup.pars['T'])), inc_rel[ist,],color=print(ist/len(state_codes)),markersize=6, label=sname)
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')
         plt.xlabel('Time')
@@ -233,7 +237,7 @@ def moment(setup,gassets,iexo,state,gtheta,draw=True):
         f4=fig.add_subplot(2,1,1)
         for ist,sname in enumerate(state_codes):
             plt.plot([],[],color=print(ist/len(state_codes)), label=sname)
-        plt.stackplot(np.array(range(setup.pars['T'])),relt[0,]/N,relt[1,]/N,relt[2,]/N,relt[3,]/N,
+        plt.stackplot(np.array(range(agents.setup.pars['T'])),relt[0,]/N,relt[1,]/N,relt[2,]/N,relt[3,]/N,
                       colors = ['b','y','g','r'])            
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')

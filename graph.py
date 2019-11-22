@@ -13,10 +13,10 @@ import gzip
 
 
 
-def graphs(setup,ai,zfi,zmi,psii,ti,thi):
+def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     # Import Value Funcrtion previously saved on File
-    with gzip.open('name_model.pkl', 'rb') as file:
-        (Packed,dec) = pickle.load(file)
+    #with open('name_model.pkl', 'rb') as file:
+    #    (Packed,dec) = pickle.load(file)
         
     ################################################
     # Unpack Stuff to Make it easier to Visualize
@@ -89,10 +89,24 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
    
     Vfs,cfs,sfs=np.empty([3,len(agrids), len(zfg),T])
     Vms,cms,sms=np.empty([3,len(agrids), len(zmg),T])
+    Vf_div,Vm_div=np.empty([2,len(agrid), len(zfg),len(zmg),T])
     Vm,Vfm,Vmm,cm,sm=np.empty([5,len(agrid), len(zfg),len(zmg),len(psig),T,setup.ntheta])# RVfm,RVmm,thfm,thmm,
     Vc,Vfc,Vmc,cc,sc=np.empty([5,len(agrid), len(zfg),len(zmg),len(psig),T,setup.ntheta])#RVfc,RVmc,thfc,thmc,
     thetam_R,thetac_R=np.empty([2,len(agrid), len(zfg),len(zmg),len(psig),T,len(setup.thetagrid_fine)])
     
+    #Divorced Women and Men
+    for t in range(T):
+        for j in range(len(agrid)):
+            for i in range(setup.pars['nexo']):
+                
+                #Get the indexes from zf,zm,psi
+                zf,zm,psi=setup.all_indices(i)[1:4]
+                
+                #Marriage
+
+                Vf_div[j,zf,zm,t]=dec[min(t,T-2)]['Couple, M']['Divorce'][0][j,i,0]
+                Vm_div[j,zf,zm,t]=dec[min(t,T-2)]['Couple, M']['Divorce'][1][j,i,0]
+               
     #Single Women
     for t in range(T):
         for i in range(len(zfg)):
@@ -176,6 +190,7 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
     ################################
     ####################################
     
+    #TODO graph for savings given theta
     
     ##########################################
     # Value Functions wrt Love
@@ -264,17 +279,30 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
     legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
     plt.xlabel('Assets')
     plt.ylabel('Marriage Surplus wrt Cohab.')
+     
+     
+    ##########################################
+    # Divorce and Assets
+    ########################################## 
+    fig = plt.figure()
+    f51=fig.add_subplot(2,1,1)
+    plt.plot(agrid, Vm_div[0:len(agrid),zfi,zmi,ti],'b',markersize=2, label='Male')
+    plt.plot(agrid, Vf_div[0:len(agrid),zfi,zmi,ti],'r', linestyle='--',markersize=2,label='Female')
+    plt.ylabel('Utility')
+    plt.xlabel('Assets')
+    #plt.title('Utility  Divorce costs: men=0.5, women=0.5')
+    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
     
     ##########################################
     # Consumption and Assets
     ########################################## 
     fig = plt.figure()
     f5=fig.add_subplot(2,1,1)
-    plt.plot(agrid, cm[0:len(agrid),zfi,zmi,psii,ti,thi],'ko',markersize=6,markevery=1, label='Marriage')
-    plt.plot(agrid, cc[0:len(agrid),zfi,zmi,psii,ti,thi],'r*',markersize=6,markevery=1, label='Cohabitation')
+    plt.plot(agrid, cm[0:len(agrid),zfi,zmi,psii,ti,thi],'k',markevery=1, label='Marriage')
+    plt.plot(agrid, cc[0:len(agrid),zfi,zmi,psii,ti,thi],'r',linestyle='--',markevery=1, label='Cohabitation')
     #plt.plot(agrid, sc[0:len(agrid),zfi,zmi,psii,ti,thi],'k',linewidth=2.0,linestyle='--', label='Cohabitation')
-    plt.plot(agrids, cms[0:len(agrids),zmi,ti],'b',linewidth=2.0,label='Men, Single')
-    plt.plot(agrids, cfs[0:len(agrids),zfi,ti],'r',linewidth=2.0,linestyle='--', label='Women, Single')
+    #plt.plot(agrids, cms[0:len(agrids),zmi,ti],'b',linewidth=2.0,label='Men, Single')
+    #plt.plot(agrids, cfs[0:len(agrids),zfi,ti],'r',linewidth=2.0,linestyle='--', label='Women, Single')
     #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral')
     plt.ylabel('Consumption')
     plt.xlabel('Assets')
@@ -289,9 +317,9 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
     f6=fig.add_subplot(2,1,1)
     plt.plot(agrid, sm[0:len(agrid),zfi,zmi,psii,ti,thi],'ko',markersize=6,markevery=1, label='Marriage')
     plt.plot(agrid, sc[0:len(agrid),zfi,zmi,psii,ti,thi],'r*',markersize=6,markevery=1, label='Cohabitation')
-    plt.plot(agrid, agrid,'k',linewidth=1.0,linestyle='--')
-    plt.plot(agrids, sms[0:len(agrids),zmi,ti],'b',linewidth=2.0,label='Men, Single')
-    plt.plot(agrids, sfs[0:len(agrids),zfi,ti],'r',linewidth=2.0,linestyle='--', label='Women, Single')
+    #plt.plot(agrid, agrid,'k',linewidth=1.0,linestyle='--')
+    #plt.plot(agrids, sms[0:len(agrids),zmi,ti],'b',linewidth=2.0,label='Men, Single')
+    #plt.plot(agrids, sfs[0:len(agrids),zfi,ti],'r',linewidth=2.0,linestyle='--', label='Women, Single')
     #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral')
     plt.ylabel('Savings')
     plt.xlabel('Assets')
@@ -405,14 +433,43 @@ def graphs(setup,ai,zfi,zmi,psii,ti,thi):
     plt.plot(psig,  thetac_R[ai,zfi,zmi,0:len(psig),ti,0],'r', linestyle='--',linewidth=1.5, label='Theta Cohabitation')
     for j in range(0, len(setup.thetagrid_fine), 10): 
         plt.plot(psig,  thetam_R[ai,zfi,zmi,0:len(psig),ti,j],'b',linewidth=1.5)
-        plt.plot(psig,  thetam_R[ai,zfi,zmi,0:len(psig),ti,j],'r', linestyle='--',linewidth=1.5)
+        plt.plot(psig,  thetac_R[ai,zfi,zmi,0:len(psig),ti,j],'r', linestyle='--',linewidth=1.5)
     legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
     plt.xlabel('Love')
     plt.ylabel('Theta')
+    
+    ##########################################
+    # Thetas and Assets
+    ########################################## 
+    zero = np.array([0.0] * psig)
+    fig11 = plt.figure()
+    #plt.plot(psig, zero,'k',linewidth=1)
+    plt.plot(setup.thetagrid,  sm[ai,zfi,zmi,psii,ti,0:len(setup.thetagrid)],'b',linewidth=1.5, label='Savings Marriage')
+    #plt.plot(setup.thetagrid,  sc[ai,zfi,zmi,psii,ti,0:len(setup.thetagrid)],'r', linestyle='--',linewidth=1.5, label='Savings Cohabitation')
+    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    plt.xlabel('Theta')
+    plt.ylabel('Assets')
+    
+    
+    ##########################################
+    # Assets and Theta
+    ########################################## 
+    zero = np.array([0.0] * psig)
+    fig12 = plt.figure()
+    #plt.plot(psig, zero,'k',linewidth=1)
+    plt.plot(agrid,  thetam_R[0:len(agrid),zfi,zmi,psii,ti,0],'b',linewidth=1.5, label='Theta Marriage')
+    plt.plot(agrid,  thetac_R[0:len(agrid),zfi,zmi,psii,ti,0],'r', linestyle='--',linewidth=1.5, label='Theta Cohabitation')
+    for j in range(0, len(setup.thetagrid_fine), 10): 
+        plt.plot(agrid,  thetam_R[0:len(agrid),zfi,zmi,psii,ti,j],'b',linewidth=1.5)
+        plt.plot(agrid,  thetac_R[0:len(agrid),zfi,zmi,psii,ti,j],'r', linestyle='--',linewidth=1.5)
+    #plt.plot(setup.thetagrid,  sc[ai,zfi,zmi,psii,ti,0:len(setup.thetagrid)],'r', linestyle='--',linewidth=1.5, label='Savings Cohabitation')
+    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    plt.xlabel('Assets')
+    plt.ylabel('Thetas')
     
     ##########################################
     # Consumption over the Life Cycle
     ########################################## 
     
        
-    return Packed,cfs
+    return Packed,dec

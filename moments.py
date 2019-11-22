@@ -10,6 +10,7 @@ plots some graphs
 
 import numpy as np
 import matplotlib.pyplot as plt 
+from numba import njit, vectorize
 
 def moment(agents,draw=True):
 #This function compute moments coming from the simulation
@@ -71,10 +72,12 @@ def moment(agents,draw=True):
     spells_type=list()
     spells_length=list()
     spells_end=list()
-    
+
+    #@njit
+    #def loop(spells_type,spells_length,spells_end):
     for n in range(N):
-        for ist,sname in enumerate(state_codes):
-            for t in range(agents.setup.pars['T']):
+        for ist in range(4):
+            for t in range(agents.setup.pars['T']-1):
                 
                 if t==0:
                     leng=0
@@ -82,13 +85,16 @@ def moment(agents,draw=True):
                 if (leng>=0) and (state[n,t]==ist): 
                     leng=leng+1
                 
-                if (leng>0 and state[n,t]!=ist) or (t==agents.setup.pars['T']-1): 
+                if (leng>0 and state[n,t]!=ist) or (t==agents.setup.pars['T']-2): 
                    
                     spells_type=[ist] + spells_type
                     spells_length=[leng] + spells_length
                     spells_end=[state[n,t]] + spells_end
                     leng=0
+        
+     #   return spells_type,spells_length,spells_end
             
+    #spells_type,spells_length,spells_end=loop(spells_type,spells_length,spells_end)
     spells_type.reverse()
     spells_length.reverse()
     spells_end.reverse()
@@ -182,9 +188,11 @@ def moment(agents,draw=True):
         #Print something useful for debug and rest
         print('The share of singles choosing marriage is {0:.2f}'.format(sharem))
         cond=(state<2)
-        print('The max level of assets for singles is {:.2f}, the grid upper bound is {:.2f}'.format(np.amax(assets_t[cond]),max(agents.setup.agrid_s)))
+        if assets_t[cond].size:
+            print('The max level of assets for singles is {:.2f}, the grid upper bound is {:.2f}'.format(np.amax(assets_t[cond]),max(agents.setup.agrid_s)))
         cond=(state>1)
-        print('The max level of assets for couples is {:.2f}, the grid upper bound is {:.2f}'.format(np.amax(assets_t[cond]),max(agents.setup.agrid_c)))
+        if assets_t[cond].size:
+            print('The max level of assets for couples is {:.2f}, the grid upper bound is {:.2f}'.format(np.amax(assets_t[cond]),max(agents.setup.agrid_c)))
         
         #############################################
         # Hazard of Divorce, Separation and Marriage

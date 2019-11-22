@@ -31,11 +31,11 @@ def v_ren_new(setup,V,marriage,t):
     if marriage:
         dc = setup.div_costs
         is_unil = dc.unilateral_divorce # whether to do unilateral divorce at all
-        des='Couple, M'
+        des=['Couple, M']
     else:
         dc = setup.sep_costs
         is_unil = dc.unilateral_divorce # whether to do unilateral divorce at all
-        des='Couple, C'
+        des=['Couple, C','Couple, M']
     
     assert is_unil, 'only unilateral divorce is implemented'
     
@@ -58,10 +58,17 @@ def v_ren_new(setup,V,marriage,t):
     
     assert Vf_divorce.ndim == Vm_divorce.ndim == 2
     
+    Vval_postren,VMval_postren,VFval_postren=\
+    np.zeros([3,len(des),np.size(V['Couple, M']['V'],0),np.size(V['Couple, M']['V'],1),np.size(V['Couple, M']['V'],2)])
     
-    Vval_postren, VMval_postren, VFval_postren = V[des]['V'], V[des]['VM'], V[des]['VF']
+
+        
+    for ist,sname in enumerate(des):
+  
+        Vval_postren[ist,], VMval_postren[ist,], VFval_postren[ist,] = V[sname]['V'], V[sname]['VM'], V[sname]['VF']
     
-    assert Vval_postren.shape[:-1] == Vm_divorce.shape
+    assert np.size(Vval_postren,1) == np.size(Vm_divorce,0)
+    assert np.size(Vval_postren,2) == np.size(Vm_divorce,1)
     
     
     result  = v_ren_core_interp(setup,Vval_postren, VFval_postren, VMval_postren, Vf_divorce, Vm_divorce)
@@ -217,12 +224,48 @@ def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,Vmale,Vfemale,izf,izm,cost_f
 def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
     # compute the surplus
     
-    
     # interpolate it
     tgf = setup.v_thetagrid_fine
     
+    #Get relevant variables if marriage or cohabitation
+    v_y_check=np.copy(v_y)
+    if np.size(v_y,0)==1:
+        v_y=v_y[0]
+        vf_y=vf_y[0]
+        vm_y=vm_y[0] 
+        
+        
+        vy, vfy, vmy = (tgf.apply(x,axis=2) for x in (v_y,vf_y,vm_y) )
+    else:
+        
+        assert np.size(v_y,0)==2
+        
+        #TODO try when both agree
+        
+        #Cohabitation
+        v_y0=v_y[0]
+        vf_y0=vf_y[0]
+        vm_y0=vm_y[0] 
+        
+        #Marriage
+        v_y1=v_y[1]
+        vf_y1=vf_y[1]
+        vm_y1=vm_y[1] 
+        
+        
+        vy0, vfy0, vmy0 = (tgf.apply(x,axis=2) for x in (v_y0,vf_y0,vm_y0) )
+        vy1, vfy1, vmy1 = (tgf.apply(x,axis=2) for x in (v_y1,vf_y1,vm_y1) )
+        
+        #Foreach theta_fine, get marriage or cohabitation
+        #inde = (vy0>=vy1)            
+        indef = (vfy0<vfy1)
+        indem = (vmy0<vmy1)
+        inde=1-indem*indef
+        vy=inde*vy0+(1-inde)*vy1
+        vfy=inde*vfy0+(1-inde)*vfy1
+        vmy=inde*vmy0+(1-inde)*vmy1
     
-    vy, vfy, vmy = (tgf.apply(x,axis=2) for x in (v_y,vf_y,vm_y) )
+    
     
     sf_expand = vfy - vf_n[...,None]
     sm_expand = vmy - vm_n[...,None]
@@ -256,6 +299,12 @@ def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
     no = ~(yes)
     # the reason is that single crossing has much simpler algorithm
     
+    
+    share_sc = np.mean(yes_sc)
+    share_nsc = np.mean(yes_nsc)
+    
+    if share_nsc > 0: print('Not single crossing in {}, singe crossing in {} cases'.format(share_nsc,share_sc))
+    
     # these things still have nice shape
     
     # compute couple's value of divroce
@@ -278,6 +327,7 @@ def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
     v_out[no,:]  = v_div_full[no,:]
     vf_out[no,:] = vf_div_full[no,:]
     vm_out[no,:] = vm_div_full[no,:]
+    
     
     
     
@@ -319,9 +369,12 @@ def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
     
     assert not np.any(yes_nsc), 'Single crossing does not hold!' # FIXME: remove this later
     
-    
-    return {'Decision': yes, 'thetas': i_theta_out,
-                'Values': (v_out, vf_out, vm_out)}
+    if np.size(v_y_check,0)==1:
+        return {'Decision': yes, 'thetas': i_theta_out,
+                'Values': (v_out, vf_out, vm_out),'Divorce':(vf_div_full,vm_div_full)}
+    else:
+        return {'Decision': yes, 'thetas': i_theta_out,
+                'Values': (v_out, vf_out, vm_out),'Cohabitation preferred to Marriage': inde}
 
 
 

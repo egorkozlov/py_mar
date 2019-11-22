@@ -14,7 +14,7 @@ from numba import jit#, prange, cuda, float32
 from platform import system
 from aux_routines import cp_take_along_axis
 
-if system() != 'Darwin':
+if system() != 'Darwin' and system() != 'Windows':
     import cupy as cp
     ucp = True
 else:
@@ -163,7 +163,7 @@ def v_optimize(money,sgrid,EV,sigma,beta,use_cp=ucp,return_ind=False):
         u_mat = u_mat.reshape(u_mat.shape + (1,))    
     
     V_arr = u_mat + beta*mr.expand_dims(EV,0)
-    
+   
     i_opt = V_arr.argmax(axis=1)
     
     s = sgrid[i_opt]

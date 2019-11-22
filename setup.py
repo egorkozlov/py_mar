@@ -21,7 +21,7 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()        
-        p['T']         =11
+        p['T'] =        5
         p['sig_zf_0']  = 0.25
         p['sig_zf']    = 0.25
         p['n_zf']      = 5
@@ -29,13 +29,13 @@ class ModelSetup(object):
         p['sig_zm']    = 0.25
         p['n_zm']      = 5
         p['sigma_psi_init'] = 0.28
-        p['sigma_psi']   = 0.21
+        p['sigma_psi']   = 0.11
         p['R'] = 1.04
         p['n_psi']     = 12
         p['beta'] = 0.95
         p['A'] = 1.2 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
-        p['couple_rts'] = 0.4      
+        p['couple_rts'] = 0.0      
         p['sig_partner_a'] = 0.1
         p['sig_partner_z'] = 0.2
         p['m_bargaining_weight'] = 0.5
@@ -122,7 +122,7 @@ class ModelSetup(object):
         #Grid Couple
         self.na = 60
         self.amin = 0
-        self.amax = 20
+        self.amax =8
         self.agrid_c = np.linspace(self.amin,self.amax,self.na)
         tune=1.5
         #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
@@ -137,7 +137,7 @@ class ModelSetup(object):
         
         #Grid Single
         self.amin_s = 0
-        self.amax_s = self.amax/2.0
+        self.amax_s = self.amax/1.0
         self.agrid_s = np.linspace(self.amin_s,self.amax_s,self.na)
         tune_s=1.5
         #self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
@@ -229,9 +229,9 @@ class ModelSetup(object):
         for ia, a in enumerate(agrid_s):
             lagrid_t = np.zeros_like(agrid_c)
             
-            i_neg = (agrid_c <= max(abar,a) + 1e-3)
+            i_neg = (agrid_c <= max(abar,a) - 1e-6)
             
-            lagrid_t[~i_neg] = np.log((agrid_c[~i_neg] - a)/max(abar,a))
+            lagrid_t[~i_neg] = np.log(2e-6 + (agrid_c[~i_neg] - a)/max(abar,a))
             lmin = lagrid_t[~i_neg].min()
             # just fill with very negative values so this is never chosen
             lagrid_t[i_neg] = lmin - s_a_partner*10 - \
@@ -243,7 +243,8 @@ class ModelSetup(object):
             p_pa = p_a[i_pa]
             prob_a_mat[ia,:] = p_pa
             i_a_mat[ia,:] = i_pa
-            
+        
+        
         self.prob_a_mat = prob_a_mat
         self.i_a_mat = i_a_mat
             
@@ -353,7 +354,7 @@ class ModelSetup(object):
                     i_conv[:,ia] = np.arange(npos_iexo*ia,npos_iexo*(ia+1))
                  
                 
-                for iz in range(self.pars['n_zf']):
+                for iz in range(nz):
                     probs = pmat_iexo[iz,inds]
                     
                     for ia in range(npos_a):
@@ -529,10 +530,10 @@ class DivorceCosts(object):
         
     def shares_if_split(self,income_share_f):
         
-        income_share_m = 1-income_share_f
         
-        share_f = self.assets_kept*(0.5*self.eq_split + income_share_f*(1-self.eq_split)) - self.money_lost_f
-        share_m = self.assets_kept*(0.5*self.eq_split + income_share_m*(1-self.eq_split)) - self.money_lost_m
+        shf=(0.5*self.eq_split + income_share_f*(1-self.eq_split))
+        share_f = self.assets_kept*shf - self.money_lost_f
+        share_m = self.assets_kept*(1-shf) - self.money_lost_m
         
         return share_f, share_m
         

@@ -27,17 +27,11 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True):
     Vren = {'M':{'V':tk(_Vren2[0]),'VF':tk(_Vren2[1]),'VM':tk(_Vren2[2])},
             'SF':Vpostren['Female, single'],
             'SM':Vpostren['Male, single']}
-    
-    
-    
-    Vren2 = {'M':{'V':_Vren2[0],'VF':_Vren2[1],'VM':_Vren2[2]},
-            'SF':Vpostren['Female, single'],
-            'SM':Vpostren['Male, single']}
+
     
     # accounts for exogenous transitions
     
     EV, EVf, EVm = ev_couple_exo(setup,Vren['M'],t,use_sparse)
-    EV2, EVf2, EVm2 = ev_couple_exo(setup,Vren2['M'],t,use_sparse)
     
     
     return (EV, EVf, EVm), dec

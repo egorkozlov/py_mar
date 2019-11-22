@@ -13,7 +13,7 @@ from gridvec import VecOnGrid
 class Agents:
     
     
-    def __init__(self,M,N=7000,T=None,verbose=True):
+    def __init__(self,M,N=15000,T=None,verbose=True):
         if T is None:
             T = M.setup.pars['T']
             
@@ -246,6 +246,7 @@ class Agents:
                 
                 decision = self.M.decisions[t][sname]
                 
+                
                 # by default keep the same theta and weights
                 
                 self.itheta[ind,t+1] = self.itheta[ind,t]
@@ -269,6 +270,7 @@ class Agents:
                 thts_orig = thts_orig_all[isc,iall,itht]
                 
                 i_stay = decision['Decision'][isc,iall]
+
                 
                 
                 i_div = ~i_stay                
@@ -307,13 +309,30 @@ class Agents:
                 
                 if np.any(i_ren):
                     
-                    self.itheta[ind[i_ren],t+1] = thts[i_ren]                    
-                    self.state[ind[i_ren],t+1] = self.state_codes[sname]
+                    self.itheta[ind[i_ren],t+1] = thts[i_ren]
+                    
+                    #Distinguish between marriage and cohabitation
+                    if sname == "Couple, M":
+                        self.state[ind[i_ren],t+1] = self.state_codes[sname]
+                    else:
+                        i_coh = decision['Cohabitation preferred to Marriage'][isc,iall,thts]
+                        i_coh1=i_coh[i_ren]
+                        self.state[ind[i_ren],t+1] = i_coh1*self.state_codes["Couple, C"]+(1-i_coh1)*self.state_codes["Couple, M"]
+                      
+                            
+                        
                     
                 if np.any(i_sq):
                     self.state[ind[i_sq],t+1] = self.state_codes[sname]
                     # do not touch theta as already updated
-                
+                    
+                    #Distinguish between marriage and cohabitation
+                    if sname == "Couple, M":
+                        self.state[ind[i_sq],t+1] = self.state_codes[sname]
+                    else:
+                        i_coh = decision['Cohabitation preferred to Marriage'][isc,iall,thts]
+                        i_coh1=i_coh[i_sq]
+                        self.state[ind[i_sq],t+1] = i_coh1*self.state_codes["Couple, C"]+(1-i_coh1)*self.state_codes["Couple, M"]
             
             else:
                 raise Exception('unsupported state?')

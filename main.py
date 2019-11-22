@@ -18,9 +18,9 @@ if __name__ == '__main__':
     mdl = Model(iterator_name='default-timed',
                 divorce_costs={'unilateral_divorce':True})
     
-    graphs=False
+    graphs=True
     #gassets,iexo,state,gtheta=mdl.solve_sim()
-    mdl.solve_sim(graphs=graphs,simulate=False)
+    mdl.solve_sim(simulate=True)
     #gassets, iexo, state, gtheta = mdl.agents.gsavings_c, mdl.agents.iexo, mdl.agents.state, mdl.agents.gtheta
     mdl.time_statistics()
     
@@ -31,14 +31,14 @@ if __name__ == '__main__':
     #Indexes for the graphs
     if graphs:
         ai=0
-        zfi=3
-        zmi=1
+        zfi=0
+        zmi=4
         psii=6
-        ti=0
+        ti=3
         thi=10
         
         #Actual Graphs
-        Packed,cfs=mdl.graph(ai,zfi,zmi,psii,ti,thi)
+        Packed,dec=mdl.graph(ai,zfi,zmi,psii,ti,thi)
         
         #If you plan to use graphs only once, deselect below to save space on disk
         #os.remove('name_model.pkl') 

@@ -15,6 +15,7 @@ import numpy as np
 import dill as pickle
 from timeit import default_timer
 import gzip
+from numba import njit, vectorize
 
 
 #if system() != 'Darwin':
@@ -137,7 +138,7 @@ class Model(object):
         return iterate, initialize
         
         
-    def solve(self,graphs=False):
+    def solve(self):
         T = self.setup.pars['T']
         self.V = list()
         self.decisions = list()
@@ -159,17 +160,11 @@ class Model(object):
             
             self.V = [Vnow] + self.V
             self.decisions = [decnow] + self.decisions
-            
-        #For Graphs
-        
-        if graphs:
-            with gzip.open('name_model.pkl', 'wb') as file:
-                pickle.dump((self.V,self.decisions), file) 
-            self.time('pickling')    
+
             
             
             
-    def solve_sim(self,graphs=False,simulate=True):
+    def solve_sim(self,simulate=True):
 
         #Solve the model
         self.solve()
@@ -185,7 +180,7 @@ class Model(object):
     def graph(self,ai,zfi,zmi,psii,ti,thi):
         
         #Draw some graph of Value and Policy Functions
-        V=graphs(self.setup,ai,zfi,zmi,psii,ti,thi)
+        V=graphs(self.setup,self.V,self.decisions,ai,zfi,zmi,psii,ti,thi)
         
         return V
       

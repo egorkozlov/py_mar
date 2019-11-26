@@ -40,14 +40,19 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
     sigma = setup.pars['crra_power']
     R = setup.pars['R']
 
-    labor_income = np.exp(zf) + np.exp(zm)
+
+
+    wf = np.exp(zf)
+    wm = np.exp(zm)
     
-    money = R*agrid[:,None] + labor_income[None,:]
+    #labor_income = np.exp(zf) + np.exp(zm)
+    
+    #money = R*agrid[:,None] + wf[None,:] 
     
     shp = (setup.na,setup.nexo,setup.ntheta)
     
     # type conversion to keep everything float32
-    money,sgrid,EV,sigma,beta = (np.float32(x) for x in (money,sgrid,EV,sigma,beta))
+    sgrid,EV,sigma,beta = (np.float32(x) for x in (sgrid,EV,sigma,beta))
     
     V_couple, c_opt, s_opt, i_opt = np.empty(shp,np.float32), np.empty(shp,np.float32), np.empty(shp,np.float32), np.empty(shp,np.int32)
     
@@ -66,7 +71,7 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
         #money_i = money[:,istart:ifinish]
         assert ifinish > istart
         
-        money_t = (R*agrid,labor_income[istart:ifinish])
+        money_t = (R*agrid, wf[istart:ifinish], wm[istart:ifinish])
         EV_t = (ind,p,EV[:,istart:ifinish,:])
         
         V_pure_i, c_opt_i, s_opt_i, i_opt_i = \

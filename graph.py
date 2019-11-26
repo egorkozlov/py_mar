@@ -86,7 +86,7 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
         
         
 
-   
+    V_ren_c,V_ren_m=np.empty([2,len(agrids)])
     Vfs,cfs,sfs=np.empty([3,len(agrids), len(zfg),T])
     Vms,cms,sms=np.empty([3,len(agrids), len(zmg),T])
     Vf_div,Vm_div=np.empty([2,len(agrid), len(zfg),len(zmg),T])
@@ -94,6 +94,14 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     Vc,Vfc,Vmc,cc,sc=np.empty([5,len(agrid), len(zfg),len(zmg),len(psig),T,setup.ntheta])#RVfc,RVmc,thfc,thmc,
     thetam_R,thetac_R=np.empty([2,len(agrid), len(zfg),len(zmg),len(psig),T,len(setup.thetagrid_fine)])
     
+    
+    #Renegotiated Value
+    for a in range(len(agrid)):
+        nex=setup.all_indices((zfi,zmi,psii))[0]
+        inde=setup.theta_orig_on_fine[thi]
+        V_ren_c[a]=dec[max(ti-1,0)]['Couple, C']['Values'][0][a,nex,inde]
+        V_ren_m[a]=dec[max(ti-1,0)]['Couple, M']['Values'][0][a,nex,inde]
+        
     #Divorced Women and Men
     for t in range(T):
         for j in range(len(agrid)):
@@ -282,12 +290,16 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
      
      
     ##########################################
-    # Divorce and Assets
+    # Vf and ASSETS
     ########################################## 
     fig = plt.figure()
     f51=fig.add_subplot(2,1,1)
-    plt.plot(agrid, Vm_div[0:len(agrid),zfi,zmi,ti],'b',markersize=2, label='Male')
-    plt.plot(agrid, Vf_div[0:len(agrid),zfi,zmi,ti],'r', linestyle='--',markersize=2,label='Female')
+    #plt.plot(agrid, Vm[0:len(agrid),zfi,zmi,psii,ti,thi],'bo',markersize=4, label='Before Ren M')
+    #plt.plot(agrid, Vc[0:len(agrid),zfi,zmi,psii,ti,thi],'r*',markersize=2,label='Before Ren C')
+    plt.plot(agrid, V_ren_c,'y', markersize=4,label='After Ren C')
+    plt.plot(agrid, V_ren_m,'k', linestyle='--',markersize=4, label='After Ren M')
+    #plt.plot(agrid, Vm_div[0:len(agrid),zfi,zmi,ti],'b',markersize=2, label='Male Divorce') 
+    plt.plot(agrid, setup.thetagrid[thi]*Vf_div[0:len(agrid),zfi,zmi,ti]+(1-setup.thetagrid[thi])*Vm_div[0:len(agrid),zfi,zmi,ti],'r', linestyle='--',markersize=2,label='Female Divorce') 
     plt.ylabel('Utility')
     plt.xlabel('Assets')
     #plt.title('Utility  Divorce costs: men=0.5, women=0.5')

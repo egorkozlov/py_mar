@@ -111,8 +111,6 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,use_cp=ucp,return_ind=Fals
     # So far they are slower than this but they might be improved
     
     
-    ls = [0.0,0.0,0.0]
-    us = [0.0,0.0,0.0]
     
     mr = cp if use_cp else np # choose matrix routine
         
@@ -158,9 +156,6 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,use_cp=ucp,return_ind=Fals
     def u(c): return (c**(oms))/(oms)   
     
     ns = sgrid.size
-    na = asset_income.size
-    nexo = wf.size
-    
     
     # this will use a weird fact that -2*(1,) = () (empty tuple)
     
@@ -168,32 +163,14 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,use_cp=ucp,return_ind=Fals
     
     s_expanded = sgrid.reshape(s_size)
     
-    
-    
-    
-    c_mat_max = mr.expand_dims(money,1) - s_expanded 
-    
-    c_mat_by_l = [c_mat_max - wf[None,:,:]*l for l in ls]
-    
-    uc_mat_by_l = list()
-    for l, c_mat in zip(ls,c_mat_by_l):
-        u_mat = mr.full(c_mat.shape,-mr.inf)
-        u_mat[c_mat>0] = u(c_mat[c_mat>0])
-        uc_mat_by_l.append(u_mat.reshape(u_mat.shape + (1,))) # adds dimension for theta 
-    
+    c_mat = mr.expand_dims(money,1) - s_expanded 
+    u_mat = mr.full(c_mat.shape,-mr.inf)
+    u_mat[c_mat>0] = u(c_mat[c_mat>0])
     
     
     # u_mat shape is (na,ns,nexo)
-    
-    
-    
-    u_mat_theta_byl = mr.zeros((na,ns,nexo,ntheta,len(ls)))
-    for i, u_lfp in enumerate(us):
-        u_mat_theta_byl[...,i] = uc_mat_by_l[i]*umult.reshape((1,1,1,umult.size))  + u_lfp
-        
-    u_mat_theta = mr.max(u_mat_theta_byl,axis=-1)
-    #il_mat_theta = mr.armax(u_mat_theta_byl,axis=-1)
-    
+    u_mat = u_mat.reshape(u_mat.shape + (1,))   # adds dimension for theta 
+    u_mat_theta = u_mat*umult.reshape((1,1,1,umult.size)) # we added s dimension :(
     # u_mat shape is (na,ns,nexo,ntheta)
     # EV shape is (ns,nexo,ntheta)
     V_arr = u_mat_theta + beta*mr.expand_dims(EV,0) # adds dimension for current a

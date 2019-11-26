@@ -48,7 +48,10 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
             inds[i]=setup.all_indices((zfi,zmi,i))[0]
         inds=np.array(inds,np.int64)
         # cohabitation
-        resc = v_mar_igrid(setup,Packed[t],ai,inds,female=True,marriage=False)
+        
+        ai_a = ai*np.ones_like(setup.agrid_s,dtype=np.int32)
+        
+        resc = v_mar_igrid(setup,Packed[t],ai_a,inds,female=True,marriage=False)
         (vf_c,vm_c), nbs_c, decm, tht_c = resc['Values'], resc['NBS'], resc['Decision'], resc['theta']
         
         is_state=(tht_c==-1)
@@ -57,7 +60,7 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
         tcv[inde[0],inde[1]]=None
         
         # marriage
-        resm = v_mar_igrid(setup,Packed[t],ai,inds,female=True,marriage=True)
+        resm = v_mar_igrid(setup,Packed[t],ai_a,inds,female=True,marriage=True)
         (vf_m,vm_m), nbs_m, decm, tht_m = resm['Values'], resm['NBS'], resm['Decision'], resm['theta']
         
         is_state2=(tht_m==-1)

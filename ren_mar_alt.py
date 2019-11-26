@@ -108,7 +108,7 @@ def v_mar_igrid(setup,V,icouple,ind_or_inds,*,female,marriage,interpolate=True,r
     
     
     VMval_single, VFval_single = V['Male, single']['V'], V['Female, single']['V']
-    VMval_postren, VFval_postren = V[coup]['VM'], V[coup]['VF']
+    VMval_postren, VFval_postren = V[coup]['VM'][icouple,...], V[coup]['VF'][icouple,...]
     
     # type conversion
     #VMval_single, VFval_single, VMval_postren, VFval_postren = \

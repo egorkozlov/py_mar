@@ -8,7 +8,7 @@ from timeit import default_timer
 
 
 from optimizers import get_EVM
-from optimizers import v_optimize
+from optimizers import v_optimize_couple
 
 from platform import system
 
@@ -51,16 +51,11 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
     
     V_couple, c_opt, s_opt, i_opt = np.empty(shp,np.float32), np.empty(shp,np.float32), np.empty(shp,np.float32), np.empty(shp,np.int32)
     
-    theta_val = np.float32(setup.thetagrid[None,None,:])
+    theta_val = np.float32(setup.thetagrid)
     umult_vec = setup.u_mult(theta_val)
     
     # the original problem is max{umult*u(c) + beta*EV}
     # we need to rescale the problem to max{u(c) + beta*EV_resc}
-    
-    
-    EV_resc = (1/umult_vec)*EV # we mutiply back later
-    
-    if verbose: print('MMEV computed after {} sec'.format(default_timer()-start))
     
     istart = 0
     ifinish = nbatch if nbatch < setup.nexo else setup.nexo
@@ -72,11 +67,11 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
         assert ifinish > istart
         
         money_t = (R*agrid,labor_income[istart:ifinish])
-        EV_t = (ind,p,EV_resc[:,istart:ifinish,:])
+        EV_t = (ind,p,EV[:,istart:ifinish,:])
         
         V_pure_i, c_opt_i, s_opt_i, i_opt_i = \
-           v_optimize(money_t,sgrid,EV_t,sigma,beta,return_ind=True)
-        V_ret_i = umult_vec[None,None,:]*V_pure_i + psi[None,istart:ifinish,None]
+           v_optimize_couple(money_t,sgrid,umult_vec,EV_t,sigma,beta,return_ind=True)
+        V_ret_i = V_pure_i + psi[None,istart:ifinish,None]
         
         
         V_couple[:,istart:ifinish,:] = V_ret_i
@@ -95,7 +90,7 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
     psi_r = psi[None,:,None]
     
     # finally obtain value functions of partners
-    uf, um = setup.u_part(c_opt,theta_val)
+    uf, um = setup.u_part(c_opt,theta_val[None,None,:])
     EVf_all, EVm_all,EV_all  = (get_EVM(ind,p,x) for x in (EV_fem, EV_mal,EV))
     V_fem = uf + psi_r + beta*np.take_along_axis(EVf_all,i_opt,0)
     V_mal = um + psi_r + beta*np.take_along_axis(EVm_all,i_opt,0)
@@ -122,10 +117,12 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
     
     # consistency check
     EV_all = get_EVM(ind,p,EV)
-    uc = setup.u_couple(c_opt,theta_val)
+    uc = setup.u_couple(c_opt,theta_val[None,None,:])
     V_all = uc + psi_r + beta*np.take_along_axis(EV_all,i_opt,0)
-    md =  np.max(np.abs(V_all-V_couple))
-    assert md < 1e-4
+    
+    assert np.allclose(V_all,V_couple,atol=1e-5)
+    
+    
     
     
     #out = {'V':V_couple,'VF':V_fem,'VM':V_mal,'c':c_opt, 's':s_opt}

@@ -8,7 +8,7 @@ import numpy as np
 #from scipy.optimize import fminbound
 
 #from opt_test import build_s_grid, sgrid_on_agrid, get_EVM
-from optimizers import v_optimize
+from optimizers import v_optimize_single
 
 
 
@@ -37,7 +37,7 @@ def v_iter_single(setup,EV,female):
     money_t = (R*agrid_s,np.exp(zvals))
     
     
-    V_ret, c_opt, s_opt = v_optimize(money_t,sgrid_s,(ind,p,EV),sigma,beta)
+    V_ret, c_opt, s_opt = v_optimize_single(money_t,sgrid_s,(ind,p,EV),sigma,beta)
     
     
     

@@ -92,28 +92,10 @@ def get_EVM(ind,p,EVin,use_cp=False):
 
     
 
-def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,use_cp=ucp,return_ind=False):
-    # this is the optimizer for value functions
-    # 1. It can use cuda arrays (cupy) if use_cp=True
-    # 2. It can accept few shapes of money array and EV
-    # 3. If money array and EV array are of different shapes money array is
-    # broadcasted (this is for the case where EV varies with theta and money
-    # are independent on theta)
-    # 4. money can be tuple of two elements (assets income and labor income),
-    # this form is more compact. In this case the array if formed by adding
-    # them (outter sum). 
-    # 5. EV can also be tuple of three elements, that are inputs to get_EVM
-    # in this case get_EVM is ran internally, this may help with large arrays
-    # so we transition less things to GPU
-    # Shape of the result is (money.shape[0],EV.shape[1:])
+def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,ls,us,use_cp=ucp):
+    # TODO: rewrite the description
     
-    # TBD: file opt_test.py has jit-able version of these functions .
-    # So far they are slower than this but they might be improved
-    
-    ls = [1.0,1.0]
-    us = [0.0,0.0]
 
-    
     nls = len(ls)
     
     mr = cp if use_cp else np # choose matrix routine
@@ -146,17 +128,17 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,use_cp=ucp,return_ind=Fals
     if isinstance(EV,tuple):
         assert len(EV) == 3
         (ind,p,EVin) = (cp.asarray(x) if use_cp else x for x in EV)
-        EV = get_EVM(ind,p,EVin,use_cp)
+        EV_by_l = get_EVM(ind,p,EVin,use_cp)
     
     
     if use_cp: # it is ok to use cp.asarray twice, it does not copy
-        money,sgrid,EV = (cp.asarray(x) for x in (money,sgrid,EV))
+        money,sgrid,EV_by_l = (cp.asarray(x) for x in (money,sgrid,EV_by_l))
     
     
-    ntheta = EV.shape[-1]
+    ntheta = EV_by_l.shape[-2]
     
-    assert money.ndim < EV.ndim
-    assert (EV.ndim - money.ndim == 1), 'Shape mismatch?'
+    assert money.ndim < EV_by_l.ndim
+    assert (EV_by_l.ndim - money.ndim == 2), 'Shape mismatch?'
     shp = money.shape + (ntheta,) # shape of the result
     
     V, c, s = mr.empty(shp,mr.float32), mr.empty(shp,mr.float32), mr.empty(shp,mr.float32)    
@@ -186,6 +168,8 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,use_cp=ucp,return_ind=Fals
     
     for i, (lval, uval) in enumerate(zip(ls,us)):
         
+        EV_here = EV_by_l[...,i]
+        
         c_mat = mr.expand_dims(money,1) - s_expanded - (1-lval)*wf.reshape((1,1,nexo))
         u_mat = mr.full(c_mat.shape,-mr.inf)
         u_mat[c_mat>0] = u(c_mat[c_mat>0])
@@ -197,7 +181,7 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,use_cp=ucp,return_ind=Fals
         
         # u_mat_total shape is (na,ns,nexo,ntheta)
         # EV shape is (ns,nexo,ntheta)
-        V_arr = u_mat_theta + beta*mr.expand_dims(EV,0) # adds dimension for current a
+        V_arr = u_mat_theta + beta*mr.expand_dims(EV_here,0) # adds dimension for current a
         # V_arr shape is (na,ns,nexo,ntheta)
         i_opt = V_arr.argmax(axis=1) # (na,nexo,ntheta)
         
@@ -207,7 +191,7 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,use_cp=ucp,return_ind=Fals
         s = sgrid[i_opt]
         c = tal(mr.expand_dims(c_mat,3),i_opt_ed,1).squeeze(axis=1) #money.reshape( (money.shape+(1,)) ) - s
         
-        V = tal(u_mat_total,i_opt_ed,1).squeeze(axis=1) + beta*tal(EV,i_opt,0) # squeeze
+        V = tal(u_mat_total,i_opt_ed,1).squeeze(axis=1) + beta*tal(EV_here,i_opt,0) # squeeze
         
         i_opt_arr[...,i] = i_opt
         c_opt_arr[...,i] = c
@@ -221,6 +205,7 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,use_cp=ucp,return_ind=Fals
     s = tal(s_opt_arr,i_ls,axis=3).squeeze(axis=3)
     i_opt = tal(i_opt_arr,i_ls,axis=3).squeeze(axis=3)
         
+    i_ls = i_ls.squeeze(axis=3)
         
     
     if use_cp:
@@ -230,10 +215,7 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,use_cp=ucp,return_ind=Fals
         
     
     
-    if not return_ind:
-        return ret(V), ret(c), ret(s)
-    else:
-        return ret(V), ret(c), ret(s), ret(i_opt)
+    return ret(V), ret(c), ret(s), ret(i_opt), ret(i_ls)
 
 
 

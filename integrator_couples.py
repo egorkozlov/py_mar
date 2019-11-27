@@ -31,13 +31,14 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True):
     
     # accounts for exogenous transitions
     
-    EV, EVf, EVm = ev_couple_exo(setup,Vren['M'],t,use_sparse)
+    EV, EVf, EVm = ev_couple_exo(setup,Vren['M'],t,use_sparse,down=False)
+    EV_d, EVf_d, EVm_d = ev_couple_exo(setup,Vren['M'],t,use_sparse,down=True)
     
     
-    return (EV, EVf, EVm), dec
+    return {'regular':(EV, EVf, EVm),'down':(EV_d, EVf_d, EVm_d)}, dec
 
 
-def ev_couple_exo(setup,Vren,t,use_sparse=True):
+def ev_couple_exo(setup,Vren,t,use_sparse=True,down=False):
     
  
     # this does dot product along 3rd dimension
@@ -47,7 +48,7 @@ def ev_couple_exo(setup,Vren,t,use_sparse=True):
     
     if use_sparse:
         
-        M = setup.exogrid.all_t_mat_sparse_T[t]      
+        M = setup.exogrid.all_t_mat_sparse_T[t] if not down else setup.exogrid.all_t_mat_down_sparse_T[t]
         def integrate_array(x):
             xout = np.zeros_like(x)
             for itheta in range(x.shape[2]):
@@ -55,7 +56,7 @@ def ev_couple_exo(setup,Vren,t,use_sparse=True):
             return xout
     else:
         
-        M = setup.exogrid.all_t_mat[t].T        
+        M = setup.exogrid.all_t_mat[t].T  if not down else setup.exogrid.all_t_mat_down[t].T     
         def integrate_array(x):
             xout = np.zeros_like(x)
             for itheta in range(x.shape[2]):
@@ -63,8 +64,6 @@ def ev_couple_exo(setup,Vren,t,use_sparse=True):
             return xout  
         
         
-        
-    
     EV, EVf, EVm = tuple( (integrate_array(a) for a in (Vren['V'],Vren['VF'],Vren['VM'])) )
     
     

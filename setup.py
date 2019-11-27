@@ -154,6 +154,14 @@ class ModelSetup(object):
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta)
         
         
+        # female labor supply
+        self.ls_levels = [1.0,1.0]
+        self.ls_utilities = [0.0,0.0]
+        self.ls_pdown = [0.0,0.0]
+        
+        
+        
+        
         # construct finer grid for bargaining
         ntheta_fine = 10*self.ntheta # actual number may be a bit bigger
         self.thetagrid_fine = np.unique(np.concatenate( (self.thetagrid,np.linspace(self.thetamin,self.thetamax,ntheta_fine)) ))

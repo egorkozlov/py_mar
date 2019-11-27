@@ -27,11 +27,35 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
     sgrid = setup.sgrid_c
     ind, p = setup.s_ind_c, setup.s_p_c
     
-    EV = EV_tuple[0]
     
-    EV_fem = EV_tuple[1]
-    EV_mal = EV_tuple[2]
     
+    
+    EV = EV_tuple['regular'][0]
+    
+    EV_fem = EV_tuple['regular'][1]
+    EV_mal = EV_tuple['regular'][2]
+    
+    EV_d = EV_tuple['down'][0]    
+    EV_fem_d = EV_tuple['down'][1]
+    EV_mal_d = EV_tuple['down'][2]
+    
+    ls = setup.ls_levels
+    us = setup.ls_utilities
+    pd = setup.ls_pdown
+    nls = len(ls)
+    
+    
+    EV_by_l = np.empty((EV.shape+(nls,)),dtype=np.float32) 
+    EV_fem_by_l = np.empty((EV.shape+(nls,)),dtype=np.float32) 
+    EV_mal_by_l = np.empty((EV.shape+(nls,)),dtype=np.float32) 
+    
+    for i, prob in enumerate(pd):
+        EV_by_l[...,i] = (1-prob)*EV + prob*EV_d
+        EV_fem_by_l[...,i] = (1-prob)*EV_fem + prob*EV_fem_d
+        EV_mal_by_l[...,i] = (1-prob)*EV_mal + prob*EV_mal_d
+    
+    
+    # type conversion is here
     
     zf  = setup.exogrid.all_t[0][:,0]
     zm  = setup.exogrid.all_t[0][:,1]
@@ -52,9 +76,9 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
     shp = (setup.na,setup.nexo,setup.ntheta)
     
     # type conversion to keep everything float32
-    sgrid,EV,sigma,beta = (np.float32(x) for x in (sgrid,EV,sigma,beta))
+    sgrid,sigma,beta = (np.float32(x) for x in (sgrid,sigma,beta))
     
-    V_couple, c_opt, s_opt, i_opt = np.empty(shp,np.float32), np.empty(shp,np.float32), np.empty(shp,np.float32), np.empty(shp,np.int32)
+    V_couple, c_opt, s_opt, i_opt, il_opt = np.empty(shp,np.float32), np.empty(shp,np.float32), np.empty(shp,np.float32), np.empty(shp,np.int32), np.empty(shp,np.int32)
     
     theta_val = np.float32(setup.thetagrid)
     umult_vec = setup.u_mult(theta_val)
@@ -72,10 +96,10 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
         assert ifinish > istart
         
         money_t = (R*agrid, wf[istart:ifinish], wm[istart:ifinish])
-        EV_t = (ind,p,EV[:,istart:ifinish,:])
+        EV_t = (ind,p,EV_by_l[:,istart:ifinish,...])
         
-        V_pure_i, c_opt_i, s_opt_i, i_opt_i = \
-           v_optimize_couple(money_t,sgrid,umult_vec,EV_t,sigma,beta,return_ind=True)
+        V_pure_i, c_opt_i, s_opt_i, i_opt_i, il_opt_i = \
+           v_optimize_couple(money_t,sgrid,umult_vec,EV_t,sigma,beta,ls,us)
         V_ret_i = V_pure_i + psi[None,istart:ifinish,None]
         
         
@@ -83,6 +107,7 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
         c_opt[:,istart:ifinish,:] = c_opt_i
         s_opt[:,istart:ifinish,:] = s_opt_i
         i_opt[:,istart:ifinish,:] = i_opt_i
+        il_opt[:,istart:ifinish,:] = il_opt_i
         
         istart = ifinish
         ifinish = ifinish+nbatch if ifinish+nbatch < setup.nexo else setup.nexo
@@ -96,9 +121,9 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
     
     # finally obtain value functions of partners
     uf, um = setup.u_part(c_opt,theta_val[None,None,:])
-    EVf_all, EVm_all,EV_all  = (get_EVM(ind,p,x) for x in (EV_fem, EV_mal,EV))
-    V_fem = uf + psi_r + beta*np.take_along_axis(EVf_all,i_opt,0)
-    V_mal = um + psi_r + beta*np.take_along_axis(EVm_all,i_opt,0)
+    EVf_all, EVm_all, EV_all  = (get_EVM(ind,p,x) for x in (EV_fem_by_l, EV_mal_by_l,EV_by_l))
+    V_fem = uf + psi_r + beta*np.take_along_axis(np.take_along_axis(EVf_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
+    V_mal = um + psi_r + beta*np.take_along_axis(np.take_along_axis(EVm_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
     
     #TODO check below for monotonicity: it is driven by uf!!
 #    psi_broadcast = np.broadcast_to(psi_r,V_fem.shape)
@@ -121,9 +146,8 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
                     
     
     # consistency check
-    EV_all = get_EVM(ind,p,EV)
     uc = setup.u_couple(c_opt,theta_val[None,None,:])
-    V_all = uc + psi_r + beta*np.take_along_axis(EV_all,i_opt,0)
+    V_all = uc + psi_r + beta*np.take_along_axis(np.take_along_axis(EV_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
     
     assert np.allclose(V_all,V_couple,atol=1e-5)
     

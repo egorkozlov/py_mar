@@ -7,7 +7,7 @@ This contains things relevant for setting up the model
 import numpy as np
 
 from rw_approximations import rouw_nonst
-from mc_tools import combine_matrices_two_lists, int_prob
+from mc_tools import combine_matrices_two_lists, int_prob,cut_matrix
 from scipy.stats import norm
 import sobol_seq
 from collections import namedtuple
@@ -112,6 +112,22 @@ class ModelSetup(object):
             zfzm, zfzmmat = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], exogrid['zf_t_mat'], exogrid['zm_t_mat'])
             exogrid['all_t'], exogrid['all_t_mat'] = combine_matrices_two_lists(zfzm,exogrid['psi_t'],zfzmmat,exogrid['psi_t_mat'])
             exogrid['all_t_mat_sparse_T'] = [sparse.csc_matrix(D.T) if D is not None else None for D in exogrid['all_t_mat']]
+            
+            
+            #Create a new bad version of transition matrix p(zf_t)
+            zf_bad=list()
+            for t in range(self.pars['T']-1):
+                zft=cut_matrix(exogrid['zf_t_mat'][t])
+                zf_bad.append(zft)
+            zf_bad.append(None)    
+            exogrid['zf_t_mat_down']=zf_bad
+            
+            zfzm, zfzmmat = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], exogrid['zf_t_mat_down'], exogrid['zm_t_mat'])
+            exogrid['all_t_down'], exogrid['all_t_mat_down'] = combine_matrices_two_lists(zfzm,exogrid['psi_t'],zfzmmat,exogrid['psi_t_mat'])
+            exogrid['all_t_mat_down_sparse_T'] = [sparse.csc_matrix(D.T) if D is not None else None for D in exogrid['all_t_mat_down']]
+            
+            exogrid['all_t_mat_down']=exogrid['all_t_mat']
+            exogrid['all_t_mat_down_sparse_T']=exogrid['all_t_mat_sparse_T']
             
             
             Exogrid_nt = namedtuple('Exogrid_nt',exogrid.keys())

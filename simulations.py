@@ -132,7 +132,7 @@ class Agents:
             sname = self.state_names[ist]
             
             mat = self.setup.exo_mats[sname][t]
-            
+            # TODO we need different matrices for each level of 
             iexo_now = self.iexo[ind,t].reshape(nst)
             
             iexo_next = mc_simulate(iexo_now,mat,shocks=None) # import + add shocks     

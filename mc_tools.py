@@ -71,6 +71,37 @@ def trim_one_matrix(M,level=0.001):
     Mout = Mout / np.sum(Mout,axis=1)[:,np.newaxis]
     return Mout
 
+def cut_matrix(M,kill_diag=False):
+    # This routine takes matrix M as input and returns a 'cut' Matrix M'
+    # all the entries states above the current one are made equal to
+    # zero. 
+    # Kill diag makes all the entries in the diagonal equal to zero.
+ 
+    #Assert we have a aquare matrix
+    assert np.shape(M)[0]==np.shape(M)[1]
+    dim=np.shape(M)[0]
+    
+    MM=M.copy()
+    #Kill the diagonal
+    if kill_diag:
+        for a in range(dim):
+            if a>0:
+                MM[a][a]=0.0
+                
+    #Fill the zeros
+    for a in range(dim):
+        for b in range(dim):
+            if b>a:
+                MM[a][b]=0.0
+                
+    #Rescale the non-zero entries
+    for a in range(dim):
+       
+        MM[a]=np.array(MM[a])/sum(MM[a])
+    
+    return MM
+    
+    
 def combine_matrices(a,b,Pia,Pib,check=True,trim=True,trim_level=0.00001):
     # this combines INDEPENDENT transition matrices Pia and Pib
     grid = mat_combine(a,b)

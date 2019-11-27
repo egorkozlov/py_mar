@@ -14,7 +14,7 @@ from numba import jit#, prange, cuda, float32
 from platform import system
 from aux_routines import cp_take_along_axis
 
-if system() != 'Darwin' and system() != 'Windows':
+if system() != 'Darwin':
     import cupy as cp
     ucp = True
 else:
@@ -110,7 +110,11 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,use_cp=ucp,return_ind=Fals
     # TBD: file opt_test.py has jit-able version of these functions .
     # So far they are slower than this but they might be improved
     
+    ls = [1.0,1.0]
+    us = [0.0,0.0]
+
     
+    nls = len(ls)
     
     mr = cp if use_cp else np # choose matrix routine
         
@@ -118,12 +122,18 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,use_cp=ucp,return_ind=Fals
     assert len(money)==3
     
     
-    if use_cp: money = tuple((cp.asarray(x) for x in money))
+    if use_cp:
+        money = tuple((cp.asarray(x) for x in money))
+        umult = cp.asarray(umult)
+    
+    
     
     wf = money[1]
     wm = money[2]
     asset_income = money[0]
     
+    nexo = wf.size
+    na = asset_income.size
     
     
     wf = wf.reshape((1,wf.size))
@@ -163,29 +173,55 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,use_cp=ucp,return_ind=Fals
     
     s_expanded = sgrid.reshape(s_size)
     
-    c_mat = mr.expand_dims(money,1) - s_expanded 
-    u_mat = mr.full(c_mat.shape,-mr.inf)
-    u_mat[c_mat>0] = u(c_mat[c_mat>0])
     
     
-    # u_mat shape is (na,ns,nexo)
-    u_mat = u_mat.reshape(u_mat.shape + (1,))   # adds dimension for theta 
-    u_mat_theta = u_mat*umult.reshape((1,1,1,umult.size)) # we added s dimension :(
-    # u_mat shape is (na,ns,nexo,ntheta)
-    # EV shape is (ns,nexo,ntheta)
-    V_arr = u_mat_theta + beta*mr.expand_dims(EV,0) # adds dimension for current a
-    # V_arr shape is (na,ns,nexo,ntheta)
-    i_opt = V_arr.argmax(axis=1) # (na,nexo,ntheta)
-    
-    s = sgrid[i_opt]
-    
-    c = money.reshape( (money.shape+(1,)) ) - s
     
     tal = cp_take_along_axis if use_cp else np.take_along_axis
     
     
-    V = u(c)*umult.reshape((1,1,umult.size)) + beta*tal(EV,i_opt,0)
+    i_opt_arr = mr.empty((na,nexo,ntheta,nls),dtype=mr.int32)
+    c_opt_arr = mr.empty((na,nexo,ntheta,nls),dtype=mr.float32)
+    s_opt_arr = mr.empty((na,nexo,ntheta,nls),dtype=mr.float32)
+    V_opt_arr = mr.empty((na,nexo,ntheta,nls),dtype=mr.float32)
     
+    for i, (lval, uval) in enumerate(zip(ls,us)):
+        
+        c_mat = mr.expand_dims(money,1) - s_expanded - (1-lval)*wf.reshape((1,1,nexo))
+        u_mat = mr.full(c_mat.shape,-mr.inf)
+        u_mat[c_mat>0] = u(c_mat[c_mat>0])
+        # u_mat shape is (na,ns,nexo)
+        u_mat = u_mat.reshape(u_mat.shape + (1,))   # adds dimension for theta 
+        u_mat_theta = u_mat*umult.reshape((1,1,1,umult.size)) # we added s dimension :(
+        u_mat_total = u_mat_theta + uval
+        
+        
+        # u_mat_total shape is (na,ns,nexo,ntheta)
+        # EV shape is (ns,nexo,ntheta)
+        V_arr = u_mat_theta + beta*mr.expand_dims(EV,0) # adds dimension for current a
+        # V_arr shape is (na,ns,nexo,ntheta)
+        i_opt = V_arr.argmax(axis=1) # (na,nexo,ntheta)
+        
+        i_opt_ed = mr.expand_dims(i_opt,1)
+        
+        
+        s = sgrid[i_opt]
+        c = tal(mr.expand_dims(c_mat,3),i_opt_ed,1).squeeze(axis=1) #money.reshape( (money.shape+(1,)) ) - s
+        
+        V = tal(u_mat_total,i_opt_ed,1).squeeze(axis=1) + beta*tal(EV,i_opt,0) # squeeze
+        
+        i_opt_arr[...,i] = i_opt
+        c_opt_arr[...,i] = c
+        s_opt_arr[...,i] = s
+        V_opt_arr[...,i] = V
+        
+    i_ls = mr.expand_dims(V_opt_arr.argmax(axis=3),3)
+    
+    V = tal(V_opt_arr,i_ls,axis=3).squeeze(axis=3)
+    c = tal(c_opt_arr,i_ls,axis=3).squeeze(axis=3)
+    s = tal(s_opt_arr,i_ls,axis=3).squeeze(axis=3)
+    i_opt = tal(i_opt_arr,i_ls,axis=3).squeeze(axis=3)
+        
+        
     
     if use_cp:
         ret = lambda x : cp.asnumpy(x)

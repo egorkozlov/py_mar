@@ -120,15 +120,15 @@ class ModelSetup(object):
             self.exogrid = Exogrid_nt(**exogrid)
 
         #Grid Couple
-        self.na = 60
+        self.na = 40
         self.amin = 0
-        self.amax =8
+        self.amax =3
         self.agrid_c = np.linspace(self.amin,self.amax,self.na)
         tune=1.5
-        #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
+        self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         
         # this builds finer grid for potential savings
-        s_between = 10 # default numer of points between poitns on agrid
+        s_between = 7 # default numer of points between poitns on agrid
         s_da_min = 0.001 # minimal step (does not create more points)
         s_da_max = 0.1 # maximal step (creates more if not enough)
         
@@ -139,8 +139,10 @@ class ModelSetup(object):
         self.amin_s = 0
         self.amax_s = self.amax/1.0
         self.agrid_s = np.linspace(self.amin_s,self.amax_s,self.na)
+        
+        
         tune_s=1.5
-        #self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
+        self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
         
         self.sgrid_s = build_s_grid(self.agrid_s,s_between,s_da_min,s_da_max)
         self.s_ind_s, self.s_p_s = sgrid_on_agrid(self.sgrid_s,self.agrid_s)
@@ -148,14 +150,18 @@ class ModelSetup(object):
 
 
         # grid for theta
-        self.ntheta = 21
+        self.ntheta = 31
         self.thetamin = 0.01
         self.thetamax = 0.99
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta)
         
+        tune_t=0.005
+        self.thetah=np.geomspace(self.thetamin+tune_t,0.5-self.thetamin/2+tune_t,num=self.ntheta/2)-tune_t
+        self.thetagridr=1-self.thetah[::-1]
+        #self.thetagrid=np.concatenate((self.thetah,self.thetagridr),axis=0)
         
         # construct finer grid for bargaining
-        ntheta_fine = 10*self.ntheta # actual number may be a bit bigger
+        ntheta_fine = 5*self.ntheta # actual number may be a bit bigger
         self.thetagrid_fine = np.unique(np.concatenate( (self.thetagrid,np.linspace(self.thetamin,self.thetamax,ntheta_fine)) ))
         self.ntheta_fine = self.thetagrid_fine.size
         

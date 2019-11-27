@@ -14,7 +14,7 @@ from numba import jit#, prange, cuda, float32
 from platform import system
 from aux_routines import cp_take_along_axis
 
-if system() != 'Darwin' and system() != 'Windows':
+if system() != 'Darwin':
     import cupy as cp
     ucp = True
 else:
@@ -111,8 +111,8 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,use_cp=ucp,return_ind=Fals
     # So far they are slower than this but they might be improved
     
     
-    ls = [0.0,0.0,0.0]
-    us = [0.0,0.0,0.0]
+    ls = [0.0,0.0,0.0,0.0]
+    us = [0.0,0.0,0.0,0.0]
     
     mr = cp if use_cp else np # choose matrix routine
         
@@ -120,7 +120,9 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,use_cp=ucp,return_ind=Fals
     assert len(money)==3
     
     
-    if use_cp: money = tuple((cp.asarray(x) for x in money))
+    if use_cp:
+        money = tuple((cp.asarray(x) for x in money))
+        umult = cp.asarray(umult)
     
     wf = money[1]
     wm = money[2]
@@ -189,7 +191,7 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,use_cp=ucp,return_ind=Fals
     
     u_mat_theta_byl = mr.zeros((na,ns,nexo,ntheta,len(ls)))
     for i, u_lfp in enumerate(us):
-        u_mat_theta_byl[...,i] = uc_mat_by_l[i]*umult.reshape((1,1,1,umult.size))  + u_lfp
+        u_mat_theta_byl[:,:,:,:,i] = uc_mat_by_l[i]*umult.reshape((1,1,1,umult.size))  + u_lfp
         
     u_mat_theta = mr.max(u_mat_theta_byl,axis=-1)
     #il_mat_theta = mr.armax(u_mat_theta_byl,axis=-1)

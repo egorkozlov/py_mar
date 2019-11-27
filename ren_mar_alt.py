@@ -71,7 +71,7 @@ def v_ren_new(setup,V,marriage,t):
     assert np.size(Vval_postren,2) == np.size(Vm_divorce,1)
     
     
-    result  = v_ren_core_interp(setup,Vval_postren, VFval_postren, VMval_postren, Vf_divorce, Vm_divorce)
+    result  = v_ren_core_interp(setup,Vval_postren, VFval_postren, VMval_postren, Vf_divorce, Vm_divorce,t)
     
     
     return result
@@ -188,8 +188,8 @@ def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,Vmale,Vfemale,izf,izm,cost_f
     
     # find utilities of divorce for different divisions of assets
     for i, shr in enumerate(shrs):
-        sv_m = VecOnGrid(setup.agrid_s, shr*sc - cost_mal)
-        sv_f = sv_m if cost_fem == cost_mal else VecOnGrid(setup.agrid,shr*sc - cost_fem)
+        sv_m = VecOnGrid(setup.agrid_s, shr*sc*dc.assets_kept - cost_mal)
+        sv_f = sv_m if cost_fem == cost_mal else VecOnGrid(setup.agrid,shr*sc*dc.assets_kept - cost_fem)
         
         Vm_divorce_M[...,i] = sv_m.apply(Vmale,    axis=0,take=(1,izm),reshape_i=True) - dc.u_lost_m
         Vf_divorce_M[...,i] = sv_f.apply(Vfemale,  axis=0,take=(1,izf),reshape_i=True) - dc.u_lost_f
@@ -221,7 +221,7 @@ def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,Vmale,Vfemale,izf,izm,cost_f
     return Vf_divorce, Vm_divorce
 
 
-def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
+def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n,t):
     # compute the surplus
     
     # interpolate it
@@ -276,6 +276,10 @@ def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
     # compute where each agent agrees
     i_sf_expand = (sf_expand >= 0)
     i_sm_expand = (sm_expand >= 0)
+    #print(t)
+    if t==setup.pars['T']:
+        i_sf_expand = (sf_expand >= -10000)
+        i_sm_expand = (sm_expand >= -10000)
     
     # check for single crossing
     # signle crossing from false to true
@@ -374,7 +378,7 @@ def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
                 'Values': (v_out, vf_out, vm_out),'Divorce':(vf_div_full,vm_div_full)}
     else:
         return {'Decision': yes, 'thetas': i_theta_out,
-                'Values': (v_out, vf_out, vm_out),'Cohabitation preferred to Marriage': inde}
+                'Values': (v_out, vf_out, vm_out),'Cohabitation preferred to Marriage': inde,'Separation':(vf_div_full,vm_div_full)}
 
 
 

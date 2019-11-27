@@ -95,6 +95,7 @@ class Model(object):
                 return {desc: {'V':V,'c':c,'s':s}}   
              
             elif desc== 'Couple, M' or desc == 'Couple, C':
+
                 if EV is None:
                     V, VF, VM, c, s = setup.vm_last_grid(return_cs=True)
                 else:
@@ -142,6 +143,8 @@ class Model(object):
         T = self.setup.pars['T']
         self.V = list()
         self.decisions = list()
+        
+
         
         
         for t in reversed(range(T)):

@@ -89,10 +89,10 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
         
         
 
-    V_ren_c,V_ren_m=np.empty([2,len(agrids)])
+    V_ren_c,V_ren_m,Vf_ren_c,Vf_ren_m,Vm_ren_c,Vm_ren_m=np.empty([6,len(agrids)])
     Vfs,cfs,sfs=np.empty([3,len(agrids), len(zfg),T])
     Vms,cms,sms=np.empty([3,len(agrids), len(zmg),T])
-    Vf_div,Vm_div=np.empty([2,len(agrid), len(zfg),len(zmg),T])
+    Vf_div,Vm_div,Vf_sep,Vm_sep=np.empty([4,len(agrid), len(zfg),len(zmg),T])
     Vm,Vfm,Vmm,cm,sm=np.empty([5,len(agrid), len(zfg),len(zmg),len(psig),T,setup.ntheta])# RVfm,RVmm,thfm,thmm,
     Vc,Vfc,Vmc,cc,sc=np.empty([5,len(agrid), len(zfg),len(zmg),len(psig),T,setup.ntheta])#RVfc,RVmc,thfc,thmc,
     thetam_R,thetac_R=np.empty([2,len(agrid), len(zfg),len(zmg),len(psig),T,len(setup.thetagrid_fine)])
@@ -104,6 +104,10 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
         inde=setup.theta_orig_on_fine[thi]
         V_ren_c[a]=dec[max(ti-1,0)]['Couple, C']['Values'][0][a,nex,inde]
         V_ren_m[a]=dec[max(ti-1,0)]['Couple, M']['Values'][0][a,nex,inde]
+        Vf_ren_c[a]=dec[max(ti-1,0)]['Couple, C']['Values'][1][a,nex,inde]
+        Vf_ren_m[a]=dec[max(ti-1,0)]['Couple, M']['Values'][1][a,nex,inde]
+        Vm_ren_c[a]=dec[max(ti-1,0)]['Couple, C']['Values'][2][a,nex,inde]
+        Vm_ren_m[a]=dec[max(ti-1,0)]['Couple, M']['Values'][2][a,nex,inde]
         
     #Divorced Women and Men
     for t in range(T):
@@ -117,6 +121,8 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
 
                 Vf_div[j,zf,zm,t]=dec[max(t-1,0)]['Couple, M']['Divorce'][0][j,i,0]
                 Vm_div[j,zf,zm,t]=dec[max(t-1,0)]['Couple, M']['Divorce'][1][j,i,0]
+                Vf_sep[j,zf,zm,t]=dec[max(t-1,0)]['Couple, C']['Separation'][0][j,i,0]
+                Vm_sep[j,zf,zm,t]=dec[max(t-1,0)]['Couple, C']['Separation'][1][j,i,0]
                
     #Single Women
     for t in range(T):
@@ -293,21 +299,41 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
      
      
     ##########################################
-    # Vf and ASSETS
+    # Assets and Renegitiation-Couples
     ########################################## 
     fig = plt.figure()
     f51=fig.add_subplot(2,1,1)
-    #plt.plot(agrid, Vm[0:len(agrid),zfi,zmi,psii,ti,thi],'bo',markersize=4, label='Before Ren M')
-    #plt.plot(agrid, Vc[0:len(agrid),zfi,zmi,psii,ti,thi],'r*',markersize=2,label='Before Ren C')
     plt.plot(agrid, V_ren_c,'y', markersize=4,label='After Ren C')
     plt.plot(agrid, V_ren_m,'k', linestyle='--',markersize=4, label='After Ren M')
-    #plt.plot(agrid, Vm_div[0:len(agrid),zfi,zmi,ti],'b',markersize=2, label='Male Divorce') 
-    plt.plot(agrid, setup.thetagrid[thi]*Vf_div[0:len(agrid),zfi,zmi,ti]+(1-setup.thetagrid[thi])*Vm_div[0:len(agrid),zfi,zmi,ti],'r', linestyle='--',markersize=2,label='Female Divorce') 
+    plt.plot(agrid, setup.thetagrid[thi]*Vf_div[0:len(agrid),zfi,zmi,ti]+
+             (1-setup.thetagrid[thi])*Vm_div[0:len(agrid),zfi,zmi,ti],
+             'r', linestyle='--',markersize=2,label='Couples Divorce') 
     plt.ylabel('Utility')
     plt.xlabel('Assets')
     #plt.title('Utility  Divorce costs: men=0.5, women=0.5')
     legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
     
+    ##########################################
+    # Assets and Renegitiation-Individuals
+    ########################################## 
+    fig = plt.figure()
+    f52=fig.add_subplot(2,1,1)
+    top=15#len(agrid)
+    plt.plot(agrid[0:top], Vf_ren_c[0:top],'ko', linestyle='--', markersize=2,label='After Ren C F')
+    #plt.plot(agrid, Vf_ren_m,'k', linestyle='--',markersize=2, label='After Ren M F')
+    plt.plot(agrid[0:top], Vm_ren_c[0:top],'b', markersize=4,label='After Ren C M')
+    #plt.plot(agrid, Vm_ren_m,'bo', markersize=4, label='After Ren M M')
+    #plt.plot(agrid, Vf_div[0:len(agrid),zfi,zmi,ti],'r', linestyle='--',markersize=2,label='Female Divorce') 
+    #plt.plot(agrid, Vm_div[0:len(agrid),zfi,zmi,ti],'ro',markersize=2,label='Male Divorce')
+    plt.plot(agrid[0:top], Vf_sep[0:top,zfi,zmi,ti],'r', linestyle='--',markersize=2,label='Female Separation') 
+    plt.plot(agrid[0:top], Vm_sep[0:top,zfi,zmi,ti],'ro',markersize=2,label='Male Separation')
+    plt.ylabel('Utility')
+    plt.xlabel('Assets')
+    #plt.title('Utility  Divorce costs: men=0.5, women=0.5')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
+                  fancybox=True, shadow=True, ncol=4, fontsize='x-small')
+    print(6666,Vf_sep[0:top,zfi,zmi,ti])
+    print(7777,Vf_ren_c[0:top])
     ##########################################
     # Consumption and Assets
     ########################################## 
@@ -472,11 +498,11 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     zero = np.array([0.0] * psig)
     fig12 = plt.figure()
     #plt.plot(psig, zero,'k',linewidth=1)
-    plt.plot(agrid,  thetam_R[0:len(agrid),zfi,zmi,psii,ti,0],'b',linewidth=1.5, label='Theta Marriage')
-    plt.plot(agrid,  thetac_R[0:len(agrid),zfi,zmi,psii,ti,0],'r', linestyle='--',linewidth=1.5, label='Theta Cohabitation')
+    plt.plot(agrid[0:top],  thetam_R[0:top,zfi,zmi,psii,ti,0],'b',linewidth=1.5, label='Theta Marriage')
+    plt.plot(agrid[0:top],  thetac_R[0:top,zfi,zmi,psii,ti,0],'r', linestyle='--',linewidth=1.5, label='Theta Cohabitation')
     for j in range(0, len(setup.thetagrid_fine), 10): 
-        plt.plot(agrid,  thetam_R[0:len(agrid),zfi,zmi,psii,ti,j],'b',linewidth=1.5)
-        plt.plot(agrid,  thetac_R[0:len(agrid),zfi,zmi,psii,ti,j],'r', linestyle='--',linewidth=1.5)
+        plt.plot(agrid[0:top],  thetam_R[0:top,zfi,zmi,psii,ti,j],'b',linewidth=1.5)
+        plt.plot(agrid[0:top],  thetac_R[0:top,zfi,zmi,psii,ti,j],'r', linestyle='--',linewidth=1.5)
     #plt.plot(setup.thetagrid,  sc[ai,zfi,zmi,psii,ti,0:len(setup.thetagrid)],'r', linestyle='--',linewidth=1.5, label='Savings Cohabitation')
     legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
     plt.xlabel('Assets')

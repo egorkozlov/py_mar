@@ -297,10 +297,12 @@ class Agents:
                     income_share_fem = income_fem / (income_fem + income_mal)
                     
                     costs = self.setup.div_costs if sname == 'Couple, M' else self.setup.sep_costs
+                   
                                
                     share_f, share_m = costs.shares_if_split(income_share_fem)
+                    rete=costs.assets_kept
                     
-                    sf = share_f*sc[i_div]
+                    sf = share_f*rete*sc[i_div]
                     
                     self.iassets[ind[i_div],t+1] = VecOnGrid(agrid,sf).roll() # FIXME: this is temporary solution till we find a better organization
                     self.itheta[ind[i_div],t+1] = -1

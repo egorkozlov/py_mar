@@ -30,12 +30,12 @@ if __name__ == '__main__':
     
     #Indexes for the graphs
     if graphs:
-        ai=50
+        ai=35
         zfi=0
         zmi=2
         psii=5
         ti=3
-        thi=10
+        thi=15
         
         #Actual Graphs
         Packed,dec=mdl.graph(ai,zfi,zmi,psii,ti,thi)

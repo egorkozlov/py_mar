@@ -116,7 +116,6 @@ class Agents:
       
             
             
-            
     def iexonext(self,t):
         
         # let's find out new exogenous state
@@ -131,8 +130,12 @@ class Agents:
             ind = np.where(is_state)[0]
             sname = self.state_names[ist]
             
-            mat = self.setup.exo_mats[sname][t]
-            # TODO we need different matrices for each level of 
+            
+            if sname == 'Couple, C' or sname == 'Couple, M':
+                mat = self.setup.exo_mats[sname][t][0] # FIXME: takes 0th level of LS
+            else:
+                mat = self.setup.exo_mats[sname][t]
+
             iexo_now = self.iexo[ind,t].reshape(nst)
             
             iexo_next = mc_simulate(iexo_now,mat,shocks=None) # import + add shocks     

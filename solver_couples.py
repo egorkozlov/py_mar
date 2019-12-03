@@ -30,29 +30,16 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
     
     
     
-    EV = EV_tuple['regular'][0]
+    EV_by_l = EV_tuple[0]
     
-    EV_fem = EV_tuple['regular'][1]
-    EV_mal = EV_tuple['regular'][2]
+    EV_fem_by_l = EV_tuple[1]
+    EV_mal_by_l = EV_tuple[2]
     
-    EV_d = EV_tuple['down'][0]    
-    EV_fem_d = EV_tuple['down'][1]
-    EV_mal_d = EV_tuple['down'][2]
     
     ls = setup.ls_levels
     us = setup.ls_utilities
-    pd = setup.ls_pdown
-    nls = len(ls)
-    
-    
-    EV_by_l = np.empty((EV.shape+(nls,)),dtype=np.float32) 
-    EV_fem_by_l = np.empty((EV.shape+(nls,)),dtype=np.float32) 
-    EV_mal_by_l = np.empty((EV.shape+(nls,)),dtype=np.float32) 
-    
-    for i, prob in enumerate(pd):
-        EV_by_l[...,i] = (1-prob)*EV + prob*EV_d
-        EV_fem_by_l[...,i] = (1-prob)*EV_fem + prob*EV_fem_d
-        EV_mal_by_l[...,i] = (1-prob)*EV_mal + prob*EV_mal_d
+    #pd = setup.ls_pdown
+    #nls = len(ls)
     
     
     # type conversion is here

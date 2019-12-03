@@ -505,7 +505,7 @@ class ModelSetup(object):
         
         for l in range(len(self.ls_levels)):
            
-            income_g[...,l] = self.pars['R']*s + np.exp(zm) +  np.exp(zf)
+            income_g[...,l] = self.pars['R']*s + np.exp(zm) +  np.exp(zf)*self.ls_levels[l]
             kf, km = self.c_mult(theta)        
             u_couple_g[...,l] = self.u_mult(theta)*self.u(income_g[...,l])+self.ls_utilities[l] 
             util_g[...,l]=self.ls_utilities[l] 
@@ -516,9 +516,9 @@ class ModelSetup(object):
         ls=np.argmax(u_couple_g,axis=3)
         lsi=np.expand_dims(ls,3)
         lsii=np.broadcast_to(lsi,(self.na,self.pars['nexo'],len(self.thetagrid),len(self.ls_levels)))
-        u_couple=np.take_along_axis(u_couple_g,lsii,axis=3)[:,:,:,0]
-        income=np.take_along_axis(income_g,lsii,axis=3)[:,:,:,0]
-        util=np.take_along_axis(util_g,lsii,axis=3)[:,:,:,0]
+        u_couple=np.take_along_axis(u_couple_g,lsi,axis=3)[:,:,:,0]
+        income=np.take_along_axis(income_g,lsi,axis=3)[:,:,:,0]
+        util=np.take_along_axis(util_g,lsi,axis=3)[:,:,:,0]
         #levels=np.take_along_axis(levels_g,lsii,axis=3)[:,:,:,0]
         
        

@@ -36,6 +36,9 @@ class Agents:
         
         self.iassets = np.zeros((N,T),np.int32)
         
+        # initialize FLS
+        #self.ils=np.ones((N,T),np.float64)
+        self.ils_i=np.ones((N,T),np.int32)*(len(self.setup.ls_levels)-1)
 
         # initialize theta
         self.itheta = -np.ones((N,T),np.int32)
@@ -56,7 +59,7 @@ class Agents:
         
         
         self.timer('Simulations, creation')
-    
+        self.ils_def = len(self.setup.ls_levels)-1
     def simulate(self):
         
         #Create Variables that stores varibles of interest
@@ -71,7 +74,6 @@ class Agents:
         
         
         #return self.gsavings, self.iexo, self.state,self.gtheta
-    
     
     def anext(self,t):
         # finds savings (potenitally off-grid)
@@ -104,6 +106,7 @@ class Agents:
                 anext = tk(self.V[t][sname]['s'])[self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
                 
                 
+                
             assert np.all(anext >= 0)
             
             agrid = self.setup.agrid_c if use_theta else self.setup.agrid_s
@@ -132,7 +135,8 @@ class Agents:
             
             
             if sname == 'Couple, C' or sname == 'Couple, M':
-                mat = self.setup.exo_mats[sname][t][0] # FIXME: takes 0th level of LS
+                
+                mat = self.setup.exo_mats[sname][-1][t] # FIXME: takes 0th level of LS
             else:
                 mat = self.setup.exo_mats[sname][t]
 
@@ -174,7 +178,8 @@ class Agents:
                 matches = self.M.decisions[t]['Female, single']
                 
                 
-                ia = self.iassets[ind,t+1] # note that timing is slightly inconsistent                
+                ia = self.iassets[ind,t+1] # note that timing is slightly inconsistent  
+                
                 # we use iexo from t and savings from t+1
                 # TODO: fix the seed
                 iznow = self.iexo[ind,t]
@@ -309,17 +314,34 @@ class Agents:
                     self.itheta[ind[i_div],t+1] = -1
                     self.iexo[ind[i_div],t+1] = izf[i_div]
                     self.state[ind[i_div],t+1] = self.state_codes['Female, single']
+                    
+                    #FLS
+                    self.ils_i[ind[i_div],t+1] = self.ils_def
+                    #self.ils[ind,t+1] = self.setup.ls_levels[self.ils_i[ind,t+1]]
                 
                 if np.any(i_ren):
                     
                     self.itheta[ind[i_ren],t+1] = thts[i_ren]
                     
+                    
+                    tg = self.setup.v_thetagrid_fine
+                    
                     #Distinguish between marriage and cohabitation
                     if sname == "Couple, M":
                         self.state[ind[i_ren],t+1] = self.state_codes[sname]
+                        
+                        
+                        ipick = (self.iassets[ind[i_ren],t],self.iexo[ind[i_ren],t],tg.i[self.itheta[ind[i_ren],t]])
+                        self.ils_i[ind[i_ren],t+1] = self.V[t][sname]['fls'][ipick]
                     else:
                         i_coh = decision['Cohabitation preferred to Marriage'][isc,iall,thts]
                         i_coh1=i_coh[i_ren]
+                        
+                        ipick = (self.iassets[ind[i_ren],t],self.iexo[ind[i_ren],t],tg.i[self.itheta[ind[i_ren],t]])
+                        ils_if_mar = self.V[t]["Couple, M"]['fls'][ipick]
+                        ils_if_coh = self.V[t]["Couple, C"]['fls'][ipick]
+                        
+                        self.ils_i[ind[i_ren],t+1] = i_coh1*ils_if_coh+(1-i_coh1)*ils_if_mar
                         self.state[ind[i_ren],t+1] = i_coh1*self.state_codes["Couple, C"]+(1-i_coh1)*self.state_codes["Couple, M"]
                       
                             
@@ -332,9 +354,20 @@ class Agents:
                     #Distinguish between marriage and cohabitation
                     if sname == "Couple, M":
                         self.state[ind[i_sq],t+1] = self.state_codes[sname]
+                        
+                        ipick = (self.iassets[ind[i_sq],t],self.iexo[ind[i_sq],t],tg.i[self.itheta[ind[i_sq],t]])
+                        self.ils_i[ind[i_sq],t+1] = self.V[t][sname]['fls'][ipick]
                     else:
                         i_coh = decision['Cohabitation preferred to Marriage'][isc,iall,thts]
                         i_coh1=i_coh[i_sq]
+                        self.state[ind[i_sq],t+1] = i_coh1*self.state_codes["Couple, C"]+(1-i_coh1)*self.state_codes["Couple, M"]
+                        
+                        ipick = (self.iassets[ind[i_sq],t],self.iexo[ind[i_sq],t],tg.i[self.itheta[ind[i_sq],t]])
+                        
+                        ils_if_mar = self.V[t]["Couple, M"]['fls'][ipick]
+                        ils_if_coh = self.V[t]["Couple, C"]['fls'][ipick]
+                       
+                        self.ils_i[ind[i_sq],t+1] = i_coh1*ils_if_coh+(1-i_coh1)*ils_if_mar
                         self.state[ind[i_sq],t+1] = i_coh1*self.state_codes["Couple, C"]+(1-i_coh1)*self.state_codes["Couple, M"]
             
             else:

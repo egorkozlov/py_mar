@@ -96,7 +96,7 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     Vm,Vfm,Vmm,cm,sm=np.empty([5,len(agrid), len(zfg),len(zmg),len(psig),T,setup.ntheta])# RVfm,RVmm,thfm,thmm,
     Vc,Vfc,Vmc,cc,sc=np.empty([5,len(agrid), len(zfg),len(zmg),len(psig),T,setup.ntheta])#RVfc,RVmc,thfc,thmc,
     thetam_R,thetac_R=np.empty([2,len(agrid), len(zfg),len(zmg),len(psig),T,len(setup.thetagrid_fine)])
-    
+    flsm,flsc=np.empty([2,len(agrid), len(zfg),len(zmg),len(psig),T,setup.ntheta],dtype=np.int32)
     
     #Renegotiated Value
     for a in range(len(agrid)):
@@ -148,6 +148,7 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
                 Vfm[j,zf,zm,psi,t,]=Packed[t]['Couple, M']['VF'][j,i,]
                 cm[j,zf,zm,psi,t,]=Packed[t]['Couple, M']['c'][j,i,]
                 sm[j,zf,zm,psi,t,]=Packed[t]['Couple, M']['s'][j,i,]
+                flsm[j,zf,zm,psi,t,]=Packed[t]['Couple, M']['fls'][j,i,]
                 #RVmm[j,zf,zm,psi,t]=vtoutm[t][j,i]
                 #RVfm[j,zf,zm,psi,t]=vtoutf[t][j,i]
                 #thmm[j,zf,zm,psi,t]=thetm[t][j,i]
@@ -160,6 +161,7 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
                 Vfc[j,zf,zm,psi,t,]=Packed[t]['Couple, C']['VF'][j,i,]
                 cc[j,zf,zm,psi,t,]=Packed[t]['Couple, C']['c'][j,i,]
                 sc[j,zf,zm,psi,t,]=Packed[t]['Couple, C']['s'][j,i,]
+                flsc[j,zf,zm,psi,t,]=Packed[t]['Couple, C']['fls'][j,i,]
                 #RVmc[j,zf,zm,psi,t]=vtoutm_c[t][j,i]
                 #RVfc[j,zf,zm,psi,t]=vtoutf_c[t][j,i]
                 #thmc[j,zf,zm,psi,t]=thetm_c[t][j,i]
@@ -218,6 +220,47 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral')
     plt.xlabel('Love')
     plt.ylabel('Utility')
+    #plt.title('Utility  Divorce costs: men=0.5, women=0.5')
+    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    
+    ##########################################
+    # FLS wrt Love
+    ########################################## 
+    fig = plt.figure()
+    f1=fig.add_subplot(2,1,1)
+    graphc=[None] * len(psig)
+    graphm=[None] * len(psig)
+    for i in range(len(psig)):
+       
+        graphc[i]=setup.ls_levels[flsc[ai,zfi,zmi,i,ti,thi]]
+        graphm[i]=setup.ls_levels[flsm[ai,zfi,zmi,i,ti,thi]]
+
+    plt.plot(psig, graphm,'k',markersize=6, label='Couple Marriage')
+    plt.plot(psig, graphc,'r*',markersize=6,label='Women, Marriage')
+    plt.axvline(x=tre, color='b', linestyle='--', label='Treshold Single-Couple')
+    #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral')
+    plt.xlabel('Love')
+    plt.ylabel('FLS')
+    #plt.title('Utility  Divorce costs: men=0.5, women=0.5')
+    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    
+    ##########################################
+    # FLS wrt female earnings
+    ########################################## 
+    fig = plt.figure()
+    f1=fig.add_subplot(2,1,1)
+    graphc=[None] * setup.pars['n_zf']
+    graphm=[None] * setup.pars['n_zf']
+    
+    for i in range(setup.pars['n_zf']):
+        graphc[i]=setup.ls_levels[flsc[ai,i,zmi,psii,ti,thi]]
+        graphm[i]=setup.ls_levels[flsm[ai,i,zmi,psii,ti,thi]]
+    
+    plt.plot(range(setup.pars['n_zf']),graphm,'k',markersize=6, label='Couple Marriage')
+    plt.plot(range(setup.pars['n_zf']), graphc,'r*',markersize=6,label='Women, Marriage')
+    #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral')
+    plt.xlabel('Female Productivity')
+    plt.ylabel('FLS')
     #plt.title('Utility  Divorce costs: men=0.5, women=0.5')
     legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
     

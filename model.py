@@ -96,10 +96,10 @@ class Model(object):
              
             elif desc== 'Couple, M' or desc == 'Couple, C':
                 if EV is None:
-                    V, VF, VM, c, s = setup.vm_last_grid(return_cs=True)
+                    V, VF, VM, c, s, fls = setup.vm_last_grid(return_cs=True)
                 else:
-                    V, VF, VM, c, s = v_iter_couple(setup,EV)            
-                return {desc: {'V':V,'VF':VF,'VM':VM,'c':c,'s':s}}
+                    V, VF, VM, c, s, fls = v_iter_couple(setup,EV)            
+                return {desc: {'V':V,'VF':VF,'VM':VM,'c':c,'s':s,'fls':fls}}
           
             
         # and the integrator   

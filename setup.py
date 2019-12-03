@@ -468,18 +468,43 @@ class ModelSetup(object):
         # this is the value function for couple that has savings s,
         # Z = (zm,zf,psi) and bargaining power theta after all decisions are made
         
-        income = self.pars['R']*s + np.exp(zm) +  np.exp(zf)
-        kf, km = self.c_mult(theta)
+        
+        #Get utility for different FLS
+        #TODO check indeces here
+        u_couple_g=np.zeros((self.na,self.pars['nexo'],len(self.thetagrid),len(self.ls_levels)))
+        income_g=np.zeros((self.na,self.pars['nexo'],len(self.thetagrid),len(self.ls_levels)))
+        util_g=np.zeros((self.na,self.pars['nexo'],len(self.thetagrid),len(self.ls_levels)))
+        #levels_g=np.zeros((self.na,self.pars['nexo'],len(self.thetagrid),len(self.ls_levels)))
+        
+        for l in range(len(self.ls_levels)):
+           
+            income_g[...,l] = self.pars['R']*s + np.exp(zm) +  np.exp(zf)
+            kf, km = self.c_mult(theta)        
+            u_couple_g[...,l] = self.u_mult(theta)*self.u(income_g[...,l])+self.ls_utilities[l] 
+            util_g[...,l]=self.ls_utilities[l] 
+            #levels_g[...,l]=self.ls_levels[l] 
+            
+        #Get optimal FLS
+        ls= np.empty((self.na,self.pars['nexo'],len(self.thetagrid)),dtype=np.int32)
+        ls=np.argmax(u_couple_g,axis=3)
+        lsi=np.expand_dims(ls,3)
+        lsii=np.broadcast_to(lsi,(self.na,self.pars['nexo'],len(self.thetagrid),len(self.ls_levels)))
+        u_couple=np.take_along_axis(u_couple_g,lsii,axis=3)[:,:,:,0]
+        income=np.take_along_axis(income_g,lsii,axis=3)[:,:,:,0]
+        util=np.take_along_axis(util_g,lsii,axis=3)[:,:,:,0]
+        #levels=np.take_along_axis(levels_g,lsii,axis=3)[:,:,:,0]
+        
+       
+        
         cf, cm = kf*income, km*income
-        u_couple = self.u_mult(theta)*self.u(income)        
-        u_m = self.u(cm)
+        u_m = self.u(cm)   
         u_f = self.u(cf)
         V = u_couple + psi
-        VM = u_m + psi
-        VF = u_f + psi
+        VM = u_m + psi+util
+        VF = u_f + psi+util
         
         if return_cs:
-            return V, VF, VM, income, np.zeros_like(income)
+            return V, VF, VM, income, np.zeros_like(income), ls
         else:
             return V, VF, VM
 

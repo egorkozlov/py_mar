@@ -156,7 +156,7 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
     
     #out = {'V':V_couple,'VF':V_fem,'VM':V_mal,'c':c_opt, 's':s_opt}
     
-    return V_couple, V_fem, V_mal, c_opt, s_opt
+    return V_couple, V_fem, V_mal, c_opt, s_opt, il_opt
 
 
 

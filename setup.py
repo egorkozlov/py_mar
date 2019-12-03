@@ -69,6 +69,15 @@ class ModelSetup(object):
         self.state_names = ['Female, single','Male, single','Couple, M', 'Couple, C']
         
         
+        
+        # female labor supply
+        self.ls_levels = [1.0,1.0]
+        self.ls_utilities = [0.0,0.0]
+        self.ls_pdown = [0.0,0.0]
+        
+        
+        
+        
         #Cost of Divorce
         divorce_costs=DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.02,u_lost_f=0.02,eq_split=0.0)
         if divorce_costs == 'Default':
@@ -110,25 +119,47 @@ class ModelSetup(object):
             exogrid['psi_t'], exogrid['psi_t_mat'] = rouw_nonst(p['T'],p['sigma_psi'],p['sigma_psi_init'],p['n_psi'])
             
             zfzm, zfzmmat = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], exogrid['zf_t_mat'], exogrid['zm_t_mat'])
-            exogrid['all_t'], exogrid['all_t_mat'] = combine_matrices_two_lists(zfzm,exogrid['psi_t'],zfzmmat,exogrid['psi_t_mat'])
-            exogrid['all_t_mat_sparse_T'] = [sparse.csc_matrix(D.T) if D is not None else None for D in exogrid['all_t_mat']]
+            all_t, all_t_mat = combine_matrices_two_lists(zfzm,exogrid['psi_t'],zfzmmat,exogrid['psi_t_mat'])
+            all_t_mat_sparse_T = [sparse.csc_matrix(D.T) if D is not None else None for D in all_t_mat]
             
             
             #Create a new bad version of transition matrix p(zf_t)
-            zf_bad=list()
-            for t in range(self.pars['T']-1):
-                zft=cut_matrix(exogrid['zf_t_mat'][t])
-                zf_bad.append(zft)
-            zf_bad.append(None)    
-            exogrid['zf_t_mat_down']=zf_bad
             
-            zfzm, zfzmmat = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], exogrid['zf_t_mat_down'], exogrid['zm_t_mat'])
-            exogrid['all_t_down'], exogrid['all_t_mat_down'] = combine_matrices_two_lists(zfzm,exogrid['psi_t'],zfzmmat,exogrid['psi_t_mat'])
-            exogrid['all_t_mat_down_sparse_T'] = [sparse.csc_matrix(D.T) if D is not None else None for D in exogrid['all_t_mat_down']]
+            #zf_bad=list()
+            #for t in range(self.pars['T']-1):
+            #    zft=cut_matrix(exogrid['zf_t_mat'][t])
+            #    zf_bad.append(zft)
+            #zf_bad.append(None)    
             
-            exogrid['all_t_mat_down']=exogrid['all_t_mat']
-            exogrid['all_t_mat_down_sparse_T']=exogrid['all_t_mat_sparse_T']
+            zf_bad = [cut_matrix(exogrid['zf_t_mat'][t]) if t < p['T']-1 
+                          else None 
+                              for t in range(self.pars['T'])]
             
+            zf_t_mat_down = zf_bad
+            
+            zfzm, zfzmmat = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], zf_t_mat_down, exogrid['zm_t_mat'])
+            all_t_down, all_t_mat_down = combine_matrices_two_lists(zfzm,exogrid['psi_t'],zfzmmat,exogrid['psi_t_mat'])
+            all_t_mat_down_sparse_T = [sparse.csc_matrix(D.T) if D is not None else None for D in all_t_mat_down]
+            
+            all_t_mat_down=all_t_mat
+            all_t_mat_down_sparse_T = all_t_mat_sparse_T
+            
+            
+            
+            all_t_mat_by_l = [ [(1-p)*m + p*md if m is not None else None 
+                                for m , md in zip(all_t_mat,all_t_mat_down)]
+                               for p in self.ls_pdown ]
+            
+            all_t_mat_by_l_spt = [ [(1-p)*m + p*md if m is not None else None
+                                    for m, md in zip(all_t_mat_sparse_T,all_t_mat_down_sparse_T)]
+                               for p in self.ls_pdown ]
+            
+            
+            
+            exogrid['all_t_mat_by_l'] = all_t_mat_by_l
+            exogrid['all_t_mat_by_l_spt'] = all_t_mat_by_l_spt
+            
+            exogrid['all_t'] = all_t
             
             Exogrid_nt = namedtuple('Exogrid_nt',exogrid.keys())
             
@@ -170,10 +201,6 @@ class ModelSetup(object):
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta)
         
         
-        # female labor supply
-        self.ls_levels = [1.0,1.0]
-        self.ls_utilities = [0.0,0.0]
-        self.ls_pdown = [0.0,0.0]
         
         
         
@@ -207,8 +234,8 @@ class ModelSetup(object):
                           'Couple, C':exogrid['all_t']}
         self.exo_mats = {'Female, single':exogrid['zf_t_mat'],
                           'Male, single':exogrid['zm_t_mat'],
-                          'Couple, M':exogrid['all_t_mat'],
-                          'Couple, C':exogrid['all_t_mat']} # sparse version?
+                          'Couple, M':exogrid['all_t_mat_by_l'],
+                          'Couple, C':exogrid['all_t_mat_by_l']} # sparse version?
         
         
         # this pre-computes transition matrices for meeting a partner

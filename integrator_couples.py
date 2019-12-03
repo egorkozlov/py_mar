@@ -32,10 +32,9 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True):
     # accounts for exogenous transitions
     
     EV, EVf, EVm = ev_couple_exo(setup,Vren['M'],t,use_sparse,down=False)
-    EV_d, EVf_d, EVm_d = ev_couple_exo(setup,Vren['M'],t,use_sparse,down=True)
     
     
-    return {'regular':(EV, EVf, EVm),'down':(EV_d, EVf_d, EVm_d)}, dec
+    return (EV, EVf, EVm), dec
 
 
 def ev_couple_exo(setup,Vren,t,use_sparse=True,down=False):
@@ -46,25 +45,33 @@ def ev_couple_exo(setup,Vren,t,use_sparse=True,down=False):
     # expected pre-negotiation V) and takes expectations wrt exogenous shocks
     
     
-    if use_sparse:
+    def mmult(a,b):
+        if use_sparse:
+            return a*b
+        else:
+            return np.dot(a,b.T)
         
-        M = setup.exogrid.all_t_mat_sparse_T[t] if not down else setup.exogrid.all_t_mat_down_sparse_T[t]
-        def integrate_array(x):
-            xout = np.zeros_like(x)
-            for itheta in range(x.shape[2]):
-                xout[...,itheta] = x[...,itheta]*M                
-            return xout
-    else:
+    
+    nl = len(setup.exogrid.all_t_mat_by_l_spt)
+    
+    
+    na, nexo, ntheta = Vren['V'].shape
+    
+    
+    V, Vf, Vm = Vren['V'], Vren['VF'], Vren['VM']
+    EV, EVf, EVm = np.zeros((na,nexo,ntheta,nl)), np.zeros((na,nexo,ntheta,nl)), np.zeros((na,nexo,ntheta,nl))
+    
+    
+    for il in range(nl):
         
-        M = setup.exogrid.all_t_mat[t].T  if not down else setup.exogrid.all_t_mat_down[t].T     
-        def integrate_array(x):
-            xout = np.zeros_like(x)
-            for itheta in range(x.shape[2]):
-                xout[...,itheta] = np.dot(x[...,itheta], M)                
-            return xout  
-        
-        
-    EV, EVf, EVm = tuple( (integrate_array(a) for a in (Vren['V'],Vren['VF'],Vren['VM'])) )
+        M = setup.exogrid.all_t_mat_by_l_spt[il][t] if use_sparse else setup.exogrid.all_t_mat_by_l[il][t]
+        for itheta in range(ntheta):
+            EV[...,itheta,il]  = mmult( V[...,itheta],M)
+            EVf[...,itheta,il] = mmult(Vf[...,itheta],M)             
+            EVm[...,itheta,il] = mmult(Vm[...,itheta],M)             
+            
+    
+    
     
     
     return EV, EVf, EVm

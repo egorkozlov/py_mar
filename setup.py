@@ -74,7 +74,7 @@ class ModelSetup(object):
         self.ls_levels = [1.0,1.0]
         self.ls_utilities = [0.0,0.0]
         self.ls_pdown = [0.0,0.0]
-        
+        self.nls = len(self.ls_levels)
         
         
         

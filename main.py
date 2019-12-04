@@ -33,7 +33,7 @@ if __name__ == '__main__':
         ai=0
         zfi=0
         zmi=4
-        psii=7
+        psii=5
         ti=0
         thi=10
         

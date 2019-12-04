@@ -10,6 +10,8 @@ plots some graphs
 
 import numpy as np
 import matplotlib.pyplot as plt 
+from matplotlib.pyplot import plot, draw, show
+import matplotlib.backends.backend_pdf
 from numba import njit, vectorize
 
 def moment(agents,draw=True):
@@ -22,7 +24,7 @@ def moment(agents,draw=True):
     iexo=agents.iexo
     state=agents.state
     theta_t=agents.setup.thetagrid_fine[agents.itheta]
-    countls=agents.ls_count
+    
    
     #As a first thing we unpack assets and theta
     N=len(state)
@@ -38,9 +40,9 @@ def moment(agents,draw=True):
     
     for t in range(agents.setup.pars['T']):
         for l in range(agents.setup.nls):
-            
-            flsm[t]=flsm[t]+(countls[l,t,1]/max(np.sum(countls[:,t,1], axis=0),0.001))*agents.setup.ls_levels[l]
-            flsc[t]=flsc[t]+(countls[l,t,0]/max(np.sum(countls[:,t,0], axis=0),0.001))*agents.setup.ls_levels[l]
+            print(t,l,np.mean(agents.ils_i[agents.state[:,t]==2,t]==l))
+            flsm[t]=flsm[t]+np.mean(agents.ils_i[agents.state[:,t]==2,t]==l)*agents.setup.ls_levels[l]
+            flsc[t]=flsc[t]+np.mean(agents.ils_i[agents.state[:,t]==3,t]==l)*agents.setup.ls_levels[l]
             
     ###########################################
     #Moments: Variables over Age
@@ -207,6 +209,10 @@ def moment(agents,draw=True):
         if assets_t[cond].size:
             print('The max level of assets for couples is {:.2f}, the grid upper bound is {:.2f}'.format(np.amax(assets_t[cond]),max(agents.setup.agrid_c)))
         
+        #Setup a file for the graphs
+        pdf = matplotlib.backends.backend_pdf.PdfPages("moments_graphs.pdf")
+        
+        
         #############################################
         # Hazard of Divorce, Separation and Marriage
         #############################################
@@ -278,6 +284,14 @@ def moment(agents,draw=True):
         plt.xlabel('Time')
         plt.ylabel('FLS')
 
-        
+        ##########################################
+        # Put graphs together
+        ########################################## 
+        #show()
+        for fig in range(1, plt.gcf().number + 1): ## will open an empty extra figure :(
+            pdf.savefig( fig )
+       
+        pdf.close()
+        matplotlib.pyplot.close("all")
         
         

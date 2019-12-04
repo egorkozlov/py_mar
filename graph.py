@@ -8,6 +8,8 @@ This file creates Graphs based on Policy and Value Functions
 import numpy as np
 import dill as pickle
 import matplotlib.pyplot as plt 
+from matplotlib.pyplot import plot, draw, show
+import matplotlib.backends.backend_pdf
 from ren_mar_alt import v_mar_igrid
 import gzip
 
@@ -203,7 +205,8 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     ################################
     ####################################
     
-    #TODO graph for savings given theta
+    #Save the graphs
+    pdf = matplotlib.backends.backend_pdf.PdfPages("policy_graphs.pdf")
     
     ##########################################
     # Value Functions wrt Love
@@ -221,13 +224,14 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     plt.xlabel('Love')
     plt.ylabel('Utility')
     #plt.title('Utility  Divorce costs: men=0.5, women=0.5')
-    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
+                  fancybox=True, shadow=True, ncol=3, fontsize='x-small')
     
     ##########################################
     # FLS wrt Love
     ########################################## 
     fig = plt.figure()
-    f1=fig.add_subplot(2,1,1)
+    f2=fig.add_subplot(2,1,1)
     graphc=[None] * len(psig)
     graphm=[None] * len(psig)
     for i in range(len(psig)):
@@ -241,14 +245,14 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral')
     plt.xlabel('Love')
     plt.ylabel('FLS')
-    #plt.title('Utility  Divorce costs: men=0.5, women=0.5')
-    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
+                  fancybox=True, shadow=True, ncol=3, fontsize='x-small')
     
     ##########################################
     # FLS wrt female earnings
     ########################################## 
     fig = plt.figure()
-    f1=fig.add_subplot(2,1,1)
+    f3=fig.add_subplot(2,1,1)
     graphc=[None] * setup.pars['n_zf']
     graphm=[None] * setup.pars['n_zf']
     
@@ -262,13 +266,14 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     plt.xlabel('Female Productivity')
     plt.ylabel('FLS')
     #plt.title('Utility  Divorce costs: men=0.5, women=0.5')
-    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
+                  fancybox=True, shadow=True, ncol=2, fontsize='x-small')
     
     ##########################################
     # FLS wrt theta
     ########################################## 
     fig = plt.figure()
-    f1=fig.add_subplot(2,1,1)
+    f4=fig.add_subplot(2,1,1)
     graphc=[None] * len(setup.thetagrid)
     graphm=[None] * len(setup.thetagrid)
     
@@ -281,8 +286,8 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral')
     plt.xlabel('Theta')
     plt.ylabel('FLS')
-    #plt.title('Utility  Divorce costs: men=0.5, women=0.5')
-    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
+                  fancybox=True, shadow=True, ncol=2, fontsize='x-small')
     
     ##########################################
     # Surplues of Marriage wrt Cohabitation, Love grid
@@ -299,25 +304,24 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     
     #Graph for the Surplus
     zero = np.array([0.0] * psig)
-    fig2 = plt.figure()
+    fig5 = fig.add_subplot(2,1,1)
     plt.plot(psig, zero,'k',linewidth=1)
     plt.plot(psig, surpM,'b',linewidth=1.5, label='Man')
     plt.plot(psig, surpW,'r',linewidth=1.5, label='Women')
     plt.axvline(x=tre, color='b', linestyle='--', label='Treshold Single-Couple')
-    #plt.axvline(x=treb, color='b', label='Tresh Bilateral')
-    #plt.axvline(x=treu, color='r', linestyle='--', label='Tresh Unilateral')
     plt.ylim(-0.1*max(max(surpM),max(surpW),max(surpM),max(surpW)),1.1*max(max(surpM),max(surpW)))
-    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
+                  fancybox=True, shadow=True, ncol=3, fontsize='x-small')
     plt.xlabel('Love')
     plt.ylabel('Marriage Surplus wrt Cohab.')
-    print(333,surpM,surpW)
+  
     
     
     ##########################################
     # Value Function and Assets
     ########################################## 
     fig = plt.figure()
-    f3=fig.add_subplot(2,1,1)
+    f6=fig.add_subplot(2,1,1)
     plt.plot(agrid, Vmm[0:len(agrid),zfi,zmi,psii,ti,thi],'bo',markersize=6,markevery=5, label='Man, Marriage')
     plt.plot(agrid, Vmc[0:len(agrid),zfi,zmi,psii,ti,thi],'b',linewidth=0.4, label='Man, Cohabitation')
     plt.plot(agrid, Vfc[0:len(agrid),zfi,zmi,psii,ti,thi],'r',linewidth=0.4, label='Women, Cohabitation')
@@ -326,7 +330,8 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     plt.ylabel('Utility')
     plt.xlabel('Assets')
     #plt.title('Utility  Divorce costs: men=0.5, women=0.5')
-    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
+                  fancybox=True, shadow=True, ncol=4, fontsize='x-small')
     
     ##########################################
     # Surplues of Marriage wrt Cohabitation, Asset
@@ -343,14 +348,15 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     
     #Graph for the Surplus
     zero = np.array([0.0] * agrid)
-    fig4 = plt.figure()
+    fig7 = fig.add_subplot(2,1,1)
     plt.plot(agrid, zero,'k',linewidth=1)
     plt.plot(agrid, surpM,'b',linewidth=1.5, label='Man')
     plt.plot(agrid, surpW,'r',linewidth=1.5, label='Women')
     #plt.axvline(x=treb, color='b', label='Tresh Bilateral')
     #plt.axvline(x=treu, color='r', linestyle='--', label='Tresh Unilateral')
     plt.ylim(-0.1*max(max(surpM),max(surpW),max(surpM),max(surpW)),1.1*max(max(surpM),max(surpW)))
-    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
+                  fancybox=True, shadow=True, ncol=3, fontsize='x-small')
     plt.xlabel('Assets')
     plt.ylabel('Marriage Surplus wrt Cohab.')
      
@@ -359,7 +365,7 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     # Vf and ASSETS
     ########################################## 
     fig = plt.figure()
-    f51=fig.add_subplot(2,1,1)
+    f8=fig.add_subplot(2,1,1)
     #plt.plot(agrid, Vm[0:len(agrid),zfi,zmi,psii,ti,thi],'bo',markersize=4, label='Before Ren M')
     #plt.plot(agrid, Vc[0:len(agrid),zfi,zmi,psii,ti,thi],'r*',markersize=2,label='Before Ren C')
     plt.plot(agrid, V_ren_c,'y', markersize=4,label='After Ren C')
@@ -369,13 +375,14 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     plt.ylabel('Utility')
     plt.xlabel('Assets')
     #plt.title('Utility  Divorce costs: men=0.5, women=0.5')
-    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
+                  fancybox=True, shadow=True, ncol=3, fontsize='x-small')
     
     ##########################################
     # Consumption and Assets
     ########################################## 
     fig = plt.figure()
-    f5=fig.add_subplot(2,1,1)
+    f9=fig.add_subplot(2,1,1)
     plt.plot(agrid, cm[0:len(agrid),zfi,zmi,psii,ti,thi],'k',markevery=1, label='Marriage')
     plt.plot(agrid, cc[0:len(agrid),zfi,zmi,psii,ti,thi],'r',linestyle='--',markevery=1, label='Cohabitation')
     #plt.plot(agrid, sc[0:len(agrid),zfi,zmi,psii,ti,thi],'k',linewidth=2.0,linestyle='--', label='Cohabitation')
@@ -385,14 +392,15 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     plt.ylabel('Consumption')
     plt.xlabel('Assets')
     #plt.title('Utility  Divorce costs: men=0.5, women=0.5')
-    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
+                  fancybox=True, shadow=True, ncol=2, fontsize='x-small')
     
     
     ##########################################
     # Savings and Assets
     ########################################## 
     fig = plt.figure()
-    f6=fig.add_subplot(2,1,1)
+    f10=fig.add_subplot(2,1,1)
     plt.plot(agrid, sm[0:len(agrid),zfi,zmi,psii,ti,thi],'ko',markersize=6,markevery=1, label='Marriage')
     plt.plot(agrid, sc[0:len(agrid),zfi,zmi,psii,ti,thi],'r*',markersize=6,markevery=1, label='Cohabitation')
     #plt.plot(agrid, agrid,'k',linewidth=1.0,linestyle='--')
@@ -402,14 +410,15 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     plt.ylabel('Savings')
     plt.xlabel('Assets')
     #plt.title('Utility  Divorce costs: men=0.5, women=0.5')
-    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
+                  fancybox=True, shadow=True, ncol=2, fontsize='x-small')
     #print(111,cms[0:len(agrid),zmi,ti])
     
     ##########################################
     # Value Function and Pareto Weights
     ########################################## 
     fig = plt.figure()
-    f7=fig.add_subplot(2,1,1)
+    f11=fig.add_subplot(2,1,1)
     plt.plot(setup.thetagrid, Vmm[ai,zfi,zmi,psii,ti,0:len(setup.thetagrid)],'bo',markersize=6, label='Man, Marriage')
     plt.plot(setup.thetagrid, Vmc[ai,zfi,zmi,psii,ti,0:len(setup.thetagrid)],'b',linewidth=0.4, label='Man, Cohabitation')
     plt.plot(setup.thetagrid, Vfc[ai,zfi,zmi,psii,ti,0:len(setup.thetagrid)],'r',linewidth=0.4, label='Women, Cohabitation')
@@ -418,7 +427,8 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     plt.ylabel('Utility')
     plt.xlabel('Pareto Weight-Women')
     #plt.title('Utility  Divorce costs: men=0.5, women=0.5')
-    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
+                  fancybox=True, shadow=True, ncol=4, fontsize='x-small')
     
     ###########################################
     # Value of Marriage-Cohabitation over time
@@ -434,14 +444,16 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     
     #Graph for the Surplus
     zero = np.array([0.0] * np.array(range(T)))
-    fig8 = plt.figure()
+    fig = plt.figure()
+    fig12 = fig.add_subplot(2,1,1)
     plt.plot(np.array(range(T)), zero,'k',linewidth=1)
     plt.plot(np.array(range(T)), surpM,'b',linewidth=1.5, label='Man')
     plt.plot(np.array(range(T)), surpW,'r',linewidth=1.5, label='Women')
     #plt.axvline(x=treb, color='b', label='Tresh Bilateral')
     #plt.axvline(x=treu, color='r', linestyle='--', label='Tresh Unilateral')
     plt.ylim(-0.1*max(max(surpM),max(surpW),max(surpM),max(surpW)),1.1*max(max(surpM),max(surpW)))
-    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
+                  fancybox=True, shadow=True, ncol=3, fontsize='x-small')
     plt.xlabel('Time')
     plt.ylabel('Marriage Surplus wrt Cohab.')
     
@@ -460,7 +472,8 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     
     #Graph for the Surplus
     zero = np.array([0.0] * psig)
-    fig9 = plt.figure()
+    fig = plt.figure()
+    fig13 = fig.add_subplot(2,1,1)
     plt.plot(psig, zero,'k',linewidth=1)
     plt.plot(psig, surpM,'b',linewidth=1.5, label='Man')
     plt.plot(psig, surpW,'r',linewidth=1.5, label='Women')
@@ -468,7 +481,8 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     #plt.axvline(x=treb, color='b', label='Tresh Bilateral')
     #plt.axvline(x=treu, color='r', linestyle='--', label='Tresh Unilateral')
     plt.ylim(-0.1*max(max(surpM),max(surpW),max(surpM),max(surpW)),1.1*max(max(surpM),max(surpW)))
-    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
+                  fancybox=True, shadow=True, ncol=3, fontsize='x-small')
     plt.xlabel('Love')
     plt.ylabel('Marriage Surplus wrt Cohab.')
     print(333,surpM,surpW)
@@ -488,31 +502,32 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     
     #Graph for the Surplus
     zero = np.array([0.0] * psig)
-    fig9 = plt.figure()
+    fig = plt.figure()
+    fig14 = fig.add_subplot(2,1,1)
     plt.plot(psig, zero,'k',linewidth=1)
     plt.plot(psig,  thetf[ti,ai,0:len(psig)],'b',linewidth=1.5, label='Theta Marriage')
     plt.plot(psig,  thetf_c[ti,ai,0:len(psig)],'r', linestyle='--',linewidth=1.5, label='Theta Cohabitation')
     plt.axvline(x=tre, color='k', linestyle='--', label='Treshold Single-Couple')
-    #plt.axvline(x=treb, color='b', label='Tresh Bilateral')
-    #plt.axvline(x=treu, color='r', linestyle='--', label='Tresh Unilateral')
-    #plt.ylim(-0.1*max(max(surpM),max(surpW),max(surpM),max(surpW)),1.1*max(max(surpM),max(surpW)))
-    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
+                  fancybox=True, shadow=True, ncol=3, fontsize='x-small')
     plt.xlabel('Love')
     plt.ylabel('Theta')
-    print(444,thetf[ti,ai,1:len(psig)],thetf_c[ti,ai,1:len(psig)])
+   
     
     ##########################################
     # Renegotiated Thetas-Possible Split
     ########################################## 
     zero = np.array([0.0] * psig)
-    fig10 = plt.figure()
+    fig = plt.figure()
+    fig15 = fig.add_subplot(2,1,1)
     plt.plot(psig, zero,'k',linewidth=1)
     plt.plot(psig,  thetam_R[ai,zfi,zmi,0:len(psig),ti,0],'b',linewidth=1.5, label='Theta Marriage')
     plt.plot(psig,  thetac_R[ai,zfi,zmi,0:len(psig),ti,0],'r', linestyle='--',linewidth=1.5, label='Theta Cohabitation')
     for j in range(0, len(setup.thetagrid_fine), 10): 
         plt.plot(psig,  thetam_R[ai,zfi,zmi,0:len(psig),ti,j],'b',linewidth=1.5)
         plt.plot(psig,  thetac_R[ai,zfi,zmi,0:len(psig),ti,j],'r', linestyle='--',linewidth=1.5)
-    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
+                  fancybox=True, shadow=True, ncol=2, fontsize='x-small')
     plt.xlabel('Love')
     plt.ylabel('Theta')
     
@@ -520,11 +535,13 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     # Thetas and Assets
     ########################################## 
     zero = np.array([0.0] * psig)
-    fig11 = plt.figure()
+    fig = plt.figure()
+    fig16 = fig.add_subplot(2,1,1)
     #plt.plot(psig, zero,'k',linewidth=1)
     plt.plot(setup.thetagrid,  sm[ai,zfi,zmi,psii,ti,0:len(setup.thetagrid)],'b',linewidth=1.5, label='Savings Marriage')
     #plt.plot(setup.thetagrid,  sc[ai,zfi,zmi,psii,ti,0:len(setup.thetagrid)],'r', linestyle='--',linewidth=1.5, label='Savings Cohabitation')
-    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
+                  fancybox=True, shadow=True, ncol=1, fontsize='x-small')
     plt.xlabel('Theta')
     plt.ylabel('Assets')
     
@@ -533,7 +550,8 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     # Assets and Theta
     ########################################## 
     zero = np.array([0.0] * psig)
-    fig12 = plt.figure()
+    fig = plt.figure()
+    fig17 = fig.add_subplot(2,1,1)
     #plt.plot(psig, zero,'k',linewidth=1)
     plt.plot(agrid,  thetam_R[0:len(agrid),zfi,zmi,psii,ti,0],'b',linewidth=1.5, label='Theta Marriage')
     plt.plot(agrid,  thetac_R[0:len(agrid),zfi,zmi,psii,ti,0],'r', linestyle='--',linewidth=1.5, label='Theta Cohabitation')
@@ -541,13 +559,18 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
         plt.plot(agrid,  thetam_R[0:len(agrid),zfi,zmi,psii,ti,j],'b',linewidth=1.5)
         plt.plot(agrid,  thetac_R[0:len(agrid),zfi,zmi,psii,ti,j],'r', linestyle='--',linewidth=1.5)
     #plt.plot(setup.thetagrid,  sc[ai,zfi,zmi,psii,ti,0:len(setup.thetagrid)],'r', linestyle='--',linewidth=1.5, label='Savings Cohabitation')
-    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
+                  fancybox=True, shadow=True, ncol=2, fontsize='x-small')
     plt.xlabel('Assets')
     plt.ylabel('Thetas')
     
     ##########################################
-    # Consumption over the Life Cycle
+    # Put graphs together
     ########################################## 
-    
+    #show()
+    for fig in range(1, plt.gcf().number + 1): ## will open an empty extra figure :(
+        pdf.savefig( fig )
        
+    pdf.close()
+    matplotlib.pyplot.close("all")
     return Packed,dec

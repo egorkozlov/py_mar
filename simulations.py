@@ -51,8 +51,6 @@ class Agents:
         self.state = np.zeros((N,T),dtype=np.int32)       
         self.state[:,0] = 0  # everyone starts as female
         
-        #Count for female labor supply
-        self.ls_count=np.zeros((self.setup.nls,T,2)) #First position for cohabitation,second for marriage
         
         self.state_codes = dict()
         self.has_theta = list()
@@ -152,11 +150,7 @@ class Agents:
                 
                     cnt = np.sum(this_ls)
                     lvl = self.setup.ls_levels[ils]
-                    
-                    if sname== 'Couple, C':
-                        self.ls_count[ils,t,0]=cnt
-                    else:
-                        self.ls_count[ils,t,1]=cnt
+
                     
                     print('At t = {} for {} {} have LS of {}'.format(t,sname,cnt,lvl))
                     

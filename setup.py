@@ -488,7 +488,7 @@ class ModelSetup(object):
     
     
     
-    def vm_last(self,s,zm,zf,psi,theta,return_cs=False):
+    def vm_last(self,s,zm,zf,psi,theta):
         # this is the value function for couple that has savings s,
         # Z = (zm,zf,psi) and bargaining power theta after all decisions are made
         
@@ -512,7 +512,7 @@ class ModelSetup(object):
         ls= np.empty((self.na,self.pars['nexo'],len(self.thetagrid)),dtype=np.int32)
         ls=np.argmax(u_couple_g,axis=3)
         lsi=np.expand_dims(ls,3)
-        lsii=np.broadcast_to(lsi,(self.na,self.pars['nexo'],len(self.thetagrid),len(self.ls_levels)))
+        #lsii=np.broadcast_to(lsi,(self.na,self.pars['nexo'],len(self.thetagrid),len(self.ls_levels)))
         u_couple=np.take_along_axis(u_couple_g,lsi,axis=3)[:,:,:,0]
         income=np.take_along_axis(income_g,lsi,axis=3)[:,:,:,0]
         util=np.take_along_axis(util_g,lsi,axis=3)[:,:,:,0]
@@ -527,12 +527,10 @@ class ModelSetup(object):
         VM = u_m + psi+util
         VF = u_f + psi+util
         
-        if return_cs:
-            return V, VF, VM, income, np.zeros_like(income), ls
-        else:
-            return V, VF, VM
+        return V, VF, VM, income, np.zeros_like(income), ls, u_couple_g
+        
 
-    def vm_last_grid(self,return_cs=False):
+    def vm_last_grid(self):
         # this returns value of vm on the grid corresponding to vm
         s_in = self.agrid_c[:,None,None]
         zm_in = self.exogrid.all_t[-1][:,1][None,:,None]
@@ -540,7 +538,7 @@ class ModelSetup(object):
         psi_in = self.exogrid.all_t[-1][:,2][None,:,None]
         theta_in = self.thetagrid[None,None,:]
                 
-        return self.vm_last(s_in,zm_in,zf_in,psi_in,theta_in,return_cs)
+        return self.vm_last(s_in,zm_in,zf_in,psi_in,theta_in)
         
     
     

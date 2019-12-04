@@ -12,7 +12,7 @@ from optimizers import v_optimize_single
 
 
 
-def v_iter_single(setup,EV,female):
+def v_iter_single(setup,t,EV,female):
     #EVT = np.float32(EV.T)
     
     agrid_s = setup.agrid_s
@@ -21,7 +21,7 @@ def v_iter_single(setup,EV,female):
     ind, p = setup.s_ind_s, setup.s_p_s
     
     
-    zvals = setup.exogrid.zf_t[0] if female else setup.exogrid.zm_t[0]
+    zvals = setup.exogrid.zf_t[t] if female else setup.exogrid.zm_t[t]
     sigma = setup.pars['crra_power']
     beta = setup.pars['beta']
     R = setup.pars['R']

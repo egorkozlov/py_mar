@@ -19,7 +19,7 @@ else:
     nbatch_def = 17
     use_cp = False
 
-def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
+def v_iter_couple(setup,t,EV_tuple,nbatch=nbatch_def,verbose=False):
     
     if verbose: start = default_timer()
     
@@ -44,15 +44,15 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
     
     # type conversion is here
     
-    zf  = setup.exogrid.all_t[0][:,0]
-    zm  = setup.exogrid.all_t[0][:,1]
-    psi = setup.exogrid.all_t[0][:,2]
+    zf  = setup.exogrid.all_t[t][:,0]
+    zm  = setup.exogrid.all_t[t][:,1]
+    psi = setup.exogrid.all_t[t][:,2]
     beta = setup.pars['beta']
     sigma = setup.pars['crra_power']
     R = setup.pars['R']
 
 
-
+    
     wf = np.exp(zf)
     wm = np.exp(zm)
     

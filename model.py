@@ -91,14 +91,14 @@ class Model(object):
                 if EV is None:            
                     V, c, s = setup.vs_last_grid(female,return_cs=True)
                 else:
-                    V, c, s = v_iter_single(setup,EV,female)             
+                    V, c, s = v_iter_single(setup,t,EV,female)             
                 return {desc: {'V':V,'c':c,'s':s}}   
              
             elif desc== 'Couple, M' or desc == 'Couple, C':
                 if EV is None:
                     V, VF, VM, c, s, fls, V_all_l = setup.vm_last_grid()
                 else:
-                    V, VF, VM, c, s, fls, V_all_l = v_iter_couple(setup,EV)            
+                    V, VF, VM, c, s, fls, V_all_l = v_iter_couple(setup,t,EV)            
                 return {desc: {'V':V,'VF':VF,'VM':VM,'c':c,'s':s,'fls':fls,'V_all_l':V_all_l}}
           
             

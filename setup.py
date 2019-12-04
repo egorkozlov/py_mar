@@ -71,9 +71,9 @@ class ModelSetup(object):
         
         
         # female labor supply
-        self.ls_levels = [1.0,1.0]
-        self.ls_utilities = [0.0,0.0]
-        self.ls_pdown = [0.0,0.0]
+        self.ls_levels = [0.5,1.0]
+        self.ls_utilities = [0.5,0.0]
+        self.ls_pdown = [0.05,0.0]
         self.nls = len(self.ls_levels)
         
         
@@ -140,9 +140,6 @@ class ModelSetup(object):
             zfzm, zfzmmat = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], zf_t_mat_down, exogrid['zm_t_mat'])
             all_t_down, all_t_mat_down = combine_matrices_two_lists(zfzm,exogrid['psi_t'],zfzmmat,exogrid['psi_t_mat'])
             all_t_mat_down_sparse_T = [sparse.csc_matrix(D.T) if D is not None else None for D in all_t_mat_down]
-            
-            all_t_mat_down=all_t_mat
-            all_t_mat_down_sparse_T = all_t_mat_sparse_T
             
             
             

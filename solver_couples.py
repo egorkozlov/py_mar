@@ -133,10 +133,10 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
                     
     
     # consistency check
-    uc = setup.u_couple(c_opt,theta_val[None,None,:])
-    V_all = uc + psi_r + beta*np.take_along_axis(np.take_along_axis(EV_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
+    #uc = setup.u_couple(c_opt,theta_val[None,None,:])
+    #V_all = uc + psi_r + beta*np.take_along_axis(np.take_along_axis(EV_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
     
-    assert np.allclose(V_all,V_couple,atol=1e-5)
+    #assert np.allclose(V_all,V_couple,atol=1e-5)
     
     
     

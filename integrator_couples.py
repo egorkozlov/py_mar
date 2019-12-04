@@ -65,13 +65,16 @@ def ev_couple_exo(setup,Vren,t,use_sparse=True,down=False):
     for il in range(nl):
         
         M = setup.exogrid.all_t_mat_by_l_spt[il][t] if use_sparse else setup.exogrid.all_t_mat_by_l[il][t]
+        
+        
+        
         for itheta in range(ntheta):
             EV[...,itheta,il]  = mmult( V[...,itheta],M)
             EVf[...,itheta,il] = mmult(Vf[...,itheta],M)             
             EVm[...,itheta,il] = mmult(Vm[...,itheta],M)             
             
-    
-    
+
+    #assert not np.allclose( EV[...,0], EV[...,1])
     
     
     return EV, EVf, EVm

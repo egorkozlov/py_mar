@@ -144,10 +144,16 @@ class Agents:
                 ls_val = self.ils_i[ind,t] 
                 
                 for ils in range(self.setup.nls):
-                    this_ls = (ls_val==ils)
+                    this_ls = (ls_val==ils)                    
                     if not np.any(this_ls): continue
+                
+                    cnt = np.sum(this_ls)
+                    lvl = self.setup.ls_levels[ils]
                     
-                    mat = self.setup.exo_mats[sname][-1][t]
+                    print('At t = {} for {} {} have LS of {}'.format(t,sname,cnt,lvl))
+                    
+                    
+                    mat = self.setup.exo_mats[sname][ils][t]
                     iexo_next_this_ls = mc_simulate(iexo_now[this_ls],mat,shocks=None)
                     self.iexo[ind[this_ls],t+1] = iexo_next_this_ls
                     

@@ -96,10 +96,10 @@ class Model(object):
              
             elif desc== 'Couple, M' or desc == 'Couple, C':
                 if EV is None:
-                    V, VF, VM, c, s, fls = setup.vm_last_grid(return_cs=True)
+                    V, VF, VM, c, s, fls, V_all_l = setup.vm_last_grid()
                 else:
-                    V, VF, VM, c, s, fls = v_iter_couple(setup,EV)            
-                return {desc: {'V':V,'VF':VF,'VM':VM,'c':c,'s':s,'fls':fls}}
+                    V, VF, VM, c, s, fls, V_all_l = v_iter_couple(setup,EV)            
+                return {desc: {'V':V,'VF':VF,'VM':VM,'c':c,'s':s,'fls':fls,'V_all_l':V_all_l}}
           
             
         # and the integrator   
@@ -125,17 +125,42 @@ class Model(object):
                 if timed: self.time('Integration for {}'.format(desc))
                 vout = v_iterator(self.setup,desc,t,EV)
                 if timed: self.time('Optimization for {}'.format(desc))
+                
+                self.wrap_decisions(desc,dec,vout)
+                
                 return vout, dec
             def initialize(desc,t):
                 vout = v_iterator(self.setup,desc,None)
                 if timed: self.time('Initialization for {}'.format(desc))
-                return vout, None
+                dec = {}
+                self.wrap_decisions(desc,dec,vout)
+                return vout, dec
         else:
             raise Exception('unsupported name')
             
             
             
         return iterate, initialize
+    
+    def wrap_decisions(self,desc,dec,vout):
+        # This interpolates consumption, savings and labor supply decisions
+        # on fine grid for theta that is used for integration and simulations.
+        
+        v = vout[desc]
+        if desc == 'Couple, M' or desc == 'Couple, C':
+            
+            cint = self.setup.v_thetagrid_fine.apply(v['c'],axis=2)
+            sint = self.setup.v_thetagrid_fine.apply(v['s'],axis=2)
+            
+            Vint = self.setup.v_thetagrid_fine.apply(v['V_all_l'],axis=2)
+            
+            fls = self.setup.v_thetagrid_fine.apply(Vint,axis=2).argmax(axis=3)
+            
+            dec.update({'c':cint,'s':sint,'fls':fls})
+        else:
+            dec.update({'c':v['c'],'s':v['s']})
+        
+        
         
         
     def solve(self):

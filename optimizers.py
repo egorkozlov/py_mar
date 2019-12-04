@@ -213,9 +213,10 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,ls,us,use_cp=ucp):
     else:
         ret = lambda x : x
         
+    V_all = V_opt_arr
     
     
-    return ret(V), ret(c), ret(s), ret(i_opt), ret(i_ls)
+    return ret(V), ret(c), ret(s), ret(i_opt), ret(i_ls), ret(V_all)
 
 
 

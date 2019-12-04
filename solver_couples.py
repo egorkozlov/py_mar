@@ -39,7 +39,7 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
     ls = setup.ls_levels
     us = setup.ls_utilities
     #pd = setup.ls_pdown
-    #nls = len(ls)
+    nls = len(ls)
     
     
     # type conversion is here
@@ -67,6 +67,9 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
     
     V_couple, c_opt, s_opt, i_opt, il_opt = np.empty(shp,np.float32), np.empty(shp,np.float32), np.empty(shp,np.float32), np.empty(shp,np.int32), np.empty(shp,np.int32)
     
+    
+    V_all_l = np.empty(shp+(nls,),dtype=np.float32)
+    
     theta_val = np.float32(setup.thetagrid)
     umult_vec = setup.u_mult(theta_val)
     
@@ -85,7 +88,7 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
         money_t = (R*agrid, wf[istart:ifinish], wm[istart:ifinish])
         EV_t = (ind,p,EV_by_l[:,istart:ifinish,...])
         
-        V_pure_i, c_opt_i, s_opt_i, i_opt_i, il_opt_i = \
+        V_pure_i, c_opt_i, s_opt_i, i_opt_i, il_opt_i, V_all_l_i = \
            v_optimize_couple(money_t,sgrid,umult_vec,EV_t,sigma,beta,ls,us)
         V_ret_i = V_pure_i + psi[None,istart:ifinish,None]
         
@@ -95,6 +98,8 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
         s_opt[:,istart:ifinish,:] = s_opt_i
         i_opt[:,istart:ifinish,:] = i_opt_i
         il_opt[:,istart:ifinish,:] = il_opt_i
+        V_all_l[:,istart:ifinish,...] = V_all_l_i
+        
         
         istart = ifinish
         ifinish = ifinish+nbatch if ifinish+nbatch < setup.nexo else setup.nexo
@@ -143,7 +148,7 @@ def v_iter_couple(setup,EV_tuple,nbatch=nbatch_def,verbose=False):
     
     #out = {'V':V_couple,'VF':V_fem,'VM':V_mal,'c':c_opt, 's':s_opt}
     
-    return V_couple, V_fem, V_mal, c_opt, s_opt, il_opt
+    return V_couple, V_fem, V_mal, c_opt, s_opt, il_opt, V_all_l
 
 
 

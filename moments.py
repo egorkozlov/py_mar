@@ -22,6 +22,7 @@ def moment(agents,draw=True):
     iexo=agents.iexo
     state=agents.state
     theta_t=agents.setup.thetagrid_fine[agents.itheta]
+    countls=agents.ls_count
    
     #As a first thing we unpack assets and theta
     N=len(state)
@@ -29,6 +30,18 @@ def moment(agents,draw=True):
     #Get states codes
     state_codes = {name: i for i, name in enumerate(agents.setup.state_names)}
     
+    ###########################################
+    #Moments: FLS over time by Relationship
+    ###########################################
+    flsm=np.zeros(agents.setup.pars['T'])
+    flsc=np.zeros(agents.setup.pars['T'])
+    
+    for t in range(agents.setup.pars['T']):
+        for l in range(agents.setup.nls):
+            
+            flsm[t]=flsm[t]+(countls[l,t,1]/max(np.sum(countls[:,t,1], axis=0),0.001))*agents.setup.ls_levels[l]
+            flsc[t]=flsc[t]+(countls[l,t,0]/max(np.sum(countls[:,t,0], axis=0),0.001))*agents.setup.ls_levels[l]
+            print(l,t,flsc[t])
     ###########################################
     #Moments: Variables over Age
     ###########################################
@@ -251,6 +264,19 @@ def moment(agents,draw=True):
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')
         plt.xlabel('Time')
         plt.ylabel('Share')
+        
+        ##########################################
+        # FLS Over the Live Cycle
+        ##########################################       
+        fig = plt.figure()
+        f5=fig.add_subplot(2,1,1)
+
+        plt.plot(np.array(range(agents.setup.pars['T'])), flsm,color='r', label='Marriage') 
+        plt.plot(np.array(range(agents.setup.pars['T'])), flsc,color='k', label='Cohabitation')          
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
+                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')
+        plt.xlabel('Time')
+        plt.ylabel('FLS')
 
         
         

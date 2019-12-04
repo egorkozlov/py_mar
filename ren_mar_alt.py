@@ -273,6 +273,9 @@ def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
     exp_shape = sf_expand.shape
     
     
+    
+    
+    
     # compute where each agent agrees
     i_sf_expand = (sf_expand >= 0)
     i_sm_expand = (sm_expand >= 0)
@@ -280,10 +283,12 @@ def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
     # check for single crossing
     # signle crossing from false to true
     d_sf = np.sum(np.diff(i_sf_expand.astype(int),axis=-1),axis=-1) 
-    sc_f = (d_sf == 1) | (d_sf == 0)
+    n_sf = np.sum(np.abs(np.diff(i_sf_expand.astype(int),axis=-1)),axis=-1) 
+    sc_f = ((d_sf == 1) & (n_sf==1)) | ((d_sf == 0) & (n_sf==0))
     # single crossing from true to false
     d_sm = np.sum(np.diff(i_sm_expand.astype(int),axis=-1),axis=-1)
-    sc_m = (d_sm == -1) | (d_sm == 0)
+    n_sm = np.sum(np.abs(np.diff(i_sm_expand.astype(int),axis=-1)),axis=-1)
+    sc_m = ((d_sm == -1) & (n_sm == 1)) | ((d_sm == 0) & (n_sm==0))
     sc = (sc_f) & (sc_m)
     
     # agreement for all theta
@@ -367,7 +372,7 @@ def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
         print('Warning: broken is {} cases'.format(np.sum(vm_out<=vm_div_full - 1e-4)))
         
     
-    assert not np.any(yes_nsc), 'Single crossing does not hold!' # FIXME: remove this later
+    #assert not np.any(yes_nsc), 'Single crossing does not hold!' # FIXME: remove this later
     
     if np.size(v_y_check,0)==1:
         return {'Decision': yes, 'thetas': i_theta_out,

@@ -30,11 +30,11 @@ if __name__ == '__main__':
     
     #Indexes for the graphs
     if graphs:
-        ai=5
-        zfi=2
-        zmi=3
-        psii=6
-        ti=2
+        ai=0
+        zfi=0
+        zmi=4
+        psii=7
+        ti=0
         thi=10
         
         #Actual Graphs

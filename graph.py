@@ -235,8 +235,8 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
         graphc[i]=setup.ls_levels[flsc[ai,zfi,zmi,i,ti,thi]]
         graphm[i]=setup.ls_levels[flsm[ai,zfi,zmi,i,ti,thi]]
 
-    plt.plot(psig, graphm,'k',markersize=6, label='Couple Marriage')
-    plt.plot(psig, graphc,'r*',markersize=6,label='Women, Marriage')
+    plt.plot(psig, graphm,'k',markersize=6, label='Marriage')
+    plt.plot(psig, graphc,'r*',markersize=6,label='Cohabitation')
     plt.axvline(x=tre, color='b', linestyle='--', label='Treshold Single-Couple')
     #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral')
     plt.xlabel('Love')
@@ -256,10 +256,30 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
         graphc[i]=setup.ls_levels[flsc[ai,i,zmi,psii,ti,thi]]
         graphm[i]=setup.ls_levels[flsm[ai,i,zmi,psii,ti,thi]]
     
-    plt.plot(range(setup.pars['n_zf']),graphm,'k',markersize=6, label='Couple Marriage')
-    plt.plot(range(setup.pars['n_zf']), graphc,'r*',markersize=6,label='Women, Marriage')
+    plt.plot(range(setup.pars['n_zf']),graphm,'k',markersize=6, label='Marriage')
+    plt.plot(range(setup.pars['n_zf']), graphc,'r*',markersize=6,label='Cohabitation')
     #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral')
     plt.xlabel('Female Productivity')
+    plt.ylabel('FLS')
+    #plt.title('Utility  Divorce costs: men=0.5, women=0.5')
+    legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')
+    
+    ##########################################
+    # FLS wrt theta
+    ########################################## 
+    fig = plt.figure()
+    f1=fig.add_subplot(2,1,1)
+    graphc=[None] * len(setup.thetagrid)
+    graphm=[None] * len(setup.thetagrid)
+    
+    for i in range(len(setup.thetagrid)):
+        graphc[i]=setup.ls_levels[flsc[ai,zfi,zmi,psii,ti,i]]
+        graphm[i]=setup.ls_levels[flsm[ai,zfi,zmi,psii,ti,i]]
+    
+    plt.plot(setup.thetagrid,graphm,'k',markersize=6, label='Marriage')
+    plt.plot(setup.thetagrid, graphc,'r*',markersize=6,label='Cohabitation')
+    #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral')
+    plt.xlabel('Theta')
     plt.ylabel('FLS')
     #plt.title('Utility  Divorce costs: men=0.5, women=0.5')
     legend = plt.legend(loc='upper left', shadow=True, fontsize='x-small')

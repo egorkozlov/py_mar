@@ -72,8 +72,8 @@ class ModelSetup(object):
         
         # female labor supply
         self.ls_levels = [0.5,1.0]
-        self.ls_utilities = [0.3,0.0]
-        self.ls_pdown = [0.0,0.0]
+        self.ls_utilities = [0.25,0.0]#[0.25,0.0]
+        self.ls_pdown = [0.0,0.0]#[0.5,0.0]
         self.nls = len(self.ls_levels)
         
         

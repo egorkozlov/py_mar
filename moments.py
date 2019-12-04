@@ -41,7 +41,7 @@ def moment(agents,draw=True):
             
             flsm[t]=flsm[t]+(countls[l,t,1]/max(np.sum(countls[:,t,1], axis=0),0.001))*agents.setup.ls_levels[l]
             flsc[t]=flsc[t]+(countls[l,t,0]/max(np.sum(countls[:,t,0], axis=0),0.001))*agents.setup.ls_levels[l]
-            print(l,t,flsc[t])
+            
     ###########################################
     #Moments: Variables over Age
     ###########################################

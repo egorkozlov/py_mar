@@ -21,14 +21,16 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()       
-        T = 5
+        T = 10
+        Tret = 5 # first period when the agent is retired
         p['T'] =        T
+        p['Tret'] = Tret
         p['sig_zf_0']  = 0.25
         p['sig_zf']    = 0.25
-        p['n_zf_t']      = [5]*T
+        p['n_zf_t']      = [5]*Tret + [1]*(T-Tret)
         p['sig_zm_0']  = 0.25
         p['sig_zm']    = 0.25
-        p['n_zm_t']      = [5]*T
+        p['n_zm_t']      = [5]*Tret + [1]*(T-Tret)
         p['sigma_psi_init'] = 0.28
         p['sigma_psi']   = 0.11
         p['R'] = 1.04
@@ -41,7 +43,7 @@ class ModelSetup(object):
         p['sig_partner_z'] = 0.2
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.4
-        
+        p['wret'] = 0.8
         
         
         
@@ -50,10 +52,7 @@ class ModelSetup(object):
             p[key] = value
         
         
-        p['nexo_t'] = [ nzf*nzm*npsi 
-                         for nzf, nzm, npsi
-                         in zip(p['n_zf_t'],p['n_zm_t'],p['n_psi_t'])
-                      ]
+        
         
         self.pars = p
         
@@ -111,6 +110,18 @@ class ModelSetup(object):
             
             exogrid['zf_t'],  exogrid['zf_t_mat'] = rouw_nonst(p['T'],p['sig_zf'],p['sig_zf_0'],p['n_zf_t'][0])
             exogrid['zm_t'],  exogrid['zm_t_mat'] = rouw_nonst(p['T'],p['sig_zm'],p['sig_zm_0'],p['n_zm_t'][0])
+            
+            for t in range(Tret,T):
+                exogrid['zf_t'][t] = np.array([np.log(p['wret'])])
+                exogrid['zm_t'][t] = np.array([np.log(p['wret'])])
+                exogrid['zf_t_mat'][t] = np.atleast_2d(1.0)
+                exogrid['zm_t_mat'][t] = np.atleast_2d(1.0)
+                
+                
+            # fix transition from non-retired to retired    
+            exogrid['zf_t_mat'][Tret-1] = np.ones((p['n_zf_t'][Tret-1],1))
+            exogrid['zm_t_mat'][Tret-1] = np.ones((p['n_zm_t'][Tret-1],1))
+            
             exogrid['psi_t'], exogrid['psi_t_mat'] = rouw_nonst(p['T'],p['sigma_psi'],p['sigma_psi_init'],p['n_psi_t'][0])
             
             zfzm, zfzmmat = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], exogrid['zf_t_mat'], exogrid['zm_t_mat'])
@@ -118,11 +129,13 @@ class ModelSetup(object):
             all_t_mat_sparse_T = [sparse.csc_matrix(D.T) if D is not None else None for D in all_t_mat]
             
             
+            
+            
             #Create a new bad version of transition matrix p(zf_t)
             
             
-            zf_bad = [cut_matrix(exogrid['zf_t_mat'][t]) if t < p['T']-1 
-                          else None 
+            zf_bad = [cut_matrix(exogrid['zf_t_mat'][t]) if t < Tret -1 
+                          else (exogrid['zf_t_mat'][t] if t < T - 1 else None) 
                               for t in range(self.pars['T'])]
             
             zf_t_mat_down = zf_bad
@@ -151,7 +164,10 @@ class ModelSetup(object):
             Exogrid_nt = namedtuple('Exogrid_nt',exogrid.keys())
             
             self.exogrid = Exogrid_nt(**exogrid)
-
+            self.pars['nexo_t'] = [v.shape[0] for v in all_t]
+            
+            #assert False
+            
         #Grid Couple
         self.na = 60
         self.amin = 0

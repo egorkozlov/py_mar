@@ -54,8 +54,8 @@ def ev_couple_exo(setup,Vren,t,use_sparse=True,down=False):
     
     nl = len(setup.exogrid.all_t_mat_by_l_spt)
     
-    
-    na, nexo, ntheta = Vren['V'].shape
+    # TODO: why is it t-1 here...
+    na, nexo, ntheta = setup.na, setup.pars['nexo_t'][t], setup.ntheta 
     
     
     V, Vf, Vm = Vren['V'], Vren['VF'], Vren['VM']

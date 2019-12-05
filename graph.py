@@ -23,7 +23,7 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     ################################################
     # Unpack Stuff to Make it easier to Visualize
     ################################################
-    T = setup.pars['T']
+    T = setup.pars['Tret']
     agrid = setup.agrid_c
     agrids = setup.agrid_s
     zfg = setup.exogrid.zf_t[ti]
@@ -47,13 +47,13 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
            
             #p_mat = setup.part_mats['Female, single'][t].T 
             #inds = np.where( np.any(p_mat>-1,axis=1 ) )[0]
-            inds[i]=setup.all_indices(t,(zfi,zmi,i))[0]
+            inds[i]=setup.all_indices(t+1,(zfi,zmi,i))[0]
         inds=np.array(inds,np.int64)
         # cohabitation
         
         ai_a = ai*np.ones_like(setup.agrid_s,dtype=np.int32)
         
-        resc = v_mar_igrid(setup,t,Packed[t],ai_a,inds,female=True,marriage=False)
+        resc = v_mar_igrid(setup,t+1,Packed[t],ai_a,inds,female=True,marriage=False)
         (vf_c,vm_c), nbs_c, decm, tht_c = resc['Values'], resc['NBS'], resc['Decision'], resc['theta']
         
         is_state=(tht_c==-1)

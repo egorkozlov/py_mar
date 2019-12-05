@@ -39,10 +39,10 @@ def v_ren_new(setup,V,marriage,t):
     
     assert is_unil, 'only unilateral divorce is implemented'
     
-    ind, izf, izm, ipsi = setup.all_indices(t)
+    ind, izf, izm, ipsi = setup.all_indices(t+1)
     
-    zfgrid = setup.exo_grids['Female, single'][t]
-    zmgrid = setup.exo_grids['Male, single'][t]
+    zfgrid = setup.exo_grids['Female, single'][t+1]
+    zmgrid = setup.exo_grids['Male, single'][t+1]
     
     income_share_f = (np.exp(zfgrid[izf]) / ( np.exp(zmgrid[izm]) + np.exp(zfgrid[izf]) ) ).squeeze()
     
@@ -206,7 +206,7 @@ def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,Vmale,Vfemale,izf,izm,cost_f
     i_mal = mal_gets.i
     wn_mal = mal_gets.wnext
     
-    inds_exo = np.arange(setup.pars['nexo_t'][t])
+    inds_exo = np.arange(setup.pars['nexo_t'][t+1])
     
     
     

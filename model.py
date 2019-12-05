@@ -18,6 +18,10 @@ import gzip
 from numba import njit, vectorize
 
 
+import os
+import psutil
+
+
 #if system() != 'Darwin':
 from setup import ModelSetup
 from graph import graphs
@@ -31,22 +35,34 @@ from integrator_couples import ev_couple_m_c
 
 class Model(object):
     def __init__(self,iterator_name='default',**kwargs):
+        self.mstart = self.get_mem()
+        self.mlast = self.get_mem()
+        
         self.setup = ModelSetup(**kwargs)
         self.iterator, self.initializer = self._get_iterator(iterator_name)
         self.start = default_timer()
         self.last = default_timer()
+        
         self.time_dict = dict()
+        
+    def get_mem(self):
+        return psutil.Process(os.getpid()).memory_info().rss/1e6
+        
         
     def time(self,whatisdone):
         
         total_time = default_timer() - self.start
         last_time = default_timer() - self.last
         
+        total_mem = self.get_mem()
+        last_mem  = self.get_mem() - self.mlast
+        
         def r(x): return round(x,2)
         
-        print('{} is done in {} sec, total {} sec'.format(whatisdone,r(last_time),r(total_time)))
+        print('{} is done in {} sec, total {} sec, memory used is {} Mb'.format(whatisdone,r(last_time),r(total_time),r(total_mem)))
         self.last = default_timer()
-    
+        self.mlast = self.get_mem()
+        
         if whatisdone in self.time_dict:
             self.time_dict[whatisdone] = self.time_dict[whatisdone] + [last_time]
         else:

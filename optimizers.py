@@ -14,6 +14,7 @@ from numba import jit#, prange, cuda, float32
 from platform import system
 from aux_routines import cp_take_along_axis
 
+#if system() != 'Darwin' and system() != 'Windows':
 if system() != 'Darwin':
     import cupy as cp
     ucp = True

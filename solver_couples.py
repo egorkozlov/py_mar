@@ -12,10 +12,17 @@ from optimizers import v_optimize_couple
 
 from platform import system
 
-if system() != 'Darwin':    
+if system() != 'Darwin' and system() != 'Windows':    
     nbatch_def = 50
     use_cp = True
+    
+elif system() == 'Windows':
+    
+    nbatch_def = 17
+    use_cp = True
+    
 else:
+    
     nbatch_def = 17
     use_cp = False
 

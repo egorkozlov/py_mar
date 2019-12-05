@@ -14,8 +14,12 @@ Created on Tue Oct 29 17:01:07 2019
 import numpy as np
 import dill as pickle
 from timeit import default_timer
-import gzip
 from numba import njit, vectorize
+#from memory_profiler import profile
+from IPython import get_ipython
+from asizeof import asizeof
+import sys
+import os
 
 
 import os
@@ -96,12 +100,13 @@ class Model(object):
         # as long as they all are specified here or imported
         
         # first we define the iterator
+         
         def v_iterator(setup,desc,t,EV=None):
             # this takes integrated future type-specific value function and returns
             # this period value function. Integration is done separately.
             # If None is feeded for EV this assumes that we are in the last period
             # and returns last period value
-            
+            #get_ipython().magic('reset -sf')
             if desc == 'Female, single' or desc == 'Male, single':
                 female = (desc == 'Female, single')
                 if EV is None:            
@@ -119,6 +124,7 @@ class Model(object):
           
             
         # and the integrator   
+        
         def v_integrator(setup,desc,t,V_next):
             
             if desc == 'Female, single' or desc == 'Male, single':
@@ -173,13 +179,13 @@ class Model(object):
             fls = self.setup.v_thetagrid_fine.apply(Vint,axis=2).argmax(axis=3)
             
             dec.update({'c':cint,'s':sint,'fls':fls})
+            del cint,sint,fls
         else:
             dec.update({'c':v['c'],'s':v['s']})
+            del v
         
-        
-        
-        
-    def solve(self):
+    
+    def solve(self,Prof):
         T = self.setup.pars['T']
         self.V = list()
         self.decisions = list()
@@ -195,20 +201,26 @@ class Model(object):
                 if t == T-1:
                     V_d, dec = self.initializer(desc,t)
                 else:
-                    V_d, dec = self.iterator(desc,t,Vnext)                    
+                    V_d, dec = self.iterator(desc,t,Vnext)   
+
                 Vnow.update(V_d)
                 decnow.update({desc:dec})
+
             
             self.V = [Vnow] + self.V
             self.decisions = [decnow] + self.decisions
-
+            del Vnow,decnow
             
+            if Prof:
+                print('The size of V is {} giga'.format(asizeof(self.V)/1000000000))
+                print('The size of decisions is {} giga'.format(asizeof(self.decisions)/1000000000))
+                
             
-            
-    def solve_sim(self,simulate=True):
+           
+    def solve_sim(self,simulate=True,Prof=True):
 
         #Solve the model
-        self.solve()
+        self.solve(Prof)
         if not simulate: return
         #Simulate the model
         self.agents = Agents(self)

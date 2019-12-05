@@ -6,13 +6,20 @@ aCreated on Tue Sep 17 19:14:08 2019
 @author: Egor Kozlov
 """
 
+#Clean Memory
+from IPython import get_ipython
+get_ipython().magic('reset -f')
+ 
 #import numpy as np
 from model import Model
 import os
 
 
 
+
 if __name__ == '__main__':
+    
+
     
     #Solve the model
     mdl = Model(iterator_name='default-timed',
@@ -20,7 +27,7 @@ if __name__ == '__main__':
     
     graphs=True
     #gassets,iexo,state,gtheta=mdl.solve_sim()
-    mdl.solve_sim(simulate=True)
+    mdl.solve_sim(simulate=True,Prof=True)
     #gassets, iexo, state, gtheta = mdl.agents.gsavings_c, mdl.agents.iexo, mdl.agents.state, mdl.agents.gtheta
     mdl.time_statistics()
     
@@ -43,6 +50,10 @@ if __name__ == '__main__':
         #If you plan to use graphs only once, deselect below to save space on disk
         #os.remove('name_model.pkl') 
     
+
+
    
-    
+        
+
+
     

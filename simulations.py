@@ -48,7 +48,7 @@ class Agents:
         
         # initialize iexo
         self.iexo = np.zeros((N,T),np.int32)
-        self.iexo[:,0] = np.random.randint(0,self.setup.pars['n_zf'],size=N) # initialize iexo
+        self.iexo[:,0] = np.random.randint(0,self.setup.pars['n_zf_t'][0],size=N) # initialize iexo
         
         # initialize state
         self.state = np.zeros((N,T),dtype=np.int32)       
@@ -171,7 +171,7 @@ class Agents:
             
             
             
-            assert np.all(iexo_next<self.setup.pars['nexo'])
+            assert np.all(iexo_next<self.setup.pars['nexo_t'][t])
             
     def statenext(self,t):
         
@@ -222,7 +222,7 @@ class Agents:
                 
                 # potential assets position of couple
                 
-                iall, izf, izm, ipsi = setup.all_indices(ic_out)
+                iall, izf, izm, ipsi = setup.all_indices(t,ic_out)
                 
                 
                 # compute for everyone
@@ -309,7 +309,7 @@ class Agents:
                 
                 # initiate renegotiation
                 isc = self.iassets[ind,t+1]
-                iall, izf, izm, ipsi = self.setup.all_indices(self.iexo[ind,t+1])
+                iall, izf, izm, ipsi = self.setup.all_indices(t+1,self.iexo[ind,t+1])
                 
                 itht = self.itheta[ind,t+1] 
                 agrid =  self.setup.agrid_c                

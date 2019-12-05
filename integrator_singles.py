@@ -35,7 +35,7 @@ def ev_single_meet2(setup,V,sown,female,t,trim_lvl=0.001):
     # this also removes unlikely combinations of future z and partner's 
     # characteristics so we have to do less bargaining
     
-    nexo = setup.pars['nexo']
+    nexo = setup.pars['nexo_t'][t]
     ns = sown.size
     
     
@@ -65,12 +65,12 @@ def ev_single_meet2(setup,V,sown,female,t,trim_lvl=0.001):
     for i in range(npart):
         
         
-        res_m = v_mar_igrid(setup,V,i_assets_c[:,i],inds,
+        res_m = v_mar_igrid(setup,t,V,i_assets_c[:,i],inds,
                                  female=female,marriage=True)
         
         (vfoutm,vmoutm), nprm, decm, thtm = res_m['Values'], res_m['NBS'], res_m['Decision'], res_m['theta']
         
-        res_c = v_mar_igrid(setup,V,i_assets_c[:,i],inds,
+        res_c = v_mar_igrid(setup,t,V,i_assets_c[:,i],inds,
                                  female=female,marriage=False)
         
         

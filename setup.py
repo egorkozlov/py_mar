@@ -20,18 +20,19 @@ from scipy import sparse
 
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
-        p = dict()        
-        p['T'] =        15
+        p = dict()       
+        T = 5
+        p['T'] =        T
         p['sig_zf_0']  = 0.25
         p['sig_zf']    = 0.25
-        p['n_zf']      = 5
+        p['n_zf_t']      = [5]*T
         p['sig_zm_0']  = 0.25
         p['sig_zm']    = 0.25
-        p['n_zm']      = 5
+        p['n_zm_t']      = [5]*T
         p['sigma_psi_init'] = 0.28
         p['sigma_psi']   = 0.11
         p['R'] = 1.04
-        p['n_psi']     = 12
+        p['n_psi_t']     = [12]*T
         p['beta'] = 0.95
         p['A'] = 1.2 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
@@ -43,39 +44,29 @@ class ModelSetup(object):
         
         
         
+        
         for key, value in kwargs.items():
             assert (key in p), 'wrong name?'
             p[key] = value
         
         
-        p['nexo'] = p['n_zf']*p['n_zm']*p['n_psi']
+        p['nexo_t'] = [ nzf*nzm*npsi 
+                         for nzf, nzm, npsi
+                         in zip(p['n_zf_t'],p['n_zm_t'],p['n_psi_t'])
+                      ]
+        
         self.pars = p
         
-        p_int = dict()
-        
+       
         
         # relevant for integration
-        
-        # this one is for (a_part,z_part,psi_couple)
-        p_int['num_partners'] = 5
-        p_int['nodes_couple'] = norm.ppf(sobol_seq.i4_sobol_generate(3,p_int['num_partners']))
-        p_int['num_z_nodes'] = 7
-        p_int['z_nodes'] = norm.ppf(sobol_seq.i4_sobol_generate(1,p_int['num_z_nodes']))
-        p_int['large_3dim'] = norm.ppf(sobol_seq.i4_sobol_generate(3,30)) # generate many draws from normal
-        self.integration = p_int
-        
-        
-        #self.state_names = ['Female, single','Male, single','Couple']
         self.state_names = ['Female, single','Male, single','Couple, M', 'Couple, C']
-        
-        
         
         # female labor supply
         self.ls_levels = [0.5,1.0]
-        self.ls_utilities = [0.05,0.0]#[0.25,0.0]
-        self.ls_pdown = [0.9,0.0]#[0.5,0.0]
+        self.ls_utilities = [0.05,0.0] 
+        self.ls_pdown = [0.9,0.0]
         self.nls = len(self.ls_levels)
-        
         
         
         #Cost of Divorce
@@ -114,9 +105,13 @@ class ModelSetup(object):
             
             # let's approximate three Markov chains
             # this sets up exogenous grid
-            exogrid['zf_t'],  exogrid['zf_t_mat'] = rouw_nonst(p['T'],p['sig_zf'],p['sig_zf_0'],p['n_zf'])
-            exogrid['zm_t'],  exogrid['zm_t_mat'] = rouw_nonst(p['T'],p['sig_zm'],p['sig_zm_0'],p['n_zm'])
-            exogrid['psi_t'], exogrid['psi_t_mat'] = rouw_nonst(p['T'],p['sigma_psi'],p['sigma_psi_init'],p['n_psi'])
+            
+            # FIXME: this uses number of points from 0th entry. 
+            # in principle we can generalize this
+            
+            exogrid['zf_t'],  exogrid['zf_t_mat'] = rouw_nonst(p['T'],p['sig_zf'],p['sig_zf_0'],p['n_zf_t'][0])
+            exogrid['zm_t'],  exogrid['zm_t_mat'] = rouw_nonst(p['T'],p['sig_zm'],p['sig_zm_0'],p['n_zm_t'][0])
+            exogrid['psi_t'], exogrid['psi_t_mat'] = rouw_nonst(p['T'],p['sigma_psi'],p['sigma_psi_init'],p['n_psi_t'][0])
             
             zfzm, zfzmmat = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], exogrid['zf_t_mat'], exogrid['zm_t_mat'])
             all_t, all_t_mat = combine_matrices_two_lists(zfzm,exogrid['psi_t'],zfzmmat,exogrid['psi_t_mat'])
@@ -125,11 +120,6 @@ class ModelSetup(object):
             
             #Create a new bad version of transition matrix p(zf_t)
             
-            #zf_bad=list()
-            #for t in range(self.pars['T']-1):
-            #    zft=cut_matrix(exogrid['zf_t_mat'][t])
-            #    zf_bad.append(zft)
-            #zf_bad.append(None)    
             
             zf_bad = [cut_matrix(exogrid['zf_t_mat'][t]) if t < p['T']-1 
                           else None 
@@ -160,7 +150,6 @@ class ModelSetup(object):
             
             Exogrid_nt = namedtuple('Exogrid_nt',exogrid.keys())
             
-            self.nexo = p['nexo']
             self.exogrid = Exogrid_nt(**exogrid)
 
         #Grid Couple
@@ -256,11 +245,6 @@ class ModelSetup(object):
         # (that can be off grid) and correpsonding probabilities. 
         
         
-        # a_partner = max(a_own,abar)*exp(e_a)
-        # a_couple = a_own + max(a_own,abar)*exp(e_a)
-        # log( (a_couple - a_own)/(max(a_own,abar)) ) = e_a
-        
-        
         na = self.agrid_s.size
         
         agrid_s = self.agrid_s
@@ -298,7 +282,6 @@ class ModelSetup(object):
             
             
         
-        
     
     def mar_mats_iexo(self,t,female=True,trim_lvl=0.001):
         # TODO: check timing
@@ -308,7 +291,7 @@ class ModelSetup(object):
         # you have to transpose it if you want to use it for integration
         setup = self
         
-        nexo = setup.pars['nexo']
+        nexo = setup.pars['nexo_t'][t]
         sigma_psi_init = setup.pars['sigma_psi_init']
         sig_z_partner = setup.pars['sig_partner_z']
         psi_couple = setup.exogrid.psi_t[t+1]
@@ -329,7 +312,7 @@ class ModelSetup(object):
             z_partner = setup.exogrid.zf_t[t+1]
             zmat_own = setup.exogrid.zm_t_mat[t]    
             
-        def ind_conv(a,b,c): return setup.all_indices((a,b,c))[0]
+        def ind_conv(a,b,c): return setup.all_indices(t,(a,b,c))[0]
         
         
         for iz in range(n_zown):
@@ -376,7 +359,7 @@ class ModelSetup(object):
         
         for female in [True,False]:
             desc = 'Female, single' if female else 'Male, single'
-            nz = self.pars['n_zf'] if female else self.pars['n_zm']
+            
             pmats = self.part_mats[desc] 
             
             
@@ -386,6 +369,8 @@ class ModelSetup(object):
             for t in range(self.pars['T']-1):
                 pmat_iexo = pmats[t] # nz X nexo
                 # note that here we do not use transpose
+                
+                nz = pmat_iexo.shape[0]
                 
                 inds = np.where( np.any(pmat_iexo>0,axis=0) )[0]
                 
@@ -423,20 +408,20 @@ class ModelSetup(object):
         
     
     
-    def all_indices(self,ind_or_inds=None):
+    def all_indices(self,t,ind_or_inds=None):
         
         # just return ALL indices if no argument is called
         if ind_or_inds is None: 
-            ind_or_inds = np.array(range(self.pars['nexo']))
+            ind_or_inds = np.array(range(self.pars['nexo_t'][t]))
         
         if isinstance(ind_or_inds,tuple):
             izf,izm,ipsi = ind_or_inds
-            ind = izf*self.pars['n_zm']*self.pars['n_psi'] + izm*self.pars['n_psi'] + ipsi
+            ind = izf*self.pars['n_zm_t'][t]*self.pars['n_psi_t'][t] + izm*self.pars['n_psi_t'][t] + ipsi
         else:
             ind = ind_or_inds
-            izf = ind // (self.pars['n_zm']*self.pars['n_psi'])
-            izm = (ind - izf*self.pars['n_zm']*self.pars['n_psi']) // self.pars['n_psi']
-            ipsi = ind - izf*self.pars['n_zm']*self.pars['n_psi'] - izm*self.pars['n_psi']
+            izf = ind // (self.pars['n_zm_t'][t]*self.pars['n_psi_t'][t])
+            izm = (ind - izf*self.pars['n_zm_t'][t]*self.pars['n_psi_t'][t]) // self.pars['n_psi_t'][t]
+            ipsi = ind - izf*self.pars['n_zm_t'][t]*self.pars['n_psi_t'][t] - izm*self.pars['n_psi_t'][t]
             
         return ind, izf, izm, ipsi
 
@@ -495,10 +480,9 @@ class ModelSetup(object):
         
         #Get utility for different FLS
         #TODO check indeces here
-        u_couple_g=np.zeros((self.na,self.pars['nexo'],len(self.thetagrid),len(self.ls_levels)))
-        income_g=np.zeros((self.na,self.pars['nexo'],len(self.thetagrid),len(self.ls_levels)))
-        util_g=np.zeros((self.na,self.pars['nexo'],len(self.thetagrid),len(self.ls_levels)))
-        #levels_g=np.zeros((self.na,self.pars['nexo'],len(self.thetagrid),len(self.ls_levels)))
+        u_couple_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)))
+        income_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)))
+        util_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)))
         
         for l in range(len(self.ls_levels)):
            
@@ -506,17 +490,14 @@ class ModelSetup(object):
             kf, km = self.c_mult(theta)        
             u_couple_g[...,l] = self.u_mult(theta)*self.u(income_g[...,l])+self.ls_utilities[l] 
             util_g[...,l]=self.ls_utilities[l] 
-            #levels_g[...,l]=self.ls_levels[l] 
             
         #Get optimal FLS
-        ls= np.empty((self.na,self.pars['nexo'],len(self.thetagrid)),dtype=np.int32)
+        ls= np.empty((self.na,self.pars['nexo_t'][-1],len(self.thetagrid)),dtype=np.int32)
         ls=np.argmax(u_couple_g,axis=3)
         lsi=np.expand_dims(ls,3)
-        #lsii=np.broadcast_to(lsi,(self.na,self.pars['nexo'],len(self.thetagrid),len(self.ls_levels)))
         u_couple=np.take_along_axis(u_couple_g,lsi,axis=3)[:,:,:,0]
         income=np.take_along_axis(income_g,lsi,axis=3)[:,:,:,0]
         util=np.take_along_axis(util_g,lsi,axis=3)[:,:,:,0]
-        #levels=np.take_along_axis(levels_g,lsii,axis=3)[:,:,:,0]
         
        
         

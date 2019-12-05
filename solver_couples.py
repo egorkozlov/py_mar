@@ -60,7 +60,9 @@ def v_iter_couple(setup,t,EV_tuple,nbatch=nbatch_def,verbose=False):
     
     #money = R*agrid[:,None] + wf[None,:] 
     
-    shp = (setup.na,setup.nexo,setup.ntheta)
+    
+    nexo = setup.pars['nexo_t'][t]
+    shp = (setup.na,nexo,setup.ntheta)
     
     # type conversion to keep everything float32
     sgrid,sigma,beta = (np.float32(x) for x in (sgrid,sigma,beta))
@@ -77,11 +79,11 @@ def v_iter_couple(setup,t,EV_tuple,nbatch=nbatch_def,verbose=False):
     # we need to rescale the problem to max{u(c) + beta*EV_resc}
     
     istart = 0
-    ifinish = nbatch if nbatch < setup.nexo else setup.nexo
+    ifinish = nbatch if nbatch < nexo else nexo
     
     # this natually splits everything onto slices
     
-    for ibatch in range(int(np.ceil(setup.nexo/nbatch))):
+    for ibatch in range(int(np.ceil(nexo/nbatch))):
         #money_i = money[:,istart:ifinish]
         assert ifinish > istart
         
@@ -102,7 +104,7 @@ def v_iter_couple(setup,t,EV_tuple,nbatch=nbatch_def,verbose=False):
         
         
         istart = ifinish
-        ifinish = ifinish+nbatch if ifinish+nbatch < setup.nexo else setup.nexo
+        ifinish = ifinish+nbatch if ifinish+nbatch < nexo else nexo
         
         if verbose: print('Batch {} done at {} sec'.format(ibatch,default_timer()-start))
     

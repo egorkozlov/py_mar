@@ -39,7 +39,7 @@ def v_ren_new(setup,V,marriage,t):
     
     assert is_unil, 'only unilateral divorce is implemented'
     
-    ind, izf, izm, ipsi = setup.all_indices()
+    ind, izf, izm, ipsi = setup.all_indices(t)
     
     zfgrid = setup.exo_grids['Female, single'][t]
     zmgrid = setup.exo_grids['Male, single'][t]
@@ -79,7 +79,7 @@ def v_ren_new(setup,V,marriage,t):
 
 
 
-def v_mar_igrid(setup,V,icouple,ind_or_inds,*,female,marriage,interpolate=True,return_all=False):
+def v_mar_igrid(setup,t,V,icouple,ind_or_inds,*,female,marriage,interpolate=True,return_all=False):
     # this returns value functions for couple that entered the last period with
     # (s,Z,theta) from the grid and is allowed to renegotiate them or breakup
     
@@ -118,7 +118,7 @@ def v_mar_igrid(setup,V,icouple,ind_or_inds,*,female,marriage,interpolate=True,r
     
     
     # substantial part
-    ind, izf, izm, ipsi = setup.all_indices(ind_or_inds)
+    ind, izf, izm, ipsi = setup.all_indices(t,ind_or_inds)
     
     
     # using trim = True implicitly trims things on top
@@ -206,7 +206,7 @@ def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,Vmale,Vfemale,izf,izm,cost_f
     i_mal = mal_gets.i
     wn_mal = mal_gets.wnext
     
-    inds_exo = np.arange(setup.pars['nexo'])
+    inds_exo = np.arange(setup.pars['nexo_t'][t])
     
     
     

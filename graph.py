@@ -47,13 +47,13 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
            
             #p_mat = setup.part_mats['Female, single'][t].T 
             #inds = np.where( np.any(p_mat>-1,axis=1 ) )[0]
-            inds[i]=setup.all_indices((zfi,zmi,i))[0]
+            inds[i]=setup.all_indices(t,(zfi,zmi,i))[0]
         inds=np.array(inds,np.int64)
         # cohabitation
         
         ai_a = ai*np.ones_like(setup.agrid_s,dtype=np.int32)
         
-        resc = v_mar_igrid(setup,Packed[t],ai_a,inds,female=True,marriage=False)
+        resc = v_mar_igrid(setup,t,Packed[t],ai_a,inds,female=True,marriage=False)
         (vf_c,vm_c), nbs_c, decm, tht_c = resc['Values'], resc['NBS'], resc['Decision'], resc['theta']
         
         is_state=(tht_c==-1)
@@ -62,7 +62,7 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
         tcv[inde[0],inde[1]]=None
         
         # marriage
-        resm = v_mar_igrid(setup,Packed[t],ai_a,inds,female=True,marriage=True)
+        resm = v_mar_igrid(setup,t,Packed[t],ai_a,inds,female=True,marriage=True)
         (vf_m,vm_m), nbs_m, decm, tht_m = resm['Values'], resm['NBS'], resm['Decision'], resm['theta']
         
         is_state2=(tht_m==-1)
@@ -102,7 +102,7 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     
     #Renegotiated Value
     for a in range(len(agrid)):
-        nex=setup.all_indices((zfi,zmi,psii))[0]
+        nex=setup.all_indices(t,(zfi,zmi,psii))[0]
         inde=setup.theta_orig_on_fine[thi]
         V_ren_c[a]=dec[max(ti-1,0)]['Couple, C']['Values'][0][a,nex,inde]
         V_ren_m[a]=dec[max(ti-1,0)]['Couple, M']['Values'][0][a,nex,inde]
@@ -110,10 +110,10 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     #Divorced Women and Men
     for t in range(T):
         for j in range(len(agrid)):
-            for i in range(setup.pars['nexo']):
+            for i in range(setup.pars['nexo_t'][t]):
                 
                 #Get the indexes from zf,zm,psi
-                zf,zm,psi=setup.all_indices(i)[1:4]
+                zf,zm,psi=setup.all_indices(t,i)[1:4]
                 
                 #Marriage
 
@@ -139,10 +139,10 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     #Couples: Marriage+Cohabitation
     for t in range(T):
         for j in range(len(agrid)):
-            for i in range(setup.pars['nexo']):
+            for i in range(setup.pars['nexo_t'][t]):
                 
                 #Get the indexes from zf,zm,psi
-                zf,zm,psi=setup.all_indices(i)[1:4]
+                zf,zm,psi=setup.all_indices(t,i)[1:4]
                 
                 #Marriage
                 Vm[j,zf,zm,psi,t,]=Packed[t]['Couple, M']['V'][j,i,]
@@ -253,15 +253,15 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     ########################################## 
     fig = plt.figure()
     f3=fig.add_subplot(2,1,1)
-    graphc=[None] * setup.pars['n_zf']
-    graphm=[None] * setup.pars['n_zf']
+    graphc=[None] * setup.pars['n_zf_t'][ti]
+    graphm=[None] * setup.pars['n_zf_t'][ti]
     
-    for i in range(setup.pars['n_zf']):
+    for i in range(setup.pars['n_zf_t'][ti]):
         graphc[i]=setup.ls_levels[flsc[ai,i,zmi,psii,ti,thi]]
         graphm[i]=setup.ls_levels[flsm[ai,i,zmi,psii,ti,thi]]
     
-    plt.plot(range(setup.pars['n_zf']),graphm,'k',markersize=6, label='Marriage')
-    plt.plot(range(setup.pars['n_zf']), graphc,'r*',markersize=6,label='Cohabitation')
+    plt.plot(range(setup.pars['n_zf_t'][ti]),graphm,'k',markersize=6, label='Marriage')
+    plt.plot(range(setup.pars['n_zf_t'][ti]), graphc,'r*',markersize=6,label='Cohabitation')
     #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral')
     plt.xlabel('Female Productivity')
     plt.ylabel('FLS')

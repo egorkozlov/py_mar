@@ -58,7 +58,7 @@ def moment(agents,draw=True):
             #Arrays for preparation
             is_state = (state[:,t]==ist)
             ind = np.where(is_state)[0]
-            zf,zm,psi=agents.setup.all_indices(iexo[ind,t])[1:4]
+            zf,zm,psi=agents.setup.all_indices(t,iexo[ind,t])[1:4]
             
             #Relationship over time
             relt[ist,t]=np.sum(is_state)

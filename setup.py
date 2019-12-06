@@ -45,6 +45,10 @@ class ModelSetup(object):
         p['wret'] = 0.8
         
         
+        p['f_wage_trend'] = [0.0 + 0.00*min(t,Tret) + 0.00*(min(t,Tret)**2) for t in range(T)]
+        p['m_wage_trend'] = [0.0 + 0.00*min(t,Tret) + 0.00*(min(t,Tret)**2) for t in range(T)]
+        
+        
         
         for key, value in kwargs.items():
             assert (key in p), 'wrong name?'
@@ -499,9 +503,13 @@ class ModelSetup(object):
         income_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)),dtype=np.float32)
         util_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)),dtype=np.float32)
         
+        
+        ftrend = self.pars['f_wage_trend'][-1]
+        mtrend = self.pars['m_wage_trend'][-1]
+        
         for l in range(len(self.ls_levels)):
            
-            income_g[...,l] = self.pars['R_t'][-1]*s + np.exp(zm) +  np.exp(zf)*self.ls_levels[l]
+            income_g[...,l] = self.pars['R_t'][-1]*s + np.exp(zm+mtrend) +  np.exp(zf+ftrend)*self.ls_levels[l]
             kf, km = self.c_mult(theta)        
             u_couple_g[...,l] = self.u_mult(theta)*self.u(income_g[...,l])+self.ls_utilities[l] 
             util_g[...,l]=self.ls_utilities[l] 
@@ -539,9 +547,9 @@ class ModelSetup(object):
     
     
 
-    def vs_last(self,s,z,return_cs=False):  
+    def vs_last(self,s,z_plus_trend,return_cs=False):  
         # generic last period utility for single agent
-        income = self.pars['R_t'][-1]*s+np.exp(z)
+        income = self.pars['R_t'][-1]*s+np.exp(z_plus_trend) 
         if return_cs:
             return self.u(income).astype(np.float32), income.astype(np.float32), np.zeros_like(income.astype(np.float32))
         else:
@@ -551,7 +559,8 @@ class ModelSetup(object):
         # this returns value of vs on the grid corresponding to vs
         s_in = self.agrid_s[:,None]
         z_in = self.exogrid.zf_t[-1][None,:] if female else self.exogrid.zm_t[-1][None,:]
-        return self.vs_last(s_in,z_in,return_cs)
+        trend = self.pars['f_wage_trend'][-1] if female else self.pars['m_wage_trend'][-1]        
+        return self.vs_last(s_in,z_in+trend,return_cs)
         
     
     

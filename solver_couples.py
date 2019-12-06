@@ -53,6 +53,9 @@ def v_iter_couple(setup,t,EV_tuple,nbatch=nbatch_def,verbose=False):
     
     zf  = setup.exogrid.all_t[t][:,0]
     zm  = setup.exogrid.all_t[t][:,1]
+    zftrend = setup.pars['f_wage_trend'][t]
+    zmtrend = setup.pars['m_wage_trend'][t]
+
     psi = setup.exogrid.all_t[t][:,2]
     beta = setup.pars['beta_t'][t]
     sigma = setup.pars['crra_power']
@@ -60,8 +63,8 @@ def v_iter_couple(setup,t,EV_tuple,nbatch=nbatch_def,verbose=False):
 
 
     
-    wf = np.exp(zf)
-    wm = np.exp(zm)
+    wf = np.exp(zf + zftrend)
+    wm = np.exp(zm + zmtrend)
     
     #labor_income = np.exp(zf) + np.exp(zm)
     

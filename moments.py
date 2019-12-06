@@ -52,8 +52,17 @@ def moment(agents,draw=True):
     ass_rel=np.zeros((len(state_codes),agents.setup.pars['T']))
     inc_rel=np.zeros((len(state_codes),agents.setup.pars['T']))
     
+    
+    
+        
+    
+    
     for ist,sname in enumerate(state_codes):
         for t in range(agents.setup.pars['T']):
+            
+            
+            ftrend = agents.setup.pars['f_wage_trend'][t]
+            mtrend = agents.setup.pars['m_wage_trend'][t]
             
             #Arrays for preparation
             is_state = (state[:,t]==ist)
@@ -68,13 +77,13 @@ def moment(agents,draw=True):
             
             #Income over time
             if sname=="Female, single":
-                inc_rel[ist,t]=np.mean(np.exp(agents.setup.exogrid.zf_t[t][zf]))
+                inc_rel[ist,t]=np.mean(np.exp(agents.setup.exogrid.zf_t[t][zf]  + ftrend ))
                 
             elif sname=="Male, single":
-                 inc_rel[ist,t]=np.mean(np.exp(agents.setup.exogrid.zf_t[t][zm]))
+                 inc_rel[ist,t]=np.mean(np.exp(agents.setup.exogrid.zf_t[t][zm] + mtrend))
                 
             elif sname=="Couple, C" or sname=="Couple, M":
-                 inc_rel[ist,t]=np.mean(np.exp(agents.setup.exogrid.zf_t[t][zf])+np.exp(agents.setup.exogrid.zf_t[t][zm]))
+                 inc_rel[ist,t]=np.mean(np.exp(agents.setup.exogrid.zf_t[t][zf] + ftrend)+np.exp(agents.setup.exogrid.zf_t[t][zm] + mtrend))
     
             else:
             

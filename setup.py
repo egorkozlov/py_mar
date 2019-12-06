@@ -9,7 +9,6 @@ import numpy as np
 from rw_approximations import rouw_nonst
 from mc_tools import combine_matrices_two_lists, int_prob,cut_matrix
 from scipy.stats import norm
-import sobol_seq
 from collections import namedtuple
 from optimizers import build_s_grid, sgrid_on_agrid
 from gridvec import VecOnGrid
@@ -496,9 +495,9 @@ class ModelSetup(object):
         
         #Get utility for different FLS
         #TODO check indeces here
-        u_couple_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)))
-        income_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)))
-        util_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)))
+        u_couple_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)),dtype=np.float32)
+        income_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)),dtype=np.float32)
+        util_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)),dtype=np.float32)
         
         for l in range(len(self.ls_levels)):
            
@@ -524,7 +523,7 @@ class ModelSetup(object):
         VM = u_m + psi+util
         VF = u_f + psi+util
         
-        return V, VF, VM, income, np.zeros_like(income), ls, u_couple_g
+        return V.astype(np.float32), VF.astype(np.float32), VM.astype(np.float32), income.astype(np.float32), np.zeros_like(income.astype(np.float32)), ls.astype(np.float32), u_couple_g.astype(np.float32)
         
 
     def vm_last_grid(self):
@@ -544,7 +543,7 @@ class ModelSetup(object):
         # generic last period utility for single agent
         income = self.pars['R']*s+np.exp(z)
         if return_cs:
-            return self.u(income), income, np.zeros_like(income)
+            return self.u(income).astype(np.float32), income.astype(np.float32), np.zeros_like(income.astype(np.float32))
         else:
             return self.u(income)
     

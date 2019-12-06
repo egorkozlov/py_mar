@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 from matplotlib.pyplot import plot, draw, show
 import matplotlib.backends.backend_pdf
 from ren_mar_alt import v_mar_igrid
-import gzip
+
 
 
 
@@ -573,4 +573,4 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
        
     pdf.close()
     matplotlib.pyplot.close("all")
-    return Packed,dec
+   

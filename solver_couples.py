@@ -74,7 +74,7 @@ def v_iter_couple(setup,t,EV_tuple,nbatch=nbatch_def,verbose=False):
     # type conversion to keep everything float32
     sgrid,sigma,beta = (np.float32(x) for x in (sgrid,sigma,beta))
     
-    V_couple, c_opt, s_opt, i_opt, il_opt = np.empty(shp,np.float32), np.empty(shp,np.float32), np.empty(shp,np.float32), np.empty(shp,np.int32), np.empty(shp,np.int32)
+    V_couple, c_opt, s_opt, i_opt, il_opt = np.empty(shp,np.float32), np.empty(shp,np.float16), np.empty(shp,np.float32), np.empty(shp,np.int16), np.empty(shp,np.int8)
     
     
     V_all_l = np.empty(shp+(nls,),dtype=np.float32)
@@ -118,7 +118,7 @@ def v_iter_couple(setup,t,EV_tuple,nbatch=nbatch_def,verbose=False):
     
     assert np.all(c_opt > 0)
     
-    psi_r = psi[None,:,None]
+    psi_r = psi[None,:,None].astype(np.float32)
     
     # finally obtain value functions of partners
     uf, um = setup.u_part(c_opt,theta_val[None,None,:])
@@ -156,8 +156,9 @@ def v_iter_couple(setup,t,EV_tuple,nbatch=nbatch_def,verbose=False):
     
     
     #out = {'V':V_couple,'VF':V_fem,'VM':V_mal,'c':c_opt, 's':s_opt}
+    def r(x): return x.astype(np.float32)
     
-    return V_couple, V_fem, V_mal, c_opt, s_opt, il_opt, V_all_l
+    return r(V_couple), r(V_fem), r(V_mal), r(c_opt), r(s_opt), il_opt, r(V_all_l)
 
 
 

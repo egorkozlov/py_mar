@@ -47,6 +47,7 @@ class VecOnGrid(object):
         # take's elements are assumed to be 2-element tuple where take[0] 
         # is axis and take[1] is indices. 
         
+        typein = np.float32#xin.dtype
         
         nd = xin.ndim
         assert axis < nd
@@ -116,7 +117,7 @@ class VecOnGrid(object):
         # TODO: check if this hurts dimensionality
         # FIXME: yes it does
         
-        return (np.atleast_1d(out.squeeze()))
+        return (np.atleast_1d(out.astype(typein).squeeze()))
     
     
     def apply_2dim(self,xin,*,apply_first,axis_first,axis_this=0,take=None,pick=None,reshape_i=True):

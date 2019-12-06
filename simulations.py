@@ -12,7 +12,6 @@ from gridvec import VecOnGrid
 
 class Agents:
     
-    
     def __init__(self,M,N=15000,T=None,verbose=True):
         if T is None:
             T = M.setup.pars['T']

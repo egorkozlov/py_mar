@@ -6,18 +6,17 @@ aCreated on Tue Sep 17 19:14:08 2019
 @author: Egor Kozlov
 """
 
-#Clean Memory
-from IPython import get_ipython
-get_ipython().magic('reset -f')
- 
-#import numpy as np
-from model import Model
-import os
-
-
-
 
 if __name__ == '__main__':
+    
+    
+    #Clean Memory
+    from IPython import get_ipython
+    get_ipython().magic('reset -f')
+ 
+    #import numpy as np
+    from model import Model
+  
     
 
     
@@ -45,7 +44,7 @@ if __name__ == '__main__':
         thi=10
         
         #Actual Graphs
-        Packed,dec=mdl.graph(ai,zfi,zmi,psii,ti,thi)
+        mdl.graph(ai,zfi,zmi,psii,ti,thi)
         
         #If you plan to use graphs only once, deselect below to save space on disk
         #os.remove('name_model.pkl') 

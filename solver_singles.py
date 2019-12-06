@@ -39,6 +39,6 @@ def v_iter_single(setup,t,EV,female):
     
     V_ret, c_opt, s_opt = v_optimize_single(money_t,sgrid_s,(ind,p,EV),sigma,beta)
     
+    def r(x): return x.astype(np.float32)
     
-    
-    return V_ret, c_opt, s_opt#, s_opt/money
+    return r(V_ret), r(c_opt), r(s_opt)#, s_opt/money

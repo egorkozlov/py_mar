@@ -373,13 +373,14 @@ def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
         
     
     #assert not np.any(yes_nsc), 'Single crossing does not hold!' # FIXME: remove this later
+    def r(x): return x.astype(np.float32)
     
     if np.size(v_y_check,0)==1:
         return {'Decision': yes, 'thetas': i_theta_out,
-                'Values': (v_out, vf_out, vm_out),'Divorce':(vf_div_full,vm_div_full)}
+                'Values': (r(v_out), r(vf_out), r(vm_out)),'Divorce':(vf_div_full,vm_div_full)}
     else:
         return {'Decision': yes, 'thetas': i_theta_out,
-                'Values': (v_out, vf_out, vm_out),'Cohabitation preferred to Marriage': inde}
+                'Values': (r(v_out), r(vf_out), r(vm_out)),'Cohabitation preferred to Marriage': inde}
 
 
 

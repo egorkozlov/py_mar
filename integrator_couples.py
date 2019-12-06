@@ -15,7 +15,6 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True):
     # to renegotiate or to break up
     
     
-   
     out = v_ren_new(setup,Vpostren,marriage,t)
     #_Vren2 = out.pop('Values') # THIS REMOVES VALUES FROM OUT ASSUMING WE DO NOT NEED THEM
     _Vren2=out['Values']

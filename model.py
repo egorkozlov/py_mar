@@ -12,16 +12,11 @@ Created on Tue Oct 29 17:01:07 2019
 #from platform import system
 
 import numpy as np
-import dill as pickle
 from timeit import default_timer
-from numba import njit, vectorize
+#from numba import njit, vectorize
 #from memory_profiler import profile
-from IPython import get_ipython
+#from IPython import get_ipython
 from asizeof import asizeof
-import sys
-import os
-
-
 import os
 import psutil
 
@@ -134,6 +129,7 @@ class Model(object):
                 EV, dec = ev_couple_m_c(setup,V_next,t,True)
             elif desc == 'Couple, C':
                 EV, dec = ev_couple_m_c(setup,V_next,t,False)
+                
             return EV, dec
             
         
@@ -171,17 +167,17 @@ class Model(object):
         v = vout[desc]
         if desc == 'Couple, M' or desc == 'Couple, C':
             
-            cint = self.setup.v_thetagrid_fine.apply(v['c'],axis=2)
-            sint = self.setup.v_thetagrid_fine.apply(v['s'],axis=2)
+            #cint = self.setup.v_thetagrid_fine.apply(v['c'],axis=2)
+            sint = self.setup.v_thetagrid_fine.apply(v['s'],axis=2).astype(np.float32)
             
-            Vint = self.setup.v_thetagrid_fine.apply(v['V_all_l'],axis=2)
+            Vint = self.setup.v_thetagrid_fine.apply(v['V_all_l'],axis=2).astype(np.float32)
             
-            fls = self.setup.v_thetagrid_fine.apply(Vint,axis=2).argmax(axis=3)
+            fls = self.setup.v_thetagrid_fine.apply(Vint,axis=2).argmax(axis=3).astype(np.int8)
             
-            dec.update({'c':cint,'s':sint,'fls':fls})
-            del cint,sint,fls
+            dec.update({'s':sint,'fls':fls})
+            del sint,fls
         else:
-            dec.update({'c':v['c'],'s':v['s']})
+            dec.update({'s':v['s']})
             del v
         
     
@@ -202,20 +198,20 @@ class Model(object):
                     V_d, dec = self.initializer(desc,t)
                 else:
                     V_d, dec = self.iterator(desc,t,Vnext)   
-
+                   
                 Vnow.update(V_d)
                 decnow.update({desc:dec})
-
-            
+                
             self.V = [Vnow] + self.V
             self.decisions = [decnow] + self.decisions
-            del Vnow,decnow
+            
+
             
             if Prof:
                 print('The size of V is {} giga'.format(asizeof(self.V)/1000000000))
                 print('The size of decisions is {} giga'.format(asizeof(self.decisions)/1000000000))
                 
-            
+        #del self.V,self.decisions    
            
     def solve_sim(self,simulate=True,Prof=True):
 

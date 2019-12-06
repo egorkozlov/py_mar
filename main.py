@@ -11,8 +11,11 @@ if __name__ == '__main__':
     
     
     #Clean Memory
-    from IPython import get_ipython
-    get_ipython().magic('reset -f')
+    try:
+        from IPython import get_ipython
+        get_ipython().magic('reset -f')
+    except:
+        pass
  
     #import numpy as np
     from model import Model

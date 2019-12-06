@@ -16,13 +16,15 @@ if __name__ == '__main__':
  
     #import numpy as np
     from model import Model
+    from setup import DivorceCosts
   
     
 
-    
+    dc = DivorceCosts(unilateral_divorce=False,assets_kept = 1.0,u_lost_m=0.02,u_lost_f=0.02,eq_split=0.0)
+    sc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.00,u_lost_f=0.00)
     #Solve the model
     mdl = Model(iterator_name='default-timed',
-                divorce_costs={'unilateral_divorce':True})
+                divorce_costs=dc,separation_costs=sc)
     
     graphs=True
     #gassets,iexo,state,gtheta=mdl.solve_sim()

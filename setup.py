@@ -68,7 +68,7 @@ class ModelSetup(object):
         
         
         #Cost of Divorce
-        divorce_costs=DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.02,u_lost_f=0.02,eq_split=0.0)
+        #divorce_costs=DivorceCosts(assets_kept = 1.0,u_lost_m=0.02,u_lost_f=0.02,eq_split=0.0)
         if divorce_costs == 'Default':
             # by default the costs are set in the bottom
             self.div_costs = DivorceCosts()
@@ -82,7 +82,7 @@ class ModelSetup(object):
                 self.div_costs = divorce_costs
                 
         #Cost of Separation
-        separation_costs=DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.00,u_lost_f=0.00)
+        #separation_costs=DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.00,u_lost_f=0.00)
         if separation_costs == 'Default':
             # by default the costs are set in the bottom
             self.sep_costs = DivorceCosts()

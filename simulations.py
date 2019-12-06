@@ -297,7 +297,7 @@ class Agents:
             elif sname == "Couple, M" or sname == "Couple, C":
                 
                 decision = self.M.decisions[t][sname]
-                
+
                 
                 # by default keep the same theta and weights
                 
@@ -325,11 +325,14 @@ class Agents:
 
                 
                 
-                i_div = ~i_stay                
+                i_div = ~i_stay    
+                
+
                 i_ren = (i_stay) & (thts_orig != thts)
                 i_renf = (i_stay) & (thts_orig > thts)
                 i_renm = (i_stay) & (thts_orig < thts)
                 i_sq = (i_stay) & (thts_orig == thts)
+                    
                 
                 print('{} divorce, {} ren-f, {} ren-m, {} sq'.format(np.sum(i_div),np.sum(i_renf),np.sum(i_renm),np.sum(i_sq))                     )
                 

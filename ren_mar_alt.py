@@ -37,7 +37,6 @@ def v_ren_new(setup,V,marriage,t):
         is_unil = dc.unilateral_divorce # whether to do unilateral divorce at all
         des=['Couple, C','Couple, M']
     
-    assert is_unil, 'only unilateral divorce is implemented'
     
     ind, izf, izm, ipsi = setup.all_indices(t+1)
     
@@ -236,6 +235,10 @@ def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
         
         
         vy, vfy, vmy = (tgf.apply(x,axis=2) for x in (v_y,vf_y,vm_y) )
+        
+        #Unilateral or Bilateral Divorce
+        Uni=setup.div_costs.unilateral_divorce
+        
     else:
         
         assert np.size(v_y,0)==2
@@ -264,6 +267,9 @@ def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
         vy=inde*vy0+(1-inde)*vy1
         vfy=inde*vfy0+(1-inde)*vfy1
         vmy=inde*vmy0+(1-inde)*vmy1
+        
+        #Explicit that separation is unilateral
+        Uni=setup.sep_costs.unilateral_divorce
     
     
     
@@ -291,25 +297,33 @@ def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
     sc_m = ((d_sm == -1) & (n_sm == 1)) | ((d_sm == 0) & (n_sm==0))
     sc = (sc_f) & (sc_m)
     
-    # agreement for all theta
-    agree = (i_sf_expand) & (i_sm_expand)
-    # any agreement     
-    yes = np.any(agree,axis=-1)
+    if Uni:
+        
+        # agreement for all theta
+        agree = (i_sf_expand) & (i_sm_expand)
+        # any agreement     
+        yes = np.any(agree,axis=-1)
+        
+        # then we split this by three regions: agreement + single crossing
+        yes_sc = (yes) & (sc)
+        # agreement +  non-single crossing:
+        yes_nsc = (yes) & ~(sc)   
+      
+        # disagreement
+        no = ~(yes)
+        
+        # the reason is that single crossing has much simpler algorithm  
+        share_sc = np.mean(yes_sc)
+        share_nsc = np.mean(yes_nsc)
     
-    # then we split this by three regions: agreement + single crossing
-    yes_sc = (yes) & (sc)
-    # agreement +  non-single crossing:
-    yes_nsc = (yes) & ~(sc)   
-    # disagreement
-    no = ~(yes)
-    # the reason is that single crossing has much simpler algorithm
+        if share_nsc > 0: print('Not single crossing in {}, singe crossing in {} cases'.format(share_nsc,share_sc))
     
-    
-    share_sc = np.mean(yes_sc)
-    share_nsc = np.mean(yes_nsc)
-    
-    if share_nsc > 0: print('Not single crossing in {}, singe crossing in {} cases'.format(share_nsc,share_sc))
-    
+        
+    else:
+        # disagreement
+        no=np.any((i_sf_expand<0) & (i_sm_expand<0),axis=-1)
+        yes=~(no)
+
     # these things still have nice shape
     
     # compute couple's value of divroce
@@ -335,41 +349,41 @@ def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
     
     
     
-    
-    # renegotiation for single crossing points
-    # note that this will be reshaped
-    
-    for yes_i, solver_i in zip([yes_sc,yes_nsc],[ind_sc,ind_no_sc]):
-        if not np.any(yes_i): continue
+    if Uni:
+        # renegotiation for single crossing points
+        # note that this will be reshaped
+        
+        for yes_i, solver_i in zip([yes_sc,yes_nsc],[ind_sc,ind_no_sc]):
+            if not np.any(yes_i): continue
+                
+            agree_this = agree[yes_i,:] # this is large matrix (??? x ntheta)
+                                             # where (???) is all combinations of 
+                                             # couple's characteristics that 
+                                             # give agreement + single crossing
+                                             
+            #thetagrid_fine = setup.thetagrid_fine
+            inds = solver_i(agree_this)  # finds indices of nearest positive element
+                                        # on a fine grid for theta
+            #inds2 = solver_j(agree_this)
+            #assert np.allclose(inds,inds2)
             
-        agree_this = agree[yes_i,:] # this is large matrix (??? x ntheta)
-                                         # where (???) is all combinations of 
-                                         # couple's characteristics that 
-                                         # give agreement + single crossing
-                                         
-        #thetagrid_fine = setup.thetagrid_fine
-        inds = solver_i(agree_this)  # finds indices of nearest positive element
-                                    # on a fine grid for theta
-        #inds2 = solver_j(agree_this)
-        #assert np.allclose(inds,inds2)
-        
-        i_theta_out[yes_i,:] = inds # indexing is a bit mad :(
-        
-        
-        v_out[yes_i,:] = np.take_along_axis(vy[yes_i,:],inds,axis=1)
-        vf_out[yes_i,:] = np.take_along_axis(vfy[yes_i,:],inds,axis=1)
-        vm_out[yes_i,:] = np.take_along_axis(vmy[yes_i,:],inds,axis=1)
-        
-        
-    try:
-        assert np.all(vf_out>=vf_div_full - 1e-4)
-    except:
-        print('Warning: broken is {} cases'.format(np.sum(vf_out<=vf_div_full - 1e-4)))
-        
-    try:
-        assert np.all(vm_out>=vm_div_full - 1e-4)
-    except:
-        print('Warning: broken is {} cases'.format(np.sum(vm_out<=vm_div_full - 1e-4)))
+            i_theta_out[yes_i,:] = inds # indexing is a bit mad :(
+            
+            
+            v_out[yes_i,:] = np.take_along_axis(vy[yes_i,:],inds,axis=1)
+            vf_out[yes_i,:] = np.take_along_axis(vfy[yes_i,:],inds,axis=1)
+            vm_out[yes_i,:] = np.take_along_axis(vmy[yes_i,:],inds,axis=1)
+            
+            
+        try:
+            assert np.all(vf_out>=vf_div_full - 1e-4)
+        except:
+            print('Warning: broken is {} cases'.format(np.sum(vf_out<=vf_div_full - 1e-4)))
+            
+        try:
+            assert np.all(vm_out>=vm_div_full - 1e-4)
+        except:
+            print('Warning: broken is {} cases'.format(np.sum(vm_out<=vm_div_full - 1e-4)))
         
     
     #assert not np.any(yes_nsc), 'Single crossing does not hold!' # FIXME: remove this later

@@ -14,7 +14,7 @@ from ren_mar_alt import v_mar_igrid
 
 def ev_single(setup,V,sown,female,t,trim_lvl=0.001):
     # expected value of single person meeting a partner with a chance pmeet
-    pmeet = setup.pars['pmeet']
+    pmeet = setup.pars['pmeet_t'][t]
     
     EV_meet, dec = ev_single_meet2(setup,V,sown,female,t,trim_lvl=trim_lvl)
     

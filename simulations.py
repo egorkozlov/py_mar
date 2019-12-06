@@ -197,7 +197,7 @@ class Agents:
                 
                 # meet a partner
                 
-                pmeet = self.setup.pars['pmeet']
+                pmeet = self.setup.pars['pmeet_t'][t] # TODO: check timing
                 
                 
                 matches = self.M.decisions[t]['Female, single']

@@ -22,7 +22,7 @@ class ModelSetup(object):
         p = dict()       
         T = 10
         Tret = 5 # first period when the agent is retired
-        p['T'] =        T
+        p['T'] = T
         p['Tret'] = Tret
         p['sig_zf_0']  = 0.25
         p['sig_zf']    = 0.25
@@ -32,16 +32,16 @@ class ModelSetup(object):
         p['n_zm_t']      = [5]*Tret + [1]*(T-Tret)
         p['sigma_psi_init'] = 0.28
         p['sigma_psi']   = 0.11
-        p['R'] = 1.04
+        p['R_t'] = [1.04]*T
         p['n_psi_t']     = [12]*T
-        p['beta'] = 0.95
+        p['beta_t'] = [0.95]*T
         p['A'] = 1.2 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.0      
         p['sig_partner_a'] = 0.1
         p['sig_partner_z'] = 0.2
         p['m_bargaining_weight'] = 0.5
-        p['pmeet'] = 0.4
+        p['pmeet_t'] = [0.4]*T
         p['wret'] = 0.8
         
         
@@ -501,7 +501,7 @@ class ModelSetup(object):
         
         for l in range(len(self.ls_levels)):
            
-            income_g[...,l] = self.pars['R']*s + np.exp(zm) +  np.exp(zf)*self.ls_levels[l]
+            income_g[...,l] = self.pars['R_t'][-1]*s + np.exp(zm) +  np.exp(zf)*self.ls_levels[l]
             kf, km = self.c_mult(theta)        
             u_couple_g[...,l] = self.u_mult(theta)*self.u(income_g[...,l])+self.ls_utilities[l] 
             util_g[...,l]=self.ls_utilities[l] 
@@ -541,7 +541,7 @@ class ModelSetup(object):
 
     def vs_last(self,s,z,return_cs=False):  
         # generic last period utility for single agent
-        income = self.pars['R']*s+np.exp(z)
+        income = self.pars['R_t'][-1]*s+np.exp(z)
         if return_cs:
             return self.u(income).astype(np.float32), income.astype(np.float32), np.zeros_like(income.astype(np.float32))
         else:

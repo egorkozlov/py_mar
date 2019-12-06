@@ -23,8 +23,8 @@ def v_iter_single(setup,t,EV,female):
     
     zvals = setup.exogrid.zf_t[t] if female else setup.exogrid.zm_t[t]
     sigma = setup.pars['crra_power']
-    beta = setup.pars['beta']
-    R = setup.pars['R']
+    beta = setup.pars['beta_t'][t]
+    R = setup.pars['R_t'][t]
     
     
     #money = R*agrid_s[:,None] + np.exp(zvals[None,:])

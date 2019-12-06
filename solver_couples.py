@@ -54,9 +54,9 @@ def v_iter_couple(setup,t,EV_tuple,nbatch=nbatch_def,verbose=False):
     zf  = setup.exogrid.all_t[t][:,0]
     zm  = setup.exogrid.all_t[t][:,1]
     psi = setup.exogrid.all_t[t][:,2]
-    beta = setup.pars['beta']
+    beta = setup.pars['beta_t'][t]
     sigma = setup.pars['crra_power']
-    R = setup.pars['R']
+    R = setup.pars['R_t'][t]
 
 
     

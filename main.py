@@ -18,6 +18,13 @@ if __name__ == '__main__':
     except:
         pass
     
+    #If on server set Display
+    from platform import system
+    
+    if system() != 'Darwin' and system() != 'Windows':   
+        import os
+        os.environ['QT_QPA_PLATFORM']='offscreen'
+ 
     #import numpy as np
     from model import Model
     from setup import DivorceCosts

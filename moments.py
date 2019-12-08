@@ -40,7 +40,7 @@ def moment(agents,draw=True):
     
     for t in range(agents.setup.pars['T']):
         for l in range(agents.setup.nls):
-            print(t,l,np.mean(agents.ils_i[agents.state[:,t]==2,t]==l))
+            
             flsm[t]=flsm[t]+np.mean(agents.ils_i[agents.state[:,t]==2,t]==l)*agents.setup.ls_levels[l]
             flsc[t]=flsc[t]+np.mean(agents.ils_i[agents.state[:,t]==3,t]==l)*agents.setup.ls_levels[l]
             

@@ -10,7 +10,7 @@ from rw_approximations import rouw_nonst
 from mc_tools import combine_matrices_two_lists, int_prob,cut_matrix
 from scipy.stats import norm
 from collections import namedtuple
-from optimizers import build_s_grid, sgrid_on_agrid
+from optimizers import build_s_grid
 from gridvec import VecOnGrid
 
 from scipy import sparse

@@ -321,7 +321,9 @@ class Agents:
                 thts = thts_all[isc,iall,itht]
                 thts_orig = thts_orig_all[isc,iall,itht]
                 
-                i_stay = decision['Decision'][isc,iall]
+                dec = decision['Decision']
+                
+                i_stay = dec[isc,iall] if dec.ndim==2 else dec[isc,iall,itht]
 
                 
                 
@@ -370,7 +372,7 @@ class Agents:
                     self.itheta[ind[i_ren],t+1] = thts[i_ren]
                     
                     
-                    tg = self.setup.v_thetagrid_fine
+                    #tg = self.setup.v_thetagrid_fine
                     
                     #Distinguish between marriage and cohabitation
                     if sname == "Couple, M":

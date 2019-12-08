@@ -117,8 +117,8 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
                 
                 #Marriage
 
-                Vf_div[j,zf,zm,t]=dec[max(t-1,0)]['Couple, M']['Divorce'][0][j,i,0]
-                Vm_div[j,zf,zm,t]=dec[max(t-1,0)]['Couple, M']['Divorce'][1][j,i,0]
+                Vf_div[j,zf,zm,t]=dec[max(t-1,0)]['Couple, M']['Divorce'][0][j,i]
+                Vm_div[j,zf,zm,t]=dec[max(t-1,0)]['Couple, M']['Divorce'][1][j,i]
                
     #Single Women
     for t in range(T):

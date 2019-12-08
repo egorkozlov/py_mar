@@ -49,29 +49,46 @@ def v_ren_new(setup,V,marriage,t):
     
     sc = setup.agrid_c
     
-    
-    Vf_divorce, Vm_divorce = v_div_byshare(
+    # values of divorce
+    vf_n, vm_n = v_div_byshare(
         setup, dc, t, sc, share_f, share_m,
         V['Male, single']['V'], V['Female, single']['V'],
         izf, izm, cost_fem=dc.money_lost_f, cost_mal=dc.money_lost_m)
     
-    assert Vf_divorce.ndim == Vm_divorce.ndim == 2
+    assert vf_n.ndim == vm_n.ndim == 2
     
-    Vval_postren,VMval_postren,VFval_postren=\
-    np.zeros([3,len(des),np.size(V['Couple, M']['V'],0),np.size(V['Couple, M']['V'],1),np.size(V['Couple, M']['V'],2)])
     
-
+    
+    
+    expnd = lambda x : setup.v_thetagrid_fine.apply(x,axis=2)
+    
+    if marriage:
+        # if couple is married already
+        v_y = expnd(V['Couple, M']['V'])
+        vf_y = expnd(V['Couple, M']['VF'])
+        vm_y = expnd(V['Couple, M']['VM'])
+    else:
+        # stay in cohabitation
+        v_y_coh = expnd(V['Couple, C']['V'])
+        vf_y_coh = expnd(V['Couple, C']['VF'])
+        vm_y_coh = expnd(V['Couple, C']['VM'])
+        # switch to marriage
+        v_y_mar = expnd(V['Couple, M']['V'])
+        vf_y_mar = expnd(V['Couple, M']['VF'])
+        vm_y_mar = expnd(V['Couple, M']['VM'])
+        # switching criterion
+        switch = (vf_y_mar>vf_y_coh) & (vm_y_mar>vm_y_coh)
+        #switch = (v_y_mar > v_y_coh)
         
-    for ist,sname in enumerate(des):
-  
-        Vval_postren[ist,], VMval_postren[ist,], VFval_postren[ist,] = V[sname]['V'], V[sname]['VM'], V[sname]['VF']
+        v_y = switch*v_y_mar + (~switch)*v_y_coh
+        vf_y = switch*vf_y_mar + (~switch)*vf_y_coh
+        vm_y = switch*vm_y_mar + (~switch)*vm_y_coh
+        
+        
+    result  = v_ren_core_interp(setup,v_y, vf_y, vm_y, vf_n, vm_n,is_unil)
     
-    assert np.size(Vval_postren,1) == np.size(Vm_divorce,0)
-    assert np.size(Vval_postren,2) == np.size(Vm_divorce,1)
-    
-    
-    result  = v_ren_core_interp(setup,Vval_postren, VFval_postren, VMval_postren, Vf_divorce, Vm_divorce)
-    
+    if not marriage:
+        result['Cohabitation preferred to Marriage'] = ~switch
     
     return result
 
@@ -109,11 +126,6 @@ def v_mar_igrid(setup,t,V,icouple,ind_or_inds,*,female,marriage,interpolate=True
     VMval_single, VFval_single = V['Male, single']['V'], V['Female, single']['V']
     VMval_postren, VFval_postren = V[coup]['VM'][icouple,...], V[coup]['VF'][icouple,...]
     
-    # type conversion
-    #VMval_single, VFval_single, VMval_postren, VFval_postren = \
-    #    [np.float32(x) for x in  
-    #     (VMval_single, VFval_single, VMval_postren, VFval_postren)]
-    
     
     
     # substantial part
@@ -141,8 +153,6 @@ def v_mar_igrid(setup,t,V,icouple,ind_or_inds,*,female,marriage,interpolate=True
         Vfs = s_partner_v.apply(VFval_single,axis=0,take=(1,izf))
         
         
-        
-    
     
     expnd = lambda x : setup.v_thetagrid_fine.apply(x,axis=2)
     
@@ -156,18 +166,7 @@ def v_mar_igrid(setup,t,V,icouple,ind_or_inds,*,female,marriage,interpolate=True
     vfout, vmout, nbsout, agree, ithetaout = mar_mat(*ins)
     
 
-    #assert np.allclose(vfout,vfout2)
-    #assert np.allclose(vmout,vmout2)
-    #assert np.allclose(nbsout,nbsout2)
-    #assert np.allclose(ithetaout,ithetaout2)
-    
-    
-    
     return {'Values': (vfout, vmout), 'NBS': nbsout, 'theta': ithetaout, 'Decision':agree}
-
-##### technical part
-    
-
 
 
 
@@ -220,56 +219,13 @@ def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,Vmale,Vfemale,izf,izm,cost_f
     return Vf_divorce, Vm_divorce
 
 
-def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
+def v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral):
+    # this takes values of value functions (interpolated on fine grid)
+    # and does discrete 
+    # version of renegotiation.
+    
+    
     # compute the surplus
-    
-    # interpolate it
-    tgf = setup.v_thetagrid_fine
-    
-    #Get relevant variables if marriage or cohabitation
-    v_y_check=np.copy(v_y)
-    if np.size(v_y,0)==1:
-        v_y=v_y[0]
-        vf_y=vf_y[0]
-        vm_y=vm_y[0] 
-        
-        
-        vy, vfy, vmy = (tgf.apply(x,axis=2) for x in (v_y,vf_y,vm_y) )
-        
-        #Unilateral or Bilateral Divorce
-        Uni=setup.div_costs.unilateral_divorce
-        
-    else:
-        
-        assert np.size(v_y,0)==2
-        
-        #TODO try when both agree
-        
-        #Cohabitation
-        v_y0=v_y[0]
-        vf_y0=vf_y[0]
-        vm_y0=vm_y[0] 
-        
-        #Marriage
-        v_y1=v_y[1]
-        vf_y1=vf_y[1]
-        vm_y1=vm_y[1] 
-        
-        
-        vy0, vfy0, vmy0 = (tgf.apply(x,axis=2) for x in (v_y0,vf_y0,vm_y0) )
-        vy1, vfy1, vmy1 = (tgf.apply(x,axis=2) for x in (v_y1,vf_y1,vm_y1) )
-        
-        #Foreach theta_fine, get marriage or cohabitation
-        #inde = (vy0>=vy1)            
-        indef = (vfy0<vfy1)
-        indem = (vmy0<vmy1)
-        inde=1-indem*indef
-        vy=inde*vy0+(1-inde)*vy1
-        vfy=inde*vfy0+(1-inde)*vfy1
-        vmy=inde*vmy0+(1-inde)*vmy1
-        
-        #Explicit that separation is unilateral
-        Uni=setup.sep_costs.unilateral_divorce
     
     
     
@@ -279,6 +235,42 @@ def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
     exp_shape = sf_expand.shape
     
     
+    # compute couple's value of divroce
+    # make large arrays with values for each theta
+    
+    tgrid = setup.thetagrid_fine[None,None,:]
+    ntheta = tgrid.size
+    vf_div_full = np.broadcast_to(vf_n[...,None],exp_shape)
+    vm_div_full = np.broadcast_to(vm_n[...,None],exp_shape)
+    v_div_full = vf_div_full*tgrid + vm_div_full*(1-tgrid)
+    
+    
+    
+    # now do divorce
+    
+    
+    
+    v_out, vf_out, vm_out = vy.copy(), vfy.copy(), vmy.copy()
+    i_theta_out = np.broadcast_to(np.arange(ntheta,dtype=np.int16)[None,None,:],exp_shape).copy()
+        
+    
+    if not unilateral:
+        # simple procedure
+        no = (sf_expand<0) & (sm_expand<0)
+        yes = ~no
+        v_out[no] = v_div_full[no]
+        vf_out[no] = vf_div_full[no]
+        vm_out[no] = vm_div_full[no] # this has full size (has theta on the last axis)
+        # therefore no ,:
+        
+        i_theta_out[no] = -1
+        
+        def r(x): return x.astype(np.float32)
+        
+        return {'Decision': yes, 'thetas': i_theta_out,
+                'Values': (r(v_out), r(vf_out), r(vm_out)),'Divorce':(vf_n,vm_n)}
+        
+    # the rest handles unilateral divorce
     
     
     
@@ -286,6 +278,17 @@ def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
     i_sf_expand = (sf_expand >= 0)
     i_sm_expand = (sm_expand >= 0)
     
+    
+    # agreement for all theta
+    agree = (i_sf_expand) & (i_sm_expand)
+    # any agreement     
+    yes = np.any(agree,axis=-1)
+    
+    
+    
+    # then we divide the agreement points for single crossing and 
+    # non-single crossing, as we need to handle renegotiation differently
+    #
     # check for single crossing
     # signle crossing from false to true
     d_sf = np.sum(np.diff(i_sf_expand.astype(int),axis=-1),axis=-1) 
@@ -297,107 +300,61 @@ def v_ren_core_interp(setup,v_y,vf_y,vm_y,vf_n,vm_n):
     sc_m = ((d_sm == -1) & (n_sm == 1)) | ((d_sm == 0) & (n_sm==0))
     sc = (sc_f) & (sc_m)
     
-    if Uni:
-        
-        # agreement for all theta
-        agree = (i_sf_expand) & (i_sm_expand)
-        # any agreement     
-        yes = np.any(agree,axis=-1)
-        
-        # then we split this by three regions: agreement + single crossing
-        yes_sc = (yes) & (sc)
-        # agreement +  non-single crossing:
-        yes_nsc = (yes) & ~(sc)   
-      
-        # disagreement
-        no = ~(yes)
-        
-        # the reason is that single crossing has much simpler algorithm  
-        share_sc = np.mean(yes_sc)
-        share_nsc = np.mean(yes_nsc)
+   
     
-        if share_nsc > 0: print('Not single crossing in {}, singe crossing in {} cases'.format(share_nsc,share_sc))
+    # agreement + single crossing
+    yes_sc = (yes) & (sc)
+    # agreement +  non-single crossing:
+    yes_nsc = (yes) & ~(sc)         
+    # disagreement
+    no = ~(yes)
     
-        
-    else:
-        # disagreement
-        no=np.any((i_sf_expand<0) & (i_sm_expand<0),axis=-1)
-        yes=~(no)
-
-    # these things still have nice shape
+    share_sc = np.mean(yes_sc)
+    share_nsc = np.mean(yes_nsc)
     
-    # compute couple's value of divroce
-    # make large arrays with values for each theta
+    if share_nsc > 0: print('Not single crossing in {}, singe crossing in {} cases'.format(share_nsc,share_sc))
     
-    tgrid = tgf.val[None,None,:]
-    vf_div_full = np.broadcast_to(vf_n[...,None],exp_shape)
-    vm_div_full = np.broadcast_to(vm_n[...,None],exp_shape)
-    v_div_full = vf_div_full*tgrid + vm_div_full*(1-tgrid)
-    #theta_full = np.broadcast_to(tgrid,full_shape)
-    
-    
-    v_out, vf_out, vm_out = vy.copy(), vfy.copy(), vmy.copy()
-    
-    i_theta_out = -1*np.ones(exp_shape,dtype=np.int16) # grid position 
-    
-    
-    # fill disagreement
-    
+    # disagreement values
     v_out[no,:]  = v_div_full[no,:]
     vf_out[no,:] = vf_div_full[no,:]
     vm_out[no,:] = vm_div_full[no,:]
+    i_theta_out[no,:] = -1
     
-    
-    
-    if Uni:
-        # renegotiation for single crossing points
-        # note that this will be reshaped
+    # agreement values
+    for yes_i, solver_i in zip([yes_sc,yes_nsc],[ind_sc,ind_no_sc]):
+        if not np.any(yes_i): continue
+            
+        agree_this = agree[yes_i,:] # this is large matrix (??? x ntheta)
+                                         # where (???) is all combinations of 
+                                         # couple's characteristics that 
+                                         # give agreement + single crossing
+                                         
+        inds = solver_i(agree_this)  # finds indices of nearest positive element
+                                    # on a fine grid for theta
+                                    # this is the most substantial part
         
-        for yes_i, solver_i in zip([yes_sc,yes_nsc],[ind_sc,ind_no_sc]):
-            if not np.any(yes_i): continue
-                
-            agree_this = agree[yes_i,:] # this is large matrix (??? x ntheta)
-                                             # where (???) is all combinations of 
-                                             # couple's characteristics that 
-                                             # give agreement + single crossing
-                                             
-            #thetagrid_fine = setup.thetagrid_fine
-            inds = solver_i(agree_this)  # finds indices of nearest positive element
-                                        # on a fine grid for theta
-            #inds2 = solver_j(agree_this)
-            #assert np.allclose(inds,inds2)
-            
-            i_theta_out[yes_i,:] = inds # indexing is a bit mad :(
-            
-            
-            v_out[yes_i,:] = np.take_along_axis(vy[yes_i,:],inds,axis=1)
-            vf_out[yes_i,:] = np.take_along_axis(vfy[yes_i,:],inds,axis=1)
-            vm_out[yes_i,:] = np.take_along_axis(vmy[yes_i,:],inds,axis=1)
-            
-            
-        try:
-            assert np.all(vf_out>=vf_div_full - 1e-4)
-        except:
-            print('Warning: broken is {} cases'.format(np.sum(vf_out<=vf_div_full - 1e-4)))
-            
-        try:
-            assert np.all(vm_out>=vm_div_full - 1e-4)
-        except:
-            print('Warning: broken is {} cases'.format(np.sum(vm_out<=vm_div_full - 1e-4)))
+        i_theta_out[yes_i,:] = inds # indexing is a bit mad :(
+        
+        v_out[yes_i,:] = np.take_along_axis(vy[yes_i,:],inds,axis=1)
+        vf_out[yes_i,:] = np.take_along_axis(vfy[yes_i,:],inds,axis=1)
+        vm_out[yes_i,:] = np.take_along_axis(vmy[yes_i,:],inds,axis=1)
+        
+        
+    if not np.all(vf_out>=vf_div_full - 1e-4):
+        print('Warning: f is broken is {} cases'.format(np.sum(vf_out<=vf_div_full - 1e-4)))
+        
+    if not np.all(vm_out>=vm_div_full - 1e-4):
+        print('Warning: m is broken is {} cases'.format(np.sum(vm_out<=vm_div_full - 1e-4)))
         
     
-    #assert not np.any(yes_nsc), 'Single crossing does not hold!' # FIXME: remove this later
     def r(x): return x.astype(np.float32)
     
-    if np.size(v_y_check,0)==1:
-        return {'Decision': yes, 'thetas': i_theta_out,
-                'Values': (r(v_out), r(vf_out), r(vm_out)),'Divorce':(vf_div_full,vm_div_full)}
-    else:
-        return {'Decision': yes, 'thetas': i_theta_out,
-                'Values': (r(v_out), r(vf_out), r(vm_out)),'Cohabitation preferred to Marriage': inde}
-
-
-
+   
+    
+    return {'Decision': yes, 'thetas': i_theta_out,
+            'Values': (r(v_out), r(vf_out), r(vm_out)),'Divorce':(vf_n,vm_n)}
+    
+    
 @njit
 def ren_loop(vy,vfy,vmy,vfn,vmn,thtgrid):
     print('hi!')

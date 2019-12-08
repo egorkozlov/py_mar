@@ -16,7 +16,7 @@ def ev_single(setup,V,sown,female,t,trim_lvl=0.001):
     # expected value of single person meeting a partner with a chance pmeet
     pmeet = setup.pars['pmeet_t'][t]
     
-    EV_meet, dec = ev_single_meet2(setup,V,sown,female,t,trim_lvl=trim_lvl)
+    EV_meet, dec = ev_single_meet(setup,V,sown,female,t,trim_lvl=trim_lvl)
     
     if female:
         M = setup.exogrid.zf_t_mat[t].T
@@ -28,7 +28,7 @@ def ev_single(setup,V,sown,female,t,trim_lvl=0.001):
     return (1-pmeet)*EV_nomeet + pmeet*EV_meet, dec
     
 
-def ev_single_meet2(setup,V,sown,female,t,trim_lvl=0.001):
+def ev_single_meet(setup,V,sown,female,t,trim_lvl=0.001):
     # computes expected value of single person meeting a partner
     
     # this creates potential partners and integrates over them
@@ -64,7 +64,7 @@ def ev_single_meet2(setup,V,sown,female,t,trim_lvl=0.001):
     
     for i in range(npart):
         
-        
+        # try marriage
         res_m = v_mar_igrid(setup,t,V,i_assets_c[:,i],inds,
                                  female=female,marriage=True)
         
@@ -73,9 +73,10 @@ def ev_single_meet2(setup,V,sown,female,t,trim_lvl=0.001):
         res_c = v_mar_igrid(setup,t,V,i_assets_c[:,i],inds,
                                  female=female,marriage=False)
         
-        
+        # try cohabitation
         (vfoutc, vmoutc), nprc, decc, thtc =  res_c['Values'], res_c['NBS'], res_c['Decision'], res_c['theta']
         
+        # choice is made based on Nash Surplus value
         i_mar = (nprm>=nprc) 
         
         if female:

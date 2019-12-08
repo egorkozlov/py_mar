@@ -18,7 +18,7 @@ def v_iter_single(setup,t,EV,female):
     agrid_s = setup.agrid_s
     sgrid_s = setup.sgrid_s
     
-    ind, p = setup.s_ind_s, setup.s_p_s
+    ind, p = setup.vsgrid_c.i, setup.vsgrid_c.wthis
     
     
     zvals = setup.exogrid.zf_t[t] if female else setup.exogrid.zm_t[t]

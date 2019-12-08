@@ -11,18 +11,18 @@ if __name__ == '__main__':
     
     
     #Clean Memory
+    
     try:
         from IPython import get_ipython
         get_ipython().magic('reset -f')
     except:
         pass
- 
+    
     #import numpy as np
     from model import Model
     from setup import DivorceCosts
   
     
-
     dc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.05,u_lost_f=0.05,eq_split=0.0)
     sc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.00,u_lost_f=0.00)
     

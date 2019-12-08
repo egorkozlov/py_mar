@@ -55,8 +55,6 @@ class ModelSetup(object):
             p[key] = value
         
         
-        
-        
         self.pars = p
         
        
@@ -72,7 +70,6 @@ class ModelSetup(object):
         
         
         #Cost of Divorce
-        #divorce_costs=DivorceCosts(assets_kept = 1.0,u_lost_m=0.02,u_lost_f=0.02,eq_split=0.0)
         if divorce_costs == 'Default':
             # by default the costs are set in the bottom
             self.div_costs = DivorceCosts()
@@ -86,7 +83,6 @@ class ModelSetup(object):
                 self.div_costs = divorce_costs
                 
         #Cost of Separation
-        #separation_costs=DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.00,u_lost_f=0.00)
         if separation_costs == 'Default':
             # by default the costs are set in the bottom
             self.sep_costs = DivorceCosts()
@@ -130,8 +126,6 @@ class ModelSetup(object):
             zfzm, zfzmmat = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], exogrid['zf_t_mat'], exogrid['zm_t_mat'])
             all_t, all_t_mat = combine_matrices_two_lists(zfzm,exogrid['psi_t'],zfzmmat,exogrid['psi_t_mat'])
             all_t_mat_sparse_T = [sparse.csc_matrix(D.T) if D is not None else None for D in all_t_mat]
-            
-            
             
             
             #Create a new bad version of transition matrix p(zf_t)
@@ -185,7 +179,7 @@ class ModelSetup(object):
         s_da_max = 0.1 # maximal step (creates more if not enough)
         
         self.sgrid_c = build_s_grid(self.agrid_c,s_between,s_da_min,s_da_max)
-        self.s_ind_c, self.s_p_c = sgrid_on_agrid(self.sgrid_c,self.agrid_c)
+        self.vsgrid_c = VecOnGrid(self.agrid_c,self.sgrid_c)
         
         #Grid Single
         self.amin_s = 0
@@ -195,10 +189,8 @@ class ModelSetup(object):
         #self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
         
         self.sgrid_s = build_s_grid(self.agrid_s,s_between,s_da_min,s_da_max)
-        self.s_ind_s, self.s_p_s = sgrid_on_agrid(self.sgrid_s,self.agrid_s)
+        self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)
         
-
-
         # grid for theta
         self.ntheta = 21
         self.thetamin = 0.01

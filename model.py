@@ -221,7 +221,7 @@ class Model(object):
         #Simulate the model
         self.agents = Agents(self)
         self.agents.simulate()
-        #moment(self.agents,True)
+        moment(self.agents,True)
         
         
         #return gassets,iexo,state,gtheta

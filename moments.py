@@ -24,6 +24,7 @@ def moment(agents,draw=True):
     iexo=agents.iexo
     state=agents.state
     theta_t=agents.setup.thetagrid_fine[agents.itheta]
+    setup = agents.setup
     
    
     #As a first thing we unpack assets and theta
@@ -35,15 +36,20 @@ def moment(agents,draw=True):
     ###########################################
     #Moments: FLS over time by Relationship
     ###########################################
-    flsm=np.zeros(agents.setup.pars['T'])
-    flsc=np.zeros(agents.setup.pars['T'])
+    
+    
+    flsm=np.ones(agents.setup.pars['T'])
+    flsc=np.ones(agents.setup.pars['T'])
+    
     
     for t in range(agents.setup.pars['T']):
-        for l in range(agents.setup.nls):
-            
-            flsm[t]=flsm[t]+np.mean(agents.ils_i[agents.state[:,t]==2,t]==l)*agents.setup.ls_levels[l]
-            flsc[t]=flsc[t]+np.mean(agents.ils_i[agents.state[:,t]==3,t]==l)*agents.setup.ls_levels[l]
-            
+        
+        pick = agents.state[:,t]==2        
+        if pick.any(): flsm[t] = np.array(setup.ls_levels)[agents.ils_i[pick,t]].mean()
+        pick = agents.state[:,t]==3
+        if pick.any(): flsc[t] = np.array(setup.ls_levels)[agents.ils_i[pick,t]].mean()
+        
+        
     ###########################################
     #Moments: Variables over Age
     ###########################################
@@ -54,9 +60,7 @@ def moment(agents,draw=True):
     
     
     
-        
-    
-    
+    print('relations')
     for ist,sname in enumerate(state_codes):
         for t in range(agents.setup.pars['T']):
             
@@ -89,40 +93,111 @@ def moment(agents,draw=True):
             
                print('Error: No relationship chosen')
                
-               
+              
+    print('spells new')
+
+
+    nspells = (state[:,1:]!=state[:,:-1]).astype(np.int).sum(axis=1).max() + 1
+    
+    state_beg = -1*np.ones((N,nspells),dtype=np.int8)
+    time_beg = -1*np.ones((N,nspells),dtype=np.bool)
+    did_end = np.zeros((N,nspells),dtype=np.bool)
+    state_end = -1*np.ones((N,nspells),dtype=np.int8)
+    time_end = -1*np.ones((N,nspells),dtype=np.bool)
+    sp_length = -1*np.ones((N,nspells),dtype=np.int16)
+    is_spell = np.zeros((N,nspells),dtype=np.bool)
+    
+    state_beg[:,0] = 0 # THIS ASSUMES EVERYONE STARTS AS SINGLE
+    time_beg[:,0] = 0 
+    sp_length[:,0] = 1
+    is_spell[:,0] = True
+    ispell = np.zeros((N,),dtype=np.int8)
+    
+    for t in range(1,agents.setup.pars['T']):
+        ichange = (state[:,t-1] != state[:,t])
+        sp_length[~ichange,ispell[~ichange]] += 1
+        
+        if not np.any(ichange): continue
+        
+        did_end[ichange,ispell[ichange]] = True
+        
+        is_spell[ichange,ispell[ichange]+1] = True
+        sp_length[ichange,ispell[ichange]+1] = 1 # if change then 1 year right
+        state_end[ichange,ispell[ichange]] = state[ichange,t]
+        time_end[ichange,ispell[ichange]] = t-1
+        state_beg[ichange,ispell[ichange]+1] = state[ichange,t]  
+        time_beg[ichange,ispell[ichange]] = t
+        
+        ispell[ichange] = ispell[ichange]+1
+        
+        
+    allspells_beg = state_beg[is_spell]
+    allspells_len = sp_length[is_spell]
+    allspells_end = state_end[is_spell] # may be -1 if not ended
+    
+        
     ###########################################
     #Moments: Spells Creation
     ###########################################
-    spells_type=list()
-    spells_length=list()
-    spells_end=list()
+    #spells_type=list()
+    #spells_length=list()
+    #spells_end=list()
 
     #@njit
     #def loop(spells_type,spells_length,spells_end):
-    for n in range(N):
-        for ist in range(4):
-            for t in range(agents.setup.pars['T']-1):
-                
-                if t==0:
-                    leng=0
-                 
-                if (leng>=0) and (state[n,t]==ist): 
-                    leng=leng+1
-                
-                if (leng>0 and state[n,t]!=ist) or (t==agents.setup.pars['T']-2): 
-                   
-                    spells_type=[ist] + spells_type
-                    spells_length=[leng] + spells_length
-                    spells_end=[state[n,t]] + spells_end
-                    leng=0
-        
+    
+#    print('spells old')
+    
+#    for n in range(N):
+#        for ist in range(4):
+#            for t in range(agents.setup.pars['T']-1):
+#                
+#                if t==0:
+#                    leng=0 # I think we need to assign 1 in the first period
+                            
+#                 
+#                if (leng>=0) and (state[n,t]==ist): 
+#                    leng=leng+1
+#                
+#                if (leng>0 and state[n,t]!=ist) or (t==agents.setup.pars['T']-2): 
+#                   # I did not understand this logic, please look again
+#                   # as I understand we need to compare previous state with the 
+#                   # current one, though I do not see how this is done    
+#                   # (please elaborate, I might be wrong)
+#    
+#                    spells_type=[ist] + spells_type
+#                    spells_length=[leng] + spells_length
+#                    spells_end=[state[n,t]] + spells_end
+#                    leng=0
+#                    
+#                    
+#    
+    
      #   return spells_type,spells_length,spells_end
             
     #spells_type,spells_length,spells_end=loop(spells_type,spells_length,spells_end)
-    spells_type.reverse()
-    spells_length.reverse()
-    spells_end.reverse()
-    spells=np.array([np.array(spells_type),np.array(spells_length),np.array(spells_end)]).T
+    #spells_type.reverse()
+    #spells_length.reverse()
+    #spells_end.reverse()
+    #spells=np.array([np.array(spells_type),np.array(spells_length),np.array(spells_end)]).T
+    
+    
+    # TO FABIO: I did not understand the format of spells above. Please check.
+    # I think in your format if the spell did not end the 3rd column is equal
+    # to the first column, so I added this like
+    allspells_end[allspells_end==-1] = allspells_beg[allspells_end==-1] # FIXME
+    
+    spells = np.stack((allspells_beg,allspells_len,allspells_end),axis=1)
+    
+    
+    
+    
+    
+    print('end spells')
+   
+    # TO FABIO: I did not edit things anything past this point.
+    # Please look why my spells are different than yours. 
+    
     
     #Now divide spells by relationship nature
     
@@ -132,6 +207,9 @@ def moment(agents,draw=True):
         
         
         is_state= (spells[:,0]==ist)
+        
+        if not is_state.any(): continue
+            
         ind = np.where(is_state)[0]
         globals()['spells_t'+s]=spells[ind,:]
         is_state= (globals()['spells_t'+s][:,1]!=0)
@@ -201,7 +279,8 @@ def moment(agents,draw=True):
     hazm=np.array(hazm).T
     
     #Singles: Marriage vs. cohabitation transition
-    spells_s=np.append(spells_Femalesingle,spells_Malesingle,axis=0)
+    #spells_s=np.append(spells_Femalesingle,spells_Malesingle,axis=0)
+    spells_s = spells_Femalesingle
     cond=spells_s[:,2]>1
     spells_sc=spells_s[cond,2]
     condm=spells_sc==2

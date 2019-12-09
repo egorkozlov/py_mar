@@ -181,7 +181,7 @@ class Model(object):
             del v
         
     
-    def solve(self,Prof):
+    def solve(self,show_mem=False):
         T = self.setup.pars['T']
         self.V = list()
         self.decisions = list()
@@ -207,30 +207,28 @@ class Model(object):
             
 
             
-            if Prof:
+            if show_mem:
                 print('The size of V is {} giga'.format(asizeof(self.V)/1000000000))
                 print('The size of decisions is {} giga'.format(asizeof(self.decisions)/1000000000))
                 
         #del self.V,self.decisions    
            
-    def solve_sim(self,simulate=True,Prof=True):
+    def solve_sim(self,simulate=True,show_mem=True,draw_moments=True):
 
         #Solve the model
-        self.solve(Prof)
+        self.solve(show_mem=show_mem)
         if not simulate: return
-        #Simulate the model
         self.agents = Agents(self)
-        self.agents.simulate()
-        moment(self.agents,True)
+        self.agents.simulate()        
+        self.compute_moments(draw=draw_moments)
         
         
-        #return gassets,iexo,state,gtheta
-        
-    def graph(self,ai,zfi,zmi,psii,ti,thi):
-        
+    def graph(self,ai,zfi,zmi,psii,ti,thi):        
         #Draw some graph of Value and Policy Functions
-        V=graphs(self,ai,zfi,zmi,psii,ti,thi)
-        
+        V=graphs(self,ai,zfi,zmi,psii,ti,thi)        
         return V
       
+        
+    def compute_moments(self,draw=True):
+        moment(self,draw=draw)
     

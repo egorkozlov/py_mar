@@ -39,7 +39,7 @@ if __name__ == '__main__':
     
     graphs=True
     #gassets,iexo,state,gtheta=mdl.solve_sim()
-    mdl.solve_sim(simulate=True,Prof=True)
+    mdl.solve_sim(simulate=True)
     #gassets, iexo, state, gtheta = mdl.agents.gsavings_c, mdl.agents.iexo, mdl.agents.state, mdl.agents.gtheta
     mdl.time_statistics()
     

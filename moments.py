@@ -10,15 +10,15 @@ plots some graphs
 
 import numpy as np
 import matplotlib.pyplot as plt 
-from matplotlib.pyplot import plot, draw, show
+#from matplotlib.pyplot import plot, draw, show
 import matplotlib.backends.backend_pdf
-from numba import njit, vectorize
 
-def moment(agents,draw=True):
+def moment(mdl,draw=True):
 #This function compute moments coming from the simulation
 #Optionally it can also plot graphs about them. It is feeded with
 #matrixes coming from simulations
 
+    agents = mdl.agents
     #Import simulated values
     assets_t=agents.setup.agrid_c[agents.iassets]
     iexo=agents.iexo
@@ -26,7 +26,9 @@ def moment(agents,draw=True):
     theta_t=agents.setup.thetagrid_fine[agents.itheta]
     setup = agents.setup
     
-   
+    mdl.moments = dict()
+    
+    
     #As a first thing we unpack assets and theta
     N=len(state)
     
@@ -49,7 +51,11 @@ def moment(agents,draw=True):
         pick = agents.state[:,t]==3
         if pick.any(): flsc[t] = np.array(setup.ls_levels)[agents.ils_i[pick,t]].mean()
         
+    
         
+    mdl.moments['flsm'] = flsm
+    mdl.moments['flsc'] = flsc
+    
     ###########################################
     #Moments: Variables over Age
     ###########################################
@@ -93,6 +99,9 @@ def moment(agents,draw=True):
             
                print('Error: No relationship chosen')
                
+    mdl.moments['share single'] = relt[0,:]/N
+    mdl.moments['share mar'] = relt[2,:]/N
+    mdl.moments['share coh'] = relt[3,:]/N
               
     print('spells new')
 
@@ -210,11 +219,9 @@ def moment(agents,draw=True):
         
         if not is_state.any(): continue
             
-        ind = np.where(is_state)[0]
-        globals()['spells_t'+s]=spells[ind,:]
+        globals()['spells_t'+s]=spells[is_state,:]
         is_state= (globals()['spells_t'+s][:,1]!=0)
-        ind = np.where(is_state)[0]
-        globals()['spells_'+s]=globals()['spells_t'+s][ind,:]
+        globals()['spells_'+s]=globals()['spells_t'+s][is_state,:]
     
     
     ##################################
@@ -277,6 +284,12 @@ def moment(agents,draw=True):
         
     hazm.reverse()
     hazm=np.array(hazm).T
+    
+    
+    
+    mdl.moments['hazard sep'] = hazs
+    mdl.moments['hazard div'] = hazd
+    mdl.moments['hazard mar'] = hazm
     
     #Singles: Marriage vs. cohabitation transition
     #spells_s=np.append(spells_Femalesingle,spells_Malesingle,axis=0)

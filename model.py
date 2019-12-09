@@ -229,7 +229,7 @@ class Model(object):
     def graph(self,ai,zfi,zmi,psii,ti,thi):
         
         #Draw some graph of Value and Policy Functions
-        V=graphs(self.setup,self.V,self.decisions,ai,zfi,zmi,psii,ti,thi)
+        V=graphs(self,ai,zfi,zmi,psii,ti,thi)
         
         return V
       

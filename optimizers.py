@@ -43,55 +43,21 @@ def build_s_grid(agrid,n_between,da_min,da_max):
     return sgrid
 
 
-#@jit('Tuple((int32[:],float32[:]))(float64[:],float64[:])',nopython=True)
-def sgrid_on_agrid(sgrid,agrid):
-    
-    ind = np.empty(sgrid.size,dtype=np.int32)
-    p = np.empty(sgrid.size,dtype=np.float32)
-    # this uses the fact that both agrid and sgrid are sorted
-    # this returns indices and weights that are needed for interpolation of 
-    # something that is defined on agrid for values of sgrid
-    
-    # sgrid[i] = p[i]*agrid[ind[i]] + (1-p[i])*agrid[ind[i]+1]
-    
-    na = agrid.size
-    
-    i_next_a = 1
-    a_next, a_this = agrid[1], agrid[0]
-    
-    for i in range(sgrid.size):
-        s_this = sgrid[i]
-        while a_next < s_this and i_next_a < na-1:
-            a_this = agrid[i_next_a]
-            i_next_a += 1
-            a_next = agrid[i_next_a]
-    
-        
-        #assert s_this >= a_this
-        
-        ind[i] = i_next_a - 1        
-        p[i] = (a_next - s_this)/(a_next - a_this)
-        
-    return ind, p
-
-
-# the signature is not valid as EVin may be of variable size, multiple
-# signatures are advised if we need providing signatures
-#@jit('float32[:](int32[:],float32[:],float32[:])',nopython=True)
-def get_EVM(ind,p,EVin,use_cp=False):
-    
+def get_EVM(ind,wthis,EVin,use_cp=False):
+    # this essenitally doubles VecOnGrid.apply method
+    # but we cannot deprecate it unless we are sure VecOnGrid works on GPU 
+    # correctly
     mr = cp if use_cp else np
     
     ev_aux_shape  = EVin.shape[1:]
     shap = (ind.size,) + ev_aux_shape
     EVout = mr.empty(shap,mr.float32)
     
-    pb = p.reshape(((p.size,)+(1,)*len(ev_aux_shape)))
+    pb = wthis.reshape(((wthis.size,)+(1,)*len(ev_aux_shape)))
     EVout[:] = pb*EVin[ind,...] + (1-pb)*EVin[ind+1,...]    
+    
     return EVout
 
-
-    
 
 def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,ls,us,use_cp=ucp):
     # TODO: rewrite the description
@@ -109,11 +75,7 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,ls,us,use_cp=ucp):
         money = tuple((cp.asarray(x) for x in money))
         umult = cp.asarray(umult)
     
-    
-    
-    wf = money[1]
-    wm = money[2]
-    asset_income = money[0]
+    asset_income, wf, wm = money
     
     nexo = wf.size
     na = asset_income.size
@@ -155,8 +117,6 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,ls,us,use_cp=ucp):
     s_size = (1,ns,1)
     
     s_expanded = sgrid.reshape(s_size)
-    
-    
     
     
     tal = cp_take_along_axis if use_cp else np.take_along_axis
@@ -262,7 +222,6 @@ def v_optimize_single(money,sgrid,EV,sigma,beta,use_cp=ucp,return_ind=False):
         money,sgrid,EV = (cp.asarray(x) for x in (money,sgrid,EV))
     
     
-    
     assert money.ndim == EV.ndim
         
     assert (money.ndim == EV.ndim), 'Shape mismatch?'
@@ -298,10 +257,7 @@ def v_optimize_single(money,sgrid,EV,sigma,beta,use_cp=ucp,return_ind=False):
     tal = cp_take_along_axis if use_cp else np.take_along_axis
     
     V = u(c) + beta*tal(EV,i_opt,0)
-    #V2 = V_arr.max(axis=1)
-    #print('Maximum difference is {}'.format(np.max(np.abs(V2-V))))
-    
-    
+   
     
     if use_cp:
         ret = lambda x : cp.asnumpy(x)
@@ -316,7 +272,3 @@ def v_optimize_single(money,sgrid,EV,sigma,beta,use_cp=ucp,return_ind=False):
         return ret(V), ret(c), ret(s), ret(i_opt)
 
     
-
-'''
-
-'''

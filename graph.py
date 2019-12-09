@@ -12,64 +12,89 @@ from matplotlib.pyplot import plot, draw, show
 import matplotlib.backends.backend_pdf
 from ren_mar_alt import v_mar_igrid
 
+from ren_mar_alt import v_ren_new
 
 
 
-def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
+def v_reshape(setup,desc,field,V_by_t,Tmax):
+    # this reshapes V into many-dimensional object
+    if desc == "Couple, C" or desc == "Couple, M":
+        
+        v0 = V_by_t[0][desc][field]
+        shp_v0 = v0.shape
+        
+        tht_shape = (v0.ndim>2)*(shp_v0[-1],) # can be empty if no theta dimension
+        
+        shape = (shp_v0[0],setup.pars['n_zf_t'][0],setup.pars['n_zm_t'][0],setup.pars['n_psi_t'][0]) + tht_shape + (Tmax,)
+        out = np.empty(shape,v0.dtype)        
+        for t in range(Tmax):
+            vin = V_by_t[t][desc][field]
+            out[...,t] = vin.reshape(shape[:-1])
+    else:
+        shape = V_by_t[0][desc][field].shape + (Tmax,)
+        out = np.empty(shape,V_by_t[0][desc][field].dtype)
+        for t in range(Tmax):
+            vin = V_by_t[t][desc][field]
+            out[...,t] = vin
+    
+    return out
+            
+            
+
+
+
+
+def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     # Import Value Funcrtion previously saved on File
     #with open('name_model.pkl', 'rb') as file:
     #    (Packed,dec) = pickle.load(file)
         
+    Packed = mdl.V
+    setup = mdl.setup
+    dec = mdl.decisions
+    
     ################################################
     # Unpack Stuff to Make it easier to Visualize
     ################################################
     T = setup.pars['Tret']
     agrid = setup.agrid_c
     agrids = setup.agrid_s
-    zfg = setup.exogrid.zf_t[ti]
-    zmg = setup.exogrid.zm_t[ti]
     psig = setup.exogrid.psi_t[ti]
     vtoutf=np.zeros([T,len(agrids),len(psig)])
     thetf=np.zeros([T,len(agrids),len(psig)])
     thetf_c=np.zeros([T,len(agrids),len(psig)])
     vtoutm=np.zeros([T,len(agrids),len(psig)])
-    thetm=np.zeros([T,len(agrids),len(psig)])
-    thetm_c=np.zeros([T,len(agrids),len(psig)])
     vtoutf_c=np.zeros([T,len(agrids),len(psig)])
     vtoutm_c=np.zeros([T,len(agrids),len(psig)])
     inds=np.zeros(len(psig))
     
+    
+    # TODO: vectorize this part too (I do not understand what exactly it does...)
   
     # Here I get the renegotiated values
     for t in range(T):
-        for i in range(len(psig)):
         
-           
-            #p_mat = setup.part_mats['Female, single'][t].T 
-            #inds = np.where( np.any(p_mat>-1,axis=1 ) )[0]
-            inds[i]=setup.all_indices(t+1,(zfi,zmi,i))[0]
-        inds=np.array(inds,np.int64)
+        npsi = setup.pars['n_psi_t'][t+1]
+        inds = setup.all_indices(t+1,(zfi*np.ones(npsi,dtype=np.int16),zmi*np.ones(npsi,dtype=np.int16),np.arange(npsi,dtype=np.int16)))[0]
+        
         # cohabitation
         
-        ai_a = ai*np.ones_like(setup.agrid_s,dtype=np.int32)
+        ai_a = ai*np.ones_like(setup.agrid_s,dtype=np.int32) # these are assets of potential partner
         
         resc = v_mar_igrid(setup,t+1,Packed[t],ai_a,inds,female=True,marriage=False)
-        (vf_c,vm_c), nbs_c, decm, tht_c = resc['Values'], resc['NBS'], resc['Decision'], resc['theta']
+        (vf_c,vm_c), nbs_c, decc, tht_c = resc['Values'], resc['NBS'], resc['Decision'], resc['theta']
         
-        is_state=(tht_c==-1)
-        inde = np.where(is_state)
         tcv=setup.thetagrid_fine[tht_c]
-        tcv[inde[0],inde[1]]=None
+        tcv[tht_c==-1]=None
         
         # marriage
         resm = v_mar_igrid(setup,t,Packed[t],ai_a,inds,female=True,marriage=True)
         (vf_m,vm_m), nbs_m, decm, tht_m = resm['Values'], resm['NBS'], resm['Decision'], resm['theta']
         
-        is_state2=(tht_m==-1)
-        inde2 = np.where(is_state2)
+        
         tcm=setup.thetagrid_fine[tht_m]
-        tcm[inde2[0],inde2[1]]=None
-    
+        tcm[tht_m==-1]=None
+        
       
         #Cohabitation-Marriage Choice 
         i_mar = (nbs_m>=nbs_c) 
@@ -84,102 +109,67 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
         thetf[t,:,:]=thet_ft
         thetf_c[t,:,:]=tcv
         vtoutm[t,:,:]=vout_mt
-        #vtoutm_c[t,:,:]=vm_c
-        #thetm[t,:]=1.0-thet_ft
-        #thetm_c[t,:]=1.0-tht_c
             
         
         
-
-    V_ren_c,V_ren_m=np.empty([2,len(agrids)])
-    Vfs,cfs,sfs=np.empty([3,len(agrids), len(zfg),T])
-    Vms,cms,sms=np.empty([3,len(agrids), len(zmg),T])
-    Vf_div,Vm_div=np.empty([2,len(agrid), len(zfg),len(zmg),T])
-    Vm,Vfm,Vmm,cm,sm=np.empty([5,len(agrid), len(zfg),len(zmg),len(psig),T,setup.ntheta])# RVfm,RVmm,thfm,thmm,
-    Vc,Vfc,Vmc,cc,sc=np.empty([5,len(agrid), len(zfg),len(zmg),len(psig),T,setup.ntheta])#RVfc,RVmc,thfc,thmc,
-    thetam_R,thetac_R=np.empty([2,len(agrid), len(zfg),len(zmg),len(psig),T,len(setup.thetagrid_fine)])
-    flsm,flsc=np.empty([2,len(agrid), len(zfg),len(zmg),len(psig),T,setup.ntheta],dtype=np.int32)
-    
     #Renegotiated Value
-    for a in range(len(agrid)):
-        nex=setup.all_indices(t,(zfi,zmi,psii))[0]
-        inde=setup.theta_orig_on_fine[thi]
-        V_ren_c[a]=dec[max(ti-1,0)]['Couple, C']['Values'][0][a,nex,inde]
-        V_ren_m[a]=dec[max(ti-1,0)]['Couple, M']['Values'][0][a,nex,inde]
         
-    #Divorced Women and Men
-    for t in range(T):
-        for j in range(len(agrid)):
-            for i in range(setup.pars['nexo_t'][t]):
-                
-                #Get the indexes from zf,zm,psi
-                zf,zm,psi=setup.all_indices(t,i)[1:4]
-                
-                #Marriage
-
-                Vf_div[j,zf,zm,t]=dec[max(t-1,0)]['Couple, M']['Divorce'][0][j,i,0]
-                Vm_div[j,zf,zm,t]=dec[max(t-1,0)]['Couple, M']['Divorce'][1][j,i,0]
-               
-    #Single Women
-    for t in range(T):
-        for i in range(len(zfg)):
-            for j in range(len(agrids)):
-                Vfs[j,i,t]=Packed[t]['Female, single']['V'][j,i]
-                cfs[j,i,t]=Packed[t]['Female, single']['c'][j,i]
-                sfs[j,i,t]=Packed[t]['Female, single']['s'][j,i]
-                
-    #Single Men
-    for t in range(T):
-        for i in range(len(zmg)):
-            for j in range(len(agrids)):
-                Vms[j,i,t]=Packed[t]['Male, single']['V'][j,i]
-                cms[j,i,t]=Packed[t]['Male, single']['c'][j,i]
-                sms[j,i,t]=Packed[t]['Male, single']['s'][j,i]
-                
-    #Couples: Marriage+Cohabitation
-    for t in range(T):
-        for j in range(len(agrid)):
-            for i in range(setup.pars['nexo_t'][t]):
-                
-                #Get the indexes from zf,zm,psi
-                zf,zm,psi=setup.all_indices(t,i)[1:4]
-                
-                #Marriage
-                Vm[j,zf,zm,psi,t,]=Packed[t]['Couple, M']['V'][j,i,]
-                Vmm[j,zf,zm,psi,t,]=Packed[t]['Couple, M']['VM'][j,i,]
-                Vfm[j,zf,zm,psi,t,]=Packed[t]['Couple, M']['VF'][j,i,]
-                cm[j,zf,zm,psi,t,]=Packed[t]['Couple, M']['c'][j,i,]
-                sm[j,zf,zm,psi,t,]=Packed[t]['Couple, M']['s'][j,i,]
-                flsm[j,zf,zm,psi,t,]=Packed[t]['Couple, M']['fls'][j,i,]
-                #RVmm[j,zf,zm,psi,t]=vtoutm[t][j,i]
-                #RVfm[j,zf,zm,psi,t]=vtoutf[t][j,i]
-                #thmm[j,zf,zm,psi,t]=thetm[t][j,i]
-                #thfm[j,zf,zm,psi,t]=thetf[t][j,i]
-                
-                
-                #Cohabitation
-                Vc[j,zf,zm,psi,t,]=Packed[t]['Couple, C']['V'][j,i,]
-                Vmc[j,zf,zm,psi,t,]=Packed[t]['Couple, C']['VM'][j,i,]
-                Vfc[j,zf,zm,psi,t,]=Packed[t]['Couple, C']['VF'][j,i,]
-                cc[j,zf,zm,psi,t,]=Packed[t]['Couple, C']['c'][j,i,]
-                sc[j,zf,zm,psi,t,]=Packed[t]['Couple, C']['s'][j,i,]
-                flsc[j,zf,zm,psi,t,]=Packed[t]['Couple, C']['fls'][j,i,]
-                #RVmc[j,zf,zm,psi,t]=vtoutm_c[t][j,i]
-                #RVfc[j,zf,zm,psi,t]=vtoutf_c[t][j,i]
-                #thmc[j,zf,zm,psi,t]=thetm_c[t][j,i]
-                #thfc[j,zf,zm,psi,t]=thetf_c[t][j,i]
-                
-                #Renegotiated thetas-exit
-                is_state=(dec[min(t,T-2)]['Couple, M']['thetas'][j,i,]==-1)
-                inde = np.where(is_state)[0]
-                thetam_R[j,zf,zm,psi,t,]=setup.thetagrid_fine[dec[min(t,T-2)]['Couple, M']['thetas'][j,i,]]
-                thetam_R[j,zf,zm,psi,t,inde]=None
-                
-                is_state=(dec[min(t,T-2)]['Couple, C']['thetas'][j,i,]==-1)
-                inde = np.where(is_state)[0]
-                thetac_R[j,zf,zm,psi,t,]=setup.thetagrid_fine[dec[min(t,T-2)]['Couple, C']['thetas'][j,i,]]
-                thetac_R[j,zf,zm,psi,t,inde]=None
+    nex = setup.all_indices(max(ti-1,0),(zfi,zmi,psii))[0]
+    inde=setup.theta_orig_on_fine[thi]
     
+    # if ti = 0 it creates an object that was not used for the solutions, 
+    # as V in v_ren_new is the next period value function. ti-1 should be here.
+    V_ren_c = v_ren_new(setup,Packed[ti],False,ti-1,return_extra=True)[1]['Values'][0][np.arange(agrid.size),nex,inde]
+    V_ren_m = v_ren_new(setup,Packed[ti],True,ti-1,return_extra=True)[1]['Values'][0][np.arange(agrid.size),nex,inde]
+
+       
+    #Divorced Women and Men
+    
+   
+    # this thing assembles values of divorce / separation
+    
+    vals = [{'Couple, M':
+            v_ren_new(setup,Packed[t],True,t-1,return_vdiv_only=True),
+            'Couple, C':
+            v_ren_new(setup,Packed[t],False,t-1,return_vdiv_only=True),
+           }
+            for t in range(T)]
+       
+    
+    Vf_div = v_reshape(setup,'Couple, M','Value of Divorce, female',vals,T)[...,0,:]
+    Vm_div = v_reshape(setup,'Couple, M','Value of Divorce, male',vals,T)[...,0,:]
+    
+    
+    # I take index 0 as ipsi does not matter for this
+    
+    #Single Women
+            
+    Vfs, cfs, sfs = [v_reshape(setup,'Female, single',f,Packed,T)
+                        for f in ['V','c','s']]
+    
+    
+    Vms, cms, sms = [v_reshape(setup,'Male, single',f,Packed,T)
+                        for f in ['V','c','s']]
+                     
+    #Couples: Marriage+Cohabitation
+    
+    ithetam_R = v_reshape(setup,'Couple, M','thetas',dec,T-1)
+    
+    thetam_R = setup.thetagrid_fine[ithetam_R]
+    thetam_R[ithetam_R==-1] = None
+    
+    ithetac_R = v_reshape(setup,'Couple, C','thetas',dec,T-1)
+    thetac_R = setup.thetagrid_fine[ithetac_R]
+    thetac_R[ithetac_R==-1] = None
+    
+    
+    Vm, Vmm, Vfm, cm, sm, flsm = [v_reshape(setup,'Couple, M',f,Packed,T)
+                                    for f in ['V','VM','VF','c','s','fls']]
+    Vc, Vmc, Vfc, cc, sc, flsc = [v_reshape(setup,'Couple, C',f,Packed,T)
+                                    for f in ['V','VM','VF','c','s','fls']]
+    
+    
+
     
     #########################################
     # Additional Variables needed for graphs
@@ -213,12 +203,12 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     ########################################## 
     fig = plt.figure()
     f1=fig.add_subplot(2,1,1)
-    plt.plot(psig, Vm[ai,zfi,zmi,0:len(psig),ti,thi],'k',markersize=6, label='Couple Marriage')
-    #plt.plot(psig, Vc[ai,zfi,zmi,0:len(psig),ti,thi],'k',markersize=6, label='Couple Cohabitation')
-    plt.plot(psig, Vmm[ai,zfi,zmi,0:len(psig),ti,thi],'bo',markersize=6, label='Man, Marriage')
-    plt.plot(psig, Vmc[ai,zfi,zmi,0:len(psig),ti,thi],'b',linewidth=0.4, label='Man, Cohabitation')
-    plt.plot(psig, Vfc[ai,zfi,zmi,0:len(psig),ti,thi],'r',linewidth=0.4, label='Women, Cohabitation')
-    plt.plot(psig, Vfm[ai,zfi,zmi,0:len(psig),ti,thi],'r*',markersize=6,label='Women, Marriage')
+    plt.plot(psig, Vm[ai,zfi,zmi,0:len(psig),thi,ti],'k',markersize=6, label='Couple Marriage')
+    #plt.plot(psig, Vc[ai,zfi,zmi,0:len(psig),thi,ti],'k',markersize=6, label='Couple Cohabitation')
+    plt.plot(psig, Vmm[ai,zfi,zmi,0:len(psig),thi,ti],'bo',markersize=6, label='Man, Marriage')
+    plt.plot(psig, Vmc[ai,zfi,zmi,0:len(psig),thi,ti],'b',linewidth=0.4, label='Man, Cohabitation')
+    plt.plot(psig, Vfc[ai,zfi,zmi,0:len(psig),thi,ti],'r',linewidth=0.4, label='Women, Cohabitation')
+    plt.plot(psig, Vfm[ai,zfi,zmi,0:len(psig),thi,ti],'r*',markersize=6,label='Women, Marriage')
     plt.axvline(x=tre, color='b', linestyle='--', label='Treshold Single-Couple')
     #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral')
     plt.xlabel('Love')
@@ -236,8 +226,8 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     graphm=[None] * len(psig)
     for i in range(len(psig)):
        
-        graphc[i]=setup.ls_levels[flsc[ai,zfi,zmi,i,ti,thi]]
-        graphm[i]=setup.ls_levels[flsm[ai,zfi,zmi,i,ti,thi]]
+        graphc[i]=setup.ls_levels[flsc[ai,zfi,zmi,i,thi,ti]]
+        graphm[i]=setup.ls_levels[flsm[ai,zfi,zmi,i,thi,ti]]
 
     plt.plot(psig, graphm,'k',markersize=6, label='Marriage')
     plt.plot(psig, graphc,'r*',markersize=6,label='Cohabitation')
@@ -257,8 +247,8 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     graphm=[None] * setup.pars['n_zf_t'][ti]
     
     for i in range(setup.pars['n_zf_t'][ti]):
-        graphc[i]=setup.ls_levels[flsc[ai,i,zmi,psii,ti,thi]]
-        graphm[i]=setup.ls_levels[flsm[ai,i,zmi,psii,ti,thi]]
+        graphc[i]=setup.ls_levels[flsc[ai,i,zmi,psii,thi,ti]]
+        graphm[i]=setup.ls_levels[flsm[ai,i,zmi,psii,thi,ti]]
     
     plt.plot(range(setup.pars['n_zf_t'][ti]),graphm,'k',markersize=6, label='Marriage')
     plt.plot(range(setup.pars['n_zf_t'][ti]), graphc,'r*',markersize=6,label='Cohabitation')
@@ -278,8 +268,8 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     graphm=[None] * len(setup.thetagrid)
     
     for i in range(len(setup.thetagrid)):
-        graphc[i]=setup.ls_levels[flsc[ai,zfi,zmi,psii,ti,i]]
-        graphm[i]=setup.ls_levels[flsm[ai,zfi,zmi,psii,ti,i]]
+        graphc[i]=setup.ls_levels[flsc[ai,zfi,zmi,psii,i,ti]]
+        graphm[i]=setup.ls_levels[flsm[ai,zfi,zmi,psii,i,ti]]
     
     plt.plot(setup.thetagrid,graphm,'k',markersize=6, label='Marriage')
     plt.plot(setup.thetagrid, graphc,'r*',markersize=6,label='Cohabitation')
@@ -298,8 +288,8 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     surpW = [None] * len(psig)
    
     for i in range(len(psig)):
-        surpM[i]=max(Vmm[ai,zfi,zmi,i,ti,thi]-Vmc[ai,zfi,zmi,i,ti,thi],0.0)
-        surpW[i]=max(Vfm[ai,zfi,zmi,i,ti,thi]-Vfc[ai,zfi,zmi,i,ti,thi],0.0)
+        surpM[i]=max(Vmm[ai,zfi,zmi,i,thi,ti]-Vmc[ai,zfi,zmi,i,thi,ti],0.0)
+        surpW[i]=max(Vfm[ai,zfi,zmi,i,thi,ti]-Vfc[ai,zfi,zmi,i,thi,ti],0.0)
 
     
     #Graph for the Surplus
@@ -322,10 +312,10 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     ########################################## 
     fig = plt.figure()
     f6=fig.add_subplot(2,1,1)
-    plt.plot(agrid, Vmm[0:len(agrid),zfi,zmi,psii,ti,thi],'bo',markersize=6,markevery=5, label='Man, Marriage')
-    plt.plot(agrid, Vmc[0:len(agrid),zfi,zmi,psii,ti,thi],'b',linewidth=0.4, label='Man, Cohabitation')
-    plt.plot(agrid, Vfc[0:len(agrid),zfi,zmi,psii,ti,thi],'r',linewidth=0.4, label='Women, Cohabitation')
-    plt.plot(agrid, Vfm[0:len(agrid),zfi,zmi,psii,ti,thi],'r*',markersize=6,markevery=5,label='Women, Marriage')
+    plt.plot(agrid, Vmm[0:len(agrid),zfi,zmi,psii,thi,ti],'bo',markersize=6,markevery=5, label='Man, Marriage')
+    plt.plot(agrid, Vmc[0:len(agrid),zfi,zmi,psii,thi,ti],'b',linewidth=0.4, label='Man, Cohabitation')
+    plt.plot(agrid, Vfc[0:len(agrid),zfi,zmi,psii,thi,ti],'r',linewidth=0.4, label='Women, Cohabitation')
+    plt.plot(agrid, Vfm[0:len(agrid),zfi,zmi,psii,thi,ti],'r*',markersize=6,markevery=5,label='Women, Marriage')
     #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral')
     plt.ylabel('Utility')
     plt.xlabel('Assets')
@@ -342,8 +332,8 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     surpW = [None] * len(agrid)
    
     for i in range(len(agrid)):
-        surpM[i]=max(Vmm[i,zfi,zmi,psii,ti,thi]-Vmc[i,zfi,zmi,psii,ti,thi],0.0)
-        surpW[i]=max(Vfm[i,zfi,zmi,psii,ti,thi]-Vfc[i,zfi,zmi,psii,ti,thi],0.0)
+        surpM[i]=max(Vmm[i,zfi,zmi,psii,thi,ti]-Vmc[i,zfi,zmi,psii,thi,ti],0.0)
+        surpW[i]=max(Vfm[i,zfi,zmi,psii,thi,ti]-Vfc[i,zfi,zmi,psii,thi,ti],0.0)
 
     
     #Graph for the Surplus
@@ -366,8 +356,8 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     ########################################## 
     fig = plt.figure()
     f8=fig.add_subplot(2,1,1)
-    #plt.plot(agrid, Vm[0:len(agrid),zfi,zmi,psii,ti,thi],'bo',markersize=4, label='Before Ren M')
-    #plt.plot(agrid, Vc[0:len(agrid),zfi,zmi,psii,ti,thi],'r*',markersize=2,label='Before Ren C')
+    #plt.plot(agrid, Vm[0:len(agrid),zfi,zmi,psii,thi,ti],'bo',markersize=4, label='Before Ren M')
+    #plt.plot(agrid, Vc[0:len(agrid),zfi,zmi,psii,thi,ti],'r*',markersize=2,label='Before Ren C')
     plt.plot(agrid, V_ren_c,'y', markersize=4,label='After Ren C')
     plt.plot(agrid, V_ren_m,'k', linestyle='--',markersize=4, label='After Ren M')
     #plt.plot(agrid, Vm_div[0:len(agrid),zfi,zmi,ti],'b',markersize=2, label='Male Divorce') 
@@ -383,9 +373,9 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     ########################################## 
     fig = plt.figure()
     f9=fig.add_subplot(2,1,1)
-    plt.plot(agrid, cm[0:len(agrid),zfi,zmi,psii,ti,thi],'k',markevery=1, label='Marriage')
-    plt.plot(agrid, cc[0:len(agrid),zfi,zmi,psii,ti,thi],'r',linestyle='--',markevery=1, label='Cohabitation')
-    #plt.plot(agrid, sc[0:len(agrid),zfi,zmi,psii,ti,thi],'k',linewidth=2.0,linestyle='--', label='Cohabitation')
+    plt.plot(agrid, cm[0:len(agrid),zfi,zmi,psii,thi,ti],'k',markevery=1, label='Marriage')
+    plt.plot(agrid, cc[0:len(agrid),zfi,zmi,psii,thi,ti],'r',linestyle='--',markevery=1, label='Cohabitation')
+    #plt.plot(agrid, sc[0:len(agrid),zfi,zmi,psii,thi,ti],'k',linewidth=2.0,linestyle='--', label='Cohabitation')
     #plt.plot(agrids, cms[0:len(agrids),zmi,ti],'b',linewidth=2.0,label='Men, Single')
     #plt.plot(agrids, cfs[0:len(agrids),zfi,ti],'r',linewidth=2.0,linestyle='--', label='Women, Single')
     #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral')
@@ -401,8 +391,8 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     ########################################## 
     fig = plt.figure()
     f10=fig.add_subplot(2,1,1)
-    plt.plot(agrid, sm[0:len(agrid),zfi,zmi,psii,ti,thi],'ko',markersize=6,markevery=1, label='Marriage')
-    plt.plot(agrid, sc[0:len(agrid),zfi,zmi,psii,ti,thi],'r*',markersize=6,markevery=1, label='Cohabitation')
+    plt.plot(agrid, sm[0:len(agrid),zfi,zmi,psii,thi,ti],'ko',markersize=6,markevery=1, label='Marriage')
+    plt.plot(agrid, sc[0:len(agrid),zfi,zmi,psii,thi,ti],'r*',markersize=6,markevery=1, label='Cohabitation')
     #plt.plot(agrid, agrid,'k',linewidth=1.0,linestyle='--')
     #plt.plot(agrids, sms[0:len(agrids),zmi,ti],'b',linewidth=2.0,label='Men, Single')
     #plt.plot(agrids, sfs[0:len(agrids),zfi,ti],'r',linewidth=2.0,linestyle='--', label='Women, Single')
@@ -419,10 +409,10 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     ########################################## 
     fig = plt.figure()
     f11=fig.add_subplot(2,1,1)
-    plt.plot(setup.thetagrid, Vmm[ai,zfi,zmi,psii,ti,0:len(setup.thetagrid)],'bo',markersize=6, label='Man, Marriage')
-    plt.plot(setup.thetagrid, Vmc[ai,zfi,zmi,psii,ti,0:len(setup.thetagrid)],'b',linewidth=0.4, label='Man, Cohabitation')
-    plt.plot(setup.thetagrid, Vfc[ai,zfi,zmi,psii,ti,0:len(setup.thetagrid)],'r',linewidth=0.4, label='Women, Cohabitation')
-    plt.plot(setup.thetagrid, Vfm[ai,zfi,zmi,psii,ti,0:len(setup.thetagrid)],'r*',markersize=6,label='Women, Marriage')
+    plt.plot(setup.thetagrid, Vmm[ai,zfi,zmi,psii,0:len(setup.thetagrid),ti],'bo',markersize=6, label='Man, Marriage')
+    plt.plot(setup.thetagrid, Vmc[ai,zfi,zmi,psii,0:len(setup.thetagrid),ti],'b',linewidth=0.4, label='Man, Cohabitation')
+    plt.plot(setup.thetagrid, Vfc[ai,zfi,zmi,psii,0:len(setup.thetagrid),ti],'r',linewidth=0.4, label='Women, Cohabitation')
+    plt.plot(setup.thetagrid, Vfm[ai,zfi,zmi,psii,0:len(setup.thetagrid),ti],'r*',markersize=6,label='Women, Marriage')
     #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral')
     plt.ylabel('Utility')
     plt.xlabel('Pareto Weight-Women')
@@ -438,8 +428,8 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     surpW = [None] * T
    
     for i in range(T):
-        surpM[i]=max(Vmm[ai,zfi,zmi,psii,i,thi]-Vmc[ai,zfi,zmi,psii,i,thi],0.0)
-        surpW[i]=max(Vfm[ai,zfi,zmi,psii,i,thi]-Vfc[ai,zfi,zmi,psii,i,thi],0.0)
+        surpM[i]=max(Vmm[ai,zfi,zmi,psii,thi,i]-Vmc[ai,zfi,zmi,psii,thi,i],0.0)
+        surpW[i]=max(Vfm[ai,zfi,zmi,psii,thi,i]-Vfc[ai,zfi,zmi,psii,thi,i],0.0)
 
     
     #Graph for the Surplus
@@ -521,11 +511,11 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     fig = plt.figure()
     fig15 = fig.add_subplot(2,1,1)
     plt.plot(psig, zero,'k',linewidth=1)
-    plt.plot(psig,  thetam_R[ai,zfi,zmi,0:len(psig),ti,0],'b',linewidth=1.5, label='Theta Marriage')
-    plt.plot(psig,  thetac_R[ai,zfi,zmi,0:len(psig),ti,0],'r', linestyle='--',linewidth=1.5, label='Theta Cohabitation')
+    plt.plot(psig,  thetam_R[ai,zfi,zmi,0:len(psig),0,ti],'b',linewidth=1.5, label='Theta Marriage')
+    plt.plot(psig,  thetac_R[ai,zfi,zmi,0:len(psig),0,ti],'r', linestyle='--',linewidth=1.5, label='Theta Cohabitation')
     for j in range(0, len(setup.thetagrid_fine), 10): 
-        plt.plot(psig,  thetam_R[ai,zfi,zmi,0:len(psig),ti,j],'b',linewidth=1.5)
-        plt.plot(psig,  thetac_R[ai,zfi,zmi,0:len(psig),ti,j],'r', linestyle='--',linewidth=1.5)
+        plt.plot(psig,  thetam_R[ai,zfi,zmi,0:len(psig),j,ti],'b',linewidth=1.5)
+        plt.plot(psig,  thetac_R[ai,zfi,zmi,0:len(psig),j,ti],'r', linestyle='--',linewidth=1.5)
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=2, fontsize='x-small')
     plt.xlabel('Love')
@@ -538,7 +528,7 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     fig = plt.figure()
     fig16 = fig.add_subplot(2,1,1)
     #plt.plot(psig, zero,'k',linewidth=1)
-    plt.plot(setup.thetagrid,  sm[ai,zfi,zmi,psii,ti,0:len(setup.thetagrid)],'b',linewidth=1.5, label='Savings Marriage')
+    plt.plot(setup.thetagrid,  sm[ai,zfi,zmi,psii,0:len(setup.thetagrid),ti],'b',linewidth=1.5, label='Savings Marriage')
     #plt.plot(setup.thetagrid,  sc[ai,zfi,zmi,psii,ti,0:len(setup.thetagrid)],'r', linestyle='--',linewidth=1.5, label='Savings Cohabitation')
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=1, fontsize='x-small')
@@ -553,11 +543,11 @@ def graphs(setup,Packed,dec,ai,zfi,zmi,psii,ti,thi):
     fig = plt.figure()
     fig17 = fig.add_subplot(2,1,1)
     #plt.plot(psig, zero,'k',linewidth=1)
-    plt.plot(agrid,  thetam_R[0:len(agrid),zfi,zmi,psii,ti,0],'b',linewidth=1.5, label='Theta Marriage')
-    plt.plot(agrid,  thetac_R[0:len(agrid),zfi,zmi,psii,ti,0],'r', linestyle='--',linewidth=1.5, label='Theta Cohabitation')
+    plt.plot(agrid,  thetam_R[0:len(agrid),zfi,zmi,psii,0,ti],'b',linewidth=1.5, label='Theta Marriage')
+    plt.plot(agrid,  thetac_R[0:len(agrid),zfi,zmi,psii,0,ti],'r', linestyle='--',linewidth=1.5, label='Theta Cohabitation')
     for j in range(0, len(setup.thetagrid_fine), 10): 
-        plt.plot(agrid,  thetam_R[0:len(agrid),zfi,zmi,psii,ti,j],'b',linewidth=1.5)
-        plt.plot(agrid,  thetac_R[0:len(agrid),zfi,zmi,psii,ti,j],'r', linestyle='--',linewidth=1.5)
+        plt.plot(agrid,  thetam_R[0:len(agrid),zfi,zmi,psii,j,ti],'b',linewidth=1.5)
+        plt.plot(agrid,  thetac_R[0:len(agrid),zfi,zmi,psii,j,ti],'r', linestyle='--',linewidth=1.5)
     #plt.plot(setup.thetagrid,  sc[ai,zfi,zmi,psii,ti,0:len(setup.thetagrid)],'r', linestyle='--',linewidth=1.5, label='Savings Cohabitation')
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=2, fontsize='x-small')

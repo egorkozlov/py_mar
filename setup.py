@@ -10,7 +10,7 @@ from rw_approximations import rouw_nonst
 from mc_tools import combine_matrices_two_lists, int_prob,cut_matrix
 from scipy.stats import norm
 from collections import namedtuple
-from optimizers import build_s_grid, sgrid_on_agrid
+from optimizers import build_s_grid
 from gridvec import VecOnGrid
 
 from scipy import sparse
@@ -20,15 +20,15 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()       
-        T = 10
-        Tret = 7 # first period when the agent is retired
+        T = 4
+        Tret = 3 # first period when the agent is retired
         p['T'] = T
         p['Tret'] = Tret
         p['sig_zf_0']  = 0.25
         p['sig_zf']    = 0.25
-        p['n_zf_t']      = [5]*Tret + [1]*(T-Tret)
+        p['n_zf_t']      = [7]*Tret + [1]*(T-Tret)
         p['sig_zm_0']  = 0.25
-        p['sig_zm']    = 0.25
+        p['sig_zm']    = 0.15
         p['n_zm_t']      = [5]*Tret + [1]*(T-Tret)
         p['sigma_psi_init'] = 0.28
         p['sigma_psi']   = 0.11
@@ -55,8 +55,6 @@ class ModelSetup(object):
             p[key] = value
         
         
-        
-        
         self.pars = p
         
        
@@ -72,7 +70,6 @@ class ModelSetup(object):
         
         
         #Cost of Divorce
-        #divorce_costs=DivorceCosts(assets_kept = 1.0,u_lost_m=0.02,u_lost_f=0.02,eq_split=0.0)
         if divorce_costs == 'Default':
             # by default the costs are set in the bottom
             self.div_costs = DivorceCosts()
@@ -86,7 +83,6 @@ class ModelSetup(object):
                 self.div_costs = divorce_costs
                 
         #Cost of Separation
-        #separation_costs=DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.00,u_lost_f=0.00)
         if separation_costs == 'Default':
             # by default the costs are set in the bottom
             self.sep_costs = DivorceCosts()
@@ -132,8 +128,6 @@ class ModelSetup(object):
             all_t_mat_sparse_T = [sparse.csc_matrix(D.T) if D is not None else None for D in all_t_mat]
             
             
-            
-            
             #Create a new bad version of transition matrix p(zf_t)
             
             
@@ -172,7 +166,7 @@ class ModelSetup(object):
             #assert False
             
         #Grid Couple
-        self.na = 60
+        self.na = 40
         self.amin = 0
         self.amax =8
         self.agrid_c = np.linspace(self.amin,self.amax,self.na)
@@ -185,7 +179,7 @@ class ModelSetup(object):
         s_da_max = 0.1 # maximal step (creates more if not enough)
         
         self.sgrid_c = build_s_grid(self.agrid_c,s_between,s_da_min,s_da_max)
-        self.s_ind_c, self.s_p_c = sgrid_on_agrid(self.sgrid_c,self.agrid_c)
+        self.vsgrid_c = VecOnGrid(self.agrid_c,self.sgrid_c)
         
         #Grid Single
         self.amin_s = 0
@@ -195,12 +189,10 @@ class ModelSetup(object):
         #self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
         
         self.sgrid_s = build_s_grid(self.agrid_s,s_between,s_da_min,s_da_max)
-        self.s_ind_s, self.s_p_s = sgrid_on_agrid(self.sgrid_s,self.agrid_s)
+        self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)
         
-
-
         # grid for theta
-        self.ntheta = 21
+        self.ntheta = 15
         self.thetamin = 0.01
         self.thetamax = 0.99
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta)

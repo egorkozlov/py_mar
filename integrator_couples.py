@@ -16,8 +16,8 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True):
     
     
     out = v_ren_new(setup,Vpostren,marriage,t)
-    #_Vren2 = out.pop('Values') # THIS REMOVES VALUES FROM OUT ASSUMING WE DO NOT NEED THEM
-    _Vren2=out['Values']
+    _Vren2 = out.pop('Values') 
+    #_Vren2=out['Values']
     dec = out
     
     
@@ -53,7 +53,6 @@ def ev_couple_exo(setup,Vren,t,use_sparse=True,down=False):
     
     nl = len(setup.exogrid.all_t_mat_by_l_spt)
     
-    # TODO: why is it t-1 here...
     na, nexo, ntheta = setup.na, setup.pars['nexo_t'][t], setup.ntheta 
     
     

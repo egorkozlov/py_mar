@@ -11,6 +11,7 @@ if __name__ == '__main__':
     
     
     #Clean Memory
+    
     try:
         from IPython import get_ipython
         get_ipython().magic('reset -f')
@@ -29,12 +30,12 @@ if __name__ == '__main__':
     from setup import DivorceCosts
   
     
-
-    dc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.1,u_lost_f=0.3,eq_split=1.0)
+    dc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.05,u_lost_f=0.05,eq_split=0.0)
     sc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.00,u_lost_f=0.00)
-    #Solve the model
+    
+    
     mdl = Model(iterator_name='default-timed',
-                divorce_costs=dc,separation_costs=sc)
+                divorce_costs=dc,separation_costs=sc,sigma_psi=0.2)
     
     graphs=True
     #gassets,iexo,state,gtheta=mdl.solve_sim()
@@ -52,7 +53,7 @@ if __name__ == '__main__':
         zfi=0
         zmi=4
         psii=5
-        ti=0
+        ti=1
         thi=10
         
         #Actual Graphs

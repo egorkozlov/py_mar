@@ -19,7 +19,7 @@ from gridvec import VecOnGrid
 
 ##### main part
 
-def v_ren_new(setup,V,marriage,t):
+def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False):
     # this returns value functions for couple that entered the period with
     # (s,Z,theta) from the grid and is allowed to renegotiate them or breakup
     # 
@@ -31,11 +31,9 @@ def v_ren_new(setup,V,marriage,t):
     if marriage:
         dc = setup.div_costs
         is_unil = dc.unilateral_divorce # whether to do unilateral divorce at all
-        des=['Couple, M']
     else:
         dc = setup.sep_costs
         is_unil = dc.unilateral_divorce # whether to do unilateral divorce at all
-        des=['Couple, C','Couple, M']
     
     
     ind, izf, izm, ipsi = setup.all_indices(t+1)
@@ -54,6 +52,12 @@ def v_ren_new(setup,V,marriage,t):
         setup, dc, t, sc, share_f, share_m,
         V['Male, single']['V'], V['Female, single']['V'],
         izf, izm, cost_fem=dc.money_lost_f, cost_mal=dc.money_lost_m)
+    
+    
+    if return_vdiv_only:
+        return {'Value of Divorce, male': vm_n,
+                'Value of Divorce, female': vf_n}
+    
     
     assert vf_n.ndim == vm_n.ndim == 2
     
@@ -85,12 +89,21 @@ def v_ren_new(setup,V,marriage,t):
         vm_y = switch*vm_y_mar + (~switch)*vm_y_coh
         
         
-    result  = v_ren_core_interp(setup,v_y, vf_y, vm_y, vf_n, vm_n,is_unil)
+    result  = v_ren_core_interp(setup,v_y, vf_y, vm_y, vf_n, vm_n, is_unil)
     
     if not marriage:
         result['Cohabitation preferred to Marriage'] = ~switch
+        
+        
     
-    return result
+        
+    extra = {'Values':result['Values'],
+             'Value of Divorce, male': vm_n, 'Value of Divorce, female': vf_n}
+    
+    if not return_extra:
+        return result
+    else:
+        return result, extra
 
 
 

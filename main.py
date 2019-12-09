@@ -53,7 +53,7 @@ if __name__ == '__main__':
         zfi=0
         zmi=4
         psii=5
-        ti=0
+        ti=1
         thi=10
         
         #Actual Graphs

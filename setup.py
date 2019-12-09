@@ -20,15 +20,15 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()       
-        T = 10
-        Tret = 7 # first period when the agent is retired
+        T = 4
+        Tret = 3 # first period when the agent is retired
         p['T'] = T
         p['Tret'] = Tret
         p['sig_zf_0']  = 0.25
         p['sig_zf']    = 0.25
-        p['n_zf_t']      = [5]*Tret + [1]*(T-Tret)
+        p['n_zf_t']      = [7]*Tret + [1]*(T-Tret)
         p['sig_zm_0']  = 0.25
-        p['sig_zm']    = 0.25
+        p['sig_zm']    = 0.15
         p['n_zm_t']      = [5]*Tret + [1]*(T-Tret)
         p['sigma_psi_init'] = 0.28
         p['sigma_psi']   = 0.11
@@ -166,7 +166,7 @@ class ModelSetup(object):
             #assert False
             
         #Grid Couple
-        self.na = 60
+        self.na = 40
         self.amin = 0
         self.amax =8
         self.agrid_c = np.linspace(self.amin,self.amax,self.na)
@@ -192,7 +192,7 @@ class ModelSetup(object):
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)
         
         # grid for theta
-        self.ntheta = 21
+        self.ntheta = 15
         self.thetamin = 0.01
         self.thetamax = 0.99
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta)

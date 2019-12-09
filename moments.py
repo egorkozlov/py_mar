@@ -101,7 +101,7 @@ def moment(agents,draw=True):
     #def loop(spells_type,spells_length,spells_end):
     for n in range(N):
         for ist in range(4):
-            for t in range(agents.setup.pars['T']-1):
+            for t in range(agents.setup.pars['T']):
                 
                 if t==0:
                     leng=0
@@ -109,7 +109,7 @@ def moment(agents,draw=True):
                 if (leng>=0) and (state[n,t]==ist): 
                     leng=leng+1
                 
-                if (leng>0 and state[n,t]!=ist) or (t==agents.setup.pars['T']-2): 
+                if (leng>0 and state[n,t]!=ist) or (t==agents.setup.pars['T']-1): 
                    
                     spells_type=[ist] + spells_type
                     spells_length=[leng] + spells_length

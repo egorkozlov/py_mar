@@ -77,9 +77,9 @@ if __name__ == '__main__':
         
         fls_ratio = np.mean(mdl.moments['flsm'][1:Tret])/np.mean(mdl.moments['flsc'][1:Tret])
         
-        haz_sep = mdl.moments['hazard sep'][0]
-        haz_div = mdl.moments['hazard div'][0]
-        haz_mar = mdl.moments['hazard mar'][0]
+        haz_sep = np.max(mdl.moments['hazard sep'][0:2])
+        haz_div = np.max(mdl.moments['hazard div'][0:2])
+        haz_mar = np.max(mdl.moments['hazard mar'][0:2])
         
         coh_ret = mdl.moments['share coh'][Tret-1]
         mar_ret = mdl.moments['share mar'][Tret-1]
@@ -87,7 +87,7 @@ if __name__ == '__main__':
         resid = [0.0]
         resid += [(coh_ret - 0.1)**2]
         resid += [(mar_ret - 0.8)**2]
-        resid += [((marcoh_ratio - 1.1)**2)*(marcoh_ratio<1.1)]
+        #resid += [((marcoh_ratio - 1.1)**2)*(marcoh_ratio<1.1)]
         resid += [((fls_ratio - 0.8)**2)*(fls_ratio > 0.8)]
         resid += [((haz_mar - 0.15)**2)]
         resid += [(haz_sep - 0.2)**2]
@@ -106,7 +106,7 @@ if __name__ == '__main__':
         print('')
         print('')
         print('At retirement {:.4f} mar and {:.4f} cohab'.format(mar_ret,coh_ret))
-        print('All-t ratio of marriages to cohabitation is {:.4f}'.format(marcoh_ratio))
+        print('All-t ratio fls of marriages to cohabitation is {:.4f}'.format(fls_ratio))
         print('Hazard of sep is {:.4f}, hazard of div is {:.4f}'.format(haz_sep,haz_div))        
         print('Hazard of Marriage is {:.4f}'.format(haz_mar))
         print('Calibration residual is {:.4f}'.format(out))
@@ -124,10 +124,10 @@ if __name__ == '__main__':
     def distance_pso1(particle):
         return -mdl_resid( particle.position() )
 
-    x0 = np.array([0.05,0.05,0.15,0.5,0.1])
-    lb= np.array([0.01,0.005,0.015,0.4,0.01])
-    ub= np.array([0.1,0.3,0.45,1.0,0.4])
-    
+    x0 = np.array([0.05,0.01,0.02,0.7,0.25])
+    lb= x0*0.5#np.array([0.01,0.005,0.015,0.4,0.01])
+    ub= x0*2.0#np.array([0.1,0.3,0.45,1.0,0.4])
+    ub[3]=min(ub[3],1.0)
    
     print('')
     print('')

@@ -41,8 +41,10 @@ class ModelSetup(object):
         p['sig_partner_a'] = 0.1
         p['sig_partner_z'] = 0.4
         p['m_bargaining_weight'] = 0.5
-        p['pmeet_t'] = [0.6]*T
+        p['pmeet'] = 0.5
+        p['pmeet_t'] = [p['pmeet']]*T
         p['wret'] = 0.8
+        p['uls'] = 0.3
         
         
         p['f_wage_trend'] = [0.0 + 0.00*min(t,Tret) + 0.00*(min(t,Tret)**2) for t in range(T)]
@@ -64,7 +66,7 @@ class ModelSetup(object):
         
         # female labor supply
         self.ls_levels = [0.5,1.0]
-        self.ls_utilities = [0.3,0.0] 
+        self.ls_utilities = [p['uls'],0.0] 
         self.ls_pdown = [0.5,0.0]
         self.nls = len(self.ls_levels)
         

@@ -174,6 +174,7 @@ class VecOnGrid(object):
         # of self.i is self.wthis and probability of self.i+1 is self.wnext
         
         if shocks is None:
+            print('Warning: fix the seed please')
             shocks = np.random.random_sample(self.val.shape)
             
         out = self.i

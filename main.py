@@ -28,7 +28,7 @@ if __name__ == '__main__':
     import numpy as np
     from model import Model
     from setup import DivorceCosts
-  
+    from scipy.optimize import minimize
     
 
             
@@ -45,90 +45,101 @@ if __name__ == '__main__':
     import xlwt 
     from xlwt import Workbook 
    
-    #File that gives some info on the go
-    f = open("iterations","a").close()
-    # Workbook is created 
-    wb = Workbook() 
     
-    # add_sheet is used to create sheet. 
-    sheet1 = wb.add_sheet('Sheet 1', cell_overwrite_ok=True) 
-    sheet1.write(0, 0, 'Bilateral Divorce')
-    sheet1.write(0, 1, 'sigma_psi') 
-    sheet1.write(0, 2, 'sigma_psi_init') 
-    sheet1.write(0, 3, 'u_cost') 
-    sheet1.write(0, 4, '% coh before ret')
-    sheet1.write(0, 5, '% mar berfore ret')
-    sheet1.write(0, 6, 'hazd[average]')
-    sheet1.write(0, 7, 'hazm[average]')
-    sheet1.write(0, 8, 'hazs[average]')
-    sheet1.write(0, 9, 'flsm')
-    sheet1.write(0, 10, 'flsc')
-    sheet1.write(0, 11, '% coh mean')
-    sheet1.write(0, 12, '% mar mean')
-    
-    
-    
-    
-    row=0
-    for i in range(len(sigma_psi_g)):
-        for j in range(len(sigma_psi_init_g)):
-            for k in range(len(di_co_g)):
-                for h in bila:
-                
-                
-
-                    row=row+1
-                    
-                    f = open("iterations.txt","w")
-                    f.write('{}'.format(row))
-                    dc = DivorceCosts(unilateral_divorce=h,assets_kept = 1.0,u_lost_m=di_co_g[k],u_lost_f=di_co_g[k],eq_split=0.0)
-                    sc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.00,u_lost_f=0.00)
-                    mdl = Model(iterator_name='default',
-                                divorce_costs=dc,separation_costs=sc,sigma_psi=sigma_psi_g[i],sigma_psi_init=sigma_psi_init_g[j])
-                    
-                    graphs=True
-                    #gassets,iexo,state,gtheta=mdl.solve_sim()
-                    mdl.solve_sim(simulate=True)
-                    #gassets, iexo, state, gtheta = mdl.agents.gsavings_c, mdl.agents.iexo, mdl.agents.state, mdl.agents.gtheta
-                    
-                    Tret = mdl.setup.pars['Tret']
-                    
-                    #Write results on spreadsheet
-                    sheet1.write(row, 0, '{}'.format(h)) 
-                    sheet1.write(row, 1, '{}'.format(sigma_psi_g[i])) 
-                    sheet1.write(row, 2, '{}'.format(sigma_psi_init_g[j])) 
-                    sheet1.write(row, 3, '{}'.format(di_co_g[k])) 
-                    sheet1.write(row, 4, '{}'.format(mdl.moments['share coh'][Tret-1])) 
-                    sheet1.write(row, 5, '{}'.format(mdl.moments['share mar'][Tret-1])) 
-                    sheet1.write(row, 6, '{}'.format(np.mean(mdl.moments['hazard div']))) 
-                    sheet1.write(row, 7, '{}'.format(np.mean(mdl.moments['hazard mar']))) 
-                    sheet1.write(row, 8, '{}'.format(np.mean(mdl.moments['hazard sep'])))
-                    sheet1.write(row, 9, '{}'.format(np.mean(mdl.moments['flsm'][1:-1])))
-                    sheet1.write(row, 10, '{}'.format(np.mean(mdl.moments['flsc'][1:-1])))
-                    sheet1.write(row, 11, '{}'.format(np.mean(mdl.moments['share coh'][:Tret]))) 
-                    sheet1.write(row, 12, '{}'.format(np.mean(mdl.moments['share mar'][:Tret]))) 
-                
-
-               
-    wb.save("model_parameters.xls") 
-    f.close()           
-    #Graphs Here
-    
-    
-    #Indexes for the graphs
-    if graphs:
-        ai=0
-        zfi=0
-        zmi=4
-        psii=5
-        ti=1
-        thi=10
+    def mdl_resid(x):
         
-        #Actual Graphs
-        mdl.graph(ai,zfi,zmi,psii,ti,thi)
+        ulost = x[0]
+        sigma_psi = np.exp(x[1])
+        sigma_psi_init = np.exp(x[2])
         
-        #If you plan to use graphs only once, deselect below to save space on disk
-        #os.remove('name_model.pkl') 
+
+        dc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=0.0)
+        sc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.00,u_lost_f=0.00)
+        mdl = Model(iterator_name='default',divorce_costs=dc,separation_costs=sc,sigma_psi=sigma_psi,sigma_psi_init=sigma_psi_init)
+        
+        mdl.solve_sim(simulate=True)
+        
+        Tret = mdl.setup.pars['Tret']
+        
+        
+        
+        
+        mean_mar = np.mean(mdl.moments['share mar'][1:Tret])
+        mean_coh = np.mean(mdl.moments['share coh'][1:Tret])
+        
+        marcoh_ratio = mean_mar / mean_coh
+        
+        fls_ratio = np.mean(mdl.moments['flsm'][1:Tret])/np.mean(mdl.moments['flsc'][1:Tret])
+        
+        haz_sep = np.mean(mdl.moments['hazard sep'])
+        haz_div = np.mean(mdl.moments['hazard div'])
+        
+        haz_rat = haz_sep / haz_div
+        
+        coh_ret = mdl.moments['share coh'][Tret-1]
+        mar_ret = mdl.moments['share mar'][Tret-1]
+        
+        resid = [0.0]
+        resid += [(coh_ret - 0.1)**2]
+        resid += [(mar_ret - 0.7)**2]
+        resid += [((marcoh_ratio - 1.1)**2)*(marcoh_ratio<1.1)]
+        resid += [((fls_ratio - 0.8)**2)*(fls_ratio > 0.8)]
+        resid += [((haz_rat - 2)**2)*(haz_rat < 2)]
+        resid += [(haz_sep - 0.2)**2]
+        resid += [(haz_div - 0.05)**2]
+        
+        print('')
+        print('')
+        print('Calibration report')
+        print('ulost = {} , sigma_psi = {}, sigma_psi_init = {}'.format(ulost,sigma_psi,sigma_psi_init))
+        print('')
+        print('')
+        print('At retirement {} mar and {} cohab'.format(mar_ret,coh_ret))
+        print('All-t ratio of marriages to cohabitation is {}'.format(marcoh_ratio))
+        print('Hazard of sep is {}, hazard of div is {}'.format(haz_sep,haz_div))        
+        print('Relative hazard of sep to div is {}'.format(haz_rat))
+        print('')
+        print('')
+        print('End of calibration report')
+        print('')
+        print('')
+        
+        
+        
+        resid = [v if not (np.isnan(v) or np.isinf(v)) else 1.0e6 for v in resid]
+        return np.sum(resid)
+    
+    
+    x0 = np.array([0.1,np.log(0.05),np.log(0.15)])
+    print('Initial value is {}'.format(mdl_resid(x0)))
+    print('')
+    print('')
+    print('minimizing...')
+    print('')
+    print('')
+    
+    
+    res = minimize(mdl_resid,x0,method='Nelder-Mead')
+    
+    print('x is {} and fun is {}'.format(res.x,res.fun))
+    
+    print('Final value is {}'.format(mdl_resid(res.x)))
+    
+    
+#    #Indexes for the graphs
+#    if graphs:
+#        ai=0
+#        zfi=0
+#        zmi=4
+#        psii=5
+#        ti=1
+#        thi=10
+#        
+#        #Actual Graphs
+#        mdl.graph(ai,zfi,zmi,psii,ti,thi)
+#        
+#        #If you plan to use graphs only once, deselect below to save space on disk
+#        #os.remove('name_model.pkl') 
     
 
 

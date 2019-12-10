@@ -61,7 +61,7 @@ class Agents:
             self.has_theta.append((name=='Couple, C' or name=='Couple, M'))
         
         
-        self.timer('Simulations, creation')
+        self.timer('Simulations, creation',verbose=self.verbose)
         self.ils_def = self.setup.nls - 1
         
         
@@ -77,7 +77,7 @@ class Agents:
             self.anext(t) 
             self.iexonext(t)            
             self.statenext(t)
-            self.timer('Simulations, iteration')
+            self.timer('Simulations, iteration',verbose=self.verbose)
         
         
         #return self.gsavings, self.iexo, self.state,self.gtheta

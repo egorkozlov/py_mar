@@ -48,7 +48,7 @@ class Model(object):
         return psutil.Process(os.getpid()).memory_info().rss/1e6
         
         
-    def time(self,whatisdone):
+    def time(self,whatisdone,verbose=True):
         
         total_time = default_timer() - self.start
         last_time = default_timer() - self.last
@@ -58,7 +58,7 @@ class Model(object):
         
         def r(x): return round(x,2)
         
-        print('{} is done in {} sec, total {} sec, memory used is {} Mb'.format(whatisdone,r(last_time),r(total_time),r(total_mem)))
+        if verbose: print('{} is done in {} sec, total {} sec, memory used is {} Mb'.format(whatisdone,r(last_time),r(total_time),r(total_mem)))
         self.last = default_timer()
         self.mlast = self.get_mem()
         
@@ -213,7 +213,7 @@ class Model(object):
                 
         #del self.V,self.decisions    
            
-    def solve_sim(self,simulate=True,show_mem=False,draw_moments=True,verbose_sim=True):
+    def solve_sim(self,simulate=True,show_mem=False,draw_moments=True,verbose_sim=False):
 
         #Solve the model
         self.solve(show_mem=show_mem)

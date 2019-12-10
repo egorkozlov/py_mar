@@ -42,7 +42,7 @@ class ModelSetup(object):
         p['sig_partner_z'] = 0.4
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
-        p['pmeet_t'] = [p['pmeet']]*T
+        
         p['wret'] = 0.8
         p['uls'] = 0.3
         
@@ -55,6 +55,8 @@ class ModelSetup(object):
         for key, value in kwargs.items():
             assert (key in p), 'wrong name?'
             p[key] = value
+        
+        p['pmeet_t'] = [p['pmeet']]*T
         
         
         self.pars = p

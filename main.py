@@ -51,11 +51,16 @@ if __name__ == '__main__':
         ulost = x[0]
         sigma_psi = np.exp(x[1])
         sigma_psi_init = np.exp(x[2])
+        pmeet = np.exp(x[3])/(1+np.exp(x[3]))
+        uls = np.exp(x[4])
         
 
         dc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=0.0)
         sc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.00,u_lost_f=0.00)
-        mdl = Model(iterator_name='default',divorce_costs=dc,separation_costs=sc,sigma_psi=sigma_psi,sigma_psi_init=sigma_psi_init)
+        mdl = Model(iterator_name='default',divorce_costs=dc,
+                    separation_costs=sc,sigma_psi=sigma_psi,
+                    sigma_psi_init=sigma_psi_init,
+                    pmeet=pmeet,uls=uls)
         
         mdl.solve_sim(simulate=True)
         
@@ -71,8 +76,8 @@ if __name__ == '__main__':
         
         fls_ratio = np.mean(mdl.moments['flsm'][1:Tret])/np.mean(mdl.moments['flsc'][1:Tret])
         
-        haz_sep = np.mean(mdl.moments['hazard sep'])
-        haz_div = np.mean(mdl.moments['hazard div'])
+        haz_sep = mdl.moments['hazard sep'][0]
+        haz_div = mdl.moments['hazard div'][0]
         
         haz_rat = haz_sep / haz_div
         
@@ -81,23 +86,28 @@ if __name__ == '__main__':
         
         resid = [0.0]
         resid += [(coh_ret - 0.1)**2]
-        resid += [(mar_ret - 0.7)**2]
+        resid += [(mar_ret - 0.8)**2]
         resid += [((marcoh_ratio - 1.1)**2)*(marcoh_ratio<1.1)]
         resid += [((fls_ratio - 0.8)**2)*(fls_ratio > 0.8)]
         resid += [((haz_rat - 2)**2)*(haz_rat < 2)]
         resid += [(haz_sep - 0.2)**2]
         resid += [(haz_div - 0.05)**2]
         
+        
+        resid = [v if not (np.isnan(v) or np.isinf(v)) else 1.0e6 for v in resid]
+        out = np.sum(resid)
+        
         print('')
         print('')
         print('Calibration report')
-        print('ulost = {} , sigma_psi = {}, sigma_psi_init = {}'.format(ulost,sigma_psi,sigma_psi_init))
+        print('ulost = {:.4f} , s_psi = {:.4f}, s_psi0 = {:.4f}, uls = {:.4f}, pmeet = {:.4f}'.format(ulost,sigma_psi,sigma_psi_init,uls, pmeet))
         print('')
         print('')
-        print('At retirement {} mar and {} cohab'.format(mar_ret,coh_ret))
-        print('All-t ratio of marriages to cohabitation is {}'.format(marcoh_ratio))
-        print('Hazard of sep is {}, hazard of div is {}'.format(haz_sep,haz_div))        
-        print('Relative hazard of sep to div is {}'.format(haz_rat))
+        print('At retirement {:.4f} mar and {:.4f} cohab'.format(mar_ret,coh_ret))
+        print('All-t ratio of marriages to cohabitation is {:.4f}'.format(marcoh_ratio))
+        print('Hazard of sep is {:.4f}, hazard of div is {:.4f}'.format(haz_sep,haz_div))        
+        print('Relative hazard of sep to div is {:.4f}'.format(haz_rat))
+        print('Calibration residual is {:.4f}'.format(out))
         print('')
         print('')
         print('End of calibration report')
@@ -106,11 +116,11 @@ if __name__ == '__main__':
         
         
         
-        resid = [v if not (np.isnan(v) or np.isinf(v)) else 1.0e6 for v in resid]
-        return np.sum(resid)
+        
+        return out
     
     
-    x0 = np.array([0.1,np.log(0.05),np.log(0.15)])
+    x0 = np.array([0.1,np.log(0.05),np.log(0.15),0.0,np.log(0.3)])
     print('Initial value is {}'.format(mdl_resid(x0)))
     print('')
     print('')
@@ -119,7 +129,7 @@ if __name__ == '__main__':
     print('')
     
     
-    res = minimize(mdl_resid,x0,method='Nelder-Mead')
+    res = minimize(mdl_resid,x0,method='BFGS',options={'eps':1e-4})
     
     print('x is {} and fun is {}'.format(res.x,res.fun))
     

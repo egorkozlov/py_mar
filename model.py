@@ -172,7 +172,9 @@ class Model(object):
             
             Vint = self.setup.v_thetagrid_fine.apply(v['V_all_l'],axis=2).astype(np.float32)
             
-            fls = self.setup.v_thetagrid_fine.apply(Vint,axis=2).argmax(axis=3).astype(np.int8)
+            if Vint.ndim < 4: Vint = Vint[:,:,:,None]
+            
+            fls = Vint.argmax(axis=3).astype(np.int8)
             
             dec.update({'s':sint,'fls':fls})
             del sint,fls

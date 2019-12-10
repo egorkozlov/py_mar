@@ -33,7 +33,7 @@ class ModelSetup(object):
         p['sigma_psi_init'] = 0.28
         p['sigma_psi']   = 0.11
         p['R_t'] = [1.04]*T
-        p['n_psi_t']     = [12]*T
+        p['n_psi_t']     = [7]*T
         p['beta_t'] = [0.95]*T
         p['A'] = 1.2 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
@@ -41,7 +41,7 @@ class ModelSetup(object):
         p['sig_partner_a'] = 0.1
         p['sig_partner_z'] = 0.4
         p['m_bargaining_weight'] = 0.5
-        p['pmeet_t'] = [0.6]*T
+        p['pmeet_t'] = [0.99]*T
         p['wret'] = 0.8
         
         
@@ -64,7 +64,7 @@ class ModelSetup(object):
         
         # female labor supply
         self.ls_levels = [0.5,1.0]
-        self.ls_utilities = [0.3,0.0] 
+        self.ls_utilities = [0.15,0.0] 
         self.ls_pdown = [0.5,0.0]
         self.nls = len(self.ls_levels)
         
@@ -168,7 +168,7 @@ class ModelSetup(object):
         #Grid Couple
         self.na = 40
         self.amin = 0
-        self.amax =8
+        self.amax =15
         self.agrid_c = np.linspace(self.amin,self.amax,self.na)
         tune=1.5
         #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune

@@ -20,8 +20,8 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()       
-        T = 20
-        Tret = 15 # first period when the agent is retired
+        T = 10
+        Tret = 7 # first period when the agent is retired
         p['T'] = T
         p['Tret'] = Tret
         p['sig_zf_0']  = 0.075
@@ -35,9 +35,9 @@ class ModelSetup(object):
         p['R_t'] = [1.04]*T
         p['n_psi_t']     = [12]*T
         p['beta_t'] = [0.95]*T
-        p['A'] = 1.2 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
+        p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
-        p['couple_rts'] = 0.0    
+        p['couple_rts'] = 0.4    
         p['sig_partner_a'] = 0.1
         p['sig_partner_z'] = 0.4
         p['m_bargaining_weight'] = 0.5
@@ -68,7 +68,7 @@ class ModelSetup(object):
         
         # female labor supply
         self.ls_levels = [0.5,1.0]
-        self.ls_utilities = [p['uls'],0.0] 
+        self.ls_utilities = [1.0+p['uls'],1.0] 
         self.ls_pdown = [0.5,0.0]
         self.nls = len(self.ls_levels)
         
@@ -172,7 +172,7 @@ class ModelSetup(object):
         #Grid Couple
         self.na = 40
         self.amin = 0
-        self.amax =8
+        self.amax =15
         self.agrid_c = np.linspace(self.amin,self.amax,self.na)
         tune=1.5
         #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune

@@ -29,6 +29,7 @@ if __name__ == '__main__':
     from model import Model
     from setup import DivorceCosts
     from scipy.optimize import minimize
+    import pso_edit
     
 
             
@@ -49,10 +50,10 @@ if __name__ == '__main__':
     def mdl_resid(x):
         
         ulost = x[0]
-        sigma_psi = np.exp(x[1])
-        sigma_psi_init = np.exp(x[2])
-        pmeet = np.exp(x[3])/(1+np.exp(x[3]))
-        uls = np.exp(x[4])
+        sigma_psi = x[1]
+        sigma_psi_init = x[2]
+        pmeet = x[3]#np.exp(x[3])/(1+np.exp(x[3]))
+        uls = x[4]
         
 
         dc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=0.0)
@@ -78,8 +79,7 @@ if __name__ == '__main__':
         
         haz_sep = mdl.moments['hazard sep'][0]
         haz_div = mdl.moments['hazard div'][0]
-        
-        haz_rat = haz_sep / haz_div
+        haz_mar = mdl.moments['hazard mar'][0]
         
         coh_ret = mdl.moments['share coh'][Tret-1]
         mar_ret = mdl.moments['share mar'][Tret-1]
@@ -89,10 +89,12 @@ if __name__ == '__main__':
         resid += [(mar_ret - 0.8)**2]
         resid += [((marcoh_ratio - 1.1)**2)*(marcoh_ratio<1.1)]
         resid += [((fls_ratio - 0.8)**2)*(fls_ratio > 0.8)]
-        resid += [((haz_rat - 2)**2)*(haz_rat < 2)]
+        resid += [((haz_mar - 0.15)**2)]
         resid += [(haz_sep - 0.2)**2]
         resid += [(haz_div - 0.05)**2]
         
+        def distance_pso(particle):
+            return 
         
         resid = [v if not (np.isnan(v) or np.isinf(v)) else 1.0e6 for v in resid]
         out = np.sum(resid)
@@ -106,7 +108,7 @@ if __name__ == '__main__':
         print('At retirement {:.4f} mar and {:.4f} cohab'.format(mar_ret,coh_ret))
         print('All-t ratio of marriages to cohabitation is {:.4f}'.format(marcoh_ratio))
         print('Hazard of sep is {:.4f}, hazard of div is {:.4f}'.format(haz_sep,haz_div))        
-        print('Relative hazard of sep to div is {:.4f}'.format(haz_rat))
+        print('Hazard of Marriage is {:.4f}'.format(haz_mar))
         print('Calibration residual is {:.4f}'.format(out))
         print('')
         print('')
@@ -119,21 +121,29 @@ if __name__ == '__main__':
         
         return out
     
+    def distance_pso1(particle):
+        return -mdl_resid( particle.position() )
+
+    x0 = np.array([0.05,0.05,0.15,0.5,0.1])
+    lb= np.array([0.01,0.005,0.015,0.4,0.01])
+    ub= np.array([0.1,0.3,0.45,1.0,0.4])
     
-    x0 = np.array([0.1,np.log(0.05),np.log(0.15),0.0,np.log(0.3)])
-    print('Initial value is {}'.format(mdl_resid(x0)))
+   
     print('')
     print('')
     print('minimizing...')
     print('')
     print('')
     
+    ##Particle Optimizer###
+    opt = pso_edit.Pso(objective_function=distance_pso1,lower_bound=lb,upper_bound=ub,swarm_size=20,threads=1,verbose=True,minimum_improvement=1e-4,minimum_step=1e-4,maximum_iterations=100)
+    x,f = opt.run()
+
+   # res = minimize(mdl_resid,x0,method='BFGS',options={'eps':1e-4})
     
-    res = minimize(mdl_resid,x0,method='BFGS',options={'eps':1e-4})
+    print('x is {} and fun is {}'.format(x,f))
     
-    print('x is {} and fun is {}'.format(res.x,res.fun))
-    
-    print('Final value is {}'.format(mdl_resid(res.x)))
+   # print('Final value is {}'.format(mdl_resid(res.x)))
     
     
 #    #Indexes for the graphs

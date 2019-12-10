@@ -510,9 +510,9 @@ class ModelSetup(object):
         ls= np.empty((self.na,self.pars['nexo_t'][-1],len(self.thetagrid)),dtype=np.int32)
         ls=np.argmax(u_couple_g,axis=3)
         lsi=np.expand_dims(ls,3)
-        u_couple=np.take_along_axis(u_couple_g,lsi,axis=3)[:,:,:,0]
-        income=np.take_along_axis(income_g,lsi,axis=3)[:,:,:,0]
-        util=np.take_along_axis(util_g,lsi,axis=3)[:,:,:,0]
+        u_couple=np.take_along_axis(u_couple_g,lsi,axis=3).squeeze(axis=3)#[:,:,:,0]
+        income=np.take_along_axis(income_g,lsi,axis=3).squeeze(axis=3)#[:,:,:,0]
+        util=np.take_along_axis(util_g,lsi,axis=3).squeeze(axis=3)#[:,:,:,0]
         
        
         

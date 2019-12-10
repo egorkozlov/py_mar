@@ -131,11 +131,10 @@ dmypy.json
 
 
 *.zip
-
 *.pkl
 
 *.pdf
-
 *.txt
-
 *.xls
+*.xslx
+*.out

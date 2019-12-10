@@ -213,7 +213,7 @@ class Model(object):
                 
         #del self.V,self.decisions    
            
-    def solve_sim(self,simulate=True,show_mem=False,draw_moments=True,verbose_sim=True):
+    def solve_sim(self,simulate=True,show_mem=False,draw_moments=True,verbose_sim=False):
 
         #Solve the model
         self.solve(show_mem=show_mem)

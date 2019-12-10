@@ -33,8 +33,8 @@ if __name__ == '__main__':
 
             
     #Create grids of parameters
-    sigma_psi_g=np.linspace(0.01,0.3,3)
-    sigma_psi_init_g=np.linspace(0.05,0.5,3)
+    sigma_psi_g=np.linspace(0.01,0.3,10)
+    sigma_psi_init_g=np.linspace(0.05,0.5,5)
     di_co_g=np.linspace(0.05,0.3,3)
     bila=np.array([False,True])
     

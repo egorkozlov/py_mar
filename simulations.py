@@ -19,6 +19,9 @@ class Agents:
             
         np.random.seed(18) # TODO: this should be replaced by explicitly supplying shocks  
             
+        
+        
+        
         # take the stuff from the model and arguments
         # note that this does not induce any copying just creates links
         self.M = M
@@ -30,6 +33,12 @@ class Agents:
         self.verbose = verbose
         self.timer = M.time
         
+        
+        self.shocks_single_iexo = np.random.random_sample((N,T))
+        self.shocks_single_meet = np.random.random_sample((N,T))
+        self.shocks_couple_iexo = np.random.random_sample((N,T))
+        self.shocks_single_a = np.random.random_sample((N,T))
+        self.shocks_couple_a = np.random.random_sample((N,T))
         
         # initialize assets
         
@@ -47,6 +56,7 @@ class Agents:
         
         # initialize iexo
         self.iexo = np.zeros((N,T),np.int32)
+        # TODO: look if we can/need fix the shocks here...
         self.iexo[:,0] = np.random.randint(0,self.setup.pars['n_zf_t'][0],size=N) # initialize iexo
         
         # initialize state
@@ -100,7 +110,8 @@ class Agents:
                 
                 # apply for singles
                 anext = self.V[t][sname]['s'][self.iassets[ind,t],self.iexo[ind,t]]
-                
+                self.iassets[ind,t+1] = VecOnGrid(self.agrid_s,anext).roll(shocks=self.shocks_single_a[ind,t])
+            
             else:
                 
                 # interpolate in both assets and theta
@@ -111,15 +122,16 @@ class Agents:
                 tk = lambda x : self.setup.v_thetagrid_fine.apply(x,axis=2)
                 
                 anext = tk(self.V[t][sname]['s'])[self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
-                anext2 = self.M.decisions[t][sname]['s'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
-                assert np.allclose(anext2,anext)
                 
+                #anext2 = self.M.decisions[t][sname]['s'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
+                #assert np.allclose(anext2,anext)
+                
+                self.iassets[ind,t+1] = VecOnGrid(self.agrid_c,anext).roll(shocks=self.shocks_couple_a[ind,t])
                 
             assert np.all(anext >= 0)
             
-            agrid = self.setup.agrid_c if use_theta else self.setup.agrid_s
+           # agrid = self.setup.agrid_c if use_theta else self.setup.agrid_s
             
-            self.iassets[ind,t+1] = VecOnGrid(agrid,anext).roll(shocks=None) # TODO: add shocks
             
       
             
@@ -159,18 +171,22 @@ class Agents:
                     
                     
                     mat = self.setup.exo_mats[sname][ils][t]
-                    iexo_next_this_ls = mc_simulate(iexo_now[this_ls],mat,shocks=None)
+                    
+                    shks = self.shocks_couple_iexo[ind[this_ls],t]
+                    
+                    iexo_next_this_ls = mc_simulate(iexo_now[this_ls],mat,shocks=shks)
                     self.iexo[ind[this_ls],t+1] = iexo_next_this_ls
                     
             else:
                 mat = self.setup.exo_mats[sname][t]
-                iexo_next = mc_simulate(iexo_now,mat,shocks=None) # import + add shocks     
+                shks = self.shocks_single_iexo[ind,t]                    
+                iexo_next = mc_simulate(iexo_now,mat,shocks=shks) # import + add shocks     
                 self.iexo[ind,t+1] = iexo_next
 
             
             
             
-            assert np.all(iexo_next<self.setup.pars['nexo_t'][t])
+            #assert np.all(iexo_next<self.setup.pars['nexo_t'][t])
             
     def statenext(self,t):
         
@@ -211,7 +227,9 @@ class Agents:
                 
                 pmat = matches['p'][ia,iznow,:]
                 pmat_cum = pmat.cumsum(axis=1)
-                v = np.random.random_sample(ind.size) # draw uniform dist
+                
+                
+                v = self.shocks_single_iexo[ind,t] #np.random.random_sample(ind.size) # draw uniform dist
                 
                 i_pmat = (v[:,None] > pmat_cum).sum(axis=1)  # index of the position in pmat
                 
@@ -227,8 +245,8 @@ class Agents:
                 # compute for everyone
                 
                 
-                
-                i_nomeet =  np.array( np.random.rand(nind) > pmeet )
+                vmeet = self.shocks_single_meet[ind,t]
+                i_nomeet =  np.array( vmeet > pmeet )
                 
                 
                 
@@ -359,7 +377,8 @@ class Agents:
                     
                     sf = share_f*sc[i_div]
                     
-                    self.iassets[ind[i_div],t+1] = VecOnGrid(agrid,sf).roll() # FIXME: this is temporary solution till we find a better organization
+                    shks = self.shocks_couple_a[ind,t]
+                    self.iassets[ind[i_div],t+1] = VecOnGrid(agrid,sf).roll(shocks=shks)
                     self.itheta[ind[i_div],t+1] = -1
                     self.iexo[ind[i_div],t+1] = izf[i_div]
                     self.state[ind[i_div],t+1] = self.state_codes['Female, single']

@@ -155,7 +155,7 @@ class Agents:
                     lvl = self.setup.ls_levels[ils]
 
                     
-                    print('At t = {} for {} {} have LS of {}'.format(t,sname,cnt,lvl))
+                    if self.verbose: print('At t = {} for {} {} have LS of {}'.format(t,sname,cnt,lvl))
                     
                     
                     mat = self.setup.exo_mats[sname][ils][t]
@@ -251,7 +251,7 @@ class Agents:
                 nmar, ncoh, ndis, nnom = np.sum(i_agree_mar),np.sum(i_agree_coh),np.sum(i_disagree_and_meet),np.sum(i_nomeet)
                 ntot = sum((nmar, ncoh, ndis, nnom))
                 
-                print('{} mar, {} coh,  {} disagreed, {} did not meet ({} total)'.format(nmar,ncoh,ndis,nnom,ntot))
+                if self.verbose: print('{} mar, {} coh,  {} disagreed, {} did not meet ({} total)'.format(nmar,ncoh,ndis,nnom,ntot))
                 #assert np.all(ismar==(i_agree )
                 
                 if np.any(i_agree_mar):
@@ -336,7 +336,7 @@ class Agents:
                 i_sq = (i_stay) & (thts_orig == thts)
                     
                 
-                print('{} divorce, {} ren-f, {} ren-m, {} sq'.format(np.sum(i_div),np.sum(i_renf),np.sum(i_renm),np.sum(i_sq))                     )
+                if self.verbose: print('{} divorce, {} ren-f, {} ren-m, {} sq'.format(np.sum(i_div),np.sum(i_renf),np.sum(i_renm),np.sum(i_sq))                     )
                 
                 
                 

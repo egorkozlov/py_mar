@@ -232,7 +232,7 @@ def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,Vmale,Vfemale,izf,izm,cost_f
     return Vf_divorce, Vm_divorce
 
 
-def v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral):
+def v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral,show_sc=False):
     # this takes values of value functions (interpolated on fine grid)
     # and does discrete 
     # version of renegotiation.
@@ -325,7 +325,7 @@ def v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral):
     share_sc = np.mean(yes_sc)
     share_nsc = np.mean(yes_nsc)
     
-    if share_nsc > 0: print('Not single crossing in {}, singe crossing in {} cases'.format(share_nsc,share_sc))
+    if (share_nsc > 0) & show_sc: print('Not single crossing in {}, singe crossing in {} cases'.format(share_nsc,share_sc))
     
     # disagreement values
     v_out[no,:]  = v_div_full[no,:]

@@ -213,12 +213,12 @@ class Model(object):
                 
         #del self.V,self.decisions    
            
-    def solve_sim(self,simulate=True,show_mem=True,draw_moments=True):
+    def solve_sim(self,simulate=True,show_mem=False,draw_moments=True,verbose_sim=True):
 
         #Solve the model
         self.solve(show_mem=show_mem)
         if not simulate: return
-        self.agents = Agents(self)
+        self.agents = Agents(self,verbose=verbose_sim)
         self.agents.simulate()        
         self.compute_moments(draw=draw_moments)
         

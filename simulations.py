@@ -110,7 +110,7 @@ class Agents:
                 
                 # apply for singles
                 anext = self.V[t][sname]['s'][self.iassets[ind,t],self.iexo[ind,t]]
-                self.iassets[ind,t+1] = VecOnGrid(self.agrid_s,anext).roll(shocks=self.shocks_single_a[ind,t])
+                self.iassets[ind,t+1] = VecOnGrid(self.setup.agrid_s,anext).roll(shocks=self.shocks_single_a[ind,t])
             
             else:
                 
@@ -126,7 +126,7 @@ class Agents:
                 #anext2 = self.M.decisions[t][sname]['s'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
                 #assert np.allclose(anext2,anext)
                 
-                self.iassets[ind,t+1] = VecOnGrid(self.agrid_c,anext).roll(shocks=self.shocks_couple_a[ind,t])
+                self.iassets[ind,t+1] = VecOnGrid(self.setup.agrid_c,anext).roll(shocks=self.shocks_couple_a[ind,t])
                 
             assert np.all(anext >= 0)
             
@@ -377,7 +377,7 @@ class Agents:
                     
                     sf = share_f*sc[i_div]
                     
-                    shks = self.shocks_couple_a[ind,t]
+                    shks = self.shocks_couple_a[ind[i_div],t]
                     self.iassets[ind[i_div],t+1] = VecOnGrid(agrid,sf).roll(shocks=shks)
                     self.itheta[ind[i_div],t+1] = -1
                     self.iexo[ind[i_div],t+1] = izf[i_div]

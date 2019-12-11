@@ -12,29 +12,28 @@ from timeit import default_timer
 
 
 
+
+
 def fun_check(x):
     #sleep(5.0)
     return sum([i**2 for i in x]), x[0]
 
 #f = line.split()
 
+try:        
+    os.mkdir('Job')
+except:
+    pass
 
 
-def compute_for_values(values,timeout=240.0,print_every=15.0):
-    cwd = os.getcwd()
-    
-    if cwd.endswith('Job'): os.chdir('..')   
- 
-    
-    try:
-        os.chdir('Job')            
-    except:
-        os.mkdir('Job')
-        os.chdir('Job')
-        
+
+# optionally this can apply function f_apply to the results
+def compute_for_values(values,f_apply=lambda x:x,timeout=240.0,print_every=15.0,nfails=3):
+      
     
     
-    assert type(values) is list
+    
+    #assert type(values) is list
     
     names_in = list()
     names_out = list()
@@ -44,29 +43,23 @@ def compute_for_values(values,timeout=240.0,print_every=15.0):
     for ival in range(len(values)):
         namein = 'in{}.txt'.format(ival)
         
-        try:
-            os.remove(namein)
-        except:
-            pass
+        [os.remove('Job/'+f) for f in os.listdir('Job') 
+         if (f.endswith('.txt') and f.startswith('in')) or 
+            (f.endswith('.txt') and f.startswith('out'))]
         
         names_in.append(namein)
         nameout = 'out{}.txt'.format(ival)
         names_out.append(nameout)
         
-        try:
-            os.remove(nameout)
-        except:
-            pass
-        
-    
         
         
     def create_in(fname,x):
         x_str = [str(y) for y in x]
         towrite = ' '.join(x_str)
-        file_in = open(fname,'w+')  
+        file_in = open('Job/'+fname,'w+')  
         file_in.write(towrite)
         file_in.close()
+    
     
     
     # create bunch of in files and write values of them
@@ -80,6 +73,7 @@ def compute_for_values(values,timeout=240.0,print_every=15.0):
     time_took = [0.0]*len(names_in)
     started = [False]*len(names_in)
     finished = [False]*len(names_in)
+    fail_count = [0]*len(names_in)
     
     start = default_timer()
     tic = default_timer()
@@ -90,7 +84,7 @@ def compute_for_values(values,timeout=240.0,print_every=15.0):
         sleep(1.0)
         
         
-        ld = os.listdir()
+        ld = os.listdir('Job')
         
         
         li_in =  [f for f in ld if f.endswith('.txt') and f.startswith('in') ]
@@ -108,8 +102,15 @@ def compute_for_values(values,timeout=240.0,print_every=15.0):
                     if time_since > timeout: # if does restart
                         print('timeout for i = {}, recreating'.format(i))
                         time_start[i] = 0
+                        fail_count[i] += 1
                         started[i] = False
-                        create_in(name,values[i])
+                        if fail_count[i] >= nfails: # if too many fails
+                            # simulates output of function computation
+                            nameout = 'out{}.txt'.format(i)
+                            create_in(nameout,[1e6])
+                        else:
+                            # creates new in file in hope to get the answer again
+                            create_in(name,values[i])
                         
             if (names_out[i] in li_out) and (not finished[i]) and (started[i]):
                 finished[i] = True
@@ -133,19 +134,19 @@ def compute_for_values(values,timeout=240.0,print_every=15.0):
     
     fout = list()
     for i, name in enumerate(names_out):
-        file = open(name)
+        file = open('Job/'+name)
         
         # this handles both lists and values
         val = [float(x) for x in file.readline().split()]
         if len(val)==1: val = val[0]            
         
-        fout.append(val)
+        fout.append(f_apply(val))
         file.close()
-        os.remove(name)
+        os.remove('Job/'+name)
         
         
         
-    os.chdir(cwd)
+    
     return fout
     
 if __name__ == '__main__':

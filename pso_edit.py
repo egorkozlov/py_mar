@@ -20,6 +20,7 @@ class Logger(object):
         self._root_logger = None
         self._timestamp = datetime.datetime.now()
 
+        '''
         if verbose:
             formatter = logging.Formatter("%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s")
             self._root_logger = logging.getLogger()
@@ -38,7 +39,8 @@ class Logger(object):
             console_handler = logging.StreamHandler()
             console_handler.setFormatter(formatter)
             self._root_logger.addHandler(console_handler)
-
+        '''
+        
     def log(self, message: str, error: bool = False) -> None:
         """
         Log message
@@ -46,6 +48,8 @@ class Logger(object):
         :param error: if message should be logged as error
         :return: None
         """
+        return 
+    
         if self._root_logger:
             self._root_logger.log(logging.CRITICAL if error else logging.INFO, message)
 
@@ -511,8 +515,12 @@ class Executor(object):
         #with ThreadPool(min(self._threads, len(swarm))) as pool:
         #    scores = pool.starmap(self._objective_function, zip(swarm), chunksize=1)
         
-        xs = [p.position() for p in swarm]
-        scores = [self._objective_function(x) for x in xs]
+        
+        from p_client import compute_for_values
+        
+        xs = [p.position() for p in swarm]  
+        print('Sending to the p_client...')
+        scores = compute_for_values(xs,f_apply=self._objective_function)
         swarm.update_scores(scores)
         
         
@@ -586,7 +594,7 @@ class Pso(object):
             improving, dimp = self._swarm.still_improving(return_d=True)
             moving, dmov    = self._swarm.still_moving(return_d=True)
             
-            self._logger.log("Iteration {}, best score is {} at {}, stall {}, movement: {}, improvement: {}".format(ii, self._swarm.best_score(), self._swarm.best_position(),self._stall,dmov,dimp))
+            print("Iteration {}, best score is {} at {}, stall {}, movement: {}, improvement: {}".format(ii, self._swarm.best_score(), self._swarm.best_position(),self._stall,dmov,dimp))
 
             
             

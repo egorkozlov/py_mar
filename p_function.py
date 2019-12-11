@@ -9,5 +9,5 @@ Created on Tue Dec 10 17:07:47 2019
 from main import mdl_resid
 
 def fun(x):
-    #sleep(5.0)
+    #return (x[0]-1)**2        
     return mdl_resid(x)

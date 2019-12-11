@@ -24,18 +24,13 @@ def find_between( s, first, last ):
 #f = line.split()
 
 
-
-cwd = getcwd()
-
-if cwd.endswith('Job'): chdir('..')   
-    
 from p_function import fun
 
+
 try:
-    chdir('Job')
-except:    
     mkdir('Job')
-    chdir('Job')
+except:    
+    pass
     
     
 start = default_timer()
@@ -60,7 +55,7 @@ while True:
     
     
     
-    li_txt = [f for f in listdir() if f.endswith('.txt') and f.startswith('in')]
+    li_txt = [f for f in listdir('Job') if f.endswith('.txt') and f.startswith('in')]
         
     if len(li_txt) == 0: continue
 
@@ -73,12 +68,14 @@ while True:
         print('something wrong with file named {}'.format(fname))
     
     
-    file_in = open(fname)
+    fname_full = 'Job/{}'.format(fname)
+    
+    file_in = open(fname_full)
     try:        
         st = file_in.readline().split()
         x = [float(s) for s in st]
         file_in.close()
-        remove(fname)
+        remove(fname_full)
         print('I got a job to solve {}'.format(fname))
         f = fun(x)
     except KeyboardInterrupt:
@@ -90,11 +87,12 @@ while True:
         #    remove(fname)
         #except:
         #    pass
+        continue
         f = 1e6          
     
     
     try:
-        file_tmp_name = 'tmp{}.txt'.format(num)
+        file_tmp_name = 'Job/tmp{}.txt'.format(num)
         file_tmp = open(file_tmp_name,'w+')  
 
         try: # if f is list
@@ -105,7 +103,7 @@ while True:
         
         file_tmp.write('{}'.format(f))
         file_tmp.close()        
-        file_out_name = 'out{}.txt'.format(num)
+        file_out_name = 'Job/out{}.txt'.format(num)
         try:
             remove(file_out_name)
         except:

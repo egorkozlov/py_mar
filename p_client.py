@@ -9,6 +9,7 @@ Created on Tue Dec 10 17:07:47 2019
 import os
 from time import sleep
 from timeit import default_timer
+import pickle
 
 
 
@@ -41,25 +42,22 @@ def compute_for_values(values,f_apply=lambda x:x,timeout=240.0,print_every=15.0,
     # find names of in and out
     # clear files if something already exists
     for ival in range(len(values)):
-        namein = 'in{}.txt'.format(ival)
+        namein = 'in{}.pkl'.format(ival)
         
         [os.remove('Job/'+f) for f in os.listdir('Job') 
-         if (f.endswith('.txt') and f.startswith('in')) or 
-            (f.endswith('.txt') and f.startswith('out'))]
+         if (f.endswith('.pkl') and f.startswith('in')) or 
+            (f.endswith('.pkl') and f.startswith('out'))]
         
         names_in.append(namein)
-        nameout = 'out{}.txt'.format(ival)
+        nameout = 'out{}.pkl'.format(ival)
         names_out.append(nameout)
         
         
         
     def create_in(fname,x):
-        x_str = [str(y) for y in x]
-        towrite = ' '.join(x_str)
-        file_in = open('Job/'+fname,'w+')  
-        file_in.write(towrite)
+        file_in = open('Job/'+fname,'wb+')  
+        pickle.dump(x,file_in)
         file_in.close()
-    
     
     
     # create bunch of in files and write values of them
@@ -87,8 +85,8 @@ def compute_for_values(values,f_apply=lambda x:x,timeout=240.0,print_every=15.0,
         ld = os.listdir('Job')
         
         
-        li_in =  [f for f in ld if f.endswith('.txt') and f.startswith('in') ]
-        li_out = [f for f in ld if f.endswith('.txt') and f.startswith('out')]
+        li_in =  [f for f in ld if f.endswith('.pkl') and f.startswith('in') ]
+        li_out = [f for f in ld if f.endswith('.pkl') and f.startswith('out')]
          
         for i, name in enumerate(names_in):
             if (name not in li_in): 
@@ -106,8 +104,8 @@ def compute_for_values(values,f_apply=lambda x:x,timeout=240.0,print_every=15.0,
                         started[i] = False
                         if fail_count[i] >= nfails: # if too many fails
                             # simulates output of function computation
-                            nameout = 'out{}.txt'.format(i)
-                            create_in(nameout,[1e6])
+                            nameout = 'out{}.pkl'.format(i)
+                            create_in(nameout,1.0e6)
                         else:
                             # creates new in file in hope to get the answer again
                             create_in(name,values[i])
@@ -134,11 +132,10 @@ def compute_for_values(values,f_apply=lambda x:x,timeout=240.0,print_every=15.0,
     
     fout = list()
     for i, name in enumerate(names_out):
-        file = open('Job/'+name)
+        file = open('Job/'+name,'rb')
         
         # this handles both lists and values
-        val = [float(x) for x in file.readline().split()]
-        if len(val)==1: val = val[0]            
+        val = pickle.load(file)
         
         fout.append(f_apply(val))
         file.close()

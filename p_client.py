@@ -117,6 +117,7 @@ def compute_for_values(values,timeout=240.0,print_every=15.0):
                 
 
         if set(li_out) == set(names_out):
+            print('Everything is computed!')
             break # job is done!
             
         # time stats  sometimes if not done

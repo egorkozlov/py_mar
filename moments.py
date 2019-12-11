@@ -13,7 +13,7 @@ import matplotlib.pyplot as plt
 #from matplotlib.pyplot import plot, draw, show
 import matplotlib.backends.backend_pdf
 
-def moment(mdl,draw=True):
+def moment(mdl,draw=False):
 #This function compute moments coming from the simulation
 #Optionally it can also plot graphs about them. It is feeded with
 #matrixes coming from simulations
@@ -291,6 +291,9 @@ def moment(mdl,draw=True):
     mdl.moments['hazard div'] = hazd
     mdl.moments['hazard mar'] = hazm
     
+    return
+
+
     #Singles: Marriage vs. cohabitation transition
     #spells_s=np.append(spells_Femalesingle,spells_Malesingle,axis=0)
     spells_s = spells_Femalesingle
@@ -388,7 +391,7 @@ def moment(mdl,draw=True):
         ##########################################
         # Put graphs together
         ########################################## 
-        #show()
+        show()
         for fig in range(1, plt.gcf().number + 1): ## will open an empty extra figure :(
             pdf.savefig( fig )
        

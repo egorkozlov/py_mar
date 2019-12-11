@@ -8,6 +8,8 @@ aCreated on Tue Sep 17 19:14:08 2019
 
 
 
+
+
 if __name__ == '__main__':
     
     try:
@@ -17,12 +19,20 @@ if __name__ == '__main__':
         pass
 
 
+from platform import system
+    
+if system() != 'Darwin' and system() != 'Windows':   
+    import os
+    os.environ['QT_QPA_PLATFORM']='offscreen'
+
+
 import numpy as np
 from numpy.random import random_sample as rs
-from model import Model
-from setup import DivorceCosts
+
 
 def mdl_resid(x):
+    from model import Model
+    from setup import DivorceCosts
     
     ulost = x[0]
     sigma_psi = x[1]
@@ -102,11 +112,7 @@ if __name__ == '__main__':
     
     
     #If on server set Display
-    from platform import system
     
-    if system() != 'Darwin' and system() != 'Windows':   
-        import os
-        os.environ['QT_QPA_PLATFORM']='offscreen'
  
    
             
@@ -129,9 +135,13 @@ if __name__ == '__main__':
     print('')
     
     
-    xlist = [lb + rs(x0.shape)*(ub-lb) for _ in range(6)]
+    xlist = [lb + rs(x0.shape)*(ub-lb) for _ in range(50)]
     from p_client import compute_for_values
     out = compute_for_values(xlist)
+    
+    ibest = np.argmin(out)
+    xbest = xlist[ibest]
+    print(out[ibest],xbest)
 
    
         

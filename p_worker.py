@@ -83,12 +83,13 @@ while True:
         f = fun(x)
     except KeyboardInterrupt:
         raise KeyboardInterrupt()
-    except:
+    except BaseException as e:
         print('error while solving {}'.format(fname))
-        try:
-            remove(fname)
-        except:
-            pass
+        print('error text is ' + str(e))
+        #try:
+        #    remove(fname)
+        #except:
+        #    pass
         f = 1e6          
     
     

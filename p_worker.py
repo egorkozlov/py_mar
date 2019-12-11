@@ -44,7 +44,7 @@ start = default_timer()
 tic = default_timer()
 
 
-time_abort = 1200.0 # time when the worker stops, in seconds
+time_abort = 7200.0 # time when the worker stops, in seconds
 
 
 

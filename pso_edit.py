@@ -2,7 +2,6 @@
 Fast parallel PSO module
 """
 from typing import List, Tuple
-from multiprocessing.pool import ThreadPool
 import logging
 import datetime
 import time
@@ -29,7 +28,7 @@ class Logger(object):
             
 
             filename = "{}{}{}_{}_pso".format(*self.timestamp())
-            file_handler = logging.FileHandler("{0}/{1}.log".format('D:\Downloads\Telegram Desktop', filename))
+            file_handler = logging.FileHandler("{0}/{1}.log".format('.', filename))
             file_handler.setFormatter(formatter)
             
             
@@ -509,10 +508,12 @@ class Executor(object):
         :param swarm: Swarm of particles
         :return: None
         """
-        with ThreadPool(min(self._threads, len(swarm))) as pool:
-            scores = pool.starmap(self._objective_function, zip(swarm), chunksize=1)
-
-            swarm.update_scores(scores)
+        #with ThreadPool(min(self._threads, len(swarm))) as pool:
+        #    scores = pool.starmap(self._objective_function, zip(swarm), chunksize=1)
+        
+        xs = [p.position() for p in swarm]
+        scores = [self._objective_function(x) for x in xs]
+        swarm.update_scores(scores)
         
         
 class Pso(object):

@@ -204,8 +204,8 @@ if __name__ == '__main__':
         
         return out
     
-    def distance_pso1(particle):
-        return -mdl_resid( particle.position() )
+    def distance_pso1(x):
+        return -mdl_resid( x )
 
     x0 = np.array([0.05,0.01,0.02,0.7,0.25])
     lb= x0*0.5#np.array([0.01,0.005,0.015,0.4,0.01])

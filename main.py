@@ -29,8 +29,8 @@ if system() != 'Darwin' and system() != 'Windows':
 import numpy as np
 from numpy.random import random_sample as rs
 
-
-def mdl_resid(x):
+xdef = np.array([0.05,0.01,0.02,0.7,0.25])
+def mdl_resid(x=xdef):
     from model import Model
     from setup import DivorceCosts
     
@@ -131,7 +131,20 @@ if __name__ == '__main__':
     lb= np.array([0.0,0.005,0.015,0.4,0.01])
     ub= np.array([1.0,1.0,0.45,1.0,0.4])
     ub[3]=min(ub[3],1.0)
-   
+    
+    
+    ##### FIRST LET'S TRY TO RUN THE FUNCTION IN FEW POINTS
+    
+    print('Testing the workers...')
+    from p_client import compute_for_values
+    pts = [lb + rs(lb.shape)*(ub-lb) for _ in range(3)]
+    outs = compute_for_values(pts)
+    print('Everything worked, output is {}'.format(outs))
+    
+    
+    
+    print('Trying PSO') 
+    
     from pso_edit import Pso
     
     def fapply(x): return -x

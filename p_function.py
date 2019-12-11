@@ -8,6 +8,12 @@ Created on Tue Dec 10 17:07:47 2019
 #from time import sleep
 from main import mdl_resid
 
-def fun(x):
-    #return (x[0]-1)**2        
-    return mdl_resid(x)
+
+# we need fun() to be possible, do not remove None
+def fun(x=None):
+    if x is None:
+        return mdl_resid()
+    else:
+        return mdl_resid(x)
+    
+    

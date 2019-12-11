@@ -26,6 +26,13 @@ def find_between( s, first, last ):
 
 from p_function import fun
 
+# this tests if the worker can run at least something
+try:
+    out = fun()
+    print('I was able to get the value {} in the default point'.format(out))
+except:
+    raise Exception('I cannot compute the function in the default point, sorry...')
+
 
 try:
     mkdir('Job')

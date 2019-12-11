@@ -11,7 +11,6 @@ from shutil import copyfile
 from time import sleep
 from timeit import default_timer
 from numpy.random import random_sample as rs
-from p_function import fun
 
 def find_between( s, first, last ):
     try:
@@ -30,6 +29,7 @@ cwd = getcwd()
 
 if cwd.endswith('Job'): chdir('..')   
     
+from p_function import fun
 
 try:
     chdir('Job')
@@ -81,9 +81,14 @@ while True:
         remove(fname)
         print('I got a job to solve {}'.format(fname))
         f = fun(x)
+    except KeyboardInterrupt:
+        raise KeyboardInterrupt()
     except:
         print('error while solving {}'.format(fname))
-        remove(fname)
+        try:
+            remove(fname)
+        except:
+            pass
         f = 1e6          
     
     

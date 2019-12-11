@@ -5,9 +5,9 @@ Created on Tue Dec 10 17:07:47 2019
 
 @author: egorkozlov
 """
-import numpy as np
-from time import sleep
+#from time import sleep
+from main import mdl_resid
 
 def fun(x):
-    sleep(5.0)
-    return np.array([sum([i**2 for i in x]), x[0]])
+    #sleep(5.0)
+    return mdl_resid(x)

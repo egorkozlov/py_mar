@@ -20,7 +20,7 @@ def fun_check(x):
 
 
 
-def compute_for_values(values,timeout=60.0):
+def compute_for_values(values,timeout=240.0,print_every=15.0):
     cwd = os.getcwd()
     
     if cwd.endswith('Job'): os.chdir('..')   
@@ -81,11 +81,13 @@ def compute_for_values(values,timeout=60.0):
     started = [False]*len(names_in)
     finished = [False]*len(names_in)
     
+    start = default_timer()
+    tic = default_timer()
     
     
     while True:
         
-        sleep(0.1)
+        sleep(1.0)
         
         
         ld = os.listdir()
@@ -105,11 +107,11 @@ def compute_for_values(values,timeout=60.0):
                     
                     if time_since > timeout: # if does restart
                         print('timeout for i = {}, recreating'.format(i))
-                        time_since[i] = 0
+                        time_start[i] = 0
                         started[i] = False
                         create_in(name,values[i])
                         
-            if (name in li_out and not finished[i]):
+            if (names_out[i] in li_out) and (not finished[i]) and (started[i]):
                 finished[i] = True
                 time_took[i] = default_timer() - time_start[i]
                 
@@ -117,7 +119,17 @@ def compute_for_values(values,timeout=60.0):
         if set(li_out) == set(names_out):
             break # job is done!
             
+        # time stats  sometimes if not done
+        toc = default_timer()
+        
+        if toc - tic > print_every:
+            print('{} started, {} finished, {} not started, running for {:.1f} minutes'.
+                  format(sum(started),sum(finished),len(values)-sum(started),(toc-start)/60))
+            tic = toc
             
+            
+    
+    
     fout = list()
     for i, name in enumerate(names_out):
         file = open(name)

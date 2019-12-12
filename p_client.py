@@ -29,7 +29,7 @@ except:
 
 
 # optionally this can apply function f_apply to the results
-def compute_for_values(values,f_apply=lambda x:x,timeout=240.0,print_every=15.0,nfails=3):
+def compute_for_values(values,f_apply=lambda x:x,timeout=240.0,print_every=10.0,nfails=3):
       
     
     

@@ -20,8 +20,8 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()       
-        T = 20
-        Tret = 15 # first period when the agent is retired
+        T = 5
+        Tret = 4 # first period when the agent is retired
         p['T'] = T
         p['Tret'] = Tret
         p['sig_zf_0']  = 0.25

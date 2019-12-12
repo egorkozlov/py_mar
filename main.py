@@ -29,6 +29,7 @@ if __name__ == '__main__':
     from model import Model
     from setup import DivorceCosts
     from scipy.optimize import minimize
+    from tiktak import tiktak
     import pso_edit
     
 
@@ -121,8 +122,7 @@ if __name__ == '__main__':
         
         return out
     
-    def distance_pso1(particle):
-        return -mdl_resid( particle.position() )
+
 
     x0 = np.array([0.05,0.01,0.02,0.7,0.25])
     lb= x0*0.5#np.array([0.01,0.005,0.015,0.4,0.01])
@@ -136,14 +136,17 @@ if __name__ == '__main__':
     print('')
     
     ##Particle Optimizer###
-    opt = pso_edit.Pso(objective_function=distance_pso1,lower_bound=lb,upper_bound=ub,swarm_size=20,threads=1,verbose=True,minimum_improvement=1e-4,minimum_step=1e-4,maximum_iterations=100)
-    x,f = opt.run()
+    #opt = pso_edit.Pso(objective_function=distance_pso1,lower_bound=lb,upper_bound=ub,swarm_size=20,threads=1,verbose=True,minimum_improvement=1e-4,minimum_step=1e-4,maximum_iterations=100)
+    #x,f = opt.run()
+    
+   
 
-   # res = minimize(mdl_resid,x0,method='BFGS',options={'eps':1e-4})
+    #Tik Tak Optimization
+    param=tiktak(1,20,10,lb,ub,mdl_resid,1e-2)
     
-    print('x is {} and fun is {}'.format(x,f))
+    print('f is {} and x is {}'.format(param[0],param[1]))
     
-   # print('Final value is {}'.format(mdl_resid(res.x)))
+  
     
     
 #    #Indexes for the graphs

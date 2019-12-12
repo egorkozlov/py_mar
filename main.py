@@ -137,10 +137,10 @@ if __name__ == '__main__':
     
     ##### FIRST LET'S TRY TO RUN THE FUNCTION IN FEW POINTS
     
-    print('Testing the workers (minimization now)...')
+    print('Testing the workers...')
     from p_client import compute_for_values
     pts = [lb + rs(lb.shape)*(ub-lb) for _ in range(2)]
-    pts = [('minimize',x) for x in pts]    
+    pts = [('compute',x) for x in pts]    
     outs = compute_for_values(pts,timeout=3600.0)
     print('Everything worked, output is {}'.format(outs))
     

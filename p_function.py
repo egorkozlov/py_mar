@@ -7,8 +7,8 @@ Created on Tue Dec 10 17:07:47 2019
 """
 #from time import sleep
 from main import mdl_resid
-
-
+import numpy as np
+from tiktak import filer
 
 # we need fun() to be possible, do not remove None
 def fun(x):
@@ -26,11 +26,46 @@ def fun(x):
     elif action == 'compute':
         return mdl_resid(args)
     elif action == 'minimize':	
-        from scipy.optimize import minimize
-        x0 = args
-        print('I am running a local maximizer starting at {}'.format(x0))
-        res = minimize(mdl_resid,x0,method='Nelder-Mead',options={'maxiter':20})
-        return res.x, res.fun
+        
+        import dfols
+        
+        i, N_st = args
+        
+        #Sort lists
+        def sortFirst(val): 
+           return val[0]
+        
+        #Get the starting point for local minimization
+        
+            
+        #Open File with best solution so far
+        param=filer('wisdom.pkl',0,False)
+             
+        param.sort(key=sortFirst)
+        print('f best so far is {} and x is {}'.format(param[0][0],param[0][1]))
+        xm=param[0][1]
+        
+        #Get right sobol sequence point
+        xt=filer('sobol.pkl',i,False)
+        
+        #Determine the initial position
+        dump=min(max(0.1,((i+1)/N_st)**(0.5)),0.995)
+        
+        xc=dump*xm+(1-dump)*xt[:,i]
+        
+        q = lambda pt : (np.array[np.sqrt(mdl_resid(pt))])
+        res=dfols.solve(q, xc,rhoend=1e-3)
+        fbest = mdl_resid(res.x)
+        
+        print('Final value is {}'.format(fbest))        
+        param=param+[(res.f,res.x)]
+        
+        #Save Updated File
+        param.sort(key=sortFirst)
+        filer('wisdom.pkl',param,True)
+        
+        return fbest
+    
     else:
         raise Exception('unsupported action or format')
     

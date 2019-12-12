@@ -10,7 +10,7 @@ Implementation of TikTak code as described in:
 import sobol_seq
 import numpy as np
 from scipy.optimize import minimize
-import dfols
+from p_client import compute_for_values
 from time import sleep
 import pickle
 
@@ -21,8 +21,6 @@ def tiktak(nthreads,N,N_st,xl,xu,f,tole=1e-3,nelder=True,refine=False):
     
     assert N>=N_st
     
-    #Redesign the function
-    q= lambda x:np.array([f(x)])
     
     ############################################
     #1 INITIALIZATION
@@ -38,10 +36,9 @@ def tiktak(nthreads,N,N_st,xl,xu,f,tole=1e-3,nelder=True,refine=False):
     x_init=x_init.squeeze()
 
     #Get fitness of initial points
-    fx_init=np.ones(N)
-    for j in range(N):
-       
-        fx_init[j]=f(x_init[:,j])
+    
+    pts = [ ('compute',x_init[:,j]) for j in range(N)]
+    fx_init = compute_for_values(pts)
     
     #Sort in ascending order of fitness
     order=np.argsort(fx_init,axis=0)
@@ -56,77 +53,16 @@ def tiktak(nthreads,N,N_st,xl,xu,f,tole=1e-3,nelder=True,refine=False):
     filer('sobol.pkl',x_init,True)    
     
     #List containing parameters and save them in file
-    param=list()
+    param=list([ (fx_init[0], x_init[:,0])])
     filer('wisdom.pkl',param,True)
          
-    #Initialize loop value
-    i=-1
-    filer('loop.pkl',i,True)
     
-    ############################################
-    #2 LOCAL STAGE
-    ###########################################
-    #ite=0
-    #Check if stop
-    while i<=(N_st-2):
-       
-        #Update Iteration
-        i=filer('loop.pkl',i,False)
-        
-        i+=1
-        
-        #Write on file
-        filer('loop.pkl',i,True)
-
-        
-        #Sort lists
-        def sortFirst(val): 
-           return val[0]
-        
-        #Get the starting point for local minimization
-        if i>0:
-            
-            #Open File with best solution so far
-            param=filer('wisdom.pkl',param,False)
-                 
-            param.sort(key=sortFirst)
-            print('f best so far is {} and x is {}'.format(param[0][0],param[0][1]))
-            xm=param[0][1]
-            
-            #Get right sobol sequence point
-            xt=filer('sobol.pkl',i,False)
-            
-            #Determine the initial position
-            dump=min(max(0.1,((i+1)/N_st)**(0.5)),0.995)
-            
-            xc=dump*xm+(1-dump)*xt[:,i]
-            
-        else:
-            xc=x_init[:,0]
-            
-        #Local Minimization
-        
-        if nelder:
-            
-            res = minimize(q,xc,method='Nelder-Mead',tol=tole)#,options={'maxiter':300}
-            #ite=ite+res.nfev        
-            print('Final value is {}'.format(f(res.x)))
-            param=param+[(res.fun,res.x)]
-        else:
-
-            #res=dfogn.solve(q, xc,rhoend=tole)
-            res=dfols.solve(q, xc,rhoend=tole)
-            #ite=ite+res.nf
-            print('Final value is {}'.format(f(res.x)))
-            param=param+[(res.f,res.x)]
-
-        
-        #Save Updated File
-        filer('wisdom.pkl',param,True)
-        
-        param.sort(key=sortFirst)
-        
-            
+    vals = [('minimize',(i,N_st)) for i in range(N_st)]
+    
+    compute_for_values(vals)
+    
+    param = filer('wisdom.pkl',None,write=False)
+    
     ############################################
     #3 TOPPING RULE
     ###########################################

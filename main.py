@@ -29,6 +29,7 @@ if system() != 'Darwin' and system() != 'Windows':
 import numpy as np
 from numpy.random import random_sample as rs
 from tiktak import tiktak
+print('Hi!')
 
 xdef = np.array([0.05,0.01,0.02,0.7,0.25])
 def mdl_resid(x=xdef):
@@ -160,7 +161,7 @@ if __name__ == '__main__':
    
 
     #Tik Tak Optimization
-    param=tiktak(1,4,2,lb,ub,mdl_resid,tole=1e-3,nelder=False,refine=False)
+    param=tiktak(1,50,10,lb,ub,mdl_resid,tole=1e-3,nelder=False,refine=False)
     
     print('f is {} and x is {}'.format(param[0],param[1]))
     

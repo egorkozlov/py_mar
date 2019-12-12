@@ -15,7 +15,7 @@ from numpy.random import random_sample as rs
 import pickle
 
 
-debug_mode = False
+debug_mode = True
 
 def find_between( s, first, last ):
     try:

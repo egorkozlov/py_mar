@@ -74,12 +74,20 @@ while True:
     
     li_txt = [f for f in listdir('Job') if f.endswith('.pkl') and f.startswith('in')]
         
+    
+    
     if len(li_txt) == 0: continue
+
+    
+    getnum = lambda x : int(find_between(x,'in','.pkl'))
 
     fname = li_txt[0]
     
     try:
-        num = int(find_between(fname,'in','.pkl'))
+        # sort trying to get the file with the lowest number
+        li_txt.sort(key=getnum)
+        fname = li_txt[0]
+        num = getnum(fname)
     except:
         num = 0
         print('something wrong with file named {}'.format(fname))

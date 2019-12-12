@@ -33,6 +33,9 @@ xdef = np.array([0.05,0.01,0.02,0.7,0.25])
 def mdl_resid(x=xdef):
     from model import Model
     from setup import DivorceCosts
+    from scipy.optimize import minimize
+    from tiktak import tiktak
+    import pso_edit
     
     ulost = x[0]
     sigma_psi = x[1]
@@ -157,17 +160,31 @@ if __name__ == '__main__':
 
     # res = minimize(mdl_resid,x0,method='BFGS',options={'eps':1e-4})
     
-    print('x is {} and fun is {}'.format(x,f))
-    
-    '''
+
+
+    x0 = np.array([0.05,0.01,0.02,0.7,0.25])
+    lb= x0*0.5#np.array([0.01,0.005,0.015,0.4,0.01])
+    ub= x0*2.0#np.array([0.1,0.3,0.45,1.0,0.4])
+    ub[3]=min(ub[3],1.0)
+   
     print('')
     print('')
     print('solving for few points...')
     print('')
     print('')
     
+    ##Particle Optimizer###
+    #opt = pso_edit.Pso(objective_function=distance_pso1,lower_bound=lb,upper_bound=ub,swarm_size=20,threads=1,verbose=True,minimum_improvement=1e-4,minimum_step=1e-4,maximum_iterations=100)
+    #x,f = opt.run()
     
+   
+
+    #Tik Tak Optimization
+    param=tiktak(1,2,1,lb,ub,mdl_resid,tole=1e-3,nelder=False,refine=False)
     
+    print('f is {} and x is {}'.format(param[0],param[1]))
+    
+  
     
     
     xlist = [lb + rs(x0.shape)*(ub-lb) for _ in range(50)]

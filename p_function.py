@@ -25,10 +25,11 @@ def fun(x):
         return mdl_resid()
     elif action == 'compute':
         return mdl_resid(args)
-    elif action == 'minimize':
+    elif action == 'minimize':	
         from scipy.optimize import minimize
         x0 = args
-        res = minimize(mdl_resid,x0,options={'maxiter':20})
+        print('I am running a local maximizer starting at {}'.format(x0))
+        res = minimize(mdl_resid,x0,method='Nelder-Mead',options={'maxiter':20})
         return res.x, res.fun
     else:
         raise Exception('unsupported action or format')

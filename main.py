@@ -142,7 +142,7 @@ if __name__ == '__main__':
    
 
     #Tik Tak Optimization
-    param=tiktak(1,20,10,lb,ub,mdl_resid,1e-2)
+    param=tiktak(1,2,1,lb,ub,mdl_resid,tole=1e-3,nelder=False,refine=False)
     
     print('f is {} and x is {}'.format(param[0],param[1]))
     

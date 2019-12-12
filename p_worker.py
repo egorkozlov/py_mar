@@ -30,8 +30,11 @@ from p_function import fun
 
 # this tests if the worker can run at least something
 try:
-    out = fun()
+    print('I am trying to test myself...')
+    out = fun(('test',0))
     print('I was able to get the value {} in the default point'.format(out))
+except KeyboardInterrupt:
+    raise KeyboardInterrupt
 except:
     raise Exception('I cannot compute the function in the default point, sorry...')
 

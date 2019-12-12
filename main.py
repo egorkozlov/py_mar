@@ -138,6 +138,7 @@ if __name__ == '__main__':
     print('Testing the workers...')
     from p_client import compute_for_values
     pts = [lb + rs(lb.shape)*(ub-lb) for _ in range(3)]
+    pts = [('compute',x) for x in pts]    
     outs = compute_for_values(pts)
     print('Everything worked, output is {}'.format(outs))
     

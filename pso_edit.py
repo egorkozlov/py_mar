@@ -519,6 +519,7 @@ class Executor(object):
         from p_client import compute_for_values
         
         xs = [p.position() for p in swarm]  
+        xs = [('compute',x) for x in xs]
         print('Sending to the p_client...')
         scores = compute_for_values(xs,f_apply=self._objective_function)
         swarm.update_scores(scores)

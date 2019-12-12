@@ -10,10 +10,21 @@ from main import mdl_resid
 
 
 # we need fun() to be possible, do not remove None
-def fun(x=None):
-    if x is None:
+def fun(x):
+    assert type(x) is tuple, 'x must be a tuple!'
+    
+    action = x[0]
+    args = x[1]
+    
+    assert type(action) is str, 'x[0] should be string for action'
+    assert len(x) <= 2, 'too many things in x! x is (action,agrs)'
+    
+    
+    if action == 'test':
         return mdl_resid()
+    elif action == 'compute':
+        return mdl_resid(args)
     else:
-        return mdl_resid(x)
+        raise Exception('unsupported action or format')
     
     

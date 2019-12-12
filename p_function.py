@@ -9,6 +9,7 @@ Created on Tue Dec 10 17:07:47 2019
 from main import mdl_resid
 
 
+
 # we need fun() to be possible, do not remove None
 def fun(x):
     assert type(x) is tuple, 'x must be a tuple!'
@@ -24,6 +25,11 @@ def fun(x):
         return mdl_resid()
     elif action == 'compute':
         return mdl_resid(args)
+    elif action == 'minimize':
+        from scipy.optimize import minimize
+        x0 = args
+        res = minimize(mdl_resid,x0,options={'maxiter':20})
+        return res.x, res.fun
     else:
         raise Exception('unsupported action or format')
     

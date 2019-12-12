@@ -28,14 +28,13 @@ if system() != 'Darwin' and system() != 'Windows':
 
 import numpy as np
 from numpy.random import random_sample as rs
+from tiktak import tiktak
 
 xdef = np.array([0.05,0.01,0.02,0.7,0.25])
 def mdl_resid(x=xdef):
     from model import Model
     from setup import DivorceCosts
-    from scipy.optimize import minimize
-    from tiktak import tiktak
-    import pso_edit
+    
     
     ulost = x[0]
     sigma_psi = x[1]
@@ -147,21 +146,6 @@ if __name__ == '__main__':
     
     
     
-    print('Trying PSO') 
-    
-    from pso_edit import Pso
-    
-    def fapply(x): return -x
-    # here Pso uses the output from p_workers (that is the value of model's 
-    # residuals) and fapply is the additional function that is applied to this
-    # output (so fapply(resid) is -residual, because Pso MAXIMIZES)
-    opt = Pso(objective_function=fapply,lower_bound=lb,upper_bound=ub,swarm_size=20,threads=1,verbose=True,minimum_improvement=1e-4,minimum_step=1e-4,maximum_iterations=100)
-    x,f = opt.run()
-
-    # res = minimize(mdl_resid,x0,method='BFGS',options={'eps':1e-4})
-    
-
-
     x0 = np.array([0.05,0.01,0.02,0.7,0.25])
     lb= x0*0.5#np.array([0.01,0.005,0.015,0.4,0.01])
     ub= x0*2.0#np.array([0.1,0.3,0.45,1.0,0.4])
@@ -169,13 +153,9 @@ if __name__ == '__main__':
    
     print('')
     print('')
-    print('solving for few points...')
+    print('running tic tac...')
     print('')
     print('')
-    
-    ##Particle Optimizer###
-    #opt = pso_edit.Pso(objective_function=distance_pso1,lower_bound=lb,upper_bound=ub,swarm_size=20,threads=1,verbose=True,minimum_improvement=1e-4,minimum_step=1e-4,maximum_iterations=100)
-    #x,f = opt.run()
     
    
 
@@ -194,9 +174,7 @@ if __name__ == '__main__':
     ibest = np.argmin(out)
     xbest = xlist[ibest]
     print(out[ibest],xbest)
-    '''
+    
    
         
 
-
-    

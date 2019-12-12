@@ -10,7 +10,6 @@ Implementation of TikTak code as described in:
 import sobol_seq
 import numpy as np
 from scipy.optimize import minimize
-import dfogn
 import dfols
 from time import sleep
 import pickle

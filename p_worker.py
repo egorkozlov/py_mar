@@ -14,6 +14,9 @@ from numpy.random import random_sample as rs
 
 import pickle
 
+
+debug_mode = False
+
 def find_between( s, first, last ):
     try:
         start = s.index( first ) + len( first )
@@ -35,8 +38,10 @@ try:
     print('I was able to get the value {} in the default point'.format(out))
 except KeyboardInterrupt:
     raise KeyboardInterrupt
-except:
-    raise Exception('I cannot compute the function in the default point, sorry...')
+except BaseException as a:
+    print('I cannot compute the function in the default point, sorry...')
+    raise a
+   
 
 
 try:
@@ -82,20 +87,41 @@ while True:
     
     fname_full = 'Job/{}'.format(fname)
     
+    
+    
     file_in = open(fname_full,'rb')
-    try:                
-        x = pickle.load(file_in)
+        
+    try:
+        try:
+            x = pickle.load(file_in)
+        except EOFError:
+            print('file {} seems empty... deleting it just in case'.format(fname_full))
+            file_in.close()
+            remove(fname_full)
+            continue
+        
         file_in.close()
         remove(fname_full)
         print('I got a job to solve {}'.format(fname))
-        f = fun(x)
+        print('request is {}'.format(x))
+        
+        try:
+            f = fun(x)
+        except KeyboardInterrupt:
+            raise KeyboardInterrupt()
+        except BaseException as e:
+            print('error while evaluating function at {}'.format(fname))
+            print('error text is ' + str(e)) 
+            if debug_mode: raise e
+            f = 1e6
+            
     except KeyboardInterrupt:
         raise KeyboardInterrupt()
     except BaseException as e:
         print('error while solving {}'.format(fname))
-        print('error text is ' + str(e))        
+        print('error text is ' + str(e))
+        if debug_mode: raise e        
         continue
-        f = 1e6          
     
     
     try:

@@ -5,10 +5,18 @@ Created on Tue Dec 10 17:07:47 2019
 
 @author: egorkozlov
 """
-#from time import sleep
+from time import sleep
 from main import mdl_resid
 import numpy as np
 from tiktak import filer
+
+#
+#def mdl_resid(x=(0,)):
+#    sleep(1)
+#    print('hi, my x is {}'.format(x))
+#    #if np.random.random_sample()>0.8: raise Exception('oh')
+#    return sum(x)
+
 
 # we need fun() to be possible, do not remove None
 def fun(x):
@@ -53,8 +61,16 @@ def fun(x):
         
         xc=dump*xm+(1-dump)*xt[:,i]
         
-        q = lambda pt : (np.array[np.sqrt(mdl_resid(pt))])
-        res=dfols.solve(q, xc,rhoend=1e-3)
+        def q(pt):
+            try:
+                res = mdl_resid(pt)
+            except:
+                print('During optimization function evaluation failed at {}'.format(pt))
+                res = 1e6
+            finally:
+                return res
+            
+        res=dfols.solve(q, xc,rhoend=1e-3,maxfun=100)
         fbest = mdl_resid(res.x)
         
         print('Final value is {}'.format(fbest))        

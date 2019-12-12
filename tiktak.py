@@ -39,7 +39,7 @@ def tiktak(nthreads,N,N_st,xl,xu,f,tole=1e-3,nelder=True,refine=False):
     
     pts = [ ('compute',x_init[:,j]) for j in range(N)]
     fx_init = compute_for_values(pts)
-    
+    fx_init = np.array(fx_init)
     #Sort in ascending order of fitness
     order=np.argsort(fx_init,axis=0)
     fx_init=fx_init[order]
@@ -88,7 +88,7 @@ def filer(filename,array,write=True):
                 with open(filename, 'wb+') as file:
                     pickle.dump(array,file)
             else:
-                with open(filename, 'rb+') as file:
+                with open(filename, 'rb') as file:
                     array=pickle.load(file)
                 return array
                 

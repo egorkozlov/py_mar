@@ -37,9 +37,9 @@ def mdl_resid(x=xdef):
     
     
     ulost = x[0]
-    sigma_psi = x[1]
-    sigma_psi_init = x[2]
-    pmeet = x[3]#np.exp(x[3])/(1+np.exp(x[3]))
+    sigma_psi = max(x[1],0.00001)
+    sigma_psi_init = max(x[2],0.00001)
+    pmeet = min(x[3],1.0)#np.exp(x[3])/(1+np.exp(x[3]))
     uls = x[4]
     
 
@@ -160,20 +160,10 @@ if __name__ == '__main__':
    
 
     #Tik Tak Optimization
-    param=tiktak(1,2,1,lb,ub,mdl_resid,tole=1e-3,nelder=False,refine=False)
+    param=tiktak(1,4,2,lb,ub,mdl_resid,tole=1e-3,nelder=False,refine=False)
     
     print('f is {} and x is {}'.format(param[0],param[1]))
     
-  
-    
-    
-    xlist = [lb + rs(x0.shape)*(ub-lb) for _ in range(50)]
-    from p_client import compute_for_values
-    out = compute_for_values(xlist)
-    
-    ibest = np.argmin(out)
-    xbest = xlist[ibest]
-    print(out[ibest],xbest)
     
    
         

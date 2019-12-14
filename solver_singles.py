@@ -12,7 +12,7 @@ from optimizers import v_optimize_single
 
 
 
-def v_iter_single(setup,t,EV,female):
+def v_iter_single(setup,t,EV,female,ushift):
     #EVT = np.float32(EV.T)
     
     agrid_s = setup.agrid_s
@@ -38,7 +38,7 @@ def v_iter_single(setup,t,EV,female):
     money_t = (R*agrid_s,np.exp(zvals + ztrend))
     
     
-    V_ret, c_opt, s_opt = v_optimize_single(money_t,sgrid_s,(ind,p,EV),sigma,beta)
+    V_ret, c_opt, s_opt = v_optimize_single(money_t,sgrid_s,(ind,p,EV),sigma,beta,ushift)
     
     def r(x): return x.astype(np.float32)
     

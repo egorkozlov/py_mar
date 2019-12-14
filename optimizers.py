@@ -59,7 +59,7 @@ def get_EVM(ind,wthis,EVin,use_cp=False):
     return EVout
 
 
-def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,ls,us,use_cp=ucp):
+def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_cp=ucp):
     # TODO: rewrite the description
     
 
@@ -137,7 +137,7 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,ls,us,use_cp=ucp):
         # u_mat shape is (na,ns,nexo)
         u_mat = u_mat.reshape(u_mat.shape + (1,))   # adds dimension for theta 
         u_mat_theta = u_mat*umult.reshape((1,1,1,umult.size)) # we added s dimension :(
-        u_mat_total = u_mat_theta + uval
+        u_mat_total = u_mat_theta + uval + ushift
         
         
         # u_mat_total shape is (na,ns,nexo,ntheta)
@@ -182,7 +182,7 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,ls,us,use_cp=ucp):
 
 
 
-def v_optimize_single(money,sgrid,EV,sigma,beta,use_cp=ucp,return_ind=False):
+def v_optimize_single(money,sgrid,EV,sigma,beta,ushift,use_cp=ucp,return_ind=False):
     # this is the optimizer for value functions
     # 1. It can use cuda arrays (cupy) if use_cp=True
     # 2. It can accept few shapes of money array and EV
@@ -243,7 +243,7 @@ def v_optimize_single(money,sgrid,EV,sigma,beta,use_cp=ucp,return_ind=False):
     
     c_mat = mr.expand_dims(money,1) - s_expanded 
     u_mat = mr.full(c_mat.shape,-mr.inf)
-    u_mat[c_mat>0] = u(c_mat[c_mat>0])
+    u_mat[c_mat>0] = u(c_mat[c_mat>0]) + ushift
      
     
     V_arr = u_mat + beta*mr.expand_dims(EV,0)

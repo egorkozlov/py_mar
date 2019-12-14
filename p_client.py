@@ -122,9 +122,10 @@ def compute_for_values(values,f_apply=lambda x:x,timeout=240.0,print_every=10.0,
         # time stats  sometimes if not done
         toc = default_timer()
         
+        
         if toc - tic > print_every:
-            print('{} started, {} finished, {} not started, running for {:.1f} minutes'.
-                  format(sum(started),sum(finished),len(values)-sum(started),(toc-start)/60))
+            print('{} running, {} finished, {} not started, running for {:.1f} minutes'.
+                  format(sum(started)-sum(finished),sum(finished),len(values)-sum(started),(toc-start)/60))
             tic = toc
             
             

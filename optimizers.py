@@ -137,8 +137,15 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_cp=ucp,co
             V, c, s = np.empty((3,na,nexo,ntheta),dtype=np.float32)
             i_opt = -np.ones((na,nexo,ntheta),dtype=np.int16)
                  
-            v_opt_couple_local(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift,V,i_opt,c,s)
-        
+            v_couple_local(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift,V,i_opt,c,s)
+            
+            
+            
+            Vg, cg, sg = np.empty((3,na,nexo,ntheta),dtype=np.float32)
+            i_optg = -np.ones((na,nexo,ntheta),dtype=np.int16)
+            v_couple_gpu(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift,Vg,i_optg,cg,sg)
+            
+            assert np.allclose(V,Vg,rtol=1e-3,atol=1e-4)
         else:
             
             if compare:
@@ -303,11 +310,11 @@ def v_optimize_single(money,sgrid,EV,sigma,beta,ushift,use_cp=ucp,return_ind=Fal
 
 from numba import prange
 @jit(nopython=True,parallel=True)
-def v_opt_couple_local(money,sgrid,u_multupliers,EV,sigma,beta,uadd,V_opt,i_opt,c_opt,s_opt):
+def v_couple_local(money,sgrid,u_mult,EV,sigma,beta,uadd,V_opt,i_opt,c_opt,s_opt):
     # this is a looped version of the optimizer
     # the last two things are outputs
     
-    na, nexo, ntheta = money.shape[0], money.shape[1], u_multupliers.size
+    na, nexo, ntheta = money.shape[0], money.shape[1], u_mult.size
     
     ns = sgrid.size
     
@@ -315,9 +322,6 @@ def v_opt_couple_local(money,sgrid,u_multupliers,EV,sigma,beta,uadd,V_opt,i_opt,
     assert V_opt.shape == (na,nexo,ntheta) == i_opt.shape
     assert EV.shape == (ns,nexo,ntheta)
     
-    #uout = np.full((na,ns,nexo,ntheta),-np.inf)
-    #Vout = np.full((na,ns,nexo,ntheta),-np.inf)
-    #cout = np.full((na,ns,nexo),-1.0)
     
     def ufun(x):
         return (x**(1-sigma))/(1-sigma)
@@ -344,7 +348,7 @@ def v_opt_couple_local(money,sgrid,u_multupliers,EV,sigma,beta,uadd,V_opt,i_opt,
             # so do the maximum search for each theta using these utilities
             
             for ind_theta in prange(ntheta):
-                mult = u_multupliers[ind_theta]
+                mult = u_mult[ind_theta]
                 EV_of_s = EV[0:(ind_s+1),ind_exo,ind_theta]                
                 u_adjusted = mult*u_of_s + uadd
                 V_of_s = u_adjusted + beta*EV_of_s
@@ -356,6 +360,72 @@ def v_opt_couple_local(money,sgrid,u_multupliers,EV,sigma,beta,uadd,V_opt,i_opt,
                 c_opt[ind_a,ind_exo,ind_theta] = money_i - sgrid[io]
                 s_opt[ind_a,ind_exo,ind_theta] = sgrid[io]
     
+
+from math import ceil
+from numba import cuda
+
+def v_couple_gpu(money,sgrid,u_mult,EV,sigma,beta,uadd,V_opt,i_opt,c_opt,s_opt):
     
+    
+    na, nexo, ntheta = money.shape[0], money.shape[1], u_mult.size
+    
+    ns = sgrid.size
+    
+    assert money.shape == (na,nexo)
+    assert V_opt.shape == (na,nexo,ntheta) == i_opt.shape
+    assert EV.shape == (ns,nexo,ntheta)
+    
+    V_opt_g = cuda.device_array((na,nexo,ntheta),dtype=np.float32)
+    c_opt_g = cuda.device_array((na,nexo,ntheta),dtype=np.float32)
+    s_opt_g = cuda.device_array((na,nexo,ntheta),dtype=np.float32)
+    i_opt_g = cuda.device_array((na,nexo,ntheta),dtype=np.int16)
+    
+    
+    money_g, sgrid_g, u_mult_g, EV_g = (cuda.to_device(np.ascontiguousarray(x)) for x in (money, sgrid, u_mult, EV))
+    
+    
+    threadsperblock = (8, 8)
+    b_a = int(ceil(na / threadsperblock[0]))
+    b_exo = int(ceil(nexo / threadsperblock[1]))
+    blockspergrid = (b_a, b_exo)
+    
+    @cuda.jit
+    def cuda_ker():
+        ind_a, ind_exo = cuda.grid(2)
+        
+        def ufun(x): return (x**(1-sigma))/(1-sigma)
+        
+        if (ind_a < na) and (ind_exo < nexo):
+            # finds index of maximum savings
+            money_i = money[ind_a,ind_exo]
+            if money_i > sgrid[ns-1]: # if can save the max amount
+                ind_s = ns-1 
+            else:
+                # if not look for the highest feasible savings
+                for ind_s in range(ns-1):
+                    if money_i <= sgrid[ind_s+1]: break
+                assert money_i > sgrid[ind_s]
                 
             
+            # finds utility values of all feasible savings
+            # should I make a loop instead?
+            u_of_s = ufun( money_i - sgrid[0:ind_s+1] )
+            
+            # each value of theta corresponds to different EV
+            # so do the maximum search for each theta using these utilities
+            
+            for ind_theta in range(ntheta):
+                mult = u_mult[ind_theta]
+                EV_of_s = EV[0:(ind_s+1),ind_exo,ind_theta]                
+                u_adjusted = mult*u_of_s + uadd
+                V_of_s = u_adjusted + beta*EV_of_s
+                
+                
+                io = V_of_s.argmax()
+                i_opt[ind_a,ind_exo,ind_theta] = io
+                V_opt[ind_a,ind_exo,ind_theta] = V_of_s[io] 
+                c_opt[ind_a,ind_exo,ind_theta] = money_i - sgrid[io]
+                s_opt[ind_a,ind_exo,ind_theta] = sgrid[io]
+    
+    cuda_ker[blockspergrid, threadsperblock]()
+    V_opt,i_opt,c_opt,s_opt = (x.copy_to_host() for x in (V_opt_g,i_opt_g,c_opt_g,s_opt_g))

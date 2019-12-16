@@ -45,7 +45,8 @@ if __name__ == '__main__':
 
     x0 = np.array([0.05,0.01,0.02,0.7,0.25])
     
-    out, mdl = mdl_resid(x0,return_format=['distance','model'],calibration_report=False)
+    out, mdl = mdl_resid(x0,return_format=['distance','model'],calibration_report=False,
+                         verbose=True)
     print('Done. Residual in point x0 is {}'.format(out))
     
     

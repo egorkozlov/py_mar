@@ -17,9 +17,9 @@ from aux_routines import cp_take_along_axis
 #if system() != 'Darwin' and system() != 'Windows':
 if system() != 'Darwin':
     import cupy as cp
-    ucp = False
+    ugpu = True
 else:
-    ucp = False
+    ugpu = False
 
 
 #@jit('float64[:](float64[:], int64, float64, float64)',nopython=True)
@@ -43,11 +43,11 @@ def build_s_grid(agrid,n_between,da_min,da_max):
     return sgrid
 
 
-def get_EVM(ind,wthis,EVin,use_cp=False):
+def get_EVM(ind,wthis,EVin,use_gpu=False):
     # this essenitally doubles VecOnGrid.apply method
     # but we cannot deprecate it unless we are sure VecOnGrid works on GPU 
     # correctly
-    mr = cp if use_cp else np
+    mr = cp if use_gpu else np
     
     ev_aux_shape  = EVin.shape[1:]
     shap = (ind.size,) + ev_aux_shape
@@ -59,19 +59,108 @@ def get_EVM(ind,wthis,EVin,use_cp=False):
     return EVout
 
 
-def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_cp=ucp,compare=False,force_array=False):
-    # TODO: rewrite the description
+
+def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ugpu):
+    # This optimizer avoids creating big arrays and uses parallel-CPU on 
+    # machines without NUMBA-CUDA codes otherwise
     
 
     nls = len(ls)
     
-    mr = cp if use_cp else np # choose matrix routine
         
     assert isinstance(money,tuple)
     assert len(money)==3
     
     
-    if use_cp:
+    asset_income, wf, wm = money
+    
+    nexo = wf.size
+    na = asset_income.size
+    
+    
+    wf = wf.reshape((1,wf.size))
+    wm = wm.reshape((1,wm.size))
+    asset_income = asset_income.reshape((asset_income.size,1))
+    money = wf + wm + asset_income
+        
+    
+    if isinstance(EV,tuple):
+        assert len(EV) == 3
+        ind,p,EVin = EV
+        EV_by_l = get_EVM(ind,p,EVin,use_gpu=False) 
+    
+    ntheta = EV_by_l.shape[-2]
+    
+    assert money.ndim < EV_by_l.ndim
+    assert (EV_by_l.ndim - money.ndim == 2), 'Shape mismatch?'
+    
+    tal = np.take_along_axis
+    
+    
+    i_opt_arr = np.empty((na,nexo,ntheta,nls),dtype=np.int16)
+    c_opt_arr = np.empty((na,nexo,ntheta,nls),dtype=np.float32)
+    s_opt_arr = np.empty((na,nexo,ntheta,nls),dtype=np.float32)
+    V_opt_arr = np.empty((na,nexo,ntheta,nls),dtype=np.float32)
+    
+    for i, (lval, uval) in enumerate(zip(ls,us)):
+        
+        EV_here = EV_by_l[...,i]
+        
+        money_left = money - (1-lval)*wf.reshape((1,nexo))
+        
+        if not use_gpu:
+            
+            # preallocation helps a bit here
+            V, c, s = np.empty((3,na,nexo,ntheta),dtype=np.float32)
+            i_opt = -np.ones((na,nexo,ntheta),dtype=np.int16)                 
+            v_couple_local(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift,V,i_opt,c,s)
+            
+        else:
+            
+            # preallocation is pretty unfeasible
+            V, i_opt, c, s = v_couple_gpu(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift)
+
+                
+        i_opt_arr[...,i] = i_opt
+        c_opt_arr[...,i] = c
+        s_opt_arr[...,i] = s
+        V_opt_arr[...,i] = V
+        
+        
+        
+    i_ls = np.expand_dims(V_opt_arr.argmax(axis=3),3)
+    
+    V = tal(V_opt_arr,i_ls,axis=3).squeeze(axis=3)
+    c = tal(c_opt_arr,i_ls,axis=3).squeeze(axis=3)
+    s = tal(s_opt_arr,i_ls,axis=3).squeeze(axis=3)
+    i_opt = tal(i_opt_arr,i_ls,axis=3).squeeze(axis=3)
+        
+    i_ls = i_ls.squeeze(axis=3)
+        
+    
+    ret = lambda x : x
+        
+    V_all = V_opt_arr
+    
+    
+    return ret(V), ret(c), ret(s), ret(i_opt), ret(i_ls), ret(V_all).astype(np.float32)
+
+
+
+def v_optimize_couple_array(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ugpu,compare=False,force_array=False):
+    # This is an optimizer that uses Numpy/Cupy arrays
+    # it is robust though not completely efficient
+    
+
+    nls = len(ls)
+    
+    mr = cp if use_gpu else np # choose matrix routine
+        
+    assert isinstance(money,tuple)
+    assert len(money)==3
+    
+    
+    if use_gpu:
         money = tuple((cp.asarray(x) for x in money))
         umult = cp.asarray(umult)
     
@@ -90,11 +179,11 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_cp=ucp,co
         
     if isinstance(EV,tuple):
         assert len(EV) == 3
-        (ind,p,EVin) = (cp.asarray(x) if use_cp else x for x in EV)
-        EV_by_l = get_EVM(ind,p,EVin,use_cp)
+        (ind,p,EVin) = (cp.asarray(x) if use_gpu else x for x in EV)
+        EV_by_l = get_EVM(ind,p,EVin,use_gpu)
     
     
-    if use_cp: # it is ok to use cp.asarray twice, it does not copy
+    if use_gpu: # it is ok to use cp.asarray twice, it does not copy
         money,sgrid,EV_by_l = (cp.asarray(x) for x in (money,sgrid,EV_by_l))
     
     
@@ -119,7 +208,7 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_cp=ucp,co
     s_expanded = sgrid.reshape(s_size)
     
     
-    tal = cp_take_along_axis if use_cp else np.take_along_axis
+    tal = cp_take_along_axis if use_gpu else np.take_along_axis
     
     
     i_opt_arr = mr.empty((na,nexo,ntheta,nls),dtype=mr.int32)
@@ -133,54 +222,31 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_cp=ucp,co
         
         money_left = money - (1-lval)*wf.reshape((1,nexo))
         
-        if (not use_cp) and (not compare) and (not force_array):
-            #V, c, s = np.empty((3,na,nexo,ntheta),dtype=np.float32)
-            #i_opt = -np.ones((na,nexo,ntheta),dtype=np.int16)
-                 
-            #v_couple_local(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift,V,i_opt,c,s)
-            
-            V, i_opt, c, s = v_couple_gpu(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift)
-            
-            #assert np.allclose(V,Vg,rtol=1e-3,atol=1e-4)
-        else:
-            
-            if compare:
-                V_comp, c_comp, s_comp,  i_opt_comp = (x.copy() for x in (V, c, s, i_opt))
-            
-            c_mat = mr.expand_dims(money_left,1)  - s_expanded
-            u_mat = mr.full(c_mat.shape,-mr.inf)
-            u_mat[c_mat>0] = u(c_mat[c_mat>0])
-            
-            c_mat[c_mat<0] = -1.0
-            
-            # u_mat shape is (na,ns,nexo)
-            u_mat = u_mat.reshape(u_mat.shape + (1,))   # adds dimension for theta 
-            u_mat_theta = u_mat*umult.reshape((1,1,1,umult.size)) # we added s dimension :(
-            u_mat_total = u_mat_theta + uval + ushift
-            
-            
-            # u_mat_total shape is (na,ns,nexo,ntheta)
-            # EV shape is (ns,nexo,ntheta)
-            V_arr = u_mat_total + beta*mr.expand_dims(EV_here,0) # adds dimension for current a
-            # V_arr shape is (na,ns,nexo,ntheta)
-            i_opt = V_arr.argmax(axis=1) # (na,nexo,ntheta)
-            
-            i_opt_ed = mr.expand_dims(i_opt,1)
-            
-            
-            s = sgrid[i_opt]
-            c = tal(mr.expand_dims(c_mat,3),i_opt_ed,1).squeeze(axis=1) #money.reshape( (money.shape+(1,)) ) - s
-            V = tal(u_mat_total,i_opt_ed,1).squeeze(axis=1) + beta*tal(EV_here,i_opt,0) # squeeze
+    
+        c_mat = mr.expand_dims(money_left,1)  - s_expanded
+        u_mat = mr.full(c_mat.shape,-mr.inf)
+        u_mat[c_mat>0] = u(c_mat[c_mat>0])
+        
+        # u_mat shape is (na,ns,nexo)
+        u_mat = u_mat.reshape(u_mat.shape + (1,))   # adds dimension for theta 
+        u_mat_theta = u_mat*umult.reshape((1,1,1,umult.size)) # we added s dimension :(
+        u_mat_total = u_mat_theta + uval + ushift
         
         
-            if compare:
-                def maxdiff(x,y): return np.max(np.abs(x-y))
-                print('Maximum difference in V is {}'.format(maxdiff(V,V_comp)))
-                print('Maximum difference in c is {}'.format(maxdiff(c,c_comp)))
-                print('Maximum difference in s is {}'.format(maxdiff(s,s_comp)))
-                print('Maximum difference in i_opt is {}'.format(maxdiff(i_opt,i_opt_comp)))
-                
-                
+        # u_mat_total shape is (na,ns,nexo,ntheta)
+        # EV shape is (ns,nexo,ntheta)
+        V_arr = u_mat_total + beta*mr.expand_dims(EV_here,0) # adds dimension for current a
+        # V_arr shape is (na,ns,nexo,ntheta)
+        i_opt = V_arr.argmax(axis=1) # (na,nexo,ntheta)
+        
+        i_opt_ed = mr.expand_dims(i_opt,1)
+        
+        
+        s = sgrid[i_opt]
+        c = tal(mr.expand_dims(c_mat,3),i_opt_ed,1).squeeze(axis=1) #money.reshape( (money.shape+(1,)) ) - s
+        V = tal(u_mat_total,i_opt_ed,1).squeeze(axis=1) + beta*tal(EV_here,i_opt,0) # squeeze
+    
+    
         i_opt_arr[...,i] = i_opt
         c_opt_arr[...,i] = c
         s_opt_arr[...,i] = s
@@ -199,7 +265,7 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_cp=ucp,co
     i_ls = i_ls.squeeze(axis=3)
         
     
-    if use_cp:
+    if use_gpu:
         ret = lambda x : cp.asnumpy(x)
     else:
         ret = lambda x : x
@@ -214,9 +280,9 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_cp=ucp,co
 
 
 
-def v_optimize_single(money,sgrid,EV,sigma,beta,ushift,use_cp=ucp,return_ind=False):
+def v_optimize_single(money,sgrid,EV,sigma,beta,ushift,use_gpu=ugpu,return_ind=False):
     # this is the optimizer for value functions
-    # 1. It can use cuda arrays (cupy) if use_cp=True
+    # 1. It can use cuda arrays (cupy) if use_gpu=True
     # 2. It can accept few shapes of money array and EV
     # 3. If money array and EV array are of different shapes money array is
     # broadcasted (this is for the case where EV varies with theta and money
@@ -234,23 +300,23 @@ def v_optimize_single(money,sgrid,EV,sigma,beta,ushift,use_cp=ucp,return_ind=Fal
     
     
     
-    mr = cp if use_cp else np # choose matrix routine
+    mr = cp if use_gpu else np # choose matrix routine
     
     if isinstance(money,tuple):
         assert len(money) == 2
         
         asset_income = money[0].reshape((money[0].size,1))
         labor_income = money[1].reshape((1,money[1].size))
-        if use_cp: asset_income, labor_income = cp.asarray(asset_income), cp.asarray(labor_income)
+        if use_gpu: asset_income, labor_income = cp.asarray(asset_income), cp.asarray(labor_income)
         money = asset_income + labor_income # broadcasting 
         
     if isinstance(EV,tuple):
         assert len(EV) == 3
-        (ind,p,EVin) = (cp.asarray(x) if use_cp else x for x in EV)
-        EV = get_EVM(ind,p,EVin,use_cp)
+        (ind,p,EVin) = (cp.asarray(x) if use_gpu else x for x in EV)
+        EV = get_EVM(ind,p,EVin,use_gpu)
     
     
-    if use_cp: # it is ok to use cp.asarray twice, it does not copy
+    if use_gpu: # it is ok to use cp.asarray twice, it does not copy
         money,sgrid,EV = (cp.asarray(x) for x in (money,sgrid,EV))
     
     
@@ -286,12 +352,12 @@ def v_optimize_single(money,sgrid,EV,sigma,beta,ushift,use_cp=ucp,return_ind=Fal
     
     c = money - s
     
-    tal = cp_take_along_axis if use_cp else np.take_along_axis
+    tal = cp_take_along_axis if use_gpu else np.take_along_axis
     
     V = u(c) + beta*tal(EV,i_opt,0)
    
     
-    if use_cp:
+    if use_gpu:
         ret = lambda x : cp.asnumpy(x)
     else:
         ret = lambda x : x
@@ -361,6 +427,46 @@ from math import ceil
 from numba import cuda
 
 
+
+    
+def v_couple_gpu(money,sgrid,u_mult,EV,sigma,beta,uadd):
+    
+    
+    na, nexo, ntheta = money.shape[0], money.shape[1], u_mult.size
+    
+    ns = sgrid.size
+    
+    assert money.shape == (na,nexo)
+    assert EV.shape == (ns,nexo,ntheta)
+    
+    V_opt_g = cuda.device_array((na,nexo,ntheta),dtype=np.float32)
+    c_opt_g = cuda.device_array((na,nexo,ntheta),dtype=np.float32)
+    s_opt_g = cuda.device_array((na,nexo,ntheta),dtype=np.float32)
+    i_opt_g = cuda.device_array((na,nexo,ntheta),dtype=np.int16)
+    
+    
+    money_g, sgrid_g, u_mult_g, EV_g = (cuda.to_device(np.ascontiguousarray(x)) for x in (money, sgrid, u_mult, EV))
+    
+    
+    threadsperblock = (8, 16, 8)
+    # this is a tunning parameter. 8*16*8=1024 is the number of threads per 
+    # block. This is GPU specific, on Quests's GPU the maximum is 1024, on 
+    # different machines it can be lower
+    
+    b_a = int(ceil(na / threadsperblock[0]))
+    b_exo = int(ceil(nexo / threadsperblock[1]))
+    b_theta = int(ceil(ntheta / threadsperblock[2]))
+    blockspergrid = (b_a, b_exo, b_theta)
+    
+    cuda_ker[blockspergrid, threadsperblock](money_g, sgrid_g, u_mult_g, EV_g, sigma, beta, uadd,
+                                                V_opt_g,i_opt_g,c_opt_g,s_opt_g)
+    
+    
+    V_opt,i_opt,c_opt,s_opt = (x.copy_to_host() for x in (V_opt_g,i_opt_g,c_opt_g,s_opt_g))
+    return V_opt,i_opt,c_opt,s_opt
+
+
+
 @cuda.jit
 def cuda_ker(money_g, sgrid_g, u_mult_g, EV_g, sigma, beta, uadd, V_opt_g,i_opt_g,c_opt_g,s_opt_g):
     ind_a, ind_exo, ind_theta = cuda.grid(3)
@@ -396,39 +502,3 @@ def cuda_ker(money_g, sgrid_g, u_mult_g, EV_g, sigma, beta, uadd, V_opt_g,i_opt_
     
     
     
-    
-def v_couple_gpu(money,sgrid,u_mult,EV,sigma,beta,uadd):
-    
-    
-    na, nexo, ntheta = money.shape[0], money.shape[1], u_mult.size
-    
-    ns = sgrid.size
-    
-    assert money.shape == (na,nexo)
-    assert EV.shape == (ns,nexo,ntheta)
-    
-    V_opt_g = cuda.device_array((na,nexo,ntheta),dtype=np.float32)
-    c_opt_g = cuda.device_array((na,nexo,ntheta),dtype=np.float32)
-    s_opt_g = cuda.device_array((na,nexo,ntheta),dtype=np.float32)
-    i_opt_g = cuda.device_array((na,nexo,ntheta),dtype=np.int16)
-    
-    
-    #money_g = cuda.to_device(np.ascontiguousarray(money))
-    #sgrid_g = cuda.to_device(np.ascontiguousarray(sgrid))
-    #u_mult_g = cuda.to_device(np.ascontiguousarray(u_mult))
-    #EV_g = cuda.to_device(np.ascontiguousarray(EV))
-    money_g, sgrid_g, u_mult_g, EV_g = (cuda.to_device(np.ascontiguousarray(x)) for x in (money, sgrid, u_mult, EV))
-    
-    
-    threadsperblock = (8, 8, 8)
-    b_a = int(ceil(na / threadsperblock[0]))
-    b_exo = int(ceil(nexo / threadsperblock[1]))
-    b_theta = int(ceil(ntheta / threadsperblock[2]))
-    blockspergrid = (b_a, b_exo, b_theta)
-    
-    cuda_ker[blockspergrid, threadsperblock](money_g, sgrid_g, u_mult_g, EV_g, sigma, beta, uadd,
-                                                V_opt_g,i_opt_g,c_opt_g,s_opt_g)
-    
-    
-    V_opt,i_opt,c_opt,s_opt = (x.copy_to_host() for x in (V_opt_g,i_opt_g,c_opt_g,s_opt_g))
-    return V_opt,i_opt,c_opt,s_opt

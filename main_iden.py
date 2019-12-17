@@ -1,3 +1,4 @@
+    
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -38,12 +39,15 @@ if __name__ == '__main__':
             
     #Create grids of parameters
     x0 = np.exp(np.array([ -1.8603,-8.1430,-1.57934,0.25130,-0.4991]))
-    sigma_psi_g=np.linspace(x0[1]*0.9,x0[1]*1.1,1)
-    sigma_psi_init_g=np.linspace(x0[2]*0.9,x0[2]*1.1,1)
-    di_co_g=np.linspace(x0[0]*0.9,x0[0]*1.1,1)
+    print(x0)
+    sigma_psi_g=np.linspace(x0[1]*0.5,x0[1]*1.5,3)
+    sigma_psi_init_g=np.linspace(x0[2]*1.0,x0[2]*1.0,1)
+    di_co_g=np.linspace(x0[0]*0.8,x0[0]*1.2,3)
     bila=np.array([False,True])
     
-    
+    #Set some initial parameters
+    pmeet = min(x0[3],1.0)
+    uls = x0[4]
     
     #Initialize the file with parameters
 
@@ -80,6 +84,8 @@ if __name__ == '__main__':
             for k in range(len(di_co_g)):
                 for h in bila:
                 
+                    
+                    
                 
 
                     row=row+1
@@ -89,7 +95,8 @@ if __name__ == '__main__':
                     dc = DivorceCosts(unilateral_divorce=h,assets_kept = 1.0,u_lost_m=di_co_g[k],u_lost_f=di_co_g[k],eq_split=0.0)
                     sc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.0,u_lost_f=0.0)
                     mdl = Model(iterator_name='default',
-                                divorce_costs=dc,separation_costs=sc,sigma_psi=sigma_psi_g[i],sigma_psi_init=sigma_psi_init_g[j])
+                                divorce_costs=dc,separation_costs=sc,sigma_psi=sigma_psi_g[i],
+                                sigma_psi_init=sigma_psi_init_g[j],pmeet=pmeet,uls=uls)
 
                     mdl.solve_sim(simulate=True)
                     

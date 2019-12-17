@@ -143,7 +143,7 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_cp=ucp,co
             
             Vg, cg, sg = np.empty((3,na,nexo,ntheta),dtype=np.float32)
             i_optg = -np.ones((na,nexo,ntheta),dtype=np.int16)
-            v_couple_gpu(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift,Vg,i_optg,cg,sg)
+            Vg,i_optg,cg,sg = v_couple_gpu(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift)
             
             assert np.allclose(V,Vg,rtol=1e-3,atol=1e-4)
         else:
@@ -364,8 +364,44 @@ def v_couple_local(money,sgrid,u_mult,EV,sigma,beta,uadd,V_opt,i_opt,c_opt,s_opt
 from math import ceil
 from numba import cuda
 
+
+@cuda.jit
+def cuda_ker(money_g, sgrid_g, u_mult_g, EV_g, sigma, beta, uadd, V_opt_g,i_opt_g,c_opt_g,s_opt_g):
+    ind_a, ind_exo, ind_theta = cuda.grid(3)
     
-def v_couple_gpu(money,sgrid,u_mult,EV,sigma,beta,uadd,V_opt,i_opt,c_opt,s_opt):
+    def ufun(x): return (x**(1-sigma))/(1-sigma)
+    
+    na = money_g.shape[0]
+    nexo = money_g.shape[1]
+    ntheta = u_mult_g.size
+    ns = sgrid_g.size
+    
+    if (ind_a < na) and (ind_exo < nexo) and (ind_theta < ntheta):
+        # finds index of maximum savings
+        money_i = money_g[ind_a,ind_exo]
+        mult = u_mult_g[ind_theta]
+        EV_of_s = EV_g[:,ind_exo,ind_theta]  
+        iobest = 0
+        vbest = mult*ufun(money_i) + beta*EV_of_s[0]
+        
+        for io in range(1,ns):
+            cnow = money_i - sgrid_g[io]
+            if cnow <= 0: break
+            unow = ufun(cnow)
+            vnow = mult*unow + beta*EV_of_s[io]                
+            if vnow > vbest:
+                iobest = io
+                vbest = vnow
+            
+        i_opt_g[ind_a,ind_exo,ind_theta] = iobest
+        V_opt_g[ind_a,ind_exo,ind_theta] = vbest + uadd
+        c_opt_g[ind_a,ind_exo,ind_theta] = money_i - sgrid_g[iobest]
+        s_opt_g[ind_a,ind_exo,ind_theta] = sgrid_g[iobest]
+    
+    
+    
+    
+def v_couple_gpu(money,sgrid,u_mult,EV,sigma,beta,uadd):
     
     
     na, nexo, ntheta = money.shape[0], money.shape[1], u_mult.size
@@ -373,7 +409,6 @@ def v_couple_gpu(money,sgrid,u_mult,EV,sigma,beta,uadd,V_opt,i_opt,c_opt,s_opt):
     ns = sgrid.size
     
     assert money.shape == (na,nexo)
-    assert V_opt.shape == (na,nexo,ntheta) == i_opt.shape
     assert EV.shape == (ns,nexo,ntheta)
     
     V_opt_g = cuda.device_array((na,nexo,ntheta),dtype=np.float32)
@@ -382,11 +417,11 @@ def v_couple_gpu(money,sgrid,u_mult,EV,sigma,beta,uadd,V_opt,i_opt,c_opt,s_opt):
     i_opt_g = cuda.device_array((na,nexo,ntheta),dtype=np.int16)
     
     
-    money_g = cuda.to_device(np.ascontiguousarray(money))
-    sgrid_g = cuda.to_device(np.ascontiguousarray(sgrid))
-    u_mult_g = cuda.to_device(np.ascontiguousarray(u_mult))
-    EV_g = cuda.to_device(np.ascontiguousarray(EV))
-    #money_g, sgrid_g, u_mult_g, EV_g = (cuda.to_device(np.ascontiguousarray(x)) for x in (money, sgrid, u_mult, EV))
+    #money_g = cuda.to_device(np.ascontiguousarray(money))
+    #sgrid_g = cuda.to_device(np.ascontiguousarray(sgrid))
+    #u_mult_g = cuda.to_device(np.ascontiguousarray(u_mult))
+    #EV_g = cuda.to_device(np.ascontiguousarray(EV))
+    money_g, sgrid_g, u_mult_g, EV_g = (cuda.to_device(np.ascontiguousarray(x)) for x in (money, sgrid, u_mult, EV))
     
     
     threadsperblock = (8, 8, 8)
@@ -395,38 +430,9 @@ def v_couple_gpu(money,sgrid,u_mult,EV,sigma,beta,uadd,V_opt,i_opt,c_opt,s_opt):
     b_theta = int(ceil(ntheta / threadsperblock[2]))
     blockspergrid = (b_a, b_exo, b_theta)
     
-    @cuda.jit
-    def cuda_ker():
-        ind_a, ind_exo, ind_theta = cuda.grid(3)
-        
-        def ufun(x): return (x**(1-sigma))/(1-sigma)
-        
-        if (ind_a < na) and (ind_exo < nexo) and (ind_theta < ntheta):
-            # finds index of maximum savings
-            money_i = money_g[ind_a,ind_exo]
-            mult = u_mult_g[ind_theta]
-            
-            
-            EV_of_s = EV_g[:,ind_exo,ind_theta]  
-            
-            
-            iobest = 0
-            vbest = mult*ufun(money_i) + beta*EV_of_s[0]
-            
-            for io in range(1,ns):
-                cnow = money_i - sgrid_g[io]
-                if cnow <= 0: break
-                unow = ufun(cnow)
-                vnow = mult*unow + beta*EV_of_s[io]                
-                if vnow > vbest:
-                    iobest = io
-                    vbest = vnow
-                
-                
-            i_opt[ind_a,ind_exo,ind_theta] = iobest
-            V_opt[ind_a,ind_exo,ind_theta] = vbest + uadd
-            c_opt[ind_a,ind_exo,ind_theta] = money_i - sgrid[iobest]
-            s_opt[ind_a,ind_exo,ind_theta] = sgrid[iobest]
+    cuda_ker[blockspergrid, threadsperblock](money_g, sgrid_g, u_mult_g, EV_g, sigma, beta, uadd,
+                                                V_opt_g,i_opt_g,c_opt_g,s_opt_g)
     
-    cuda_ker[blockspergrid, threadsperblock]()
+    
     V_opt,i_opt,c_opt,s_opt = (x.copy_to_host() for x in (V_opt_g,i_opt_g,c_opt_g,s_opt_g))
+    return V_opt,i_opt,c_opt,s_opt

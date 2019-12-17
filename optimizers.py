@@ -134,18 +134,14 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_cp=ucp,co
         money_left = money - (1-lval)*wf.reshape((1,nexo))
         
         if (not use_cp) and (not compare) and (not force_array):
-            V, c, s = np.empty((3,na,nexo,ntheta),dtype=np.float32)
-            i_opt = -np.ones((na,nexo,ntheta),dtype=np.int16)
+            #V, c, s = np.empty((3,na,nexo,ntheta),dtype=np.float32)
+            #i_opt = -np.ones((na,nexo,ntheta),dtype=np.int16)
                  
-            v_couple_local(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift,V,i_opt,c,s)
+            #v_couple_local(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift,V,i_opt,c,s)
             
+            V, i_opt, c, s = v_couple_gpu(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift)
             
-            
-            Vg, cg, sg = np.empty((3,na,nexo,ntheta),dtype=np.float32)
-            i_optg = -np.ones((na,nexo,ntheta),dtype=np.int16)
-            Vg,i_optg,cg,sg = v_couple_gpu(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift)
-            
-            assert np.allclose(V,Vg,rtol=1e-3,atol=1e-4)
+            #assert np.allclose(V,Vg,rtol=1e-3,atol=1e-4)
         else:
             
             if compare:

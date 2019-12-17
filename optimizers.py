@@ -17,7 +17,7 @@ from aux_routines import cp_take_along_axis
 #if system() != 'Darwin' and system() != 'Windows':
 if system() != 'Darwin':
     import cupy as cp
-    ucp = True
+    ucp = False
 else:
     ucp = False
 
@@ -364,6 +364,7 @@ def v_couple_local(money,sgrid,u_mult,EV,sigma,beta,uadd,V_opt,i_opt,c_opt,s_opt
 from math import ceil
 from numba import cuda
 
+    
 def v_couple_gpu(money,sgrid,u_mult,EV,sigma,beta,uadd,V_opt,i_opt,c_opt,s_opt):
     
     
@@ -384,48 +385,44 @@ def v_couple_gpu(money,sgrid,u_mult,EV,sigma,beta,uadd,V_opt,i_opt,c_opt,s_opt):
     money_g, sgrid_g, u_mult_g, EV_g = (cuda.to_device(np.ascontiguousarray(x)) for x in (money, sgrid, u_mult, EV))
     
     
-    threadsperblock = (8, 8)
+    threadsperblock = (8, 8, 8)
     b_a = int(ceil(na / threadsperblock[0]))
     b_exo = int(ceil(nexo / threadsperblock[1]))
-    blockspergrid = (b_a, b_exo)
+    b_theta = int(ceil(ntheta / threadsperblock[2]))
+    blockspergrid = (b_a, b_exo, b_theta)
     
     @cuda.jit
     def cuda_ker():
-        ind_a, ind_exo = cuda.grid(2)
+        ind_a, ind_exo, ind_theta = cuda.grid(3)
         
         def ufun(x): return (x**(1-sigma))/(1-sigma)
         
-        if (ind_a < na) and (ind_exo < nexo):
+        if (ind_a < na) and (ind_exo < nexo) and (ind_theta < ntheta):
             # finds index of maximum savings
             money_i = money[ind_a,ind_exo]
-            if money_i > sgrid[ns-1]: # if can save the max amount
-                ind_s = ns-1 
-            else:
-                # if not look for the highest feasible savings
-                for ind_s in range(ns-1):
-                    if money_i <= sgrid[ind_s+1]: break
-                assert money_i > sgrid[ind_s]
-                
+            mult = u_mult[ind_theta]
             
-            # finds utility values of all feasible savings
-            # should I make a loop instead?
-            u_of_s = ufun( money_i - sgrid[0:ind_s+1] )
             
-            # each value of theta corresponds to different EV
-            # so do the maximum search for each theta using these utilities
+            EV_of_s = EV[:,ind_exo,ind_theta]  
             
-            for ind_theta in range(ntheta):
-                mult = u_mult[ind_theta]
-                EV_of_s = EV[0:(ind_s+1),ind_exo,ind_theta]                
-                u_adjusted = mult*u_of_s + uadd
-                V_of_s = u_adjusted + beta*EV_of_s
+            
+            iobest = 0
+            vbest = mult*ufun(money_i) + beta*EV_of_s[0]
+            
+            for io in range(1,ns):
+                cnow = money_i - sgrid[io]
+                if cnow <= 0: break
+                unow = ufun(cnow)
+                vnow = mult*unow + beta*EV_of_s[io]                
+                if vnow > vbest:
+                    iobest = io
+                    vbest = vnow
                 
                 
-                io = V_of_s.argmax()
-                i_opt[ind_a,ind_exo,ind_theta] = io
-                V_opt[ind_a,ind_exo,ind_theta] = V_of_s[io] 
-                c_opt[ind_a,ind_exo,ind_theta] = money_i - sgrid[io]
-                s_opt[ind_a,ind_exo,ind_theta] = sgrid[io]
+            i_opt[ind_a,ind_exo,ind_theta] = iobest
+            V_opt[ind_a,ind_exo,ind_theta] = vbest + uadd
+            c_opt[ind_a,ind_exo,ind_theta] = money_i - sgrid[iobest]
+            s_opt[ind_a,ind_exo,ind_theta] = sgrid[iobest]
     
     cuda_ker[blockspergrid, threadsperblock]()
     V_opt,i_opt,c_opt,s_opt = (x.copy_to_host() for x in (V_opt_g,i_opt_g,c_opt_g,s_opt_g))

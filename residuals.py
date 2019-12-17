@@ -20,7 +20,7 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
     from model import Model
     from setup import DivorceCosts
     
-    
+ 
     ulost = x[0]
     sigma_psi = max(x[1],0.00001)
     sigma_psi_init = max(x[2],0.00001)
@@ -64,10 +64,9 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
     resid = [0.0]
     resid += [(coh_ret - 0.1)**2]
     resid += [(mar_ret - 0.8)**2]
-    resid += [((marcoh_ratio - 1.1)**2)*(marcoh_ratio<1.1)]
-    resid += [((fls_ratio - 0.8)**2)*(fls_ratio > 0.8)]
-    resid += [((haz_mar - 0.15)**2)]
-    resid += [(haz_sep - 0.2)**2]
+    resid += [((fls_ratio - 0.8)**2)]
+    resid += [((haz_mar - 0.1)**2)]
+    resid += [(haz_sep - 0.15)**2]
     resid += [(haz_div - 0.05)**2]
     
     def distance_pso(particle):

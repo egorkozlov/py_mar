@@ -382,7 +382,11 @@ def v_couple_gpu(money,sgrid,u_mult,EV,sigma,beta,uadd,V_opt,i_opt,c_opt,s_opt):
     i_opt_g = cuda.device_array((na,nexo,ntheta),dtype=np.int16)
     
     
-    money_g, sgrid_g, u_mult_g, EV_g = (cuda.to_device(np.ascontiguousarray(x)) for x in (money, sgrid, u_mult, EV))
+    money_g = cuda.to_device(np.ascontiguousarray(money))
+    sgrid_g = cuda.to_device(np.ascontiguousarray(sgrid))
+    u_mult_g = cuda.to_device(np.ascontiguousarray(u_mult))
+    EV_g = cuda.to_device(np.ascontiguousarray(EV))
+    #money_g, sgrid_g, u_mult_g, EV_g = (cuda.to_device(np.ascontiguousarray(x)) for x in (money, sgrid, u_mult, EV))
     
     
     threadsperblock = (8, 8, 8)
@@ -399,18 +403,18 @@ def v_couple_gpu(money,sgrid,u_mult,EV,sigma,beta,uadd,V_opt,i_opt,c_opt,s_opt):
         
         if (ind_a < na) and (ind_exo < nexo) and (ind_theta < ntheta):
             # finds index of maximum savings
-            money_i = money[ind_a,ind_exo]
-            mult = u_mult[ind_theta]
+            money_i = money_g[ind_a,ind_exo]
+            mult = u_mult_g[ind_theta]
             
             
-            EV_of_s = EV[:,ind_exo,ind_theta]  
+            EV_of_s = EV_g[:,ind_exo,ind_theta]  
             
             
             iobest = 0
             vbest = mult*ufun(money_i) + beta*EV_of_s[0]
             
             for io in range(1,ns):
-                cnow = money_i - sgrid[io]
+                cnow = money_i - sgrid_g[io]
                 if cnow <= 0: break
                 unow = ufun(cnow)
                 vnow = mult*unow + beta*EV_of_s[io]                

@@ -60,7 +60,7 @@ def get_EVM(ind,wthis,EVin,use_gpu=False):
 
 
 
-def v_optimize_couple(money_in,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ugpu,compare=True):
+def v_optimize_couple(money_in,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ugpu,compare=False):
     # This optimizer avoids creating big arrays and uses parallel-CPU on 
     # machines without NUMBA-CUDA codes otherwise
     
@@ -115,8 +115,6 @@ def v_optimize_couple(money_in,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ug
             i_opt = -np.ones((na,nexo,ntheta),dtype=np.int16)                 
             v_couple_local(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift,V,i_opt,c,s)
             
-            V0, i_opt0, c0, s0 = v_couple_gpu(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift)
-            assert np.allclose(V,V0,atol=1e-5,rtol=1e-3)
         else:
             
             # preallocation is pretty unfeasible
@@ -291,7 +289,7 @@ def v_optimize_couple_array(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu
 
 
 
-def v_optimize_single(money,sgrid,EV,sigma,beta,ushift,use_gpu=ugpu,return_ind=False):
+def v_optimize_single(money,sgrid,EV,sigma,beta,ushift,use_gpu=False,return_ind=False):
     # this is the optimizer for value functions
     # 1. It can use cuda arrays (cupy) if use_gpu=True
     # 2. It can accept few shapes of money array and EV
@@ -440,12 +438,15 @@ from numba import cuda
 
 
     
-def v_couple_gpu(money,sgrid,u_mult,EV,sigma,beta,uadd):
+def v_couple_gpu(money,sgrid,u_mult,EV,sigma,beta,uadd,use_kernel_pool=True):
     
     
     na, nexo, ntheta = money.shape[0], money.shape[1], u_mult.size
     
     ns = sgrid.size
+    
+    
+    assert ns < 1000, 'Please alter the array size in cuda_ker_pool'
     
     assert money.shape == (na,nexo)
     assert EV.shape == (ns,nexo,ntheta)
@@ -457,18 +458,32 @@ def v_couple_gpu(money,sgrid,u_mult,EV,sigma,beta,uadd):
     money_g, sgrid_g, u_mult_g, EV_g = (cuda.to_device(np.ascontiguousarray(x)) for x in (money, sgrid, u_mult, EV))
     
     
-    threadsperblock = (8, 16)
-    # this is a tunning parameter. 8*16*8=1024 is the number of threads per 
-    # block. This is GPU specific, on Quests's GPU the maximum is 1024, on 
-    # different machines it can be lower
     
-    b_a = int(ceil(na / threadsperblock[0]))
-    b_exo = int(ceil(nexo / threadsperblock[1]))
-    #b_theta = int(ceil(ntheta / threadsperblock[2]))
-    blockspergrid = (b_a, b_exo)#, b_theta)
-    
-    cuda_ker_pool[blockspergrid, threadsperblock](money_g, sgrid_g, u_mult_g, EV_g, sigma, beta, uadd,
-                                                V_opt_g,i_opt_g)
+    if use_kernel_pool:
+        threadsperblock = (32, 32)
+        # this is a tunning parameter. 32*32=1024 is the number of threads per 
+        # block. This is GPU specific, on Quests's GPU the maximum is 1024, on 
+        # different machines it can be lower
+        
+        b_a = int(ceil(na / threadsperblock[0]))
+        b_exo = int(ceil(nexo / threadsperblock[1]))
+        blockspergrid = (b_a, b_exo)
+        
+        cuda_ker_pool[blockspergrid, threadsperblock](money_g, sgrid_g, u_mult_g, EV_g, sigma, beta, uadd,
+                                                    V_opt_g,i_opt_g)
+    else:
+        threadsperblock = (8, 16, 8)
+        # this is a tunning parameter. 8*16*8=1024 is the number of threads per 
+        # block. This is GPU specific, on Quests's GPU the maximum is 1024, on 
+        # different machines it can be lower
+        
+        b_a = int(ceil(na / threadsperblock[0]))
+        b_exo = int(ceil(nexo / threadsperblock[1]))
+        b_theta = int(ceil(ntheta / threadsperblock[2]))
+        blockspergrid = (b_a, b_exo, b_theta)
+        
+        cuda_ker[blockspergrid, threadsperblock](money_g, sgrid_g, u_mult_g, EV_g, sigma, beta, uadd,
+                                                    V_opt_g,i_opt_g)
     
     
     V_opt,i_opt = (x.copy_to_host() for x in (V_opt_g,i_opt_g))
@@ -511,7 +526,7 @@ def cuda_ker(money_g, sgrid_g, u_mult_g, EV_g, sigma, beta, uadd, V_opt_g,i_opt_
         V_opt_g[ind_a,ind_exo,ind_theta] = vbest + uadd
         
         
-from numba import i2, f4
+from numba import f4
 @cuda.jit
 def cuda_ker_pool(money_g, sgrid_g, u_mult_g, EV_g, sigma, beta, uadd, V_opt_g,i_opt_g):
     ind_a, ind_exo = cuda.grid(2)
@@ -523,35 +538,41 @@ def cuda_ker_pool(money_g, sgrid_g, u_mult_g, EV_g, sigma, beta, uadd, V_opt_g,i
     ntheta = u_mult_g.size
     ns = sgrid_g.size
     
+    
+    asize = 1000
+    
     if (ind_a < na) and (ind_exo < nexo):
         # finds index of maximum savings
         money_i = money_g[ind_a,ind_exo]
         
         
-        EV_of_st = EV_g[:,ind_exo,:]  
-        iobest_t = cuda.local.array((ntheta,),i2)
-        vbest_t = cuda.local.array((ntheta,),f4)
-        mult_t = cuda.local.array((ntheta,),f4)
+        ustore = cuda.local.array((asize,),f4)
         
-        for ind_theta in range(ntheta):
-            mult_t[ind_theta] = u_mult_g[ind_theta]
-            iobest_t[ind_theta] = 0
-            vbest_t[ind_theta] = mult_t[ind_theta]*ufun(money_i) + beta*EV_of_st[0,ind_theta]
-        
-        for io in range(1,ns):
+        for io in range(ns):
             cnow = money_i - sgrid_g[io]
-            if cnow <= 0: break
-            unow = ufun(cnow)
-            
-            for ind_theta in range(ntheta):
-                vnow = mult_t[ind_theta]*unow + beta*EV_of_st[io,ind_theta]                
-                if vnow > vbest_t[ind_theta]:
-                    iobest_t[ind_theta] = io
-                    vbest_t[ind_theta] = vnow
-            
+            if cnow > 0:
+                ustore[io] = ufun(cnow)
+            else:
+                ustore[io] = -1e10
+        
+        
+        
         for ind_theta in range(ntheta):
-            i_opt_g[ind_a,ind_exo,ind_theta] = iobest_t[ind_theta]
-            V_opt_g[ind_a,ind_exo,ind_theta] = vbest_t[ind_theta] + uadd
+            
+            mult = u_mult_g[ind_theta]            
+            EV_s = EV_g[:,ind_exo,ind_theta]
+            iobest = 0
+            vbest = mult*ustore[0] + beta*EV_s[0]
+        
+            for io in range(1,ns):
+                if ustore[io] < -1e9: break
+                vnow = mult*ustore[io] + beta*EV_s[io]
+                if vnow > vbest:
+                    iobest = io
+                    vbest = vnow
+            
+            i_opt_g[ind_a,ind_exo,ind_theta] = iobest
+            V_opt_g[ind_a,ind_exo,ind_theta] = vbest + uadd
             
     
     

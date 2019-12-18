@@ -40,9 +40,9 @@ if __name__ == '__main__':
     #Create grids of parameters
     x0 = np.exp(np.array([ -1.8603,-8.1430,-1.57934,0.25130,-0.4991]))
     print(x0)
-    sigma_psi_g=np.linspace(x0[1]*0.5,x0[1]*1.5,3)
-    sigma_psi_init_g=np.linspace(x0[2]*1.0,x0[2]*1.0,1)
-    di_co_g=np.linspace(x0[0]*0.8,x0[0]*1.2,3)
+    sigma_psi_g=np.linspace(x0[1]*0.5,x0[1]*3.5,6)
+    sigma_psi_init_g=np.linspace(x0[2]*0.8,x0[2]*1.2,3)
+    di_co_g=np.linspace(x0[0]*0.7,x0[0]*1.3,3)
     bila=np.array([False,True])
     
     #Set some initial parameters

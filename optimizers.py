@@ -438,7 +438,7 @@ from numba import cuda
 
 
     
-def v_couple_gpu(money,sgrid,u_mult,EV,sigma,beta,uadd,use_kernel_pool=True):
+def v_couple_gpu(money,sgrid,u_mult,EV,sigma,beta,uadd,use_kernel_pool=False):
     
     
     na, nexo, ntheta = money.shape[0], money.shape[1], u_mult.size

@@ -60,7 +60,7 @@ def get_EVM(ind,wthis,EVin,use_gpu=False):
 
 
 
-def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ugpu):
+def v_optimize_couple(money_in,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ugpu,compare=True):
     # This optimizer avoids creating big arrays and uses parallel-CPU on 
     # machines without NUMBA-CUDA codes otherwise
     
@@ -68,11 +68,11 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ugpu)
     nls = len(ls)
     
         
-    assert isinstance(money,tuple)
-    assert len(money)==3
+    assert isinstance(money_in,tuple)
+    assert len(money_in)==3
     
     
-    asset_income, wf, wm = money
+    asset_income, wf, wm = money_in
     
     nexo = wf.size
     na = asset_income.size
@@ -143,11 +143,20 @@ def v_optimize_couple(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ugpu)
     V_all = V_opt_arr
     
     
+    
+    
+    if compare:
+        Vcomp = v_optimize_couple_array(money_in,sgrid,umult,EV,sigma,beta,ls,us,ushift)[0]
+        md = np.max(np.abs(Vcomp-V))
+        
+        if md > 0.0: print('Maximum difference in V is {}'.format(md))
+    
+    
     return ret(V), ret(c), ret(s), ret(i_opt), ret(i_ls), ret(V_all).astype(np.float32)
 
 
 
-def v_optimize_couple_array(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ugpu,compare=False,force_array=False):
+def v_optimize_couple_array(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ugpu):
     # This is an optimizer that uses Numpy/Cupy arrays
     # it is robust though not completely efficient
     

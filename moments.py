@@ -66,7 +66,6 @@ def moment(mdl,draw=False):
     
     
     
-    print('relations')
     for ist,sname in enumerate(state_codes):
         for t in range(agents.setup.pars['T']):
             
@@ -77,6 +76,9 @@ def moment(mdl,draw=False):
             #Arrays for preparation
             is_state = (state[:,t]==ist)
             ind = np.where(is_state)[0]
+            
+            if not np.any(is_state): continue
+        
             zf,zm,psi=agents.setup.all_indices(t,iexo[ind,t])[1:4]
             
             #Relationship over time
@@ -103,8 +105,6 @@ def moment(mdl,draw=False):
     mdl.moments['share mar'] = relt[2,:]/N
     mdl.moments['share coh'] = relt[3,:]/N
               
-    print('spells new')
-
 
     nspells = (state[:,1:]!=state[:,:-1]).astype(np.int).sum(axis=1).max() + 1
     
@@ -144,65 +144,14 @@ def moment(mdl,draw=False):
     allspells_len = sp_length[is_spell]
     allspells_end = state_end[is_spell] # may be -1 if not ended
     
-        
-    ###########################################
-    #Moments: Spells Creation
-    ###########################################
-    #spells_type=list()
-    #spells_length=list()
-    #spells_end=list()
-
-    #@njit
-    #def loop(spells_type,spells_length,spells_end):
-    
-#    print('spells old')
-    
-#    for n in range(N):
-#        for ist in range(4):
-#            for t in range(agents.setup.pars['T']-1):
-#                
-#                if t==0:
-#                    leng=0 # I think we need to assign 1 in the first period
-                            
-#                 
-#                if (leng>=0) and (state[n,t]==ist): 
-#                    leng=leng+1
-#                
-#                if (leng>0 and state[n,t]!=ist) or (t==agents.setup.pars['T']-2): 
-#                   # I did not understand this logic, please look again
-#                   # as I understand we need to compare previous state with the 
-#                   # current one, though I do not see how this is done    
-#                   # (please elaborate, I might be wrong)
-#    
-#                    spells_type=[ist] + spells_type
-#                    spells_length=[leng] + spells_length
-#                    spells_end=[state[n,t]] + spells_end
-#                    leng=0
-#                    
-#                    
-#    
-    
-     #   return spells_type,spells_length,spells_end
-            
-    #spells_type,spells_length,spells_end=loop(spells_type,spells_length,spells_end)
-    #spells_type.reverse()
-    #spells_length.reverse()
-    #spells_end.reverse()
-    #spells=np.array([np.array(spells_type),np.array(spells_length),np.array(spells_end)]).T
-    
-    
-    # TO FABIO: I did not understand the format of spells above. Please check.
-    # I think in your format if the spell did not end the 3rd column is equal
-    # to the first column, so I added this like
-    allspells_end[allspells_end==-1] = allspells_beg[allspells_end==-1] # FIXME
+    # If the spell did not end mark it as ended with the state at its start
+    allspells_end[allspells_end==-1] = allspells_beg[allspells_end==-1]
     
     spells = np.stack((allspells_beg,allspells_len,allspells_end),axis=1)
     
     
     
     
-    
-    print('end spells')
    
     # TO FABIO: I did not edit things anything past this point.
     # Please look why my spells are different than yours. 

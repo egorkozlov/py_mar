@@ -21,7 +21,7 @@ class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()       
         T = 20
-        Tret = 14 # first period when the agent is retired
+        Tret = 15 # first period when the agent is retired
         p['T'] = T
         p['Tret'] = Tret
         p['sig_zf_0']  = 0.25
@@ -33,7 +33,7 @@ class ModelSetup(object):
         p['sigma_psi_init'] = 0.28
         p['sigma_psi']   = 0.11
         p['R_t'] = [1.04]*T
-        p['n_psi_t']     = [11]*T
+        p['n_psi_t']     = [12]*T
         p['beta_t'] = [0.95]*T
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
@@ -41,7 +41,8 @@ class ModelSetup(object):
         p['sig_partner_a'] = 0.1
         p['sig_partner_z'] = 0.4
         p['m_bargaining_weight'] = 0.5
-        p['pmeet_t'] = [0.7]*T
+        p['pmeet'] = 0.5
+        
         p['wret'] = 0.8
         p['uls'] = 0.3
         
@@ -177,8 +178,8 @@ class ModelSetup(object):
         self.amin = 0
         self.amax =15
         self.agrid_c = np.linspace(self.amin,self.amax,self.na)
-        tune=0.5
-        self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
+        tune=1.5
+        #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         
         # this builds finer grid for potential savings
         s_between = 10 # default numer of points between poitns on agrid
@@ -192,8 +193,8 @@ class ModelSetup(object):
         self.amin_s = 0
         self.amax_s = self.amax/1.0
         self.agrid_s = np.linspace(self.amin_s,self.amax_s,self.na)
-        tune_s=0.5
-        self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
+        tune_s=1.5
+        #self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
         
         self.sgrid_s = build_s_grid(self.agrid_s,s_between,s_da_min,s_da_max)
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)

@@ -514,7 +514,7 @@ def mar_mat(vfy,vmy,vfn,vmn,gamma,use_gpu=ugpu):
     n_agree = int(xp.sum(any_agree,axis=None))
     
     nbsout = xp.zeros(vfn.shape,dtype=xp.float32)
-    ithetaout = -1*np.ones(vfn.shape,dtype=xp.int32)
+    ithetaout = -1*xp.ones(vfn.shape,dtype=xp.int32)
     
     
     if n_agree > 0:       
@@ -535,7 +535,7 @@ def mar_mat(vfy,vmy,vfn,vmn,gamma,use_gpu=ugpu):
             
         nbsout[any_agree] = take(nbs_a) 
         assert xp.all(nbsout[any_agree] > 0)
-        ithetaout[any_agree] = inds_best
+        ithetaout[any_agree] = inds_best.squeeze()
         vfout[any_agree] = take(vfy[any_agree,:])
         vmout[any_agree] = take(vmy[any_agree,:])
         

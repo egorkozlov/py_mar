@@ -13,7 +13,7 @@ from optimizers import v_optimize_couple
 from platform import system
 
 if system() != 'Darwin' and system() != 'Windows':    
-    nbatch_def = 50
+    nbatch_def = 500
     use_cp = True
     
 elif system() == 'Windows':

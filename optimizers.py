@@ -115,6 +115,8 @@ def v_optimize_couple(money_in,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ug
             i_opt = -np.ones((na,nexo,ntheta),dtype=np.int16)                 
             v_couple_local(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift,V,i_opt,c,s)
             
+            V0, i_opt0, c0, s0 = v_couple_gpu(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift)
+            assert np.allclose(V,V0,atol=1e-5,rtol=1e-3)
         else:
             
             # preallocation is pretty unfeasible
@@ -448,36 +450,37 @@ def v_couple_gpu(money,sgrid,u_mult,EV,sigma,beta,uadd):
     assert money.shape == (na,nexo)
     assert EV.shape == (ns,nexo,ntheta)
     
-    V_opt_g = cuda.device_array((na,nexo,ntheta),dtype=np.float32)
-    c_opt_g = cuda.device_array((na,nexo,ntheta),dtype=np.float32)
-    s_opt_g = cuda.device_array((na,nexo,ntheta),dtype=np.float32)
+    V_opt_g = cuda.device_array((na,nexo,ntheta),dtype=np.float32)    
     i_opt_g = cuda.device_array((na,nexo,ntheta),dtype=np.int16)
     
     
     money_g, sgrid_g, u_mult_g, EV_g = (cuda.to_device(np.ascontiguousarray(x)) for x in (money, sgrid, u_mult, EV))
     
     
-    threadsperblock = (8, 16, 8)
+    threadsperblock = (8, 16)
     # this is a tunning parameter. 8*16*8=1024 is the number of threads per 
     # block. This is GPU specific, on Quests's GPU the maximum is 1024, on 
     # different machines it can be lower
     
     b_a = int(ceil(na / threadsperblock[0]))
     b_exo = int(ceil(nexo / threadsperblock[1]))
-    b_theta = int(ceil(ntheta / threadsperblock[2]))
-    blockspergrid = (b_a, b_exo, b_theta)
+    #b_theta = int(ceil(ntheta / threadsperblock[2]))
+    blockspergrid = (b_a, b_exo)#, b_theta)
     
-    cuda_ker[blockspergrid, threadsperblock](money_g, sgrid_g, u_mult_g, EV_g, sigma, beta, uadd,
-                                                V_opt_g,i_opt_g,c_opt_g,s_opt_g)
+    cuda_ker_pool[blockspergrid, threadsperblock](money_g, sgrid_g, u_mult_g, EV_g, sigma, beta, uadd,
+                                                V_opt_g,i_opt_g)
     
     
-    V_opt,i_opt,c_opt,s_opt = (x.copy_to_host() for x in (V_opt_g,i_opt_g,c_opt_g,s_opt_g))
+    V_opt,i_opt = (x.copy_to_host() for x in (V_opt_g,i_opt_g))
+    
+    s_opt = sgrid[i_opt]
+    c_opt = money[:,:,None] - s_opt
     return V_opt,i_opt,c_opt,s_opt
 
 
 
 @cuda.jit
-def cuda_ker(money_g, sgrid_g, u_mult_g, EV_g, sigma, beta, uadd, V_opt_g,i_opt_g,c_opt_g,s_opt_g):
+def cuda_ker(money_g, sgrid_g, u_mult_g, EV_g, sigma, beta, uadd, V_opt_g,i_opt_g):
     ind_a, ind_exo, ind_theta = cuda.grid(3)
     
     def ufun(x): return (x**(1-sigma))/(1-sigma)
@@ -506,8 +509,51 @@ def cuda_ker(money_g, sgrid_g, u_mult_g, EV_g, sigma, beta, uadd, V_opt_g,i_opt_
             
         i_opt_g[ind_a,ind_exo,ind_theta] = iobest
         V_opt_g[ind_a,ind_exo,ind_theta] = vbest + uadd
-        c_opt_g[ind_a,ind_exo,ind_theta] = money_i - sgrid_g[iobest]
-        s_opt_g[ind_a,ind_exo,ind_theta] = sgrid_g[iobest]
+        
+        
+from numba import i2, f4
+@cuda.jit
+def cuda_ker_pool(money_g, sgrid_g, u_mult_g, EV_g, sigma, beta, uadd, V_opt_g,i_opt_g):
+    ind_a, ind_exo = cuda.grid(2)
+    
+    def ufun(x): return (x**(1-sigma))/(1-sigma)
+    
+    na = money_g.shape[0]
+    nexo = money_g.shape[1]
+    ntheta = u_mult_g.size
+    ns = sgrid_g.size
+    
+    if (ind_a < na) and (ind_exo < nexo):
+        # finds index of maximum savings
+        money_i = money_g[ind_a,ind_exo]
+        
+        
+        EV_of_st = EV_g[:,ind_exo,:]  
+        iobest_t = cuda.local.array((ntheta,),i2)
+        vbest_t = cuda.local.array((ntheta,),f4)
+        mult_t = cuda.local.array((ntheta,),f4)
+        
+        for ind_theta in range(ntheta):
+            mult_t[ind_theta] = u_mult_g[ind_theta]
+            iobest_t[ind_theta] = 0
+            vbest_t[ind_theta] = mult_t[ind_theta]*ufun(money_i) + beta*EV_of_st[0,ind_theta]
+        
+        for io in range(1,ns):
+            cnow = money_i - sgrid_g[io]
+            if cnow <= 0: break
+            unow = ufun(cnow)
+            
+            for ind_theta in range(ntheta):
+                vnow = mult_t[ind_theta]*unow + beta*EV_of_st[io,ind_theta]                
+                if vnow > vbest_t[ind_theta]:
+                    iobest_t[ind_theta] = io
+                    vbest_t[ind_theta] = vnow
+            
+        for ind_theta in range(ntheta):
+            i_opt_g[ind_a,ind_exo,ind_theta] = iobest_t[ind_theta]
+            V_opt_g[ind_a,ind_exo,ind_theta] = vbest_t[ind_theta] + uadd
+            
+    
     
     
     

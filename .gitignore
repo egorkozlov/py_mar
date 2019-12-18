@@ -139,3 +139,7 @@ dmypy.json
 *.xslx
 *.out
 iterations*
+*.sh
+core.*
+
+*.prof

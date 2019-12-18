@@ -43,6 +43,11 @@ class ModelSetup(object):
         p['m_bargaining_weight'] = 0.5
         p['pmeet_t'] = [0.7]*T
         p['wret'] = 0.8
+        p['uls'] = 0.3
+        
+        
+        p['u_shift_mar'] = 0.0
+        p['u_shift_coh'] = 0.0
         
         
         p['f_wage_trend'] = [0.0 + 0.00*min(t,Tret) + 0.00*(min(t,Tret)**2) for t in range(T)]
@@ -54,6 +59,8 @@ class ModelSetup(object):
             assert (key in p), 'wrong name?'
             p[key] = value
         
+        p['pmeet_t'] = [p['pmeet']]*T
+        
         
         self.pars = p
         
@@ -64,7 +71,7 @@ class ModelSetup(object):
         
         # female labor supply
         self.ls_levels = [0.5,1.0]
-        self.ls_utilities = [1.25,1.0] 
+        self.ls_utilities = [1.0+p['uls'],1.0] 
         self.ls_pdown = [0.9,0.0]
         self.nls = len(self.ls_levels)
         
@@ -233,6 +240,12 @@ class ModelSetup(object):
                           'Male, single':exogrid['zm_t_mat'],
                           'Couple, M':exogrid['all_t_mat_by_l'],
                           'Couple, C':exogrid['all_t_mat_by_l']} # sparse version?
+        
+        
+        self.utility_shifters = {'Female, single':0.0,
+                                 'Male, single':0.0,
+                                 'Couple, M':p['u_shift_mar'],
+                                 'Couple, C':p['u_shift_coh']}
         
         
         # this pre-computes transition matrices for meeting a partner
@@ -484,7 +497,7 @@ class ModelSetup(object):
     
     
     
-    def vm_last(self,s,zm,zf,psi,theta):
+    def vm_last(self,s,zm,zf,psi,theta,ushift):
         # this is the value function for couple that has savings s,
         # Z = (zm,zf,psi) and bargaining power theta after all decisions are made
         
@@ -526,7 +539,7 @@ class ModelSetup(object):
         return V.astype(np.float32), VF.astype(np.float32), VM.astype(np.float32), income.astype(np.float32), np.zeros_like(income.astype(np.float32)), ls.astype(np.float32), u_couple_g.astype(np.float32)
         
 
-    def vm_last_grid(self):
+    def vm_last_grid(self,ushift):
         # this returns value of vm on the grid corresponding to vm
         s_in = self.agrid_c[:,None,None]
         zm_in = self.exogrid.all_t[-1][:,1][None,:,None]
@@ -534,25 +547,25 @@ class ModelSetup(object):
         psi_in = self.exogrid.all_t[-1][:,2][None,:,None]
         theta_in = self.thetagrid[None,None,:]
                 
-        return self.vm_last(s_in,zm_in,zf_in,psi_in,theta_in)
+        return self.vm_last(s_in,zm_in,zf_in,psi_in,theta_in,ushift)
         
     
     
 
-    def vs_last(self,s,z_plus_trend,return_cs=False):  
+    def vs_last(self,s,z_plus_trend,ushift,return_cs=False):  
         # generic last period utility for single agent
         income = self.pars['R_t'][-1]*s+np.exp(z_plus_trend) 
         if return_cs:
-            return self.u(income).astype(np.float32), income.astype(np.float32), np.zeros_like(income.astype(np.float32))
+            return self.u(income).astype(np.float32) + ushift, income.astype(np.float32), np.zeros_like(income.astype(np.float32))
         else:
             return self.u(income)
     
-    def vs_last_grid(self,female,return_cs=False):
+    def vs_last_grid(self,female,ushift,return_cs=False):
         # this returns value of vs on the grid corresponding to vs
         s_in = self.agrid_s[:,None]
         z_in = self.exogrid.zf_t[-1][None,:] if female else self.exogrid.zm_t[-1][None,:]
         trend = self.pars['f_wage_trend'][-1] if female else self.pars['m_wage_trend'][-1]        
-        return self.vs_last(s_in,z_in+trend,return_cs)
+        return self.vs_last(s_in,z_in+trend,ushift,return_cs)
         
     
     

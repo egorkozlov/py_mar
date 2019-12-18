@@ -176,8 +176,12 @@ def v_mar_igrid(setup,t,V,icouple,ind_or_inds,*,female,marriage,interpolate=True
    
     ins = [Vfm,Vmm,Vfs,Vms,gamma]
     ins = [np.float32(x) for x in ins] # optional type conversion
-    vfout, vmout, nbsout, agree, ithetaout = mar_mat(*ins)
+    #vfout, vmout, nbsout, agree, ithetaout = mar_mat(*ins)
     
+    
+    vfout, vmout, nbsout, agree, ithetaout = mar_gpu(*ins)
+        
+      
 
     return {'Values': (vfout, vmout), 'NBS': nbsout, 'theta': ithetaout, 'Decision':agree}
 
@@ -521,28 +525,93 @@ def mar_mat(vfy,vmy,vfn,vmn,gamma):
         
         
         
-        
+    
     return vfout, vmout, nbsout, any_agree, ithetaout
+
         
         
+    
+from numba import cuda
+from math import ceil
+def mar_gpu(vfy,vmy,vfn,vmn,gamma):
+
+    
+    vfy_g,vmy_g,vfn_g,vmn_g = (cuda.to_device(np.ascontiguousarray(x)) 
+                                 for x in (vfy,vmy,vfn,vmn))
+    
+    shp = vfn.shape
+    vfout_g = cuda.device_array(shp,dtype=np.float32)
+    vmout_g = cuda.device_array(shp,dtype=np.float32)
+    nbsout_g = cuda.device_array(shp,dtype=np.float32)
+    any_agree_g = cuda.device_array(shp,dtype=np.bool)
+    ithetaout_g = cuda.device_array(shp,dtype=np.int16)
         
     
+    na, nexo = vfn.shape
+    threadsperblock = (32,32)
+    
+    b_a = int(ceil(na / threadsperblock[0]))
+    b_exo = int(ceil(nexo / threadsperblock[1]))
+    blockspergrid = (b_a, b_exo)
+    
+    mar_gpu_core[blockspergrid,threadsperblock](vfy_g,vmy_g,vfn_g,vmn_g,gamma,
+                 vfout_g, vmout_g, nbsout_g, any_agree_g, ithetaout_g)
+    
+    vfout, vmout, nbsout, any_agree, ithetaout = (x.copy_to_host() for x in 
+                        (vfout_g, vmout_g, nbsout_g, any_agree_g, ithetaout_g))
+    
+    return vfout, vmout, nbsout, any_agree, ithetaout
+            
+@cuda.jit
+def mar_gpu_core(vfy_g,vmy_g,vfn_g,vmn_g,gamma,
+                 vfout_g, vmout_g, nbsout_g, any_agree_g, ithetaout_g):
+    
+    ia, iexo = cuda.grid(2)
     
     
-    #nbsout = nbs(sf,sm,gamma)
+    na, nexo = vfn_g.shape[0], vfn_g.shape[1]
+    ntheta = vfy_g.shape[2]
     
-    
-    
-    
-    
-    #ithetaout = -1*np.zeros(vfout.shape,dtype=np.float32)
-    
-    
-    
-                
-    
-    #return vfout, vmout, nbsout, ithetaout
-    
+    if (ia < na) and (iexo < nexo):
+        # find whether agree
+        vfy = vfy_g[ia,iexo,:]
+        vfn = vfn_g[ia,iexo]
+        vmy = vmy_g[ia,iexo,:]
+        vmn = vmn_g[ia,iexo]
+        
+        agree = False
+        for itheta in range(ntheta):
+            if (vfy[itheta] > vfn) and (vmy[itheta] > vmn):
+                agree = True
+                break
+            
+            
+        sbest = -1.0
+        ibest = -1
+            
+        if not agree:        
+            vfout_g[ia,iexo] = vfn
+            vmout_g[ia,iexo] = vmn
+            nbsout_g[ia,iexo] = 0.0
+            any_agree_g[ia,iexo] = False
+            ithetaout_g[ia,iexo] = -1
+        else:
+            for itheta in range(ntheta):
+                if (vfy[itheta] > vfn) and (vmy[itheta] > vmn):
+                    snow = (vfy[itheta] - vfn)**(gamma) * \
+                            (vmy[itheta] - vmn)**(1-gamma)
+                    if snow >= sbest:
+                        sbest = snow
+                        ibest = itheta
+                        
+            vfout_g[ia,iexo] = vfy[ibest]
+            vmout_g[ia,iexo] = vmy[ibest]
+            nbsout_g[ia,iexo] = sbest
+            any_agree_g[ia,iexo] = True
+            ithetaout_g[ia,iexo] = ibest
+            
+            
+                            
 
 
  

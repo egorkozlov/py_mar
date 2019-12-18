@@ -15,6 +15,16 @@ from numba import njit, vectorize
 from gridvec import VecOnGrid
 
 
+from platform import system
+if system() != 'Darwin':
+    import cupy as cp
+    from aux_routines import cp_take_along_axis
+    ugpu = True
+else:
+    ugpu = False
+
+
+
 # these are new routines for renegotiation
 
 ##### main part
@@ -478,10 +488,17 @@ def nbs(x,y,gamma):
                         
 
 
-def mar_mat(vfy,vmy,vfn,vmn,gamma):
-
-    sf = vfy - np.expand_dims(vfn,vfn.ndim)
-    sm = vmy - np.expand_dims(vmn,vmn.ndim)
+def mar_mat(vfy,vmy,vfn,vmn,gamma,use_gpu=ugpu):
+    
+    
+    if use_gpu:
+        vfy, vmy, vfn, vmn = (cp.asarray(x) for x in (vfy, vmy, vfn, vmn))
+    
+    
+    xp = np if not use_gpu else cp
+    
+    sf = vfy - xp.expand_dims(vfn,vfn.ndim)
+    sm = vmy - xp.expand_dims(vmn,vmn.ndim)
     
     
     
@@ -491,36 +508,41 @@ def mar_mat(vfy,vmy,vfn,vmn,gamma):
     
     
     agree = (sf>0) & (sm>0)
-    any_agree = np.any(agree,axis=-1)
+    any_agree = xp.any(agree,axis=-1)
     
     # this reshapes things
-    n_agree = np.sum(any_agree)
+    n_agree = int(xp.sum(any_agree,axis=None))
     
-    nbsout = np.zeros(vfn.shape,dtype=np.float32)
-    ithetaout = -1*np.ones(vfn.shape,dtype=np.int32)
+    nbsout = xp.zeros(vfn.shape,dtype=xp.float32)
+    ithetaout = -1*np.ones(vfn.shape,dtype=xp.int32)
     
     
     if n_agree > 0:       
         
         sf_a = sf[any_agree,:]
         sm_a = sm[any_agree,:]
-        nbs_a = np.zeros(sf_a.shape,dtype=np.float32)
+        nbs_a = xp.zeros(sf_a.shape,dtype=xp.float32)
         
         a_pos = (sf_a>0) & (sm_a>0)
         
         nbs_a[a_pos] = (sf_a[a_pos]**gamma) * (sm_a[a_pos]**(1-gamma))
-        inds_best = np.argmax(nbs_a,axis=1)
+        inds_best = xp.expand_dims(xp.argmax(nbs_a,axis=1).astype(xp.int16),1)
         
-        take = lambda x : np.take_along_axis(x,inds_best[:,None],axis=1).reshape((n_agree,))
-        
+        if not use_gpu:
+            take = lambda x : xp.take_along_axis(x,inds_best,axis=1).reshape((n_agree,))
+        else:
+            take = lambda x : cp_take_along_axis(x,inds_best,axis=1).reshape((n_agree,))
+            
         nbsout[any_agree] = take(nbs_a) 
-        assert np.all(nbsout[any_agree] > 0)
+        assert xp.all(nbsout[any_agree] > 0)
         ithetaout[any_agree] = inds_best
         vfout[any_agree] = take(vfy[any_agree,:])
         vmout[any_agree] = take(vmy[any_agree,:])
         
         
-        
+        if use_gpu:
+            vfout, vmout, nbsout, any_agree, ithetaout = (cp.asnumpy(x) for x in
+                                                          (vfout, vmout, nbsout, any_agree, ithetaout))
         
     return vfout, vmout, nbsout, any_agree, ithetaout
         

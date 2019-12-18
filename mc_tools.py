@@ -71,7 +71,38 @@ def trim_one_matrix(M,level=0.001):
     Mout = Mout / np.sum(Mout,axis=1)[:,np.newaxis]
     return Mout
 
-def combine_matrices(a,b,Pia,Pib,check=True,trim=True,trim_level=0.001):
+def cut_matrix(M,kill_diag=False):
+    # This routine takes matrix M as input and returns a 'cut' Matrix M'
+    # all the entries states above the current one are made equal to
+    # zero. 
+    # Kill diag makes all the entries in the diagonal equal to zero.
+ 
+    #Assert we have a aquare matrix
+    assert np.shape(M)[0]==np.shape(M)[1]
+    dim=np.shape(M)[0]
+    
+    MM=M.copy()
+    #Kill the diagonal
+    if kill_diag:
+        for a in range(dim):
+            if a>0:
+                MM[a][a]=0.0
+                
+    #Fill the zeros
+    for a in range(dim):
+        for b in range(dim):
+            if b>a:
+                MM[a][b]=0.0
+                
+    #Rescale the non-zero entries
+    for a in range(dim):
+       
+        MM[a]=np.array(MM[a])/sum(MM[a])
+    
+    return MM
+    
+    
+def combine_matrices(a,b,Pia,Pib,check=True,trim=True,trim_level=0.00001):
     # this combines INDEPENDENT transition matrices Pia and Pib
     grid = mat_combine(a,b)
     
@@ -87,7 +118,7 @@ def combine_matrices(a,b,Pia,Pib,check=True,trim=True,trim_level=0.001):
     return grid, Pi
   
 #@jit
-def combine_matrices_list(alist,b,Pialist,Pib,check=True,trim=True,trim_level=0.001):
+def combine_matrices_list(alist,b,Pialist,Pib,check=True,trim=True,trim_level=0.00001):
     # this combines each element of Pialist and Pib
     # they assumed to be independent (i.e. Pialist and Pib can be combined in any order)
     grid, Pi = (list(), list())
@@ -105,7 +136,7 @@ def combine_matrices_list(alist,b,Pialist,Pib,check=True,trim=True,trim_level=0.
 
 
 #@jit
-def combine_matrices_two_lists(alist,blist,Pialist,Piblist,check=True,trim=True,trim_level=0.001):
+def combine_matrices_two_lists(alist,blist,Pialist,Piblist,check=True,trim=True,trim_level=0.00001):
     # this combines each element of Pialist and Pib
     # they assumed to be independent (i.e. Pialist and Pib can be combined in any order)
     grid, Pi = (list(), list())
@@ -199,12 +230,16 @@ def ind_combine_m(ilist,nlist):
     
 
 
-def int_prob_standard(vec,trim=True,trim_level=0.01):
+def int_prob_standard(vec,trim=True,trim_level=0.001,n_points=None):
     # given ordered vector vec [x_0,...,x_{n-1}] this returns probabilities
     # [p0,...,p_{n-1}] such that p_i = P[d(Z,x_i) is minimal among i], where
     # Z is standard normal ranodm variable
     
-    assert np.all(np.diff(vec)>0), "vec must be ordered and increasing!"
+    try:
+        assert np.all(np.diff(vec)>0), "vec must be ordered and increasing!"
+    except:
+        print(vec)
+        assert False
     
     vm = np.concatenate( ([-np.inf],vec[:-1]) )
     vp = np.concatenate( (vec[1:],[np.inf]) )
@@ -214,9 +249,22 @@ def int_prob_standard(vec,trim=True,trim_level=0.01):
     
     p = norm.cdf(v_up) - norm.cdf(v_down)
     
+    
+    
+    if n_points is not None:
+        trim = False # npoints overrides trim
+        i_keep = ((-p).argsort())[0:n_points]
+        pold = p.copy()
+        p = np.zeros(p.shape)
+        p[i_keep] = pold[i_keep]
+        assert np.any(p>0)
+        p = p / np.sum(p)
+    
     if trim:
         p[np.where(p<trim_level)] = 0
         p = p / np.sum(p)
+        
+        
     
     
     #ap = np.argpartition(p,[-1,-2])
@@ -225,13 +273,17 @@ def int_prob_standard(vec,trim=True,trim_level=0.01):
     return p#, ap, p[ap[-2]], p[ap[-1]]
 
 
-def int_prob(vec,mu=0,sig=1,trim=True,trim_level=0.01):
+def int_prob(vec,mu=0,sig=1,trim=True,trim_level=0.001,n_points=None):
     # this works like int_prob_standard, but assumes that Z = mu + sig*N(0,1)
     vec_adj = (np.array(vec)-mu)/sig
-    return int_prob_standard(vec_adj,trim,trim_level)
+    return int_prob_standard(vec_adj,trim,trim_level,n_points)
 
 
-    
+
+
+
+
+
 
 # this tests combining things
 if __name__ == "__main__":

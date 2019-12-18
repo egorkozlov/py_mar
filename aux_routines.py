@@ -50,7 +50,8 @@ def last_true(mask, axis=None, invalid_val=-1):
 
 
 
-if system() != 'Darwin': import cupy as cp
+#if system() != 'Darwin' and system() != 'Windows':  import cupy as cp
+if system() != 'Darwin':  import cupy as cp
 
 def cp_take_along_axis(a, indices, axis):
     """Take values from the input array by matching 1d index and data slices.

@@ -131,3 +131,15 @@ dmypy.json
 
 
 *.zip
+*.pkl
+
+*.pdf
+*.txt
+*.xls
+*.xslx
+*.out
+iterations*
+*.sh
+core.*
+
+*.prof

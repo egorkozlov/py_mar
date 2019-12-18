@@ -17,13 +17,29 @@ import numpy as np
 # TODO: this should have nan-like values and throw errors
 
 class VecOnGrid(object):
-    def __init__(self,grid,values,trim=True):
+    def __init__(self,grid,values,iwn=None,trim=True):
+        # this assumes grid is strictly increasing o/w unpredictable
         self.val = values
+        self.val_trimmed = np.clip(values,grid[0],grid[-1])
         self.grid = grid
-        self.i, self.wnext = interp(self.grid,self.val,return_wnext=True,trim=trim)
+        if iwn is None:
+            self.i, self.wnext = interp(self.grid,self.val,return_wnext=True,trim=trim)
+        else:
+            self.i, self.wnext = iwn
+            
         self.n = self.i.size
         self.wthis = 1-self.wnext
         self.trim = trim
+        
+        
+        assert np.allclose(self.val_trimmed,self.apply_crude(grid))
+        
+    
+    def apply_crude(self,xin):
+        # crude version of apply
+        # has no options, assumes xin is 1-dimensional
+        return xin[self.i]*self.wthis + xin[self.i+1]*self.wnext
+        
         
     def apply(self,xin,axis=0,take=None,pick=None,reshape_i=True):
         # this applies interpolator to array xin along dimension axis
@@ -31,6 +47,7 @@ class VecOnGrid(object):
         # take's elements are assumed to be 2-element tuple where take[0] 
         # is axis and take[1] is indices. 
         
+        typein = np.float32#xin.dtype
         
         nd = xin.ndim
         assert axis < nd
@@ -58,6 +75,7 @@ class VecOnGrid(object):
             
         
         shp_i = (1,)*axis + (n,) + (1-axis)*(1,)
+        
         # TODO: this is not general but let's see if we need more
         # this creates 2-dimensional thing
         shp_w = (1,)*axis + (n,) + (nd-1-axis)*(1,)
@@ -72,7 +90,9 @@ class VecOnGrid(object):
             
             dimextra = [t[0] for t in take]
             iextra = [t[1] for t in take]
+            
             for d, i in zip(dimextra,iextra):
+                
                 ithis[d] = i
                 inext[d] = i
                 
@@ -95,7 +115,9 @@ class VecOnGrid(object):
         out = wthis*xin[tuple(ithis)] + wnext*xin[tuple(inext)]
         
         # TODO: check if this hurts dimensionality
-        return out.squeeze() 
+        # FIXME: yes it does
+        
+        return (np.atleast_1d(out.astype(typein).squeeze()))
     
     
     def apply_2dim(self,xin,*,apply_first,axis_first,axis_this=0,take=None,pick=None,reshape_i=True):
@@ -145,4 +167,17 @@ class VecOnGrid(object):
         self.i[where], self.wnext[where] = \
             interp(self.grid,self.val[where],return_wnext=True,trim=self.trim)
         self.wthis[where] = 1 - self.wnext[where]
+        
+        
+    def roll(self,shocks=None):
+        # this draws a random vector of grid poisitions such that probability
+        # of self.i is self.wthis and probability of self.i+1 is self.wnext
+        
+        if shocks is None:
+            print('Warning: fix the seed please')
+            shocks = np.random.random_sample(self.val.shape)
+            
+        out = self.i
+        out[shocks>self.wthis] += 1
+        return out
         

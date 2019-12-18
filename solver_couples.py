@@ -13,7 +13,7 @@ from optimizers import v_optimize_couple
 from platform import system
 
 if system() != 'Darwin' and system() != 'Windows':    
-    nbatch_def = 50
+    nbatch_def = 500
     use_cp = True
     
 elif system() == 'Windows':
@@ -26,7 +26,7 @@ else:
     nbatch_def = 17
     use_cp = False
 
-def v_iter_couple(setup,t,EV_tuple,nbatch=nbatch_def,verbose=False):
+def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
     
     if verbose: start = default_timer()
     
@@ -95,7 +95,7 @@ def v_iter_couple(setup,t,EV_tuple,nbatch=nbatch_def,verbose=False):
         EV_t = (ind,p,EV_by_l[:,istart:ifinish,:,:])
         
         V_pure_i, c_opt_i, s_opt_i, i_opt_i, il_opt_i, V_all_l_i = \
-           v_optimize_couple(money_t,sgrid,umult_vec,EV_t,sigma,beta,ls,us)
+           v_optimize_couple(money_t,sgrid,umult_vec,EV_t,sigma,beta,ls,us,ushift)
         V_ret_i = V_pure_i + psi[None,istart:ifinish,None]
         
         

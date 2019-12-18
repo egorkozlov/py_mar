@@ -9,6 +9,9 @@ Created on Tue Dec 10 17:07:47 2019
 import os
 from time import sleep
 from timeit import default_timer
+import pickle
+
+
 
 
 
@@ -18,23 +21,20 @@ def fun_check(x):
 
 #f = line.split()
 
+try:        
+    os.mkdir('Job')
+except:
+    pass
 
 
-def compute_for_values(values,timeout=240.0,print_every=15.0):
-    cwd = os.getcwd()
-    
-    if cwd.endswith('Job'): os.chdir('..')   
- 
-    
-    try:
-        os.chdir('Job')            
-    except:
-        os.mkdir('Job')
-        os.chdir('Job')
-        
+
+# optionally this can apply function f_apply to the results
+def compute_for_values(values,f_apply=lambda x:x,timeout=240.0,print_every=10.0,nfails=3):
+      
     
     
-    assert type(values) is list
+    
+    #assert type(values) is list
     
     names_in = list()
     names_out = list()
@@ -42,30 +42,21 @@ def compute_for_values(values,timeout=240.0,print_every=15.0):
     # find names of in and out
     # clear files if something already exists
     for ival in range(len(values)):
-        namein = 'in{}.txt'.format(ival)
+        namein = 'in{}.pkl'.format(ival)
         
-        try:
-            os.remove(namein)
-        except:
-            pass
+        [os.remove('Job/'+f) for f in os.listdir('Job') 
+         if (f.endswith('.pkl') and f.startswith('in')) or 
+            (f.endswith('.pkl') and f.startswith('out'))]
         
         names_in.append(namein)
-        nameout = 'out{}.txt'.format(ival)
+        nameout = 'out{}.pkl'.format(ival)
         names_out.append(nameout)
         
-        try:
-            os.remove(nameout)
-        except:
-            pass
-        
-    
         
         
     def create_in(fname,x):
-        x_str = [str(y) for y in x]
-        towrite = ' '.join(x_str)
-        file_in = open(fname,'w+')  
-        file_in.write(towrite)
+        file_in = open('Job/'+fname,'wb+')  
+        pickle.dump(x,file_in)
         file_in.close()
     
     
@@ -80,6 +71,7 @@ def compute_for_values(values,timeout=240.0,print_every=15.0):
     time_took = [0.0]*len(names_in)
     started = [False]*len(names_in)
     finished = [False]*len(names_in)
+    fail_count = [0]*len(names_in)
     
     start = default_timer()
     tic = default_timer()
@@ -90,11 +82,11 @@ def compute_for_values(values,timeout=240.0,print_every=15.0):
         sleep(1.0)
         
         
-        ld = os.listdir()
+        ld = os.listdir('Job')
         
         
-        li_in =  [f for f in ld if f.endswith('.txt') and f.startswith('in') ]
-        li_out = [f for f in ld if f.endswith('.txt') and f.startswith('out')]
+        li_in =  [f for f in ld if f.endswith('.pkl') and f.startswith('in') ]
+        li_out = [f for f in ld if f.endswith('.pkl') and f.startswith('out')]
          
         for i, name in enumerate(names_in):
             if (name not in li_in): 
@@ -108,8 +100,15 @@ def compute_for_values(values,timeout=240.0,print_every=15.0):
                     if time_since > timeout: # if does restart
                         print('timeout for i = {}, recreating'.format(i))
                         time_start[i] = 0
+                        fail_count[i] += 1
                         started[i] = False
-                        create_in(name,values[i])
+                        if fail_count[i] >= nfails: # if too many fails
+                            # simulates output of function computation
+                            nameout = 'out{}.pkl'.format(i)
+                            create_in(nameout,1.0e6)
+                        else:
+                            # creates new in file in hope to get the answer again
+                            create_in(name,values[i])
                         
             if (names_out[i] in li_out) and (not finished[i]) and (started[i]):
                 finished[i] = True
@@ -123,9 +122,10 @@ def compute_for_values(values,timeout=240.0,print_every=15.0):
         # time stats  sometimes if not done
         toc = default_timer()
         
+        
         if toc - tic > print_every:
-            print('{} started, {} finished, {} not started, running for {:.1f} minutes'.
-                  format(sum(started),sum(finished),len(values)-sum(started),(toc-start)/60))
+            print('{} running, {} finished, {} not started, running for {:.1f} minutes'.
+                  format(sum(started)-sum(finished),sum(finished),len(values)-sum(started),(toc-start)/60))
             tic = toc
             
             
@@ -133,19 +133,18 @@ def compute_for_values(values,timeout=240.0,print_every=15.0):
     
     fout = list()
     for i, name in enumerate(names_out):
-        file = open(name)
+        file = open('Job/'+name,'rb')
         
         # this handles both lists and values
-        val = [float(x) for x in file.readline().split()]
-        if len(val)==1: val = val[0]            
+        val = pickle.load(file)
         
-        fout.append(val)
+        fout.append(f_apply(val))
         file.close()
-        os.remove(name)
+        os.remove('Job/'+name)
         
         
         
-    os.chdir(cwd)
+    
     return fout
     
 if __name__ == '__main__':

@@ -49,7 +49,7 @@ if __name__ == '__main__':
                          verbose=True)
     print('Done. Residual in point x0 is {}'.format(out))
     
-    graphs=False
+    graphs=True
     #Indexes for the graphs
     if graphs:
         ai=30

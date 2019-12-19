@@ -60,6 +60,7 @@ def fun(x):
         dump=min(max(0.1,((i+1)/N_st)**(0.5)),0.995)
         
         xc=dump*xm+(1-dump)*xt[:,i]
+        xc=xc[:,0]
         
         def q(pt):
             try:

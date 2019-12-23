@@ -60,6 +60,13 @@ def get_EVM(ind,wthis,EVin,use_gpu=False):
 
 
 
+    
+cuda_ns = 400
+cuda_ntheta = 15
+cuda_na = 10
+
+
+
 def v_optimize_couple(money_in,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ugpu,compare=False):
     # This optimizer avoids creating big arrays and uses parallel-CPU on 
     # machines without NUMBA-CUDA codes otherwise
@@ -76,7 +83,12 @@ def v_optimize_couple(money_in,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ug
     
     nexo = wf.size
     na = asset_income.size
+    ns = sgrid.size
+    ntheta = umult.size
     
+    #assert cuda_na >= na, 'Please adjust cuda grid size for na'
+    assert cuda_ntheta >= ntheta, 'Please adjust cuda grid size for ntheta'
+    assert cuda_ns >= ns, 'Please adjust cuda grid size for ns'
     
     wf = wf.reshape((1,wf.size))
     wm = wm.reshape((1,wm.size))
@@ -114,7 +126,10 @@ def v_optimize_couple(money_in,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ug
             V, c, s = np.empty((3,na,nexo,ntheta),dtype=np.float32)
             i_opt = -np.ones((na,nexo,ntheta),dtype=np.int16)                 
             v_couple_local(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift,V,i_opt,c,s)
+            V2, i_opt2, c2, s2 = v_couple_gpu(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift)
             
+            assert np.allclose(V2,V,atol=1e-4,rtol=1e-3)
+            print('Test passed!')
         else:
             
             # preallocation is pretty unfeasible
@@ -438,7 +453,7 @@ from numba import cuda
 
 
     
-def v_couple_gpu(money,sgrid,u_mult,EV,sigma,beta,uadd,use_kernel_pool=False):
+def v_couple_gpu(money,sgrid,u_mult,EV,sigma,beta,uadd,use_kernel_shared=True):
     
     
     na, nexo, ntheta = money.shape[0], money.shape[1], u_mult.size
@@ -458,19 +473,21 @@ def v_couple_gpu(money,sgrid,u_mult,EV,sigma,beta,uadd,use_kernel_pool=False):
     money_g, sgrid_g, u_mult_g, EV_g = (cuda.to_device(np.ascontiguousarray(x)) for x in (money, sgrid, u_mult, EV))
     
     
+    sigma, beta, uadd = (np.float32(x) for x in (sigma, beta, uadd))
     
-    if use_kernel_pool:
-        threadsperblock = (32, 32)
-        # this is a tunning parameter. 32*32=1024 is the number of threads per 
-        # block. This is GPU specific, on Quests's GPU the maximum is 1024, on 
-        # different machines it can be lower
+    
+    if use_kernel_shared:
+        threadsperblock = (cuda_na, 1, cuda_ntheta)
         
         b_a = int(ceil(na / threadsperblock[0]))
         b_exo = int(ceil(nexo / threadsperblock[1]))
-        blockspergrid = (b_a, b_exo)
+        b_theta = int((ceil(ntheta/threadsperblock[1])))
+        blockspergrid = (b_a, b_exo, b_theta)
         
-        cuda_ker_pool[blockspergrid, threadsperblock](money_g, sgrid_g, u_mult_g, EV_g, sigma, beta, uadd,
+        cuda_ker_shared[blockspergrid, threadsperblock](money_g, sgrid_g, u_mult_g, EV_g, sigma, beta, uadd,
                                                     V_opt_g,i_opt_g)
+        
+        
     else:
         threadsperblock = (8, 16, 8)
         # this is a tunning parameter. 8*16*8=1024 is the number of threads per 
@@ -575,6 +592,141 @@ def cuda_ker_pool(money_g, sgrid_g, u_mult_g, EV_g, sigma, beta, uadd, V_opt_g,i
             V_opt_g[ind_a,ind_exo,ind_theta] = vbest + uadd
             
     
+
+
+@cuda.jit
+def cuda_ker_shared(money_g, sgrid_g, u_mult_g, EV_g, sigma, beta, uadd, V_opt_g,i_opt_g):
+    # this assumes ind_exo is constant
     
     
     
+    ind_a, ind_exo, ind_theta = cuda.grid(3)
+    
+    #print((ind_a,ind_exo,ind_theta))
+    
+     
+    
+    clim = np.float32(1e-5)
+    ulim = np.float32((clim**(1-sigma))/(1-sigma))
+    
+    na = money_g.shape[0]
+    nexo = money_g.shape[1]
+    ntheta = u_mult_g.size
+    ns = sgrid_g.size
+    
+    # initialize
+    EVstore = cuda.shared.array((cuda_ns,cuda_ntheta),f4)
+    umultstore = cuda.shared.array((cuda_ntheta,),f4)    
+    ustore = cuda.shared.array((cuda_na,cuda_ns),f4)
+    
+    
+    
+    #### THIS IS THE TRICKY PART
+    
+    # fill ustore
+    # !!! this uses all threads, including off-grid ones as the indices !!!
+    
+    # remap thread ids
+    # this is heavily related to indexo==1
+    
+    # prepare numbers
+    na_half = np.int16(ceil(cuda_na/2))  
+    tid = cuda.threadIdx.x + cuda.blockDim.x*cuda.threadIdx.y + \
+        cuda.blockDim.x*cuda.blockDim.y*cuda.threadIdx.z        
+    nthreads = cuda.blockDim.x*cuda.blockDim.y*cuda.blockDim.z
+    ia_up = tid % na_half
+    ia_down = (cuda_na-1) - ia_up  
+    
+    ia_ext_up = cuda.blockIdx.x*cuda_na + ia_up
+    ia_ext_down = cuda.blockIdx.x*cuda_na + ia_down
+    
+    if ia_ext_down > na - 1: ia_ext_down = na-1
+    
+    istart = tid//na_half    
+    step = nthreads//na_half
+    
+    # fill the matrix
+    # each tred gets one row on top (few computations) and one row on bottom
+    # (many compuations), this allows to distribute the load more or less
+    # uniformly
+    ia = ia_up          
+    
+    stop = False        
+    for ind_s in range(istart,ns,step):      
+        if stop:
+            ustore[ia,ind_s] = ulim
+            continue
+        money_i = money_g[ia_ext_up,ind_exo]
+        cnow = money_i - sgrid_g[ind_s]
+        if cnow > clim:
+            ustore[ia,ind_s] = (cnow**(1-sigma))/(1-sigma)
+        else:
+            ustore[ia,ind_s] = ulim
+            stop = True
+            
+            
+    ia = ia_down        
+    
+    stop = False        
+    for ind_s in range(istart,ns,step):      
+        if stop:
+            ustore[ia,ind_s] = ulim
+            continue
+        money_i = money_g[ia_ext_down,ind_exo]
+        cnow = money_i - sgrid_g[ind_s]
+        if cnow > clim:
+            ustore[ia,ind_s] = (cnow**(1-sigma))/(1-sigma)
+        else:
+            ustore[ia,ind_s] = ulim
+            stop = True
+                    
+    
+    #### END OF THE TRICKY PART
+    
+    
+    # the rest uses only those threads that have appropriate indices    
+    if (not ind_a < na) or (not ind_exo < nexo) or (not ind_theta < ntheta): return
+    
+    
+    
+    
+    # this thing has pretty low intensity so no need to remap indices
+    
+    ind_a_int = cuda.threadIdx.x
+    
+    for ind_s in range(ind_a_int,ns,cuda_na):
+        if ind_s >= ns: break
+        EVstore[ind_s,ind_theta] = EV_g[ind_s,ind_exo,ind_theta]
+        if ind_s == 0:
+            umultstore[ind_theta] = u_mult_g[ind_theta]
+    
+    
+    cuda.syncthreads()
+
+    # finds index of maximum savings
+    mult = u_mult_g[ind_theta]
+    iobest = 0
+    
+    ind_a_int = cuda.threadIdx.x
+    
+    vbest = mult*ustore[ind_a_int,0] + beta*EVstore[0,ind_theta]
+    
+    uth = ulim + 1e-8 # to aviod imprecision issues
+    
+    for io in range(1,ns):
+        unow = ustore[ind_a_int,io]
+
+        if unow <= uth: break
+        vnow = mult*unow + beta*EVstore[io,ind_theta]                
+        if vnow > vbest:
+            iobest = io
+            vbest = vnow
+    
+    cuda.syncthreads()
+
+    i_opt_g[ind_a,ind_exo,ind_theta] = iobest
+    V_opt_g[ind_a,ind_exo,ind_theta] = vbest + uadd
+    
+    cuda.syncthreads()
+    
+        

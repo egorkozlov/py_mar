@@ -237,15 +237,15 @@ def compute(hi):
     
     #Hazard of Separation
     hazs=list()
-    hazs=hazards(cohe,'sep','dury','fine',hazs,8,'SAMWT')
+    hazs=hazards(cohe,'sep','dury','fine',hazs,3,'SAMWT')
     
     #Hazard of Marriage
     hazm=list()
-    hazm=hazards(cohe,'mar','dury','fine',hazm,8,'SAMWT')
+    hazm=hazards(cohe,'mar','dury','fine',hazm,3,'SAMWT')
     
     #Hazard of Divorce
     hazd=list()
-    hazd=hazards(mare,'div','dury','fine',hazd,20,'SAMWT')
+    hazd=hazards(mare,'div','dury','fine',hazd,3,'SAMWT')
     
     ########################################
     #Construct share of each relationship
@@ -318,7 +318,7 @@ def dat_moments(sampling_number,weighting=False):
         
         W=np.diag(np.ones(len(hazm)+len(hazs)+len(hazd)+len(mar)+len(coh)+1))#one is for fls
         
-    return hazm,hazs,hazd,mar,coh,fls_ratio,W
+    return (hazm,hazs,hazd,mar,coh,fls_ratio,W)
 
 
 

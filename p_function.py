@@ -69,9 +69,9 @@ def fun(x):
                 print('During optimization function evaluation failed at {}'.format(pt))
                 res = 1e6
             finally:
-                return np.array([res, 0.0])
+                return np.array(res)#np.array([res, 0.0])
             
-        res=dfols.solve(q, xc,rhoend=1e-3,maxfun=100)
+        res=dfols.solve(q, xc[:,0],rhoend=1e-3,maxfun=100)
         fbest = mdl_resid(res.x)
         
         print('Final value is {}'.format(fbest))        

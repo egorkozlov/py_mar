@@ -8,9 +8,8 @@ Created on Sat Dec 14 10:58:43 2019
 
 
 # this defines model residuals
-
-
 import numpy as np
+import pickle
 xdef = np.array([0.05,0.01,0.02,0.7,0.25])
 
 
@@ -42,38 +41,45 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
     mdl.solve_sim(simulate=True,show_mem=verbose,
                   verbose_sim=verbose)
     
+    
+    ############################################################
+    #Build data moments and compare them with simulated ones
+    ###########################################################
+    
+    #Get Data Moments
+    with open('moments.pkl', 'rb') as file:
+        packed_data=pickle.load(file)
+        
+    #Unpack Moments (see data_moments.py to check if changes)
+    #(hazm,hazs,hazd,mar,coh,fls_ratio,W)
+    hazm_d=packed_data[0]
+    hazs_d=packed_data[1]
+    hazd_d=packed_data[2]
+    mar_d=packed_data[3]
+    coh_d=packed_data[4]
+    fls_d=np.ones(1)*packed_data[5]
+    dat=np.concatenate((hazm_d,hazs_d,hazd_d,mar_d,coh_d,fls_d),axis=0)
+    W=packed_data[6]
+
+    #Get Simulated Data
     Tret = mdl.setup.pars['Tret']
-    
-    
-    
-    
-    mean_mar = np.mean(mdl.moments['share mar'][1:Tret])
-    mean_coh = np.mean(mdl.moments['share coh'][1:Tret])
-    
-    marcoh_ratio = mean_mar / mean_coh
-    
-    fls_ratio = np.mean(mdl.moments['flsm'][1:Tret])/np.mean(mdl.moments['flsc'][1:Tret])
-    
-    haz_sep = mdl.moments['hazard sep'][0]
-    haz_div = mdl.moments['hazard div'][0]
-    haz_mar = mdl.moments['hazard mar'][0]
-    
-    coh_ret = mdl.moments['share coh'][Tret-1]
-    mar_ret = mdl.moments['share mar'][Tret-1]
-    
-    resid = [0.0]
-    resid += [(coh_ret - 0.1)**2]
-    resid += [(mar_ret - 0.8)**2]
-    resid += [((fls_ratio - 0.8)**2)]
-    resid += [((haz_mar - 0.1)**2)]
-    resid += [(haz_sep - 0.15)**2]
-    resid += [(haz_div - 0.05)**2]
+    hazm_s = mdl.moments['hazard mar'][0:len(hazm_d)]
+    hazs_s = mdl.moments['hazard sep'][0:len(hazs_d)]
+    hazd_s = mdl.moments['hazard div'][0:len(hazd_d)]
+    mar_s = mdl.moments['share mar'][0:len(mar_d)]
+    coh_s = mdl.moments['share coh'][0:len(coh_d)]
+    fls_s = np.ones(1)*np.mean(mdl.moments['flsm'][1:Tret])/np.mean(mdl.moments['flsc'][1:Tret])
+    sim=np.concatenate((hazm_s,hazs_s,hazd_s,mar_s,coh_s,fls_s),axis=0)
+
+    #Get residuals
+    vec=dat-sim
+    resid = np.dot(np.dot(vec,W),vec)
     
     def distance_pso(particle):
         return 
     
-    resid = [v if not (np.isnan(v) or np.isinf(v)) else 1.0e6 for v in resid]
-    out = np.sum(resid)
+    resid = [resid if not (np.isnan(resid) or np.isinf(resid)) else 1.0e6]
+    out = resid
     
     
     if calibration_report:
@@ -83,10 +89,9 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
         print('ulost = {:.4f} , s_psi = {:.4f}, s_psi0 = {:.4f}, uls = {:.4f}, pmeet = {:.4f}'.format(ulost,sigma_psi,sigma_psi_init,uls, pmeet))
         print('')
         print('')
-        print('At retirement {:.4f} mar and {:.4f} cohab'.format(mar_ret,coh_ret))
-        print('All-t ratio of marriages to cohabitation is {:.4f}'.format(marcoh_ratio))
-        print('Hazard of sep is {:.4f}, hazard of div is {:.4f}'.format(haz_sep,haz_div))        
-        print('Hazard of Marriage is {:.4f}'.format(haz_mar))
+        print('Average {:.4f} mar and {:.4f} cohab'.format(np.mean(mar_s),np.mean(coh_s)))
+        print('Hazard of sep is {:.4f}, hazard of div is {:.4f}'.format(np.mean(hazs_s),np.mean(hazd_s)))        
+        print('Hazard of Marriage is {:.4f}'.format(np.mean(hazm_s)))
         print('Calibration residual is {:.4f}'.format(out))
         print('')
         print('')

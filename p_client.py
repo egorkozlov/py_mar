@@ -137,7 +137,7 @@ def compute_for_values(values,f_apply=lambda x:x,timeout=240.0,print_every=10.0,
         
         # this handles both lists and values
         val = pickle.load(file)
-        
+        print(val,fout)
         fout.append(f_apply(val))
         file.close()
         os.remove('Job/'+name)

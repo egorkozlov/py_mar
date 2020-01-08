@@ -22,8 +22,10 @@ class ModelSetup(object):
         p = dict()       
         T = 52
         Tret = 42 # first period when the agent is retired
+        Tbef=2
         p['T'] = T
         p['Tret'] = Tret
+        p['Tbef'] = Tbef
         p['sig_zf_0']  = 0.25
         p['sig_zf']    = 0.075
         p['n_zf_t']      = [7]*Tret + [1]*(T-Tret)

@@ -72,8 +72,11 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
     sim=np.concatenate((hazm_s,hazs_s,hazd_s,mar_s,coh_s,fls_s),axis=0)
 
     #Get residuals
-    vec=dat-sim
-    resid = np.dot(np.dot(vec,W),vec)
+    if len(dat)==len(sim):
+        vec=dat-sim
+        resid = np.dot(np.dot(vec,W),vec)
+    else:
+        resid=np.array(1000000.0)
     
     def distance_pso(particle):
         return 

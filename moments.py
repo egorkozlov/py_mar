@@ -204,6 +204,11 @@ def moment(mdl,draw=True):
     mdl.moments['flsm'] = flsm
     mdl.moments['flsc'] = flsc
     
+    
+    ###########################################
+    #Sample selection
+    ###########################################
+    
     #Sample Selection to replicate the fact that
     #in NSFH wave two cohabitning couples were
     #excluded.
@@ -216,17 +221,18 @@ def moment(mdl,draw=True):
     
     
     #First cut the first two periods give new 'length'
-    lenn=agents.setup.pars['T']-2
-    assets_t=assets_t[:,2:agents.setup.pars['T']]
-    iexo=iexo[:,2:agents.setup.pars['T']]
-    state=state[:,2:agents.setup.pars['T']]
-    theta_t=theta_t[:,2:agents.setup.pars['T']]
+    lenn=agents.setup.pars['T']-agents.setup.pars['Tbef']
+    assets_t=assets_t[:,agents.setup.pars['Tbef']:agents.setup.pars['T']]
+    iexo=iexo[:,agents.setup.pars['Tbef']:agents.setup.pars['T']]
+    state=state[:,agents.setup.pars['Tbef']:agents.setup.pars['T']]
+    theta_t=theta_t[:,agents.setup.pars['Tbef']:agents.setup.pars['T']]
     
     
     #Now drop observation to mimic the actual data gathering process
     keep=(assets_t[:,0]<-1)
-    for i in range(10):
-        keep[int(len(state[:,0])/10*i):int(len(state[:,0])/10*(i+1))]=(state[int(len(state[:,0])/10*i):int(len(state[:,0])/10*(i+1)),28-i]!=3)
+    if (agents.setup.pars['Tret']>=42): 
+        for i in range(10):
+            keep[int(len(state[:,0])/10*i):int(len(state[:,0])/10*(i+1))]=(state[int(len(state[:,0])/10*i):int(len(state[:,0])/10*(i+1)),28-i]!=3)
     assets_t=assets_t[keep,]
     iexo=iexo[keep,]
     state=state[keep,]
@@ -281,8 +287,12 @@ def moment(mdl,draw=True):
                print('Error: No relationship chosen')
               
     #Now, before saving the moments, take interval of 5 years
-    reltt=relt[:,0:agents.setup.pars['Tret']-1]
-    reltt=reltt[:,0::5]
+    if (agents.setup.pars['Tret']>=42):        
+        reltt=relt[:,0:agents.setup.pars['Tret']-agents.setup.pars['Tbef']+1]
+        reltt=reltt[:,0::5]
+    else:
+        reltt=relt
+        
     mdl.moments['share single'] = reltt[0,:]/N
     mdl.moments['share mar'] = reltt[2,:]/N
     mdl.moments['share coh'] = reltt[3,:]/N
@@ -326,9 +336,9 @@ def moment(mdl,draw=True):
         #############################################
         fig = plt.figure()
         f1=fig.add_subplot(2,1,1)
-         
-        plt.plot(np.array(range(len(hazd_d))), hazd[0:len(hazd_d)],'b',linewidth=1.5, label='Hazard of Divorce - S')
-        plt.plot(np.array(range(len(hazd_d))), hazd_d,'r', linestyle='--',linewidth=1.5, label='Hazard of Divorce - D')
+        lg=min(len(hazd_d),len(hazd))
+        plt.plot(np.array(range(lg)), hazd[0:lg],'b',linewidth=1.5, label='Hazard of Divorce - S')
+        plt.plot(np.array(range(lg)), hazd_d[0:lg],'r', linestyle='--',linewidth=1.5, label='Hazard of Divorce - D')
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=3, fontsize='x-small')
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')
@@ -340,9 +350,9 @@ def moment(mdl,draw=True):
         #############################################
         fig = plt.figure()
         f1=fig.add_subplot(2,1,1)
-         
-        plt.plot(np.array(range(len(hazs_d))), hazs[0:len(hazs_d)],'b',linewidth=1.5, label='Hazard of Separation - S')
-        plt.plot(np.array(range(len(hazs_d))), hazs_d,'r', linestyle='--',linewidth=1.5, label='Hazard of Separation - D')
+        lg=min(len(hazs_d),len(hazs))
+        plt.plot(np.array(range(lg)), hazs[0:lg],'b',linewidth=1.5, label='Hazard of Separation - S')
+        plt.plot(np.array(range(lg)), hazs_d[0:lg],'r', linestyle='--',linewidth=1.5, label='Hazard of Separation - D')
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=3, fontsize='x-small')
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')
@@ -354,9 +364,9 @@ def moment(mdl,draw=True):
         #############################################
         fig = plt.figure()
         f1=fig.add_subplot(2,1,1)
-         
-        plt.plot(np.array(range(len(hazm_d))), hazm[0:len(hazm_d)],'b',linewidth=1.5, label='Hazard of Marriage - S')
-        plt.plot(np.array(range(len(hazm_d))), hazm_d,'r', linestyle='--',linewidth=1.5, label='Hazard of Marriage - D')
+        lg=min(len(hazm_d),len(hazm))
+        plt.plot(np.array(range(lg)), hazm[0:lg],'b',linewidth=1.5, label='Hazard of Marriage - S')
+        plt.plot(np.array(range(lg)), hazm_d[0:lg],'r', linestyle='--',linewidth=1.5, label='Hazard of Marriage - D')
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=3, fontsize='x-small')
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')
@@ -411,10 +421,11 @@ def moment(mdl,draw=True):
         ##########################################      
         fig = plt.figure()
         f4=fig.add_subplot(2,1,1)
-        plt.plot(np.array(range(len(mar_d))), mar_d,'g',linewidth=1.5, label='Share Married - D')
-        plt.plot(np.array(range(len(mar_d))), relt[2,0:len(mar_d)]/N,'g',linestyle='--',linewidth=1.5, label='Share Married - S')
-        plt.plot(np.array(range(len(coh_d))), coh_d,'r',linewidth=1.5, label='Share Cohabiting - D')
-        plt.plot(np.array(range(len(coh_d))), relt[3,0:len(coh_d)]/N,'r',linestyle='--',linewidth=1.5, label='Share Cohabiting - S')
+        lg=min(len(mar_d),len(relt[1,:]))
+        plt.plot(np.array(range(lg)), mar_d[0:lg],'g',linewidth=1.5, label='Share Married - D')
+        plt.plot(np.array(range(lg)), relt[2,0:lg]/N,'g',linestyle='--',linewidth=1.5, label='Share Married - S')
+        plt.plot(np.array(range(lg)), coh_d[0:lg],'r',linewidth=1.5, label='Share Cohabiting - D')
+        plt.plot(np.array(range(lg)), relt[3,0:lg]/N,'r',linestyle='--',linewidth=1.5, label='Share Cohabiting - S')
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')
         plt.xlabel('Time')

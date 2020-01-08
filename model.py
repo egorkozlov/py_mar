@@ -218,7 +218,7 @@ class Model(object):
                 
         #del self.V,self.decisions    
            
-    def solve_sim(self,simulate=True,show_mem=False,draw_moments=True,verbose_sim=False):
+    def solve_sim(self,simulate=True,show_mem=False,draw_moments=False,verbose_sim=False):
 
         #Solve the model
         self.solve(show_mem=show_mem)
@@ -234,6 +234,6 @@ class Model(object):
         return V
       
         
-    def compute_moments(self,draw=True):
+    def compute_moments(self,draw=False):
         moment(self,draw=draw)
     

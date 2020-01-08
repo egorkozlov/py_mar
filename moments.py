@@ -1,414 +1,3 @@
-
-1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20
-21
-22
-23
-24
-25
-26
-27
-28
-29
-30
-31
-32
-33
-34
-35
-36
-37
-38
-39
-40
-41
-42
-43
-44
-45
-46
-47
-48
-49
-50
-51
-52
-53
-54
-55
-56
-57
-58
-59
-60
-61
-62
-63
-64
-65
-66
-67
-68
-69
-70
-71
-72
-73
-74
-75
-76
-77
-78
-79
-80
-81
-82
-83
-84
-85
-86
-87
-88
-89
-90
-91
-92
-93
-94
-95
-96
-97
-98
-99
-100
-101
-102
-103
-104
-105
-106
-107
-108
-109
-110
-111
-112
-113
-114
-115
-116
-117
-118
-119
-120
-121
-122
-123
-124
-125
-126
-127
-128
-129
-130
-131
-132
-133
-134
-135
-136
-137
-138
-139
-140
-141
-142
-143
-144
-145
-146
-147
-148
-149
-150
-151
-152
-153
-154
-155
-156
-157
-158
-159
-160
-161
-162
-163
-164
-165
-166
-167
-168
-169
-170
-171
-172
-173
-174
-175
-176
-177
-178
-179
-180
-181
-182
-183
-184
-185
-186
-187
-188
-189
-190
-191
-192
-193
-194
-195
-196
-197
-198
-199
-200
-201
-202
-203
-204
-205
-206
-207
-208
-209
-210
-211
-212
-213
-214
-215
-216
-217
-218
-219
-220
-221
-222
-223
-224
-225
-226
-227
-228
-229
-230
-231
-232
-233
-234
-235
-236
-237
-238
-239
-240
-241
-242
-243
-244
-245
-246
-247
-248
-249
-250
-251
-252
-253
-254
-255
-256
-257
-258
-259
-260
-261
-262
-263
-264
-265
-266
-267
-268
-269
-270
-271
-272
-273
-274
-275
-276
-277
-278
-279
-280
-281
-282
-283
-284
-285
-286
-287
-288
-289
-290
-291
-292
-293
-294
-295
-296
-297
-298
-299
-300
-301
-302
-303
-304
-305
-306
-307
-308
-309
-310
-311
-312
-313
-314
-315
-316
-317
-318
-319
-320
-321
-322
-323
-324
-325
-326
-327
-328
-329
-330
-331
-332
-333
-334
-335
-336
-337
-338
-339
-340
-341
-342
-343
-344
-345
-346
-347
-348
-349
-350
-351
-352
-353
-354
-355
-356
-357
-358
-359
-360
-361
-362
-363
-364
-365
-366
-367
-368
-369
-370
-371
-372
-373
-374
-375
-376
-377
-378
-379
-380
-381
-382
-383
-384
-385
-386
-387
-388
-389
-390
-391
-392
-393
-394
-395
-396
-397
-398
-399
-400
-401
-402
-403
-404
-405
-406
-407
-408
-409
-	
 # -*- coding: utf-8 -*-
 """
 Created on Thu Nov 14 10:26:49 2019
@@ -437,87 +26,26 @@ def moment(mdl,draw=True):
     state=agents.state
     theta_t=agents.setup.thetagrid_fine[agents.itheta]
     setup = agents.setup
-     
+    
+
+        
     mdl.moments = dict()
      
      
+    ##########################################
+    #START COMPUTATION OF SIMULATED MOMENTS
+    #########################################
+    
     #As a first thing we unpack assets and theta
     N=len(state)
      
     #Get states codes
     state_codes = {name: i for i, name in enumerate(agents.setup.state_names)}
-     
+    
+    
     ###########################################
-    #Moments: FLS over time by Relationship
+    #Moments: Construction of Spells
     ###########################################
-     
-     
-    flsm=np.ones(agents.setup.pars['T'])
-    flsc=np.ones(agents.setup.pars['T'])
-     
-     
-    for t in range(agents.setup.pars['T']):
-         
-        pick = agents.state[:,t]==2       
-        if pick.any(): flsm[t] = np.array(setup.ls_levels)[agents.ils_i[pick,t]].mean()
-        pick = agents.state[:,t]==3
-        if pick.any(): flsc[t] = np.array(setup.ls_levels)[agents.ils_i[pick,t]].mean()
-         
-     
-         
-    mdl.moments['flsm'] = flsm
-    mdl.moments['flsc'] = flsc
-     
-    ###########################################
-    #Moments: Variables over Age
-    ###########################################
-     
-    relt=np.zeros((len(state_codes),agents.setup.pars['T']))
-    ass_rel=np.zeros((len(state_codes),agents.setup.pars['T']))
-    inc_rel=np.zeros((len(state_codes),agents.setup.pars['T']))
-     
-     
-     
-    for ist,sname in enumerate(state_codes):
-        for t in range(agents.setup.pars['T']):
-             
-             
-            ftrend = agents.setup.pars['f_wage_trend'][t]
-            mtrend = agents.setup.pars['m_wage_trend'][t]
-             
-            #Arrays for preparation
-            is_state = (state[:,t]==ist)
-            ind = np.where(is_state)[0]
-             
-            if not np.any(is_state): continue
-         
-            zf,zm,psi=agents.setup.all_indices(t,iexo[ind,t])[1:4]
-             
-            #Relationship over time
-            relt[ist,t]=np.sum(is_state)
-             
-            #Assets over time  
-            ass_rel[ist,t]=np.mean(assets_t[ind,t])
-             
-            #Income over time
-            if sname=="Female, single":
-                inc_rel[ist,t]=np.mean(np.exp(agents.setup.exogrid.zf_t[t][zf]  + ftrend ))
-                 
-            elif sname=="Male, single":
-                 inc_rel[ist,t]=np.mean(np.exp(agents.setup.exogrid.zf_t[t][zm] + mtrend))
-                 
-            elif sname=="Couple, C" or sname=="Couple, M":
-                 inc_rel[ist,t]=np.mean(np.exp(agents.setup.exogrid.zf_t[t][zf] + ftrend)+np.exp(agents.setup.exogrid.zf_t[t][zm] + mtrend))
-     
-            else:
-             
-               print('Error: No relationship chosen')
-                
-    mdl.moments['share single'] = relt[0,:]/N
-    mdl.moments['share mar'] = relt[2,:]/N
-    mdl.moments['share coh'] = relt[3,:]/N
-               
- 
     nspells = (state[:,1:]!=state[:,:-1]).astype(np.int).sum(axis=1).max() + 1
      
     state_beg = -1*np.ones((N,nspells),dtype=np.int8)
@@ -562,13 +90,6 @@ def moment(mdl,draw=True):
     spells = np.stack((allspells_beg,allspells_len,allspells_end),axis=1)
      
      
-     
-     
-    
-    # TO FABIO: I did not edit things anything past this point.
-    # Please look why my spells are different than yours.
-     
-     
     #Now divide spells by relationship nature
      
     for ist,sname in enumerate(state_codes):
@@ -592,7 +113,7 @@ def moment(mdl,draw=True):
     #Hazard of Divorce
     hazd=list()
     lgh=len(spells_CoupleM[:,0])
-    for t in range(agents.setup.pars['T']):
+    for t in range(agents.setup.pars['Tret']):
          
         cond=spells_CoupleM[:,1]==t+1
         temp=spells_CoupleM[cond,2]
@@ -611,7 +132,7 @@ def moment(mdl,draw=True):
     #Hazard of Separation
     hazs=list()
     lgh=len(spells_CoupleC[:,0])
-    for t in range(agents.setup.pars['T']):
+    for t in range(agents.setup.pars['Tret']):
          
         cond=spells_CoupleC[:,1]==t+1
         temp=spells_CoupleC[cond,2]
@@ -630,7 +151,7 @@ def moment(mdl,draw=True):
     #Hazard of Marriage (Cohabitation spells)
     hazm=list()
     lgh=len(spells_CoupleC[:,0])
-    for t in range(agents.setup.pars['T']):
+    for t in range(agents.setup.pars['Tret']):
          
         cond=spells_CoupleC[:,1]==t+1
         temp=spells_CoupleC[cond,2]
@@ -661,6 +182,111 @@ def moment(mdl,draw=True):
     spells_sc=spells_s[cond,2]
     condm=spells_sc==2
     sharem=len(spells_sc[condm])/max(len(spells_sc),0.0001)
+     
+    ###########################################
+    #Moments: FLS over time by Relationship
+    ###########################################
+     
+     
+    flsm=np.ones(agents.setup.pars['Tret'])
+    flsc=np.ones(agents.setup.pars['Tret'])
+     
+     
+    for t in range(agents.setup.pars['Tret']):
+         
+        pick = agents.state[:,t]==2       
+        if pick.any(): flsm[t] = np.array(setup.ls_levels)[agents.ils_i[pick,t]].mean()
+        pick = agents.state[:,t]==3
+        if pick.any(): flsc[t] = np.array(setup.ls_levels)[agents.ils_i[pick,t]].mean()
+         
+     
+         
+    mdl.moments['flsm'] = flsm
+    mdl.moments['flsc'] = flsc
+    
+    #Sample Selection to replicate the fact that
+    #in NSFH wave two cohabitning couples were
+    #excluded.
+    #Birth cohorts: 45-55
+    #Second wave of NLSFH:1992-1994.
+    #
+    #Assume that people are interviewd in 1993 and that age is uniformly
+    #distributed. Clearly we can adjust this later on.
+    
+    
+    
+    #First cut the first two periods give new 'length'
+    lenn=agents.setup.pars['T']-2
+    assets_t=assets_t[:,2:agents.setup.pars['T']]
+    iexo=iexo[:,2:agents.setup.pars['T']]
+    state=state[:,2:agents.setup.pars['T']]
+    theta_t=theta_t[:,2:agents.setup.pars['T']]
+    
+    
+    #Now drop observation to mimic the actual data gathering process
+    keep=(assets_t[:,0]<-1)
+    for i in range(10):
+        keep[int(len(state[:,0])/10*i):int(len(state[:,0])/10*(i+1))]=(state[int(len(state[:,0])/10*i):int(len(state[:,0])/10*(i+1)),28-i]!=3)
+    assets_t=assets_t[keep,]
+    iexo=iexo[keep,]
+    state=state[keep,]
+    theta_t=theta_t[keep,]
+     
+    ###########################################
+    #Moments: Variables over Age
+    ###########################################
+    
+    #Update N to the new sample size
+    N=len(state)
+     
+    relt=np.zeros((len(state_codes),lenn))
+    ass_rel=np.zeros((len(state_codes),lenn))
+    inc_rel=np.zeros((len(state_codes),lenn))
+     
+     
+     
+    for ist,sname in enumerate(state_codes):
+        for t in range(lenn):
+             
+             
+            ftrend = agents.setup.pars['f_wage_trend'][t]
+            mtrend = agents.setup.pars['m_wage_trend'][t]
+             
+            #Arrays for preparation
+            is_state = (state[:,t]==ist)
+            ind = np.where(is_state)[0]
+             
+            if not np.any(is_state): continue
+         
+            zf,zm,psi=agents.setup.all_indices(t,iexo[ind,t])[1:4]
+             
+            #Relationship over time
+            relt[ist,t]=np.sum(is_state)
+             
+            #Assets over time  
+            ass_rel[ist,t]=np.mean(assets_t[ind,t])
+             
+            #Income over time
+            if sname=="Female, single":
+                inc_rel[ist,t]=np.mean(np.exp(agents.setup.exogrid.zf_t[t][zf]  + ftrend ))
+                 
+            elif sname=="Male, single":
+                 inc_rel[ist,t]=np.mean(np.exp(agents.setup.exogrid.zf_t[t][zm] + mtrend))
+                 
+            elif sname=="Couple, C" or sname=="Couple, M":
+                 inc_rel[ist,t]=np.mean(np.exp(agents.setup.exogrid.zf_t[t][zf] + ftrend)+np.exp(agents.setup.exogrid.zf_t[t][zm] + mtrend))
+     
+            else:
+             
+               print('Error: No relationship chosen')
+              
+    #Now, before saving the moments, take interval of 5 years
+    reltt=relt[:,0:agents.setup.pars['Tret']-1]
+    reltt=reltt[:,0::5]
+    mdl.moments['share single'] = reltt[0,:]/N
+    mdl.moments['share mar'] = reltt[2,:]/N
+    mdl.moments['share coh'] = reltt[3,:]/N
+               
      
     if draw:
      
@@ -744,7 +370,7 @@ def moment(mdl,draw=True):
         f2=fig.add_subplot(2,1,1)
          
         for ist,sname in enumerate(state_codes):
-            plt.plot(np.array(range(agents.setup.pars['T'])), ass_rel[ist,],color=print(ist/len(state_codes)),markersize=6, label=sname)
+            plt.plot(np.array(range(lenn)), ass_rel[ist,],color=print(ist/len(state_codes)),markersize=6, label=sname)
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')
@@ -759,7 +385,7 @@ def moment(mdl,draw=True):
          
         for ist,sname in enumerate(state_codes):
            
-            plt.plot(np.array(range(agents.setup.pars['T'])), inc_rel[ist,],color=print(ist/len(state_codes)),markersize=6, label=sname)
+            plt.plot(np.array(range(lenn)), inc_rel[ist,],color=print(ist/len(state_codes)),markersize=6, label=sname)
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')
         plt.xlabel('Time')
@@ -773,7 +399,7 @@ def moment(mdl,draw=True):
         f4=fig.add_subplot(2,1,1)
         for ist,sname in enumerate(state_codes):
             plt.plot([],[],color=print(ist/len(state_codes)), label=sname)
-        plt.stackplot(np.array(range(agents.setup.pars['T'])),relt[0,]/N,relt[1,]/N,relt[2,]/N,relt[3,]/N,
+        plt.stackplot(np.array(range(lenn)),relt[0,]/N,relt[1,]/N,relt[2,]/N,relt[3,]/N,
                       colors = ['b','y','g','r'])           
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')
@@ -800,8 +426,8 @@ def moment(mdl,draw=True):
         fig = plt.figure()
         f5=fig.add_subplot(2,1,1)
  
-        plt.plot(np.array(range(agents.setup.pars['T'])), flsm,color='r', label='Marriage')
-        plt.plot(np.array(range(agents.setup.pars['T'])), flsc,color='k', label='Cohabitation')         
+        plt.plot(np.array(range(agents.setup.pars['Tret'])), flsm,color='r', label='Marriage')
+        plt.plot(np.array(range(agents.setup.pars['Tret'])), flsc,color='k', label='Cohabitation')         
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')
         plt.xlabel('Time')

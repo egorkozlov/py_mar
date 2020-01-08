@@ -20,8 +20,8 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()       
-        T = 20
-        Tret = 15 # first period when the agent is retired
+        T = 52
+        Tret = 42 # first period when the agent is retired
         p['T'] = T
         p['Tret'] = Tret
         p['sig_zf_0']  = 0.25
@@ -34,7 +34,7 @@ class ModelSetup(object):
         p['sigma_psi']   = 0.11
         p['R_t'] = [1.04]*T
         p['n_psi_t']     = [12]*T
-        p['beta_t'] = [0.95]*T
+        p['beta_t'] = [0.98]*T
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.4    
@@ -176,7 +176,7 @@ class ModelSetup(object):
         #Grid Couple
         self.na = 40
         self.amin = 0
-        self.amax =15
+        self.amax =30
         self.agrid_c = np.linspace(self.amin,self.amax,self.na)
         tune=1.5
         #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune

@@ -15,7 +15,7 @@ xdef = np.array([0.05,0.01,0.02,0.7,0.25])
 
 # return format is any combination of 'distance', 'all_residuals' and 'model'
 # we can add more things too for convenience
-def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report=False):
+def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report=False,draw=False,graphs=False):
     from model import Model
     from setup import DivorceCosts
     
@@ -39,7 +39,7 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
                 pmeet=pmeet,uls=uls)
     
     mdl.solve_sim(simulate=True,show_mem=verbose,
-                  verbose_sim=verbose)
+                  verbose_sim=verbose,draw_moments=draw)
     
     
     ############################################################
@@ -103,4 +103,10 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
     
     out_dict = {'distance':out,'all residuals':resid,'model':mdl}
     out = [out_dict[key] for key in return_format]
+    
+    #For memory reason:delete stuff
+    if not draw:
+        if not graphs:
+            del mdl
+            
     return out

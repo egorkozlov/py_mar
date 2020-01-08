@@ -90,6 +90,10 @@ if __name__ == '__main__':
     
     print('f is {} and x is {}'.format(param[0],param[1]))
     
+    #Now Re do the computation with graphs!
+    out, mdl = mdl_resid(param[1],return_format=['distance','model'],calibration_report=False,
+                         verbose=True,draw=True)
+    
     
    
         

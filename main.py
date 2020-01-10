@@ -55,9 +55,9 @@ if __name__ == '__main__':
     #Initialize the file with parameters
 
 
-    x0 = np.array([0.05,0.01,0.02,0.7,0.25])
-    lb= np.array([0.0,0.005,0.015,0.4,0.01])
-    ub= np.array([1.0,1.0,0.45,1.0,0.4])
+    x0 = np.array([0.05,0.01,0.02,0.7,0.25,0.00])
+    lb= np.array([0.0,0.005,0.015,0.4,0.01,0.00])
+    ub= np.array([1.0,1.0,0.45,1.0,0.4,2.0])
     ub[3]=min(ub[3],1.0)
     
     
@@ -71,10 +71,6 @@ if __name__ == '__main__':
     print('Everything worked, output is {}'.format(outs))
     
     
-    
-    x0 = np.array([0.05,0.01,0.02,0.7,0.25])#[ 0.15652793 -0.04038299  0.16475847  0.65413566  0.71109062]
-    lb= x0*0.5#np.array([0.01,0.005,0.015,0.4,0.01])
-    ub= x0*2.0#np.array([0.1,0.3,0.45,1.0,0.4])
     ub[3]=min(ub[3],1.0)
    
     print('')
@@ -84,9 +80,9 @@ if __name__ == '__main__':
     print('')
     
    
-
+    
     #Tik Tak Optimization
-    param=tiktak(200,15,2,lb,ub,mdl_resid,tole=1e-3,nelder=False,refine=False)
+    param=tiktak(200,60,12,lb,ub,mdl_resid,tole=1e-3,nelder=False,refine=False)
     
     print('f is {} and x is {}'.format(param[0],param[1]))
     

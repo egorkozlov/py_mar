@@ -95,6 +95,8 @@ def compute_for_values(values,f_apply=lambda x:x,timeout=240.0,print_every=10.0,
                     time_start[i] = default_timer()
                 elif not finished[i]:
                     # check if takes too long
+                    
+                    
                     time_since = default_timer() - time_start[i]
                     
                     if time_since > timeout: # if does restart

@@ -47,6 +47,7 @@ class ModelSetup(object):
         
         p['wret'] = 0.8
         p['uls'] = 0.3
+        p['uls_x'] = 0.0
         
         
         p['u_shift_mar'] = 0.0
@@ -79,7 +80,7 @@ class ModelSetup(object):
         self.nls = len(self.ls_levels)
         
         
-        self.ls_u1 = np.zeros_like(self.ls_u0)
+        self.ls_u1 = np.array([p['uls_x'],p['uls_x']])
         
         
         #Cost of Divorce

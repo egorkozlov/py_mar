@@ -71,8 +71,8 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
     # type conversion to keep everything float32
     sgrid,sigma,beta = (np.float32(x) for x in (sgrid,sigma,beta))
     
-    V_couple, c_opt, s_opt, i_opt, il_opt = np.empty(shp,np.float32), np.empty(shp,np.float16), np.empty(shp,np.float32), np.empty(shp,np.int16), np.empty(shp,np.int8)
-    
+    V_couple, c_opt, s_opt = np.empty((3,)+shp,np.float32)
+    i_opt, il_opt = np.empty(shp,np.int16), np.empty(shp,np.int8)
     
     V_all_l = np.empty(shp+(nls,),dtype=np.float32)
     
@@ -122,11 +122,17 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
     
     # finally obtain value functions of partners
     uf, um = setup.u_part(c_opt,theta_val[None,None,:])
-    EVf_all, EVm_all, EV_all  = (get_EVM(ind,p,x) for x in (EV_fem_by_l, EV_mal_by_l,EV_by_l))
-    V_fem = uf + psi_r + beta*np.take_along_axis(np.take_along_axis(EVf_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
-    V_mal = um + psi_r + beta*np.take_along_axis(np.take_along_axis(EVm_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
+    uc = setup.u_couple(c_opt,theta_val[None,None,:])
+    u_pub = us[il_opt]
     
+    
+    EVf_all, EVm_all, EV_all  = (get_EVM(ind,p,x) for x in (EV_fem_by_l, EV_mal_by_l,EV_by_l))
+    V_fem = uf + psi_r + u_pub + beta*np.take_along_axis(np.take_along_axis(EVf_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
+    V_mal = um + psi_r + u_pub + beta*np.take_along_axis(np.take_along_axis(EVm_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
+    V_all = uc + psi_r + u_pub + beta*np.take_along_axis(np.take_along_axis(EV_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
     def r(x): return x.astype(np.float32)
+    
+    assert np.allclose(V_all,V_couple,atol=1e-5,rtol=1e-4)
     
     return r(V_couple), r(V_fem), r(V_mal), r(c_opt), r(s_opt), il_opt, r(V_all_l)
 

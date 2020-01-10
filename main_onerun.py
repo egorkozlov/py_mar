@@ -54,7 +54,7 @@ if __name__ == '__main__':
     #0.08512367,-0.03874894,-0.05721577, 0.57536013, 0.20720013
  
  
-    out, mdl = mdl_resid(x0,return_format=['distance','model'],verbose=True,calibration_report=False,draw=True,graphs=graphs)
+    out, mdl = mdl_resid(x0,return_format=['distance','model'],verbose=False,calibration_report=False,draw=True,graphs=graphs)
                          
     print('Done. Residual in point x0 is {}'.format(out))
      

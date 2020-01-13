@@ -43,15 +43,14 @@ if __name__ == '__main__':
     #For graphs later
     graphs=True
     #Build  data moments and pickle them
-    packed_stuff=dat_moments(100,weighting=False)
+    packed_stuff=dat_moments(100,weighting=True)
     with open('moments.pkl', 'wb+') as file:
         pickle.dump(packed_stuff,file)
          
     #Initialize the file with parameters
- 
- 
-    x0 = np.array([0.04542052, 0.00727723, 0.04185624, 0.71617425, 0.28451476])#p.exp(np.array([ -1.8603,-8.1430,-1.57934,0.25130,-0.4991]))#0.08512367 -0.03874894 -0.05721577  0.57536013  0.20720013
-    #0.08512367,-0.03874894,-0.05721577, 0.57536013, 0.20720013
+    x0 = np.array([0.8, 0.0153118,  0.02183383, 0.50764799, 0.2855035])
+    #0.12442258, 0.01066495, 0.0364165,  0.70268823, 0.30453891
+
  
  
     out, mdl = mdl_resid(x0,return_format=['distance','model'],verbose=True,calibration_report=False,draw=True,graphs=graphs)

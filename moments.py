@@ -328,6 +328,12 @@ def moment(mdl,draw=True):
             mar_d=packed_data[3]
             coh_d=packed_data[4]
             fls_d=np.ones(1)*packed_data[5]
+            hazm_i=packed_data[7]
+            hazs_i=packed_data[8]
+            hazd_i=packed_data[9]
+            mar_i=packed_data[10]
+            coh_i=packed_data[11]
+            fls_i=np.ones(1)*packed_data[12]
  
          
          
@@ -337,10 +343,12 @@ def moment(mdl,draw=True):
         fig = plt.figure()
         f1=fig.add_subplot(2,1,1)
         lg=min(len(hazd_d),len(hazd))
-        plt.plot(np.array(range(lg)), hazd[0:lg],'b',linewidth=1.5, label='Hazard of Divorce - S')
-        plt.plot(np.array(range(lg)), hazd_d[0:lg],'r', linestyle='--',linewidth=1.5, label='Hazard of Divorce - D')
+        plt.plot(np.array(range(lg)), hazd[0:lg],'r', linestyle='--',linewidth=1.5, label='Hazard of Divorce - S')
+        plt.plot(np.array(range(lg)), hazd_d[0:lg],'b',linewidth=1.5, label='Hazard of Divorce - D')
+        plt.fill_between(np.array(range(lg)), hazd_i[0,0:lg], hazd_i[1,0:lg],alpha=0.2,facecolor='b')
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=3, fontsize='x-small')
+        plt.ylim(ymin=0)
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')
         plt.xlabel('Duration')
         plt.ylabel('Hazard')
@@ -351,10 +359,12 @@ def moment(mdl,draw=True):
         fig = plt.figure()
         f1=fig.add_subplot(2,1,1)
         lg=min(len(hazs_d),len(hazs))
-        plt.plot(np.array(range(lg)), hazs[0:lg],'b',linewidth=1.5, label='Hazard of Separation - S')
-        plt.plot(np.array(range(lg)), hazs_d[0:lg],'r', linestyle='--',linewidth=1.5, label='Hazard of Separation - D')
+        plt.plot(np.array(range(lg)), hazs[0:lg],'r', linestyle='--',linewidth=1.5, label='Hazard of Separation - S')
+        plt.plot(np.array(range(lg)), hazs_d[0:lg],'b',linewidth=1.5, label='Hazard of Separation - D')
+        plt.fill_between(np.array(range(lg)), hazs_i[0,0:lg], hazs_i[1,0:lg],alpha=0.2,facecolor='b')
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=3, fontsize='x-small')
+        plt.ylim(ymin=0)
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')
         plt.xlabel('Duration')
         plt.ylabel('Hazard')
@@ -365,10 +375,12 @@ def moment(mdl,draw=True):
         fig = plt.figure()
         f1=fig.add_subplot(2,1,1)
         lg=min(len(hazm_d),len(hazm))
-        plt.plot(np.array(range(lg)), hazm[0:lg],'b',linewidth=1.5, label='Hazard of Marriage - S')
-        plt.plot(np.array(range(lg)), hazm_d[0:lg],'r', linestyle='--',linewidth=1.5, label='Hazard of Marriage - D')
+        plt.plot(np.array(range(lg)), hazm[0:lg],'r', linestyle='--',linewidth=1.5, label='Hazard of Marriage - S')
+        plt.plot(np.array(range(lg)), hazm_d[0:lg],'b',linewidth=1.5, label='Hazard of Marriage - D')
+        plt.fill_between(np.array(range(lg)), hazm_i[0,0:lg], hazm_i[1,0:lg],alpha=0.2,facecolor='b')
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=3, fontsize='x-small')
+        plt.ylim(ymin=0)
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')
         plt.xlabel('Duration')
         plt.ylabel('Hazard')
@@ -423,11 +435,14 @@ def moment(mdl,draw=True):
         f4=fig.add_subplot(2,1,1)
         lg=min(len(mar_d),len(relt[1,:]))
         plt.plot(np.array(range(lg)), mar_d[0:lg],'g',linewidth=1.5, label='Share Married - D')
+        plt.fill_between(np.array(range(lg)), mar_i[0,0:lg], mar_i[1,0:lg],alpha=0.2,facecolor='g')
         plt.plot(np.array(range(lg)), relt[2,0:lg]/N,'g',linestyle='--',linewidth=1.5, label='Share Married - S')
         plt.plot(np.array(range(lg)), coh_d[0:lg],'r',linewidth=1.5, label='Share Cohabiting - D')
+        plt.fill_between(np.array(range(lg)), coh_i[0,0:lg], coh_i[1,0:lg],alpha=0.2,facecolor='r')
         plt.plot(np.array(range(lg)), relt[3,0:lg]/N,'r',linestyle='--',linewidth=1.5, label='Share Cohabiting - S')
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')
+        plt.ylim(ymax=1.0)
         plt.xlabel('Time')
         plt.ylabel('Share')
          

@@ -59,7 +59,7 @@ def tiktak(nthreads,N,N_st,xl,xu,f,tole=1e-3,nelder=True,refine=False):
     
     vals = [('minimize',(i,N_st)) for i in range(N_st)]
     
-    compute_for_values(vals)
+    compute_for_values(vals,timeout=3600.0)
     
     param = filer('wisdom.pkl',None,write=False)
     
@@ -97,7 +97,7 @@ def filer(filename,array,write=True):
             raise KeyboardInterrupt()
         except:
             print('Problems opening the file {}'.format(filename))
-            sleep(0.5)
+            #sleep(0.5)
     
 
 ##########################################

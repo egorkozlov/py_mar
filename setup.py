@@ -46,7 +46,7 @@ class ModelSetup(object):
         p['pmeet'] = 0.5
         
         p['wret'] = 0.8
-        p['uls'] = 0.3
+        p['uls'] = 0.2
         
         
         p['u_shift_mar'] = 0.0

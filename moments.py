@@ -436,10 +436,10 @@ def moment(mdl,draw=True):
         lg=min(len(mar_d),len(relt[1,:]))
         plt.plot(np.array(range(lg)), mar_d[0:lg],'g',linewidth=1.5, label='Share Married - D')
         plt.fill_between(np.array(range(lg)), mar_i[0,0:lg], mar_i[1,0:lg],alpha=0.2,facecolor='g')
-        plt.plot(np.array(range(lg)), relt[2,0:lg]/N,'g',linestyle='--',linewidth=1.5, label='Share Married - S')
+        plt.plot(np.array(range(lg)), reltt[2,0:lg]/N,'g',linestyle='--',linewidth=1.5, label='Share Married - S')
         plt.plot(np.array(range(lg)), coh_d[0:lg],'r',linewidth=1.5, label='Share Cohabiting - D')
         plt.fill_between(np.array(range(lg)), coh_i[0,0:lg], coh_i[1,0:lg],alpha=0.2,facecolor='r')
-        plt.plot(np.array(range(lg)), relt[3,0:lg]/N,'r',linestyle='--',linewidth=1.5, label='Share Cohabiting - S')
+        plt.plot(np.array(range(lg)), reltt[3,0:lg]/N,'r',linestyle='--',linewidth=1.5, label='Share Cohabiting - S')
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')
         plt.ylim(ymax=1.0)

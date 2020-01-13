@@ -79,7 +79,7 @@ def tiktak(nthreads,N,N_st,xl,xu,f,tole=1e-3,nelder=True,refine=False):
 #Functions
 #########################################
     
-#Write on Function
+#Write on Functionsbtach worker_run.sh
 def filer(filename,array,write=True):
     
     while True:

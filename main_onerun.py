@@ -43,12 +43,12 @@ if __name__ == '__main__':
     #For graphs later
     graphs=True
     #Build  data moments and pickle them
-    packed_stuff=dat_moments(100,weighting=True)
+    packed_stuff=dat_moments(10,weighting=True)
     with open('moments.pkl', 'wb+') as file:
         pickle.dump(packed_stuff,file)
          
     #Initialize the file with parameters
-    x0 = np.array([0.8, 0.0153118,  0.02183383, 0.50764799, 0.2855035])
+    x0 = np.array([0.99,0.39,0.56,0.16,0.34])
     #0.12442258, 0.01066495, 0.0364165,  0.70268823, 0.30453891
 
  

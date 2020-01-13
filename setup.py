@@ -73,7 +73,7 @@ class ModelSetup(object):
         self.state_names = ['Female, single','Male, single','Couple, M', 'Couple, C']
         
         # female labor supply
-        self.ls_levels = np.array([0.5,1.0])
+        self.ls_levels = np.array([0.0,1.0])
         self.ls_utilities = np.array([1.0+p['uls'],1.0])
         self.ls_pdown = np.array([0.9,0.0])
         self.nls = len(self.ls_levels)

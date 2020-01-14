@@ -72,7 +72,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
     sgrid,sigma,beta = (np.float32(x) for x in (sgrid,sigma,beta))
     
     V_couple, c_opt, s_opt = np.empty((3,)+shp,np.float32)
-    i_opt, il_opt = np.empty(shp,np.int16), np.empty(shp,np.int8)
+    i_opt, il_opt = np.empty(shp,np.int16), np.empty(shp,np.int16)
     
     V_all_l = np.empty(shp+(nls,),dtype=np.float32)
     
@@ -127,9 +127,9 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
     
     
     EVf_all, EVm_all, EV_all  = (get_EVM(ind,p,x) for x in (EV_fem_by_l, EV_mal_by_l,EV_by_l))
-    V_fem = uf + psi_r + u_pub + beta*np.take_along_axis(np.take_along_axis(EVf_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
-    V_mal = um + psi_r + u_pub + beta*np.take_along_axis(np.take_along_axis(EVm_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
-    V_all = uc + psi_r + u_pub + beta*np.take_along_axis(np.take_along_axis(EV_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
+    V_fem = uf + psi_r + u_pub + ushift+ beta*np.take_along_axis(np.take_along_axis(EVf_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
+    V_mal = um + psi_r + u_pub + ushift+ beta*np.take_along_axis(np.take_along_axis(EVm_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
+    V_all = uc + psi_r + u_pub + ushift+ beta*np.take_along_axis(np.take_along_axis(EV_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
     def r(x): return x.astype(np.float32)
     
     assert np.allclose(V_all,V_couple,atol=1e-5,rtol=1e-4)

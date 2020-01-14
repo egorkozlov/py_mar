@@ -53,8 +53,8 @@ class ModelSetup(object):
         p['u_shift_coh'] = 0.0
         
         
-        p['f_wage_trend'] = [0.0 + 0.00*min(t,Tret) + 0.00*(min(t,Tret)**2) for t in range(T)]
-        p['m_wage_trend'] = [0.0 + 0.00*min(t,Tret) + 0.00*(min(t,Tret)**2) for t in range(T)]
+        p['f_wage_trend'] = [0.0 + 0.0*min(t,Tret) - 0.000*(min(t,Tret)**2) for t in range(T)]
+        p['m_wage_trend'] = [0.0 + 0.0*min(t,Tret) - 0.000*(min(t,Tret)**2) for t in range(T)]
         
         
         
@@ -74,7 +74,7 @@ class ModelSetup(object):
         
         # female labor supply
         self.ls_levels = np.array([0.0,1.0])
-        self.ls_utilities = np.array([1.0+p['uls'],1.0])
+        self.ls_utilities = np.array([0.0+p['uls'],0.0])
         self.ls_pdown = np.array([0.9,0.0])
         self.nls = len(self.ls_levels)
         
@@ -178,7 +178,7 @@ class ModelSetup(object):
         #Grid Couple
         self.na = 40
         self.amin = 0
-        self.amax =30
+        self.amax =50
         self.agrid_c = np.linspace(self.amin,self.amax,self.na)
         tune=1.5
         #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune

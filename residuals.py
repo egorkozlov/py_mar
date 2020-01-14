@@ -10,7 +10,7 @@ Created on Sat Dec 14 10:58:43 2019
 # this defines model residuals
 import numpy as np
 import pickle
-xdef = np.array([0.05,0.01,0.02,0.7,0.25])
+xdef = np.array([0.05,0.01,0.02,0.7,0.25,0.0001])
 
 
 # return format is any combination of 'distance', 'all_residuals' and 'model'
@@ -21,13 +21,14 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
     
  
     ulost = min(x[0],1.0)
+    mshift=x[5]
     sigma_psi = max(x[1],0.00001)
     sigma_psi_init = max(x[2],0.00001)
     pmeet = min(x[3],1.0)#np.exp(x[3])/(1+np.exp(x[3]))
     uls = x[4]
     
 
-    dc = DivorceCosts(unilateral_divorce=True,assets_kept = ulost,u_lost_m=0.0,u_lost_f=0.0,eq_split=0.0)
+    dc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=0.0)
     sc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.00,u_lost_f=0.00)
     
     
@@ -36,7 +37,7 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
     mdl = Model(iterator_name=iter_name,divorce_costs=dc,
                 separation_costs=sc,sigma_psi=sigma_psi,
                 sigma_psi_init=sigma_psi_init,
-                pmeet=pmeet,uls=uls)
+                pmeet=pmeet,uls=uls,u_shift_mar=mshift)
     
     mdl.solve_sim(simulate=True,show_mem=verbose,
                   verbose_sim=verbose,draw_moments=draw)

@@ -48,7 +48,7 @@ if __name__ == '__main__':
         pickle.dump(packed_stuff,file)
          
     #Initialize the file with parameters
-    x0 = np.array([0.01,0.39,0.56,0.16,0.34,0.0001])
+    x0 = np.array([0.01,0.39,0.56,0.16,0.34,0.0001,0.5])
     #0.12442258, 0.01066495, 0.0364165,  0.70268823, 0.30453891
 
  

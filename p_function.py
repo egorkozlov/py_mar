@@ -63,22 +63,27 @@ def fun(x):
         
         def q(pt):
             try:
-                res = mdl_resid(pt)
+                ans = mdl_resid(pt)[0]
+                print('result is {} at point {}'.format(ans,pt))
             except:
                 print('During optimization function evaluation failed at {}'.format(pt))
-                res = 1e6
+                ans = 1e6
             finally:
-                return np.array(res)#np.array([res, 0.0])
+                return np.array(ans)#np.array([res, 0.0])
             
         res=dfols.solve(q, xc,rhoend=1e-3,maxfun=100)
-        fbest = mdl_resid(res.x)
         
-        print('Final value is {}'.format(fbest))        
-        param=param+[(res.f,res.x)]
+        fbest = mdl_resid(res.x)[0]
+        
+        print('Final value is {}'.format(fbest))   
+        
+        param_new = filer('wisdom.pkl',None,False)
+        
+        param_write = param_new+[(res.f,res.x)]
         
         #Save Updated File
-        param.sort(key=sortFirst)
-        filer('wisdom.pkl',param,True)
+        param_write.sort(key=sortFirst)
+        filer('wisdom.pkl',param_write,True)
         
         return fbest
     

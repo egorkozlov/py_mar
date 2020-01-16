@@ -37,6 +37,7 @@ def get_mem():
 
 from p_function import fun
 
+
 # this tests if the worker can run at least something
 try:
     print('I am trying to test myself...')

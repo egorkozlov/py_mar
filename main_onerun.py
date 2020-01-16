@@ -48,11 +48,18 @@ if __name__ == '__main__':
         pickle.dump(packed_stuff,file)
          
     #Initialize the file with parameters
-    x0 = np.array([0.01,0.39,0.56,0.16,0.34,0.0001,0.5])
+    #x0 = np.array([0.01,0.39,0.56,0.16,0.34,0.0001,0.5])
+    
+    #x0 = np.array([0.29936427,0.04353319,0.2627978,0.61821716,0.30178722,0.0310754,0.64637075])
+    x0 = np.array([0.31069515,0.11153252,0.26202321,0.68278782,0.28923198,0.02740209,0.61911462])
     #0.12442258, 0.01066495, 0.0364165,  0.70268823, 0.30453891
 
+     
+    #from p_client import compute_for_values
+    #out = compute_for_values([('compute',x0)])
+    #print(out)
  
- 
+    
     out, mdl = mdl_resid(x0,return_format=['distance','model'],verbose=True,calibration_report=False,draw=True,graphs=graphs)
                          
     print('Done. Residual in point x0 is {}'.format(out))

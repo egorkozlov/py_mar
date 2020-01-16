@@ -7,6 +7,7 @@ Created on Wed Dec 18 12:52:29 2019
 
 import pandas as pd
 import numpy as np
+import pickle
 
 ################################
 #Functions
@@ -271,7 +272,7 @@ def compute(hi):
 #Actual moments computation + weighting matrix
 ################################################
 
-def dat_moments(sampling_number,weighting=False):
+def dat_moments(sampling_number=100,weighting=False):
     
     #Import Data
     data=pd.read_csv('histo.csv')
@@ -331,8 +332,12 @@ def dat_moments(sampling_number,weighting=False):
         #If no weighting, just use sum of squred deviations as the objective function        
         W=np.diag(np.ones(len(hazm)+len(hazs)+len(hazd)+len(mar)+len(coh)+1))#one is for fls
         
-    return (hazm,hazs,hazd,mar,coh,fls_ratio,W,hazmi,hazsi,hazdi,mari,cohi,fls_ratioi)
-
+    packed_stuff = (hazm,hazs,hazd,mar,coh,fls_ratio,W,hazmi,hazsi,hazdi,mari,cohi,fls_ratioi)
+    
+    with open('moments.pkl', 'wb+') as file:
+        pickle.dump(packed_stuff,file)    
+    
+    
 
 ###################################################################
 #If script is run as main, it performs a data comparison with SIPP

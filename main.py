@@ -30,7 +30,6 @@ import numpy as np
 from numpy.random import random_sample as rs
 from data_moments import dat_moments
 from tiktak import tiktak
-import pickle
 print('Hi!')
 
 from residuals import mdl_resid
@@ -39,9 +38,8 @@ if __name__ == '__main__':
     
     
     #Build  data moments and pickle them
-    packed_stuff=dat_moments(100,weighting=False)
-    with open('moments.pkl', 'wb+') as file:
-        pickle.dump(packed_stuff,file)
+    dat_moments() # refresh
+    
     
           
     #Create grids of parameters

@@ -120,7 +120,12 @@ while True:
             continue
         
         file_in.close()
-        remove(fname_full)
+        try:
+            remove(fname_full)
+        except FileNotFoundError:
+            print('could not delete the file, someone already picked it up...')
+            continue
+        
         print('I got a job to solve {}'.format(fname))
         print('request is {}. Memory used is {}'.format(x,get_mem()))
         

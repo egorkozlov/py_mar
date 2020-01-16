@@ -10,12 +10,12 @@ from main import mdl_resid
 import numpy as np
 from tiktak import filer
 
-#
+
 #def mdl_resid(x=(0,)):
 #    sleep(1)
 #    print('hi, my x is {}'.format(x))
 #    #if np.random.random_sample()>0.8: raise Exception('oh')
-#    return sum(x)
+#    return sum([i**2 for i in x])
 
 
 # we need fun() to be possible, do not remove None
@@ -40,8 +40,7 @@ def fun(x):
         i, N_st = args
         
         #Sort lists
-        def sortFirst(val): 
-           return val[0]
+        def sortFirst(val): return val[0]
         
         #Get the starting point for local minimization
         
@@ -49,12 +48,12 @@ def fun(x):
         #Open File with best solution so far
         param=filer('wisdom.pkl',0,False)
              
-        param.sort(key=sortFirst)
+        param.sort(key = sortFirst)
         print('f best so far is {} and x is {}'.format(param[0][0],param[0][1]))
         xm=param[0][1]
         
         #Get right sobol sequence point
-        xt=filer('sobol.pkl',i,False)
+        xt=filer('sobol.pkl',None,False)
         
         #Determine the initial position
         dump=min(max(0.1,((i+1)/N_st)**(0.5)),0.995)

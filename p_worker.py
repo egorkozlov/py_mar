@@ -12,6 +12,8 @@ from time import sleep
 from timeit import default_timer
 from numpy.random import random_sample as rs
 
+import os, psutil
+
 import pickle
 
 
@@ -25,7 +27,8 @@ def find_between( s, first, last ):
     except ValueError:
         return ""
 
-
+def get_mem():
+    return psutil.Process(os.getpid()).memory_info().rss/1e6
 #f = line.split()
 
 
@@ -64,7 +67,7 @@ while True:
         
     
     if toc - tic > 5.0:
-        print('I am ok, running for {:.1f} min'.format((toc-start)/60))
+        print('I am ok, running for {:.1f} min, memory used is {}'.format((toc-start)/60,get_mem()))
         tic = toc
         
     
@@ -96,8 +99,11 @@ while True:
     fname_full = 'Job/{}'.format(fname)
     
     
-    
-    file_in = open(fname_full,'rb')
+    try:
+        file_in = open(fname_full,'rb')
+    except FileNotFoundError:
+        print('could not open the file...')
+        continue
         
     try:
         try:
@@ -111,7 +117,7 @@ while True:
         file_in.close()
         remove(fname_full)
         print('I got a job to solve {}'.format(fname))
-        print('request is {}'.format(x))
+        print('request is {}. Memore used is {}'.format(x,get_mem()))
         
         try:
             f = fun(x)

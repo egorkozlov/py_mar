@@ -76,7 +76,7 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
     #Get residuals
     if len(dat)==len(sim):
         vec=dat-sim
-        resid = np.dot(np.dot(vec,W),vec)
+        resid = np.sqrt(np.dot(np.dot(vec,W),vec))
     else:
         resid=np.array(1000000.0)
     

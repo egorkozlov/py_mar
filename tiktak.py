@@ -39,9 +39,12 @@ def tiktak(nthreads,N,N_st,xl,xu,f,tole=1e-3,nelder=True,refine=False):
     
     pts = [ ('compute',x_init[:,j]) for j in range(N)]
     fx_init = compute_for_values(pts)
-    fx_init = np.array(fx_init)
+    
+    fx_init = (np.array(fx_init)**2).squeeze()
+     # !! not the optimizer returns squared value of mdl_resid
+    
     #Sort in ascending order of fitness
-    order=np.argsort(fx_init,axis=0)
+    order=np.argsort(fx_init)
     fx_init=fx_init[order]
     x_init=x_init[:,order]
     

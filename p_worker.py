@@ -12,6 +12,9 @@ from time import sleep
 from timeit import default_timer
 from numpy.random import random_sample as rs
 
+
+import gc
+
 import os, psutil
 
 import pickle
@@ -67,6 +70,7 @@ while True:
         
     
     if toc - tic > 5.0:
+        gc.collect() # runs garbage collection
         print('I am ok, running for {:.1f} min, memory used is {}'.format((toc-start)/60,get_mem()))
         tic = toc
         
@@ -117,7 +121,7 @@ while True:
         file_in.close()
         remove(fname_full)
         print('I got a job to solve {}'.format(fname))
-        print('request is {}. Memore used is {}'.format(x,get_mem()))
+        print('request is {}. Memory used is {}'.format(x,get_mem()))
         
         try:
             f = fun(x)
@@ -128,6 +132,8 @@ while True:
             print('error text is ' + str(e)) 
             if debug_mode: raise e
             f = 1e6
+            
+        print('Response is {}'.format(f))
             
     except KeyboardInterrupt:
         raise KeyboardInterrupt()
@@ -164,4 +170,4 @@ while True:
         
         print('could not get output!')
         continue
-        
+    

@@ -59,7 +59,7 @@ def fun(x):
         dump=min(max(0.1,((i+1)/N_st)**(0.5)),0.995)
         
         xc=dump*xm+(1-dump)*xt[:,i]
-        xc=xc[:,0]
+        xc=xc.squeeze()
         
         def q(pt):
             try:
@@ -70,7 +70,7 @@ def fun(x):
             finally:
                 return np.array(res)#np.array([res, 0.0])
             
-        res=dfols.solve(q, xc[:,0],rhoend=1e-3,maxfun=100)
+        res=dfols.solve(q, xc,rhoend=1e-3,maxfun=100)
         fbest = mdl_resid(res.x)
         
         print('Final value is {}'.format(fbest))        

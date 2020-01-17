@@ -103,6 +103,7 @@ def compute(hi):
         cohe.loc[(i+1==cohe['rel']),'endd']=cohe.loc[(i+1==cohe['rel']),'ENDDAT0'+str(i+1)]
         cohe.loc[(i+1==cohe['rel']),'how']=cohe.loc[(i+1==cohe['rel']),'HOWEND0'+str(i+1)]
         cohe.loc[(i+1==cohe['rel']),'mar']=cohe.loc[(i+1==cohe['rel']),'MARDAT0'+str(i+1)]
+        #add here an indicator of whether it should be unilateral duvorce scenario
         
     #Get how relationship end
     cohe['fine']='censored'
@@ -206,7 +207,12 @@ def compute(hi):
         #Create the variable of Status
         hi['status_'+str(20+(j)*5)]='single'
         
+        #Create the variable of ever married or cohabit
+        hi['everm_'+str(20+(j)*5)]=0.0
+        hi['everc_'+str(20+(j)*5)]=0.0
+        
         for i in range(9):
+            
             
             #Get if in couple
             hi.loc[(hi['time_'+str(20+(j)*5)]>=hi['BEGDAT0'+str(i+1)]) & (hi['BEGDAT0'+str(i+1)]<3999) &\
@@ -222,6 +228,12 @@ def compute(hi):
                    (hi['HOWBEG0'+str(i+1)]=='coh')    & \
                    ((hi['MARDAT0'+str(i+1)]==0) | (hi['MARDAT0'+str(i+1)]>hi['time_'+str(20+(j)*5)]))     \
                    ,'status_'+str(20+(j)*5)]='coh'
+                   
+            #Get if ever cohabited 
+            hi.loc[(hi['everc_'+str(20+(max(j-1,0))*5)]>=0.1) | (hi['status_'+str(20+(j)*5)]=='coh'),'everc_'+str(20+(j)*5)]=1.0
+            
+            #Get if ever cohabited 
+            hi.loc[(hi['everm_'+str(20+(max(j-1,0))*5)]>=0.1) | (hi['status_'+str(20+(j)*5)]=='mar'),'everm_'+str(20+(j)*5)]=1.0
             
     ######################################
     #Build employment by status in 1986
@@ -253,10 +265,14 @@ def compute(hi):
     #######################################
     mar=np.zeros(9)
     coh=np.zeros(9)
+    emar=np.zeros(9)
+    ecoh=np.zeros(9)
     
     for j in range(9):
         mar[j]=np.average(hi['status_'+str(20+(j)*5)]=='mar', weights=np.array(hi['SAMWT']))
         coh[j]=np.average(hi['status_'+str(20+(j)*5)]=='coh', weights=np.array(hi['SAMWT']))
+        emar[j]=np.average(hi['everm_'+str(20+(j)*5)], weights=np.array(hi['SAMWT']))
+        ecoh[j]=np.average(hi['everc_'+str(20+(j)*5)], weights=np.array(hi['SAMWT']))
         
         
     #########################################
@@ -264,7 +280,7 @@ def compute(hi):
     #########################################
     fls_ratio=np.average(empl.loc[empl['stat']=='mar','work'], weights=np.array(empl.loc[empl['stat']=='mar','SAMWT']))/np.average(empl.loc[empl['stat']=='coh','work'], weights=np.array(empl.loc[empl['stat']=='coh','SAMWT']))
         
-    return hazs,hazm,hazd,mar,coh,fls_ratio
+    return hazs,hazm,hazd,emar,ecoh,fls_ratio,mar,coh
 
 
 
@@ -278,7 +294,7 @@ def dat_moments(sampling_number=100,weighting=False):
     data=pd.read_csv('histo.csv')
     
     #Call the routine to compute the moments
-    hazs,hazm,hazd,mar,coh,fls_ratio=compute(data.copy())
+    hazs,hazm,hazd,emar,ecoh,fls_ratio,mar,coh=compute(data.copy())
     
     
     #Use bootstrap samples to compute the weighting matrix
@@ -291,6 +307,8 @@ def dat_moments(sampling_number=100,weighting=False):
     hazdB=np.zeros((len(hazd),boot))
     marB=np.zeros((len(mar),boot))
     cohB=np.zeros((len(coh),boot))
+    emarB=np.zeros((len(emar),boot))
+    ecohB=np.zeros((len(ecoh),boot))
     fls_ratioB=np.zeros((1,boot))
     
     aa=data.sample(n=nn,replace=True,weights='SAMWT',random_state=4)
@@ -300,7 +318,7 @@ def dat_moments(sampling_number=100,weighting=False):
     for i in range(boot):
     
         a1=aa[(i*n):((i+1)*n)].copy().reset_index()
-        hazsB[:,i],hazmB[:,i],hazdB[:,i],marB[:,i],cohB[:,i],fls_ratioB[:,i]=compute(a1.copy())
+        hazsB[:,i],hazmB[:,i],hazdB[:,i],emarB[:,i],ecohB[:,i],fls_ratioB[:,i],marB[:,i],cohB[:,i]=compute(a1.copy())
         
     
     #################################
@@ -311,13 +329,15 @@ def dat_moments(sampling_number=100,weighting=False):
     hazdi=np.array((np.percentile(hazdB,5,axis=1),np.percentile(hazdB,95,axis=1)))
     mari=np.array((np.percentile(marB,5,axis=1),np.percentile(marB,95,axis=1)))
     cohi=np.array((np.percentile(cohB,5,axis=1),np.percentile(cohB,95,axis=1)))
+    emari=np.array((np.percentile(emarB,5,axis=1),np.percentile(marB,95,axis=1)))
+    ecohi=np.array((np.percentile(ecohB,5,axis=1),np.percentile(cohB,95,axis=1)))
     fls_ratioi=np.array((np.percentile(fls_ratioB,5,axis=1),np.percentile(fls_ratioB,95,axis=1)))
     
     #Do what is next only if you want the weighting matrix   
     if weighting:
         
         #Compute optimal Weighting Matrix
-        col=np.concatenate((hazmB,hazsB,hazdB,marB,cohB,fls_ratioB),axis=0)    
+        col=np.concatenate((hazmB,hazsB,hazdB,emarB,ecohB,fls_ratioB),axis=0)    
         dim=len(col)
         W_in=np.zeros((dim,dim))
         for i in range(dim):
@@ -330,9 +350,9 @@ def dat_moments(sampling_number=100,weighting=False):
     else:
         
         #If no weighting, just use sum of squred deviations as the objective function        
-        W=np.diag(np.ones(len(hazm)+len(hazs)+len(hazd)+len(mar)+len(coh)+1))#one is for fls
+        W=np.diag(np.ones(len(hazm)+len(hazs)+len(hazd)+len(emar)+len(ecoh)+1))#one is for fls
         
-    packed_stuff = (hazm,hazs,hazd,mar,coh,fls_ratio,W,hazmi,hazsi,hazdi,mari,cohi,fls_ratioi)
+    packed_stuff = (hazm,hazs,hazd,mar,coh,fls_ratio,W,hazmi,hazsi,hazdi,mari,cohi,fls_ratioi,mar,coh,mari,cohi)
     
     with open('moments.pkl', 'wb+') as file:
         pickle.dump(packed_stuff,file)    
@@ -346,6 +366,7 @@ if __name__ == '__main__':
     
     import matplotlib.pyplot as plt
     import matplotlib.backends.backend_pdf
+    import pickle
 
     
     ##########################
@@ -440,7 +461,8 @@ if __name__ == '__main__':
     ####################
     #Get NLSFH data     
     #####################
-    packed_data=dat_moments(100,weighting=False)
+    with open('moments.pkl', 'rb') as file:
+        packed_data=pickle.load(file)
     #datanlsh=np.array[()]
      
     #Unpack Moments (see data_moments.py to check if changes)
@@ -448,48 +470,17 @@ if __name__ == '__main__':
     hazm_d=packed_data[0]
     hazs_d=packed_data[1]
     hazd_d=packed_data[2]
-    mar_d=packed_data[3]
-    coh_d=packed_data[4]
+    mar_d=packed_data[13]
+    coh_d=packed_data[14]
     fls_d=np.ones(1)*packed_data[5]
     hazm_i=packed_data[7]
     hazs_i=packed_data[8]
     hazd_i=packed_data[9]
-    mar_i=packed_data[10]
-    coh_i=packed_data[11]
+    mar_i=packed_data[15]
+    coh_i=packed_data[16]
     fls_i=np.ones(1)*packed_data[12]
             
     #Create Graph-Marriage
-    #sipp08=sipp08[sipp08.notnull()]
-    fig = plt.figure()
-    f4=fig.add_subplot(2,1,1)
-    #lg=min(len(mar_d),len(relt[1,:]))
-    plt.plot(date08, mar08,'g',linewidth=1.5, label='Share Married - D')
-    plt.plot(date04, mar04,'g',linewidth=1.5, label='Share Married - D')
-    plt.plot(date01, mar01,'g',linewidth=1.5, label='Share Married - D')
-    plt.plot(date96, mar96,'g',linewidth=1.5, label='Share Married - D')   
-    plt.plot(date08, mar108,'r',linewidth=1.5, label='Share Married - D')
-    plt.plot(date04, mar104,'r',linewidth=1.5, label='Share Married - D')
-    plt.plot(date01, mar101,'r',linewidth=1.5, label='Share Married - D')
-    plt.plot(date96, mar196,'r',linewidth=1.5, label='Share Married - D')
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
-              fancybox=True, shadow=True, ncol=2, fontsize='x-small')
-    #plt.ylim(ymax=1.0)
-    plt.xlabel('Time')
-    plt.ylabel('Share')
-    
-    #Create Graph-Cohabitation
-    fig = plt.figure()
-    f4=fig.add_subplot(2,1,1)
-    #lg=min(len(mar_d),len(relt[1,:]))
-    plt.plot(date08, coh08,'g',linewidth=1.5, label='Share Married - D')
-    plt.plot(date04, coh04,'g',linewidth=1.5, label='Share Married - D')
-    plt.plot(date01, coh01,'g',linewidth=1.5, label='Share Married - D')
-    plt.plot(date96, coh96,'g',linewidth=1.5, label='Share Married - D')
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
-              fancybox=True, shadow=True, ncol=2, fontsize='x-small')
-    #plt.ylim(ymax=1.0)
-    plt.xlabel('Time')
-    plt.ylabel('Share')
   
     
     #Create Cohabitation Over Age

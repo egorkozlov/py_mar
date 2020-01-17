@@ -259,7 +259,8 @@ def moment(mdl,draw=True):
             mtrend = agents.setup.pars['m_wage_trend'][s]
              
             #Arrays for preparation
-            is_state = (state[:,t]==ist)
+            is_state = (np.any(state[:,0:t]==ist,1))
+            #is_state = (state[:,t]==ist)
             ind = np.where(is_state)[0]
              
             if not np.any(is_state): continue

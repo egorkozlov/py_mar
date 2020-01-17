@@ -14,7 +14,8 @@ from p_client import compute_for_values
 from time import sleep
 import pickle
 
-def tiktak(nthreads,N,N_st,xl,xu,f,tole=1e-3,nelder=True,refine=False):
+def tiktak(nthreads,N,N_st,xl,xu,f,tole=1e-3,nelder=True,refine=False,
+           skip_global=False,skip_local=False):
     
     #Initial cheks
     assert len(xl)==len(xu)
@@ -26,32 +27,46 @@ def tiktak(nthreads,N,N_st,xl,xu,f,tole=1e-3,nelder=True,refine=False):
     #1 INITIALIZATION
     ###########################################
     
-    #First Create a Sobol Sequence
-    init = sobol_seq.i4_sobol_generate(len(xl),N) # generate many draws from uniform
-    #init=init[:,0]   
     
-    #Get point on the grid
-    x_init=xl*(1-init)+xu*init
-    x_init=x_init.T
-    x_init=x_init.squeeze()
-
-    #Get fitness of initial points
+    if not skip_global:
+        #First Create a Sobol Sequence
+        init = sobol_seq.i4_sobol_generate(len(xl),N) # generate many draws from uniform
+        #init=init[:,0]   
+        
+        #Get point on the grid
+        x_init=xl*(1-init)+xu*init
+        x_init=x_init.T
+        x_init=x_init.squeeze()
     
-    pts = [ ('compute',x_init[:,j]) for j in range(N)]
-    fx_init = compute_for_values(pts)
-    
-    fx_init = (np.array(fx_init)**2).squeeze()
-     # !! not the optimizer returns squared value of mdl_resid
-    
-    #Sort in ascending order of fitness
-    order=np.argsort(fx_init)
-    fx_init=fx_init[order]
-    x_init=x_init[:,order]
-    
+        #Get fitness of initial points
+        
+        pts = [ ('compute',x_init[:,j]) for j in range(N)]
+        fx_init = compute_for_values(pts)
+        
+        fx_init = (np.array(fx_init)**2).squeeze()
+         # !! not the optimizer returns squared value of mdl_resid
+        
+        #Sort in ascending order of fitness
+        order=np.argsort(fx_init)
+        fx_init=fx_init[order]
+        x_init=x_init[:,order]
+        
+        filer('sobol_results.pkl',(fx_init,x_init),True)
+        print('saved the results succesfully')
+    else:
+        (fx_init,x_init) = filer('sobol_results.pkl',None,False)
+        print('loaded the results from the file')
+        
+        
     #Take only the first N_st realization
     fx_init=fx_init[0:N_st]
     x_init=x_init[:,0:N_st]
    
+    if skip_local:
+        print('local minimizers are skipped')
+        return x_init[:,0]
+    
+    
     #Create a file with sobol sequence points
     filer('sobol.pkl',x_init,True)    
     

@@ -51,7 +51,7 @@ if __name__ == '__main__':
     #x0 = np.array([0.29936427,0.04353319,0.2627978,0.61821716,0.30178722,0.0310754,0.64637075])
     #x0 = np.array([0.31069515,0.11153252,0.26202321,0.68278782,0.28923198,0.02740209,0.61911462])
     #0.12442258, 0.01066495, 0.0364165,  0.70268823, 0.30453891
-    x0 = np.array([0.25,0.75125,0.12375,0.85,0.1075,0.0075,0.25])
+    x0 = np.array([0.71295166, 0.15531323, 0.20284609, 0.64860099, 0.12670233,0.02245003, 0.79663735])
      
     #from p_client import compute_for_values
     #out = compute_for_values([('compute',x0)])
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     
     out, mdl = mdl_resid(x0,return_format=['distance','model'],verbose=True,calibration_report=False,draw=True,graphs=graphs)
                          
-    print('Done. Residual in point x0 is {}'.format(out))
+    print('Done. Residual in point x0 is {}'.format(out[0]**2))
      
     
     #Indexes for the graphs

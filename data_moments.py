@@ -272,7 +272,7 @@ def compute(hi):
 #Actual moments computation + weighting matrix
 ################################################
 
-def dat_moments(sampling_number=100,weighting=False):
+def dat_moments(sampling_number=100,weighting=True,covariances=False):
     
     #Import Data
     data=pd.read_csv('histo.csv')
@@ -324,8 +324,14 @@ def dat_moments(sampling_number=100,weighting=False):
             for j in range(dim):
                 W_in[i,j]=(1/(boot-1))*np.cov(col[i,:],col[j,:])[0][1]
               
+        if not covariances:
+            W_in = np.diag(np.diag(W_in))
+        
         #Invert
         W=np.linalg.inv(W_in)
+        
+        # normalize
+        W = W/W.sum()
         
     else:
         

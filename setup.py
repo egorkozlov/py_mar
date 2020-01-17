@@ -47,6 +47,7 @@ class ModelSetup(object):
         
         p['wret'] = 0.8
         p['uls'] = 0.2
+        p['pls'] = 0.8
         
         
         p['u_shift_mar'] = 0.0
@@ -73,9 +74,9 @@ class ModelSetup(object):
         self.state_names = ['Female, single','Male, single','Couple, M', 'Couple, C']
         
         # female labor supply
-        self.ls_levels = np.array([0.0,1.0])
-        self.ls_utilities = np.array([0.0+p['uls'],0.0])
-        self.ls_pdown = np.array([0.9,0.0])
+        self.ls_levels = np.array([0.2,1.0])
+        self.ls_utilities = np.array([p['uls'],0.0])
+        self.ls_pdown = np.array([p['pls'],0.0])
         self.nls = len(self.ls_levels)
         
         
@@ -178,13 +179,13 @@ class ModelSetup(object):
         #Grid Couple
         self.na = 40
         self.amin = 0
-        self.amax =50
+        self.amax =60
         self.agrid_c = np.linspace(self.amin,self.amax,self.na)
         tune=1.5
         #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         
         # this builds finer grid for potential savings
-        s_between = 10 # default numer of points between poitns on agrid
+        s_between = 7 # default numer of points between poitns on agrid
         s_da_min = 0.001 # minimal step (does not create more points)
         s_da_max = 0.1 # maximal step (creates more if not enough)
         
@@ -202,7 +203,7 @@ class ModelSetup(object):
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)
         
         # grid for theta
-        self.ntheta = 15
+        self.ntheta = 11
         self.thetamin = 0.01
         self.thetamax = 0.99
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta)

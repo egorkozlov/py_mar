@@ -10,12 +10,12 @@ from main import mdl_resid
 import numpy as np
 from tiktak import filer
 
-#
+
 #def mdl_resid(x=(0,)):
 #    sleep(1)
 #    print('hi, my x is {}'.format(x))
 #    #if np.random.random_sample()>0.8: raise Exception('oh')
-#    return sum(x)
+#    return sum([i**2 for i in x])
 
 
 # we need fun() to be possible, do not remove None
@@ -40,8 +40,7 @@ def fun(x):
         i, N_st = args
         
         #Sort lists
-        def sortFirst(val): 
-           return val[0]
+        def sortFirst(val): return val[0]
         
         #Get the starting point for local minimization
         
@@ -49,37 +48,42 @@ def fun(x):
         #Open File with best solution so far
         param=filer('wisdom.pkl',0,False)
              
-        param.sort(key=sortFirst)
+        param.sort(key = sortFirst)
         print('f best so far is {} and x is {}'.format(param[0][0],param[0][1]))
         xm=param[0][1]
         
         #Get right sobol sequence point
-        xt=filer('sobol.pkl',i,False)
+        xt=filer('sobol.pkl',None,False)
         
         #Determine the initial position
         dump=min(max(0.1,((i+1)/N_st)**(0.5)),0.995)
         
         xc=dump*xm+(1-dump)*xt[:,i]
-        xc=xc[:,0]
+        xc=xc.squeeze()
         
         def q(pt):
             try:
-                res = mdl_resid(pt)
+                ans = mdl_resid(pt)[0]
+                print('result is {} at point {}'.format(ans,pt))
             except:
                 print('During optimization function evaluation failed at {}'.format(pt))
-                res = 1e6
+                ans = 1e6
             finally:
-                return np.array(res)#np.array([res, 0.0])
+                return np.array(ans)#np.array([res, 0.0])
             
-        res=dfols.solve(q, xc[:,0],rhoend=1e-3,maxfun=100)
-        fbest = mdl_resid(res.x)
+        res=dfols.solve(q, xc,rhoend=1e-3,maxfun=100)
         
-        print('Final value is {}'.format(fbest))        
-        param=param+[(res.f,res.x)]
+        fbest = mdl_resid(res.x)[0]
+        
+        print('Final value is {}'.format(fbest))   
+        
+        param_new = filer('wisdom.pkl',None,False)
+        
+        param_write = param_new+[(res.f,res.x)]
         
         #Save Updated File
-        param.sort(key=sortFirst)
-        filer('wisdom.pkl',param,True)
+        param_write.sort(key=sortFirst)
+        filer('wisdom.pkl',param_write,True)
         
         return fbest
     

@@ -19,7 +19,7 @@ from gridvec import VecOnGrid
 
 ##### main part
 
-def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False):
+def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescale=True):
     # this returns value functions for couple that entered the period with
     # (s,Z,theta) from the grid and is allowed to renegotiate them or breakup
     # 
@@ -89,7 +89,7 @@ def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False):
         vm_y = switch*vm_y_mar + (~switch)*vm_y_coh
         
         
-    result  = v_ren_core_interp(setup,v_y, vf_y, vm_y, vf_n, vm_n, is_unil)
+    result  = v_ren_core_interp(setup,v_y, vf_y, vm_y, vf_n, vm_n, is_unil, rescale=rescale)
     
     if not marriage:
         result['Cohabitation preferred to Marriage'] = ~switch
@@ -232,7 +232,7 @@ def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,Vmale,Vfemale,izf,izm,cost_f
     return Vf_divorce, Vm_divorce
 
 
-def v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral,show_sc=False):
+def v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral,show_sc=False,rescale=False):
     # this takes values of value functions (interpolated on fine grid)
     # and does discrete 
     # version of renegotiation.
@@ -363,6 +363,17 @@ def v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral,show_sc=False):
     def r(x): return x.astype(np.float32)
     
    
+    
+    if rescale:
+        theta_orig = np.broadcast_to(tgrid,i_theta_out.shape)
+        theta_new  = setup.thetagrid_fine[i_theta_out]
+        theta_new[no,:] = theta_orig[no,:] # this fixed divorced values
+        factor = np.maximum((1-theta_orig)/(1-theta_new), theta_orig / theta_new)
+        v_out_resc = factor*v_out    
+        assert np.all(factor>=1)
+        assert np.allclose(v_out_resc[no,:],v_out[no,:])
+        v_out = v_out_resc
+        
     
     return {'Decision': yes, 'thetas': i_theta_out,
             'Values': (r(v_out), r(vf_out), r(vm_out)),'Divorce':(vf_n,vm_n)}

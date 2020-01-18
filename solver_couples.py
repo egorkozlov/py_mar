@@ -38,7 +38,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
     EV_by_l, EV_fem_by_l, EV_mal_by_l = EV_tuple    
     
     ls = setup.ls_levels
-    us = setup.ls_utilities
+    us0 = setup.ls_u0
     #pd = setup.ls_pdown
     nls = len(ls)
     
@@ -54,7 +54,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
     beta = setup.pars['beta_t'][t]
     sigma = setup.pars['crra_power']
     R = setup.pars['R_t'][t]
-
+    
     
     
     wf = np.exp(zf + zftrend)
@@ -68,6 +68,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
     nexo = setup.pars['nexo_t'][t]
     shp = (setup.na,nexo,setup.ntheta)
     
+    
     # type conversion to keep everything float32
     sgrid,sigma,beta = (np.float32(x) for x in (sgrid,sigma,beta))
     
@@ -77,7 +78,8 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
     V_all_l = np.empty(shp+(nls,),dtype=np.float32)
     
     theta_val = np.float32(setup.thetagrid)
-    umult_vec = setup.u_mult(theta_val)
+    
+    umult_mat = np.stack([setup.u_mult(theta_val,ils) for ils in range(nls)],axis=1)
     
     # the original problem is max{umult*u(c) + beta*EV}
     # we need to rescale the problem to max{u(c) + beta*EV_resc}
@@ -95,7 +97,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
         EV_t = (ind,p,EV_by_l[:,istart:ifinish,:,:])
         
         V_pure_i, c_opt_i, s_opt_i, i_opt_i, il_opt_i, V_all_l_i = \
-           v_optimize_couple(money_t,sgrid,umult_vec,EV_t,sigma,beta,ls,us,ushift)
+           v_optimize_couple(money_t,sgrid,umult_mat,EV_t,sigma,beta,ls,us0,ushift)
         V_ret_i = V_pure_i + psi[None,istart:ifinish,None]
         
         
@@ -121,15 +123,15 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
     psi_r = psi[None,:,None].astype(np.float32)
     
     # finally obtain value functions of partners
-    uf, um = setup.u_part(c_opt,theta_val[None,None,:])
-    uc = setup.u_couple(c_opt,theta_val[None,None,:])
-    u_pub = us[il_opt]
+    uf, um = setup.u_part(c_opt,theta_val[None,None,:],il_opt,psi_r,ushift)
+    uc = setup.u_couple(c_opt,theta_val[None,None,:],il_opt,psi_r,ushift)
+
     
     
     EVf_all, EVm_all, EV_all  = (get_EVM(ind,p,x) for x in (EV_fem_by_l, EV_mal_by_l,EV_by_l))
-    V_fem = uf + psi_r + u_pub + ushift+ beta*np.take_along_axis(np.take_along_axis(EVf_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
-    V_mal = um + psi_r + u_pub + ushift+ beta*np.take_along_axis(np.take_along_axis(EVm_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
-    V_all = uc + psi_r + u_pub + ushift+ beta*np.take_along_axis(np.take_along_axis(EV_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
+    V_fem = uf + beta*np.take_along_axis(np.take_along_axis(EVf_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
+    V_mal = um + beta*np.take_along_axis(np.take_along_axis(EVm_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
+    V_all = uc + beta*np.take_along_axis(np.take_along_axis(EV_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
     def r(x): return x.astype(np.float32)
     
     assert np.allclose(V_all,V_couple,atol=1e-5,rtol=1e-4)

@@ -46,7 +46,8 @@ class ModelSetup(object):
         p['pmeet'] = 0.5
         
         p['wret'] = 0.8
-        p['uls'] = 0.2
+        p['uls'] = 0.3
+        p['uls_x'] = 0.0
         p['pls'] = 0.8
         
         
@@ -74,10 +75,13 @@ class ModelSetup(object):
         self.state_names = ['Female, single','Male, single','Couple, M', 'Couple, C']
         
         # female labor supply
+        self.ls_levels = np.array([0.5,1.0])
+        self.ls_pdown = np.array([0.9,0.0])
         self.ls_levels = np.array([0.2,1.0])
-        self.ls_utilities = np.array([p['uls'],0.0])
+        self.ls_u0 = np.array([p['uls'],0.0])
         self.ls_pdown = np.array([p['pls'],0.0])
-        self.nls = len(self.ls_levels)
+        self.nls = len(self.ls_levels)     
+        self.ls_u1 = np.array([p['uls_x'],p['uls_x']])
         
         
         #Cost of Divorce
@@ -456,7 +460,10 @@ class ModelSetup(object):
     
     # functions u_mult and c_mult are meant to be shape-perservings
     
-    def u_mult(self,theta):
+    # this is multiplier for utility of just-consumption
+    def u_mult_just_c(self,theta):
+        
+        
         assert np.all(theta > 0) and np.all(theta < 1)
         powr = (1+self.pars['couple_rts'])/(self.pars['couple_rts']+self.pars['crra_power'])
         tf = theta
@@ -470,8 +477,10 @@ class ModelSetup(object):
         
         return umult
     
-    
-    def c_mult(self,theta):
+    # this is multipliers for consumption relative to couple's level of consumption 
+    def c_mult_just_c(self,theta):
+        
+        
         assert np.all(theta > 0) and np.all(theta < 1)
         powr = (1+self.pars['couple_rts'])/(self.pars['couple_rts']+self.pars['crra_power'])
         irho = 1/(1+self.pars['couple_rts'])
@@ -488,17 +497,65 @@ class ModelSetup(object):
         
         return kf, km
     
+    
+    def u_mult(self,theta,ind_l):
+        
+        # get raw umult
+        
+        umult_c = self.u_mult_just_c(theta)   
+        # combine it with ls        
+        u1l = self.ls_u1[ind_l]   
+        sigma = self.pars['crra_power'] 
+        oos = 1/sigma
+        umult = (u1l**oos + umult_c**oos)**sigma
+        
+        
+        #assert umult.shape == theta.shape
+        
+        return umult
+        
+    def c_mult(self,theta,ind_l):
+        u1l = self.ls_u1[ind_l]
+        umult_c = self.u_mult_just_c(theta)
+        
+        
+        sigma = self.pars['crra_power'] 
+        
+        oos = 1/sigma
+        
+        k_x = u1l**oos / (u1l**oos + umult_c**oos)
+        k_c = 1-k_x
+        kf, km = self.c_mult_just_c(theta)
+        
+        k_cf = k_c*kf
+        k_cm = k_c*km
+        
+        return k_cf, k_cm, k_x
+        
+        
+        
     def u(self,c):
         return u_aux(c,self.pars['crra_power'])#(c**(1-self.pars['crra_power']))/(1-self.pars['crra_power'])
     
-    def u_part(self,c,theta): # this returns utility of each partner out of some c
-        kf, km = self.c_mult(theta)        
-        return self.u(kf*c), self.u(km*c)
+    def u_part(self,c,theta,ind_l,psi,ushift): # this returns utility of each partner out of some c
     
-    def u_couple(self,c,theta): # this returns utility of each partner out of some c
-        umult = self.u_mult(theta)        
-        return umult*self.u(c)
+        k_cf, k_cm, k_x = self.c_mult(theta,ind_l)
+        if np.any(k_x < 1e-5):
+            assert np.all(k_x<1e-5)  # ! this makes sure that there are no theta
+            # such that x = 0 with one theta and x > 0 with another
+            u_both = self.ls_u0[ind_l] + psi + ushift
+        else:
+            u_both = self.ls_u1[ind_l]*self.u(k_x*c) + self.ls_u0[ind_l] + psi + ushift
+        uf, um = self.u(k_cf*c) + u_both, self.u(k_cm*c) + u_both
+        
+        return uf, um
     
+    def u_couple(self,c,theta,ind_l,psi,ushift): # this returns utility of each partner out of some c
+        
+        umult = self.u_mult(theta,ind_l)
+        
+            
+        return umult*self.u(c) + self.ls_u0[ind_l] + psi + ushift
     
     
     def vm_last(self,s,zm,zf,psi,theta,ushift):
@@ -510,8 +567,9 @@ class ModelSetup(object):
         #TODO check indeces here
         u_couple_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)),dtype=np.float32)
         income_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)),dtype=np.float32)
-        util_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)),dtype=np.float32)
-        
+        u_couple_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)),dtype=np.float32)
+        u_f_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)),dtype=np.float32)
+        u_m_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)),dtype=np.float32)
         
         ftrend = self.pars['f_wage_trend'][-1]
         mtrend = self.pars['m_wage_trend'][-1]
@@ -519,28 +577,18 @@ class ModelSetup(object):
         for l in range(len(self.ls_levels)):
            
             income_g[...,l] = self.pars['R_t'][-1]*s + np.exp(zm+mtrend) +  np.exp(zf+ftrend)*self.ls_levels[l]
-            kf, km = self.c_mult(theta)        
-            u_couple_g[...,l] = self.u_mult(theta)*self.u(income_g[...,l])+self.ls_utilities[l] 
-            util_g[...,l]=self.ls_utilities[l] 
-            
+            u_couple_g[...,l] = self.u_couple(income_g[...,l],theta,l,psi,ushift)
+            u_f_g[...,l], u_m_g[...,l] = self.u_part(income_g[...,l],theta,l,psi,ushift)
         #Get optimal FLS
-        ls= np.empty((self.na,self.pars['nexo_t'][-1],len(self.thetagrid)),dtype=np.int32)
-        ls=np.argmax(u_couple_g,axis=3)
-        lsi=np.expand_dims(ls,3)
-        u_couple=np.take_along_axis(u_couple_g,lsi,axis=3).squeeze(axis=3)#[:,:,:,0]
-        income=np.take_along_axis(income_g,lsi,axis=3).squeeze(axis=3)#[:,:,:,0]
-        util=np.take_along_axis(util_g,lsi,axis=3).squeeze(axis=3)#[:,:,:,0]
+        lsi=np.argmax(u_couple_g,axis=3)[...,None]
+        V  = np.take_along_axis(u_couple_g,lsi,axis=3).squeeze(axis=3)#[:,:,:,0]
+        VF = np.take_along_axis(u_f_g,lsi,axis=3).squeeze(axis=3)
+        VM = np.take_along_axis(u_m_g,lsi,axis=3).squeeze(axis=3)
+        income=np.take_along_axis(income_g,lsi,axis=3).squeeze(axis=3)#[:,:,:,0]        
+        lsout = self.ls_levels[lsi]
         
-       
         
-        cf, cm = kf*income, km*income
-        u_m = self.u(cm)   
-        u_f = self.u(cf)
-        V = u_couple + psi
-        VM = u_m + psi+util
-        VF = u_f + psi+util
-        
-        return V.astype(np.float32), VF.astype(np.float32), VM.astype(np.float32), income.astype(np.float32), np.zeros_like(income.astype(np.float32)), ls.astype(np.float32), u_couple_g.astype(np.float32)
+        return V.astype(np.float32), VF.astype(np.float32), VM.astype(np.float32), income.astype(np.float32), np.zeros_like(income.astype(np.float32)), lsout.astype(np.float32), u_couple_g.astype(np.float32)
         
 
     def vm_last_grid(self,ushift):

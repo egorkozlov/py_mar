@@ -68,16 +68,21 @@ class ModelSetup(object):
         
         self.pars = p
         
+        self.dtype = np.float32 # type for all floats
+        
        
         
         # relevant for integration
         self.state_names = ['Female, single','Male, single','Couple, M', 'Couple, C']
         
         # female labor supply
-        self.ls_levels = np.array([0.2,1.0])
-        self.ls_utilities = np.array([p['uls'],0.0])
-        self.ls_pdown = np.array([p['pls'],0.0])
+        self.ls_levels = np.array([0.2,1.0],dtype=self.dtype)
+        self.ls_utilities = np.array([p['uls'],0.0],dtype=self.dtype)
+        self.ls_pdown = np.array([p['pls'],0.0],dtype=self.dtype)
         self.nls = len(self.ls_levels)
+        
+        
+        
         
         
         #Cost of Divorce
@@ -180,7 +185,7 @@ class ModelSetup(object):
         self.na = 40
         self.amin = 0
         self.amax =60
-        self.agrid_c = np.linspace(self.amin,self.amax,self.na)
+        self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
         tune=1.5
         #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         
@@ -194,8 +199,8 @@ class ModelSetup(object):
         
         #Grid Single
         self.amin_s = 0
-        self.amax_s = self.amax/1.0
-        self.agrid_s = np.linspace(self.amin_s,self.amax_s,self.na)
+        self.amax_s = self.amax/1.1
+        self.agrid_s = np.linspace(self.amin_s,self.amax_s,self.na,dtype=self.dtype)
         tune_s=1.5
         #self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
         
@@ -206,7 +211,7 @@ class ModelSetup(object):
         self.ntheta = 11
         self.thetamin = 0.01
         self.thetamax = 0.99
-        self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta)
+        self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta,dtype=self.dtype)
         
         
         
@@ -215,7 +220,7 @@ class ModelSetup(object):
         
         # construct finer grid for bargaining
         ntheta_fine = 10*self.ntheta # actual number may be a bit bigger
-        self.thetagrid_fine = np.unique(np.concatenate( (self.thetagrid,np.linspace(self.thetamin,self.thetamax,ntheta_fine)) ))
+        self.thetagrid_fine = np.unique(np.concatenate( (self.thetagrid,np.linspace(self.thetamin,self.thetamax,ntheta_fine,dtype=self.dtype)) ))
         self.ntheta_fine = self.thetagrid_fine.size
         
         i_orig = list()
@@ -281,7 +286,7 @@ class ModelSetup(object):
         s_a_partner = self.pars['sig_partner_a']
         
         
-        prob_a_mat = np.zeros((na,npoints),dtype=np.float32)
+        prob_a_mat = np.zeros((na,npoints),dtype=self.dtype)
         i_a_mat = np.zeros((na,npoints),dtype=np.int16)
         
         
@@ -405,7 +410,7 @@ class ModelSetup(object):
                 npos_iexo = inds.size
                 npos_a = pmat_a.shape[1]
                 npos = npos_iexo*npos_a
-                pmatch = np.zeros((self.na,nz,npos))
+                pmatch = np.zeros((self.na,nz,npos),dtype=self.dtype)
                 iamatch = np.zeros((self.na,nz,npos),dtype=np.int32)
                 iexomatch = np.zeros((self.na,nz,npos),dtype=np.int32)
                 
@@ -508,9 +513,9 @@ class ModelSetup(object):
         
         #Get utility for different FLS
         #TODO check indeces here
-        u_couple_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)),dtype=np.float32)
-        income_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)),dtype=np.float32)
-        util_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)),dtype=np.float32)
+        u_couple_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)),dtype=self.dtype)
+        income_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)),dtype=self.dtype)
+        util_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)),dtype=self.dtype)
         
         
         ftrend = self.pars['f_wage_trend'][-1]
@@ -524,7 +529,6 @@ class ModelSetup(object):
             util_g[...,l]=self.ls_utilities[l] 
             
         #Get optimal FLS
-        ls= np.empty((self.na,self.pars['nexo_t'][-1],len(self.thetagrid)),dtype=np.int32)
         ls=np.argmax(u_couple_g,axis=3)
         lsi=np.expand_dims(ls,3)
         u_couple=np.take_along_axis(u_couple_g,lsi,axis=3).squeeze(axis=3)#[:,:,:,0]
@@ -540,7 +544,7 @@ class ModelSetup(object):
         VM = u_m + psi+util
         VF = u_f + psi+util
         
-        return V.astype(np.float32), VF.astype(np.float32), VM.astype(np.float32), income.astype(np.float32), np.zeros_like(income.astype(np.float32)), ls.astype(np.float32), u_couple_g.astype(np.float32)
+        return V.astype(self.dtype), VF.astype(self.dtype), VM.astype(self.dtype), income.astype(self.dtype), np.zeros_like(income.astype(self.dtype)), ls.astype(np.int16), u_couple_g.astype(self.dtype)
         
 
     def vm_last_grid(self,ushift):
@@ -560,7 +564,7 @@ class ModelSetup(object):
         # generic last period utility for single agent
         income = self.pars['R_t'][-1]*s+np.exp(z_plus_trend) 
         if return_cs:
-            return self.u(income).astype(np.float32) + ushift, income.astype(np.float32), np.zeros_like(income.astype(np.float32))
+            return self.u(income).astype(self.dtype) + ushift, income.astype(self.dtype), np.zeros_like(income.astype(self.dtype))
         else:
             return self.u(income)
     

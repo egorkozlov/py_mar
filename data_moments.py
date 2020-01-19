@@ -329,8 +329,8 @@ def dat_moments(sampling_number=100,weighting=False):
     hazdi=np.array((np.percentile(hazdB,5,axis=1),np.percentile(hazdB,95,axis=1)))
     mari=np.array((np.percentile(marB,5,axis=1),np.percentile(marB,95,axis=1)))
     cohi=np.array((np.percentile(cohB,5,axis=1),np.percentile(cohB,95,axis=1)))
-    emari=np.array((np.percentile(emarB,5,axis=1),np.percentile(marB,95,axis=1)))
-    ecohi=np.array((np.percentile(ecohB,5,axis=1),np.percentile(cohB,95,axis=1)))
+    emari=np.array((np.percentile(emarB,5,axis=1),np.percentile(emarB,95,axis=1)))
+    ecohi=np.array((np.percentile(ecohB,5,axis=1),np.percentile(ecohB,95,axis=1)))
     fls_ratioi=np.array((np.percentile(fls_ratioB,5,axis=1),np.percentile(fls_ratioB,95,axis=1)))
     
     #Do what is next only if you want the weighting matrix   
@@ -352,7 +352,7 @@ def dat_moments(sampling_number=100,weighting=False):
         #If no weighting, just use sum of squred deviations as the objective function        
         W=np.diag(np.ones(len(hazm)+len(hazs)+len(hazd)+len(emar)+len(ecoh)+1))#one is for fls
         
-    packed_stuff = (hazm,hazs,hazd,mar,coh,fls_ratio,W,hazmi,hazsi,hazdi,mari,cohi,fls_ratioi,mar,coh,mari,cohi)
+    packed_stuff = (hazm,hazs,hazd,emar,ecoh,fls_ratio,W,hazmi,hazsi,hazdi,emari,ecohi,fls_ratioi,mar,coh,mari,cohi)
     
     with open('moments.pkl', 'wb+') as file:
         pickle.dump(packed_stuff,file)    

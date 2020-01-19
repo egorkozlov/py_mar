@@ -42,7 +42,7 @@ if __name__ == '__main__':
     #For graphs later
     graphs=True
     #Build  data moments and pickle them
-    #dat_moments()
+    dat_moments()
     
          
     #Initialize the file with parameters
@@ -51,7 +51,7 @@ if __name__ == '__main__':
     #x0 = np.array([0.29936427,0.04353319,0.2627978,0.61821716,0.30178722,0.0310754,0.64637075])
     #x0 = np.array([0.31069515,0.11153252,0.26202321,0.68278782,0.28923198,0.02740209,0.61911462])
     #0.12442258, 0.01066495, 0.0364165,  0.70268823, 0.30453891
-    x0 = np.array([0.25,0.75125,0.12375,0.85,0.1075,0.0075,0.25])
+    x0 = np.array([0.25824045, 0.06924287, 0.29709327, 0.62403227, 0.27693248, 0.02142724, 0.75933673])
      
     #from p_client import compute_for_values
     #out = compute_for_values([('compute',x0)])

@@ -18,7 +18,6 @@ from tiktak import filer
 #    return sum([i**2 for i in x])
 
 
-# we need fun() to be possible, do not remove None
 def fun(x):
     assert type(x) is tuple, 'x must be a tuple!'
     
@@ -37,7 +36,7 @@ def fun(x):
         
         import dfols
         
-        i, N_st = args
+        i, N_st, lb, ub = args
         
         #Sort lists
         def sortFirst(val): return val[0]
@@ -61,25 +60,34 @@ def fun(x):
         xc=dump*xm+(1-dump)*xt[:,i]
         xc=xc.squeeze()
         
+        
+        
         def q(pt):
             try:
-                ans = mdl_resid(pt)[0]
-                print('result is {} at point {}'.format(ans,pt))
+                ans = mdl_resid(pt,return_format=['scaled residuals'])[0]
             except:
                 print('During optimization function evaluation failed at {}'.format(pt))
-                ans = 1e6
+                ans = np.array([1e6])
             finally:
-                return np.array(ans)#np.array([res, 0.0])
+                return ans
             
-        res=dfols.solve(q, xc,rhoend=1e-3,maxfun=100)
+            
+            
+        res=dfols.solve(q, xc, rhoend=1e-4, maxfun=100, bounds=(lb,ub))
         
-        fbest = mdl_resid(res.x)[0]
+        fbest = mdl_resid(res.x)[0] # in prnciple, this can be inconsistent with
+        # squared sum of residuals
+        
+        
+        print(res)
+        
+        print('fbest is {} and res.f is {}'.format(fbest,res.f))
         
         print('Final value is {}'.format(fbest))   
         
         param_new = filer('wisdom.pkl',None,False)
         
-        param_write = param_new+[(res.f,res.x)]
+        param_write = param_new+[(fbest,res.x)]
         
         #Save Updated File
         param_write.sort(key=sortFirst)

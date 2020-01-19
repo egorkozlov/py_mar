@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
     x0 = np.array([0.01,0.01,0.02,0.7,0.25,0.0001,0.5])
     lb= np.array([0.0,0.005,0.015,0.4,0.01,0.0,0.0])
-    ub= np.array([1.0,1.0,0.45,1.0,0.4,0.01,1.0])
+    ub= np.array([1.0,1.0,0.45,1.0,0.4,0.2,1.0])
     ub[3]=min(ub[3],1.0)
     
     
@@ -70,7 +70,6 @@ if __name__ == '__main__':
     print('Everything worked, output is {}'.format(outs))
     
     
-    
     print('')
     print('')
     print('running tic tac...')
@@ -80,8 +79,8 @@ if __name__ == '__main__':
    
 
     #Tik Tak Optimization
-    param=tiktak(200,200,10,lb,ub,mdl_resid,tole=1e-3,nelder=False,refine=False,
-                 skip_local=True,skip_global=False)
+    param=tiktak(200,200,12,lb,ub,mdl_resid,tole=1e-3,nelder=False,refine=False,
+                 skip_local=False,skip_global=True)
     
     print('f is {} and x is {}'.format(param[0],param[1]))
     

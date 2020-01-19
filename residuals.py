@@ -73,21 +73,27 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
     fls_s = np.ones(1)*np.mean(mdl.moments['flsm'][1:Tret])/np.mean(mdl.moments['flsc'][1:Tret])
     sim=np.concatenate((hazm_s,hazs_s,hazd_s,mar_s,coh_s,fls_s),axis=0)
 
-    #Get residuals
-    if len(dat)==len(sim):
-        vec=dat-sim
+
+
+    if len(dat) != len(sim):
+        sim = np.full_like(dat,1.0e6)
+        
+        
+    res_all=dat-sim
+    
+    if verbose:
         print('data moments are {}'.format(dat))
         print('simulated moments are {}'.format(sim))
-        
-        resid = np.sqrt(np.dot(np.dot(vec,W),vec))
-    else:
-        resid=np.array(1000000.0)
     
-    def distance_pso(particle):
-        return 
+    resid_all = np.array([x if (not np.isnan(x) and not np.isinf(x)) else 1e6 for x in res_all])
     
-    resid = [resid if not (np.isnan(resid) or np.isinf(resid)) else 1.0e6]
-    out = resid
+    resid_sc = resid_all*np.sqrt(np.diag(W)) # all residuals scaled
+    
+    dist = np.dot(np.dot(resid_all,W),resid_all)
+
+
+    print('Distance is {}'.format(dist))
+    
     
     
     if calibration_report:
@@ -100,7 +106,7 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
         print('Average {:.4f} mar and {:.4f} cohab'.format(np.mean(mar_s),np.mean(coh_s)))
         print('Hazard of sep is {:.4f}, hazard of div is {:.4f}'.format(np.mean(hazs_s),np.mean(hazd_s)))        
         print('Hazard of Marriage is {:.4f}'.format(np.mean(hazm_s)))
-        print('Calibration residual is {:.4f}'.format(out))
+        print('Calibration residual is {:.4f}'.format(dist))
         print('')
         print('')
         print('End of calibration report')
@@ -109,7 +115,8 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
     
     
     
-    out_dict = {'distance':out,'all residuals':resid,'model':mdl}
+    out_dict = {'distance':dist,'all residuals':resid_all,
+                'scaled residuals':resid_sc,'model':mdl}
     out = [out_dict[key] for key in return_format]
     
     #For memory reason:delete stuff

@@ -43,7 +43,7 @@ def tiktak(nthreads,N,N_st,xl,xu,f,tole=1e-3,nelder=True,refine=False,
         pts = [ ('compute',x_init[:,j]) for j in range(N)]
         fx_init = compute_for_values(pts)
         
-        fx_init = (np.array(fx_init)**2).squeeze()
+        fx_init = (np.array(fx_init)).squeeze()
          # !! not the optimizer returns squared value of mdl_resid
         
         #Sort in ascending order of fitness
@@ -75,7 +75,7 @@ def tiktak(nthreads,N,N_st,xl,xu,f,tole=1e-3,nelder=True,refine=False,
     filer('wisdom.pkl',param,True)
          
     
-    vals = [('minimize',(i,N_st)) for i in range(N_st)]
+    vals = [('minimize',(i,N_st,xl,xu)) for i in range(N_st)]
     
     compute_for_values(vals,timeout=3600.0)
     

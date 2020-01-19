@@ -78,7 +78,7 @@ if __name__ == '__main__':
     print('')
     
    
-
+    
     #Tik Tak Optimization
     param=tiktak(200,200,10,lb,ub,mdl_resid,tole=1e-3,nelder=False,refine=False,
                  skip_local=True,skip_global=False)

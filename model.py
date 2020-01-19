@@ -38,6 +38,7 @@ class Model(object):
         self.mlast = self.get_mem()
         
         self.setup = ModelSetup(**kwargs)
+        self.dtype = self.setup.dtype
         self.iterator, self.initializer = self._get_iterator(iterator_name)
         self.start = default_timer()
         self.last = default_timer()
@@ -171,9 +172,9 @@ class Model(object):
         if desc == 'Couple, M' or desc == 'Couple, C':
             
             #cint = self.setup.v_thetagrid_fine.apply(v['c'],axis=2)
-            sint = self.setup.v_thetagrid_fine.apply(v['s'],axis=2).astype(np.float32)
+            sint = self.setup.v_thetagrid_fine.apply(v['s'],axis=2).astype(self.dtype)
             
-            Vint = self.setup.v_thetagrid_fine.apply(v['V_all_l'],axis=2).astype(np.float32)
+            Vint = self.setup.v_thetagrid_fine.apply(v['V_all_l'],axis=2).astype(self.dtype)
             
             if Vint.ndim < 4: Vint = Vint[:,:,:,None]
             

@@ -43,24 +43,37 @@ def build_s_grid(agrid,n_between,da_min,da_max):
     return sgrid
 
 
-def get_EVM(ind,wthis,EVin,use_gpu=False):
+def get_EVM(ind,wthis,EVin,use_gpu=False,dtype=np.float32):
     # this essenitally doubles VecOnGrid.apply method
     # but we cannot deprecate it unless we are sure VecOnGrid works on GPU 
     # correctly
+    
     mr = cp if use_gpu else np
+    
     
     ev_aux_shape  = EVin.shape[1:]
     shap = (ind.size,) + ev_aux_shape
-    EVout = mr.empty(shap,mr.float32)
+    
+    
+    if dtype == np.float32:
+        EVout = mr.empty(shap,mr.float32)
+    else:
+        if use_gpu:
+            assert dtype==np.float64
+            EVout = mr.empty(shap,mr.float64)
+        else:
+            EVout = np.empty(shap,dtype)
     
     pb = wthis.reshape(((wthis.size,)+(1,)*len(ev_aux_shape)))
+    
     EVout[:] = pb*EVin[ind,...] + (1-pb)*EVin[ind+1,...]    
+    
     
     return EVout
 
 
 
-def v_optimize_couple(money_in,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ugpu,compare=False):
+def v_optimize_couple(money_in,sgrid,umult_mat,EV,sigma,beta,ls,us,ushift,use_gpu=ugpu,compare=False,dtype=np.float32):
     # This optimizer avoids creating big arrays and uses parallel-CPU on 
     # machines without NUMBA-CUDA codes otherwise
     
@@ -88,6 +101,7 @@ def v_optimize_couple(money_in,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ug
         assert len(EV) == 3
         ind,p,EVin = EV
         EV_by_l = get_EVM(ind,p,EVin,use_gpu=False) 
+        
     
     ntheta = EV_by_l.shape[-2]
     
@@ -98,9 +112,9 @@ def v_optimize_couple(money_in,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ug
     
     
     i_opt_arr = np.empty((na,nexo,ntheta,nls),dtype=np.int16)
-    c_opt_arr = np.empty((na,nexo,ntheta,nls),dtype=np.float32)
-    s_opt_arr = np.empty((na,nexo,ntheta,nls),dtype=np.float32)
-    V_opt_arr = np.empty((na,nexo,ntheta,nls),dtype=np.float32)
+    c_opt_arr = np.empty((na,nexo,ntheta,nls),dtype=dtype)
+    s_opt_arr = np.empty((na,nexo,ntheta,nls),dtype=dtype)
+    V_opt_arr = np.empty((na,nexo,ntheta,nls),dtype=dtype)
     
     for i, (lval, uval) in enumerate(zip(ls,us)):
         
@@ -111,14 +125,14 @@ def v_optimize_couple(money_in,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ug
         if not use_gpu:
             
             # preallocation helps a bit here
-            V, c, s = np.empty((3,na,nexo,ntheta),dtype=np.float32)
+            V, c, s = np.empty((3,na,nexo,ntheta),dtype=dtype)
             i_opt = -np.ones((na,nexo,ntheta),dtype=np.int16)                 
-            v_couple_local(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift,V,i_opt,c,s)
+            v_couple_local(money_left,sgrid,umult_mat[:,i],EV_here,sigma,beta,uval+ushift,V,i_opt,c,s)
             
         else:
             
             # preallocation is pretty unfeasible
-            V, i_opt, c, s = v_couple_gpu(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift)
+            V, i_opt, c, s = v_couple_gpu(money_left,sgrid,umult_mat[:,i],EV_here,sigma,beta,uval+ushift)
 
                 
         i_opt_arr[...,i] = i_opt
@@ -146,17 +160,17 @@ def v_optimize_couple(money_in,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ug
     
     
     if compare:
-        Vcomp = v_optimize_couple_array(money_in,sgrid,umult,EV,sigma,beta,ls,us,ushift)[0]
+        Vcomp = v_optimize_couple_array(money_in,sgrid,umult_mat,EV,sigma,beta,ls,us,ushift)[0]
         md = np.max(np.abs(Vcomp-V))
         
         if md > 0.0: print('Maximum difference in V is {}'.format(md))
     
     
-    return ret(V), ret(c), ret(s), ret(i_opt), ret(i_ls), ret(V_all).astype(np.float32)
+    return ret(V), ret(c), ret(s), ret(i_opt), ret(i_ls), ret(V_all).astype(dtype)
 
 
 
-def v_optimize_couple_array(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ugpu):
+def v_optimize_couple_array(money,sgrid,umult_mat,EV,sigma,beta,ls,us,ushift,use_gpu=ugpu,dtype=np.float32):
     # This is an optimizer that uses Numpy/Cupy arrays
     # it is robust though not completely efficient
     
@@ -165,13 +179,24 @@ def v_optimize_couple_array(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu
     
     mr = cp if use_gpu else np # choose matrix routine
         
+    if use_gpu:
+        if dtype==np.float32:
+            dtype_here = mr.float32 
+        elif dtype==np.float64:
+            dtype_here = mr.float64
+        else:
+            raise(Exception('unsupported type...'))
+    else:
+        dtype_here = dtype
+    
+    
     assert isinstance(money,tuple)
     assert len(money)==3
     
     
     if use_gpu:
         money = tuple((cp.asarray(x) for x in money))
-        umult = cp.asarray(umult)
+        umult_mat = cp.asarray(umult_mat)
     
     asset_income, wf, wm = money
     
@@ -189,7 +214,7 @@ def v_optimize_couple_array(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu
     if isinstance(EV,tuple):
         assert len(EV) == 3
         (ind,p,EVin) = (cp.asarray(x) if use_gpu else x for x in EV)
-        EV_by_l = get_EVM(ind,p,EVin,use_gpu)
+        EV_by_l = get_EVM(ind,p,EVin,use_gpu,dtype=dtype)
     
     
     if use_gpu: # it is ok to use cp.asarray twice, it does not copy
@@ -202,7 +227,7 @@ def v_optimize_couple_array(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu
     assert (EV_by_l.ndim - money.ndim == 2), 'Shape mismatch?'
     shp = money.shape + (ntheta,) # shape of the result
     
-    V, c, s = mr.empty(shp,mr.float32), mr.empty(shp,mr.float32), mr.empty(shp,mr.float32)    
+    V, c, s = mr.empty(shp,dtype_here), mr.empty(shp,dtype_here), mr.empty(shp,dtype_here)    
     
     oms = 1-sigma
     
@@ -220,10 +245,10 @@ def v_optimize_couple_array(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu
     tal = cp_take_along_axis if use_gpu else np.take_along_axis
     
     
-    i_opt_arr = mr.empty((na,nexo,ntheta,nls),dtype=mr.int32)
-    c_opt_arr = mr.empty((na,nexo,ntheta,nls),dtype=mr.float32)
-    s_opt_arr = mr.empty((na,nexo,ntheta,nls),dtype=mr.float32)
-    V_opt_arr = mr.empty((na,nexo,ntheta,nls),dtype=mr.float32)
+    i_opt_arr = mr.empty((na,nexo,ntheta,nls),dtype=mr.int16)
+    c_opt_arr = mr.empty((na,nexo,ntheta,nls),dtype=dtype_here)
+    s_opt_arr = mr.empty((na,nexo,ntheta,nls),dtype=dtype_here)
+    V_opt_arr = mr.empty((na,nexo,ntheta,nls),dtype=dtype_here)
     
     for i, (lval, uval) in enumerate(zip(ls,us)):
         
@@ -231,7 +256,8 @@ def v_optimize_couple_array(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu
         
         money_left = money - (1-lval)*wf.reshape((1,nexo))
         
-    
+        umult = umult_mat[:,i]
+        
         c_mat = mr.expand_dims(money_left,1)  - s_expanded
         u_mat = mr.full(c_mat.shape,-mr.inf)
         u_mat[c_mat>0] = u(c_mat[c_mat>0])
@@ -282,14 +308,14 @@ def v_optimize_couple_array(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu
     V_all = V_opt_arr
     
     
-    return ret(V), ret(c), ret(s), ret(i_opt), ret(i_ls), ret(V_all).astype(np.float32)
+    return ret(V), ret(c), ret(s), ret(i_opt), ret(i_ls), ret(V_all).astype(dtype)
 
 
 
 
 
 
-def v_optimize_single(money,sgrid,EV,sigma,beta,ushift,use_gpu=False,return_ind=False):
+def v_optimize_single(money,sgrid,EV,sigma,beta,ushift,use_gpu=False,return_ind=False,dtype=np.float32):
     # this is the optimizer for value functions
     # 1. It can use cuda arrays (cupy) if use_gpu=True
     # 2. It can accept few shapes of money array and EV
@@ -311,6 +337,16 @@ def v_optimize_single(money,sgrid,EV,sigma,beta,ushift,use_gpu=False,return_ind=
     
     mr = cp if use_gpu else np # choose matrix routine
     
+    if use_gpu:
+        if dtype==np.float32:
+            dtype_here = mr.float32 
+        elif dtype==np.float64:
+            dtype_here = mr.float64
+        else:
+            raise(Exception('unsupported type...'))
+    else:
+        dtype_here = dtype
+    
     if isinstance(money,tuple):
         assert len(money) == 2
         
@@ -322,7 +358,7 @@ def v_optimize_single(money,sgrid,EV,sigma,beta,ushift,use_gpu=False,return_ind=
     if isinstance(EV,tuple):
         assert len(EV) == 3
         (ind,p,EVin) = (cp.asarray(x) if use_gpu else x for x in EV)
-        EV = get_EVM(ind,p,EVin,use_gpu)
+        EV = get_EVM(ind,p,EVin,use_gpu,dtype=dtype)
     
     
     if use_gpu: # it is ok to use cp.asarray twice, it does not copy
@@ -334,7 +370,7 @@ def v_optimize_single(money,sgrid,EV,sigma,beta,ushift,use_gpu=False,return_ind=
     assert (money.ndim == EV.ndim), 'Shape mismatch?'
     shp = money.shape
     
-    V, c, s = mr.empty(shp,mr.float32), mr.empty(shp,mr.float32), mr.empty(shp,mr.float32)    
+    V, c, s = mr.empty(shp,dtype_here), mr.empty(shp,dtype_here), mr.empty(shp,dtype_here)    
     
     oms = 1-sigma
     
@@ -451,7 +487,7 @@ def v_couple_gpu(money,sgrid,u_mult,EV,sigma,beta,uadd,use_kernel_pool=False):
     assert money.shape == (na,nexo)
     assert EV.shape == (ns,nexo,ntheta)
     
-    V_opt_g = cuda.device_array((na,nexo,ntheta),dtype=np.float32)    
+    V_opt_g = cuda.device_array((na,nexo,ntheta),dtype=EV.dtype)    
     i_opt_g = cuda.device_array((na,nexo,ntheta),dtype=np.int16)
     
     

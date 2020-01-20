@@ -91,19 +91,22 @@ def moment(mdl,draw=True):
      
      
     #Now divide spells by relationship nature
-     
+    all_spells=dict()
     for ist,sname in enumerate(state_codes):
-        s = sname.replace(',', '')
-        s = s.replace(' ', '')
+        #s = sname.replace(',', '')
+        #s = s.replace(' ', '')
          
          
         is_state= (spells[:,0]==ist)
          
-        if not is_state.any(): continue
+        #if not is_state.any(): continue
              
-        globals()['spells_t'+s]=spells[is_state,:]
-        is_state= (globals()['spells_t'+s][:,1]!=0)
-        globals()['spells_'+s]=globals()['spells_t'+s][is_state,:]
+    
+        all_spells[sname]=spells[is_state,:]
+
+        is_state= (all_spells[sname][:,1]!=0)
+        all_spells[sname]=all_spells[sname][is_state,:]
+        
      
      
     ##################################
@@ -112,11 +115,11 @@ def moment(mdl,draw=True):
          
     #Hazard of Divorce
     hazd=list()
-    lgh=len(spells_CoupleM[:,0])
+    lgh=len(all_spells['Couple, M'][:,0])
     for t in range(agents.setup.pars['Tret']):
          
-        cond=spells_CoupleM[:,1]==t+1
-        temp=spells_CoupleM[cond,2]
+        cond=all_spells['Couple, M'][:,1]==t+1
+        temp=all_spells['Couple, M'][cond,2]
         cond1=temp!=2
         temp1=temp[cond1]
         if lgh>0:
@@ -131,11 +134,11 @@ def moment(mdl,draw=True):
      
     #Hazard of Separation
     hazs=list()
-    lgh=len(spells_CoupleC[:,0])
+    lgh=len(all_spells['Couple, C'][:,0])
     for t in range(agents.setup.pars['Tret']):
          
-        cond=spells_CoupleC[:,1]==t+1
-        temp=spells_CoupleC[cond,2]
+        cond=all_spells['Couple, C'][:,1]==t+1
+        temp=all_spells['Couple, C'][cond,2]
         cond1=temp==0
         temp1=temp[cond1]
         if lgh>0:
@@ -150,11 +153,11 @@ def moment(mdl,draw=True):
      
     #Hazard of Marriage (Cohabitation spells)
     hazm=list()
-    lgh=len(spells_CoupleC[:,0])
+    lgh=len(all_spells['Couple, C'][:,0])
     for t in range(agents.setup.pars['Tret']):
          
-        cond=spells_CoupleC[:,1]==t+1
-        temp=spells_CoupleC[cond,2]
+        cond=all_spells['Couple, C'][:,1]==t+1
+        temp=all_spells['Couple, C'][cond,2]
         cond1=temp==2
         temp1=temp[cond1]
         if lgh>0:
@@ -177,7 +180,7 @@ def moment(mdl,draw=True):
      
     #Singles: Marriage vs. cohabitation transition
     #spells_s=np.append(spells_Femalesingle,spells_Malesingle,axis=0)
-    spells_s = spells_Femalesingle
+    spells_s =all_spells['Female, single']
     cond=spells_s[:,2]>1
     spells_sc=spells_s[cond,2]
     condm=spells_sc==2

@@ -35,7 +35,7 @@ class ModelSetup(object):
         p['sigma_psi_init'] = 0.28
         p['sigma_psi']   = 0.11
         p['R_t'] = [1.04]*T
-        p['n_psi_t']     = [12]*T
+        p['n_psi_t']     = [16]*T
         p['beta_t'] = [0.98]*T
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
@@ -184,7 +184,7 @@ class ModelSetup(object):
             #assert False
             
         #Grid Couple
-        self.na = 40
+        self.na = 80
         self.amin = 0
         self.amax =60
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
@@ -192,7 +192,7 @@ class ModelSetup(object):
         #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         
         # this builds finer grid for potential savings
-        s_between = 7 # default numer of points between poitns on agrid
+        s_between = 10 # default numer of points between poitns on agrid
         s_da_min = 0.001 # minimal step (does not create more points)
         s_da_max = 0.1 # maximal step (creates more if not enough)
         
@@ -210,7 +210,7 @@ class ModelSetup(object):
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)
         
         # grid for theta
-        self.ntheta = 11
+        self.ntheta = 21
         self.thetamin = 0.01
         self.thetamax = 0.99
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta,dtype=self.dtype)

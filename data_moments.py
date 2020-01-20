@@ -55,14 +55,17 @@ def hazards(dataset,event,duration,end,listh,number,wgt):
 #####################################
 #Routine that computes moments
 #####################################
-def compute(hi):
+def compute(hi,period=1):
+    #compute moments, period
+    #says how many years correspond to one
+    #period
 
     #Get Date at Interview
     hi.insert(0, 'IDN', range(0,  len(hi)))
     hi['res']=hi['NUMUNION']+hi['NUMCOHMR']
     
     #Get Duration bins
-    bins_d=np.linspace(0,1200,101)
+    bins_d=np.linspace(0,1200,(100/period)+1)
     bins_d_label=np.linspace(1,len(bins_d)-1,len(bins_d)-1)
     
     ##########################
@@ -197,12 +200,12 @@ def compute(hi):
     #for i in range(9):
      #   hi=hi[(np.isfinite(hi['BEGDAT0'+str(i+1)])) & (hi['BEGDAT0'+str(i+1)]<3999)]
         
-    #Get date in time at which the guy is 20,25...,60 (9)
-    for j in range(9):
+    #Get date in time at which the guy is 20,25...,50 (9)
+    for j in range(7):
         hi['time_'+str(20+(j)*5)]=hi['DOBY']*12+hi['DOBM']+(20+(j)*5)*12
         
     #Get the status
-    for j in range(9):
+    for j in range(7):
         
         #Create the variable of Status
         hi['status_'+str(20+(j)*5)]='single'
@@ -211,7 +214,7 @@ def compute(hi):
         hi['everm_'+str(20+(j)*5)]=0.0
         hi['everc_'+str(20+(j)*5)]=0.0
         
-        for i in range(9):
+        for i in range(7):
             
             
             #Get if in couple
@@ -241,7 +244,7 @@ def compute(hi):
     empl=hi[(hi['M2DP01']=='FEMALE') & (hi['weeks']<99)].copy()
     empl['stat']='single'
     empl['dist']=99999
-    for j in range(9):
+    for j in range(7):
         empl.loc[np.abs(empl['time_'+str(20+(j)*5)]-86*12)<empl['dist'],'stat']=hi['status_'+str(20+(j)*5)]
             
     ##########################
@@ -250,25 +253,25 @@ def compute(hi):
     
     #Hazard of Separation
     hazs=list()
-    hazs=hazards(cohe,'sep','dury','fine',hazs,6,'SAMWT')
+    hazs=hazards(cohe,'sep','dury','fine',hazs,int(6/period),'SAMWT')
     
     #Hazard of Marriage
     hazm=list()
-    hazm=hazards(cohe,'mar','dury','fine',hazm,6,'SAMWT')
+    hazm=hazards(cohe,'mar','dury','fine',hazm,int(6/period),'SAMWT')
     
     #Hazard of Divorce
     hazd=list()
-    hazd=hazards(mare,'div','dury','fine',hazd,6,'SAMWT')
+    hazd=hazards(mare,'div','dury','fine',hazd,int(6/period),'SAMWT')
     
     ########################################
     #Construct share of each relationship
     #######################################
-    mar=np.zeros(9)
-    coh=np.zeros(9)
-    emar=np.zeros(9)
-    ecoh=np.zeros(9)
+    mar=np.zeros(7)
+    coh=np.zeros(7)
+    emar=np.zeros(7)
+    ecoh=np.zeros(7)
     
-    for j in range(9):
+    for j in range(7):
         mar[j]=np.average(hi['status_'+str(20+(j)*5)]=='mar', weights=np.array(hi['SAMWT']))
         coh[j]=np.average(hi['status_'+str(20+(j)*5)]=='coh', weights=np.array(hi['SAMWT']))
         emar[j]=np.average(hi['everm_'+str(20+(j)*5)], weights=np.array(hi['SAMWT']))
@@ -288,13 +291,13 @@ def compute(hi):
 #Actual moments computation + weighting matrix
 ################################################
 
-def dat_moments(sampling_number=100,weighting=False):
+def dat_moments(sampling_number=3,weighting=False,period=1):
     
     #Import Data
     data=pd.read_csv('histo.csv')
     
     #Call the routine to compute the moments
-    hazs,hazm,hazd,emar,ecoh,fls_ratio,mar,coh=compute(data.copy())
+    hazs,hazm,hazd,emar,ecoh,fls_ratio,mar,coh=compute(data.copy(),period=period)
     
     
     #Use bootstrap samples to compute the weighting matrix
@@ -318,7 +321,7 @@ def dat_moments(sampling_number=100,weighting=False):
     for i in range(boot):
     
         a1=aa[(i*n):((i+1)*n)].copy().reset_index()
-        hazsB[:,i],hazmB[:,i],hazdB[:,i],emarB[:,i],ecohB[:,i],fls_ratioB[:,i],marB[:,i],cohB[:,i]=compute(a1.copy())
+        hazsB[:,i],hazmB[:,i],hazdB[:,i],emarB[:,i],ecohB[:,i],fls_ratioB[:,i],marB[:,i],cohB[:,i]=compute(a1.copy(),period=period)
         
     
     #################################
@@ -368,6 +371,9 @@ if __name__ == '__main__':
     import matplotlib.backends.backend_pdf
     import pickle
 
+
+    #Get stuff about moments
+    dat_moments(period=6)
     
     ##########################
     #Import and work SIPP data

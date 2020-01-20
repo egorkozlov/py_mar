@@ -20,9 +20,11 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()       
-        T = 52
-        Tret = 42 # first period when the agent is retired
-        Tbef=2
+        period_year=6#this can be 1,2,3 or 6
+        T = int(52/period_year)
+        Tret = int(42/period_year) # first period when the agent is retired
+        Tbef=int(2/period_year)
+        p['py']=period_year
         p['T'] = T
         p['Tret'] = Tret
         p['Tbef'] = Tbef
@@ -34,9 +36,9 @@ class ModelSetup(object):
         p['n_zm_t']      = [5]*Tret + [1]*(T-Tret)
         p['sigma_psi_init'] = 0.28
         p['sigma_psi']   = 0.11
-        p['R_t'] = [1.04]*T
+        p['R_t'] = [1.04**period_year]*T
         p['n_psi_t']     = [12]*T
-        p['beta_t'] = [0.98]*T
+        p['beta_t'] = [0.98**period_year]*T
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.4    
@@ -63,7 +65,12 @@ class ModelSetup(object):
             assert (key in p), 'wrong name?'
             p[key] = value
         
-        p['pmeet_t'] = [p['pmeet']]*T
+        #Get the probability of meeting, adjusting for year-period
+        p_meet=p['pmeet']
+        for j in range(period_year-1):
+            p_meet=p_meet+(1-p_meet)*p['pmeet']
+            
+        p['pmeet_t'] = [p_meet]*T
         
         
         self.pars = p
@@ -118,8 +125,8 @@ class ModelSetup(object):
             # FIXME: this uses number of points from 0th entry. 
             # in principle we can generalize this
             
-            exogrid['zf_t'],  exogrid['zf_t_mat'] = rouw_nonst(p['T'],p['sig_zf'],p['sig_zf_0'],p['n_zf_t'][0])
-            exogrid['zm_t'],  exogrid['zm_t_mat'] = rouw_nonst(p['T'],p['sig_zm'],p['sig_zm_0'],p['n_zm_t'][0])
+            exogrid['zf_t'],  exogrid['zf_t_mat'] = rouw_nonst(p['T'],p['sig_zf']*period_year,p['sig_zf_0'],p['n_zf_t'][0])
+            exogrid['zm_t'],  exogrid['zm_t_mat'] = rouw_nonst(p['T'],p['sig_zm']*period_year,p['sig_zm_0'],p['n_zm_t'][0])
             
             for t in range(Tret,T):
                 exogrid['zf_t'][t] = np.array([np.log(p['wret'])])
@@ -132,7 +139,7 @@ class ModelSetup(object):
             exogrid['zf_t_mat'][Tret-1] = np.ones((p['n_zf_t'][Tret-1],1))
             exogrid['zm_t_mat'][Tret-1] = np.ones((p['n_zm_t'][Tret-1],1))
             
-            exogrid['psi_t'], exogrid['psi_t_mat'] = rouw_nonst(p['T'],p['sigma_psi'],p['sigma_psi_init'],p['n_psi_t'][0])
+            exogrid['psi_t'], exogrid['psi_t_mat'] = rouw_nonst(p['T'],p['sigma_psi']*period_year,p['sigma_psi_init'],p['n_psi_t'][0])
             
             zfzm, zfzmmat = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], exogrid['zf_t_mat'], exogrid['zm_t_mat'])
             all_t, all_t_mat = combine_matrices_two_lists(zfzm,exogrid['psi_t'],zfzmmat,exogrid['psi_t_mat'])

@@ -8,6 +8,8 @@ Created on Wed Dec 18 12:52:29 2019
 import pandas as pd
 import numpy as np
 import pickle
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
 
 ################################
 #Functions
@@ -291,6 +293,76 @@ def compute(hi,period=1):
     #########################################
     fls_ratio=np.average(empl.loc[empl['stat']=='mar','work'], weights=np.array(empl.loc[empl['stat']=='mar','SAMWT']))/np.average(empl.loc[empl['stat']=='coh','work'], weights=np.array(empl.loc[empl['stat']=='coh','SAMWT']))
         
+    
+    #########################################
+    #Create the age at unilateral divorce+
+    #regression on the effect of unilateral divorce
+    ###########################################
+    
+    #Number of relationships for the person
+    hi['numerl']=0.0
+    
+    #List of variables to keep
+    keep_var=list()
+    keep_var=keep_var+['numerl']+['state']+['SAMWT']
+    
+    for i in range(9):
+        
+        #Make sure that some relationship of order i exist
+        if (np.any(hi['BEGDAT0'+str(i+1)])):
+            
+            #Add relationship order
+            hi['order'+str(i+1)]=np.nan
+            hi.loc[np.isnan(hi['BEGDAT0'+str(i+1)])==False,'order'+str(i+1)]+=i+1
+            
+            #Add number of relationships
+            hi.loc[np.isnan(hi['BEGDAT0'+str(i+1)])==False,'numerl']+=1.0
+            
+            #Get whether the relationship started in marriage or cohabitation
+            hi['imar'+str(i+1)]=np.nan
+            hi.loc[hi['HOWBEG0'+str(i+1)]=='coh','imar'+str(i+1)]=0.0
+            hi.loc[hi['HOWBEG0'+str(i+1)]=='mar','imar'+str(i+1)]=1.0
+            
+            #Get age at relationship
+            hi['iage'+str(i+1)]=np.nan
+            hi.loc[np.isnan(hi['BEGDAT0'+str(i+1)])==False,'iage'+str(i+1)]=round((hi['BEGDAT0'+str(i+1)]-hi['birth_month'])/12)
+            
+            #Get if unilateral divorce when relationship started
+            hi['unid'+str(i+1)]=np.nan
+            hi.loc[np.isnan(hi['BEGDAT0'+str(i+1)])==False,'unid'+str(i+1)]=0.0
+            hi.loc[(round(hi['BEGDAT0'+str(i+1)]/12+1900)>=hi['unil']) & (hi['unil']>0.1),'unid'+str(i+1)]=1.0
+            
+            #Year Realationship Started
+            hi['year'+str(i+1)]=np.nan
+            hi.loc[np.isnan(hi['BEGDAT0'+str(i+1)])==False,'year'+str(i+1)]=round(hi['BEGDAT0'+str(i+1)]/12+1900)
+                       
+            #Keep variables
+            keep_var=keep_var+['year'+str(i+1)]+['unid'+str(i+1)]+['iage'+str(i+1)]+['imar'+str(i+1)]+['order'+str(i+1)]
+    
+        
+        
+    #New Dataset to reshape
+    hi2=hi[keep_var]
+    
+    #Reahspe Dataset
+    years = ([col for col in hi2.columns if col.startswith('year')])
+    unids = ([col for col in hi2.columns if col.startswith('unid')])
+    iages = ([col for col in hi2.columns if col.startswith('iage')])
+    imars = ([col for col in hi2.columns if col.startswith('imar')])
+    order = ([col for col in hi2.columns if col.startswith('order')])
+    
+    hi3 = pd.lreshape(hi2, {'year' : years,'unid' : unids,'iage' : iages,'imar' : imars,'order' : order}) 
+    
+    #Eliminate if missing
+    hi3.replace([np.inf, -np.inf], np.nan)
+    hi3.dropna(subset=['imar','unid'])
+    #Regression
+    #FE_ols = smf.wls(formula='imar ~ unid+order+C(state)+C(year)',weights=hi3[''], data = hi3.dropna()).fit()
+    #beta_unid=FE_ols.params['unid']
+    
+    
+    
+    #hi3.to_csv(r'D:\Downloads\temp.csv')
     return hazs,hazm,hazd,emar,ecoh,fls_ratio,mar,coh
 
 

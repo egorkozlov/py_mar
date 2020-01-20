@@ -210,11 +210,9 @@ def compute(hi,period=1):
         #Create the variable of Status
         hi['status_'+str(20+(j)*5)]='single'
         
-        #Create the variable of ever married or cohabit
-        hi['everm_'+str(20+(j)*5)]=0.0
-        hi['everc_'+str(20+(j)*5)]=0.0
+
         
-        for i in range(7):
+        for i in range(9):
             
             
             #Get if in couple
@@ -223,20 +221,30 @@ def compute(hi,period=1):
                     (hi['ENDDAT0'+str(i+1)]==0) | (hi['WIDDAT0'+str(i+1)]>0) )\
                    ,'status_'+str(20+(j)*5)]='mar'
                    
-            #Substitute if actually cohabitation
-            hi.loc[(hi['time_'+str(20+(j)*5)]>=hi['BEGDAT0'+str(i+1)]) & (hi['BEGDAT0'+str(i+1)]<3999) &\
-                   (((hi['time_'+str(20+(j)*5)]<=hi['ENDDAT0'+str(i+1)]) & (hi['ENDDAT0'+str(i+1)]>0))  | \
-                    (hi['ENDDAT0'+str(i+1)]==0) | (hi['WIDDAT0'+str(i+1)]>0) ) & \
-                    (hi['status_'+str(20+(j)*5)]=='mar') & \
-                   (hi['HOWBEG0'+str(i+1)]=='coh')    & \
-                   ((hi['MARDAT0'+str(i+1)]==0) | (hi['MARDAT0'+str(i+1)]>hi['time_'+str(20+(j)*5)]))     \
-                   ,'status_'+str(20+(j)*5)]='coh'
+                  
+            #Substitute if actually cohabitation 
+            hi.loc[(hi['time_'+str(20+(j)*5)]>=hi['BEGDAT0'+str(i+1)]) & (hi['BEGDAT0'+str(i+1)]<3999) &
+                   (((hi['time_'+str(20+(j)*5)]<=hi['ENDDAT0'+str(i+1)]) & (hi['ENDDAT0'+str(i+1)]>0))  | 
+                    (hi['ENDDAT0'+str(i+1)]==0) | (hi['WIDDAT0'+str(i+1)]>0) ) & 
+                    (hi['status_'+str(20+(j)*5)]=='mar') & 
+                   (hi['HOWBEG0'+str(i+1)]=='coh')    & 
+                   ((hi['MARDAT0'+str(i+1)]==0) | (hi['MARDAT0'+str(i+1)]>hi['time_'+str(20+(j)*5)]))     
+                   ,'status_'+str(20+(j)*5)]='coh' 
+                   
+    #Create the variables ever cohabited and ever married
+    for j in range(7):
+        
+        #Create the variable of ever married or cohabit
+        hi['everm_'+str(20+(j)*5)]=0.0
+        hi['everc_'+str(20+(j)*5)]=0.0
+        
+        for i in range(9):
                    
             #Get if ever cohabited 
-            hi.loc[(hi['everc_'+str(20+(max(j-1,0))*5)]>=0.1) | (hi['status_'+str(20+(j)*5)]=='coh'),'everc_'+str(20+(j)*5)]=1.0
+            hi.loc[((hi['everc_'+str(20+(max(j-1,0))*5)]>=0.1) | ((hi['HOWBEG0'+str(i+1)]=='coh') & (hi['time_'+str(20+(j)*5)]>=hi['BEGDAT0'+str(i+1)]))),'everc_'+str(20+(j)*5)]=1.0
             
             #Get if ever cohabited 
-            hi.loc[(hi['everm_'+str(20+(max(j-1,0))*5)]>=0.1) | (hi['status_'+str(20+(j)*5)]=='mar'),'everm_'+str(20+(j)*5)]=1.0
+            hi.loc[((hi['everm_'+str(20+(max(j-1,0))*5)]>=0.1) |  (hi['time_'+str(20+(j)*5)]>=hi['MARDAT0'+str(i+1)])),'everm_'+str(20+(j)*5)]=1.0
             
     ######################################
     #Build employment by status in 1986
@@ -373,7 +381,7 @@ if __name__ == '__main__':
 
 
     #Get stuff about moments
-    dat_moments(period=6)
+    dat_moments(period=1)
     
     ##########################
     #Import and work SIPP data
@@ -491,7 +499,7 @@ if __name__ == '__main__':
     
     #Create Cohabitation Over Age
     fig1 = plt.figure()
-    age_d=np.linspace(20,60,9)
+    age_d=np.linspace(20,50,7)
     plt.plot(age_d, coh_d,'r',linewidth=1.5, label='Share Cohabiting NLSFH')
     plt.fill_between(age_d, coh_i[0,:], coh_i[1,:],alpha=0.2,facecolor='r')
     plt.plot(age, coh_age,'g',linewidth=1.5, label='Share Cohabiting SIPP')
@@ -506,7 +514,7 @@ if __name__ == '__main__':
     
     #Create Marriage Over Age
     fig2 = plt.figure()
-    age_d=np.linspace(20,60,9)
+    age_d=np.linspace(20,50,7)
     plt.plot(age_d, mar_d,'r',linewidth=1.5, label='Share Married NLSFH')
     plt.fill_between(age_d, mar_i[0,:], mar_i[1,:],alpha=0.2,facecolor='r')
     plt.plot(age, marr_age,'g',linewidth=1.5, label='Share Married SIPP')

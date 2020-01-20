@@ -199,7 +199,7 @@ class ModelSetup(object):
         
         #Grid Single
         self.amin_s = 0
-        self.amax_s = self.amax/1.1
+        self.amax_s = self.amax/1.0
         self.agrid_s = np.linspace(self.amin_s,self.amax_s,self.na,dtype=self.dtype)
         tune_s=1.5
         #self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
@@ -294,9 +294,9 @@ class ModelSetup(object):
         for ia, a in enumerate(agrid_s):
             lagrid_t = np.zeros_like(agrid_c)
             
-            i_neg = (agrid_c <= max(abar,a) - 1e-6)
+            i_neg = (agrid_c <= max(abar,a) - 1e-3)
             
-            lagrid_t[~i_neg] = np.log(2e-6 + (agrid_c[~i_neg] - a)/max(abar,a))
+            lagrid_t[~i_neg] = np.log(2e-3 + (agrid_c[~i_neg] - a)/max(abar,a))
             lmin = lagrid_t[~i_neg].min()
             # just fill with very negative values so this is never chosen
             lagrid_t[i_neg] = lmin - s_a_partner*10 - \

@@ -232,10 +232,12 @@ def moment(mdl,draw=True):
     
     
     #Now drop observation to mimic the actual data gathering process
-    keep=(assets_t[:,0]<-1)
-    if (agents.setup.pars['Tret']>=42): 
-        for i in range(10):
-            keep[int(len(state[:,0])/10*i):int(len(state[:,0])/10*(i+1))]=(state[int(len(state[:,0])/10*i):int(len(state[:,0])/10*(i+1)),28-i]!=3)
+    keep=(assets_t[:,0]>-1)
+    age_radius=int(10/agents.setup.pars['py'])
+
+    for i in range(age_radius):
+        keep[int(len(state[:,0])/age_radius*i):int(len(state[:,0])/age_radius*(i+1))]=\
+        (state[int(len(state[:,0])/age_radius*i):int(len(state[:,0])/age_radius*(i+1)),int(28/agents.setup.pars['py']-i)]!=3)
     assets_t=assets_t[keep,]
     iexo=iexo[keep,]
     state=state[keep,]
@@ -249,6 +251,7 @@ def moment(mdl,draw=True):
     N=len(state)
      
     relt=np.zeros((len(state_codes),lenn))
+    relt1=np.zeros((len(state_codes),lenn))
     ass_rel=np.zeros((len(state_codes),lenn))
     inc_rel=np.zeros((len(state_codes),lenn))
      
@@ -262,18 +265,24 @@ def moment(mdl,draw=True):
             mtrend = agents.setup.pars['m_wage_trend'][s]
              
             #Arrays for preparation
-            is_state = (state[:,t]==ist)
+            is_state = (np.any(state[:,0:t]==ist,1))       
+            is_state1 = (state[:,t]==ist)
+            if t<1:
+                is_state=is_state1
             ind = np.where(is_state)[0]
+            ind1 = np.where(is_state1)[0]
              
-            if not np.any(is_state): continue
+            if not (np.any(is_state) or np.any(is_state1)): continue
          
-            zf,zm,psi=agents.setup.all_indices(t,iexo[ind,t])[1:4]
+            zf,zm,psi=agents.setup.all_indices(t,iexo[ind1,t])[1:4]
              
             #Relationship over time
             relt[ist,t]=np.sum(is_state)
+            relt1[ist,t]=np.sum(is_state1)
              
             #Assets over time  
-            ass_rel[ist,t]=np.mean(assets_t[ind,t])
+            ass_rel[ist,t]=np.mean(assets_t[ind1,t])
+            
              
             #Income over time
             if sname=="Female, single":
@@ -290,11 +299,27 @@ def moment(mdl,draw=True):
                print('Error: No relationship chosen')
               
     #Now, before saving the moments, take interval of 5 years
-    if (agents.setup.pars['Tret']>=42):        
-        reltt=relt[:,0:agents.setup.pars['Tret']-agents.setup.pars['Tbef']+1]
-        reltt=reltt[:,0::5]
-    else:
-        reltt=relt
+    # if (agents.setup.pars['Tret']>=agents.setup.pars['Tret']):        
+    reltt=relt[:,0:agents.setup.pars['Tret']-agents.setup.pars['Tbef']+1]
+    years=np.linspace(20,50,7)
+    years_model=np.linspace(20,50,30/agents.setup.pars['py'])
+    
+    #Find the right entries for creating moments
+    pos=list()
+    for j in range(len(years)):
+        pos=pos+[np.argmin(np.abs(years_model-years[j]))]
+    
+    #Approximation if more than 5 years in one period
+    if len(pos)<7:
+        for i in range(7-len(pos)):
+            pos=pos+[pos[-1]]
+    pos=np.array(pos)
+    
+    
+    
+    reltt=reltt[:,pos]
+    #else:
+     #   reltt=relt
         
     mdl.moments['share single'] = reltt[0,:]/N
     mdl.moments['share mar'] = reltt[2,:]/N
@@ -346,8 +371,14 @@ def moment(mdl,draw=True):
         fig = plt.figure()
         f1=fig.add_subplot(2,1,1)
         lg=min(len(hazd_d),len(hazd))
-        plt.plot(np.array(range(lg)), hazd[0:lg],'r', linestyle='--',linewidth=1.5, label='Hazard of Divorce - S')
-        plt.plot(np.array(range(lg)), hazd_d[0:lg],'b',linewidth=1.5, label='Hazard of Divorce - D')
+        if lg<2:
+            one='o'
+            two='o'
+        else:
+            one='r'
+            two='b'
+        plt.plot(np.array(range(lg)), hazd[0:lg],one, linestyle='--',linewidth=1.5, label='Hazard of Divorce - S')
+        plt.plot(np.array(range(lg)), hazd_d[0:lg],two,linewidth=1.5, label='Hazard of Divorce - D')
         plt.fill_between(np.array(range(lg)), hazd_i[0,0:lg], hazd_i[1,0:lg],alpha=0.2,facecolor='b')
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=3, fontsize='x-small')
@@ -362,8 +393,8 @@ def moment(mdl,draw=True):
         fig = plt.figure()
         f1=fig.add_subplot(2,1,1)
         lg=min(len(hazs_d),len(hazs))
-        plt.plot(np.array(range(lg)), hazs[0:lg],'r', linestyle='--',linewidth=1.5, label='Hazard of Separation - S')
-        plt.plot(np.array(range(lg)), hazs_d[0:lg],'b',linewidth=1.5, label='Hazard of Separation - D')
+        plt.plot(np.array(range(lg)), hazs[0:lg],one, linestyle='--',linewidth=1.5, label='Hazard of Separation - S')
+        plt.plot(np.array(range(lg)), hazs_d[0:lg],two,linewidth=1.5, label='Hazard of Separation - D')
         plt.fill_between(np.array(range(lg)), hazs_i[0,0:lg], hazs_i[1,0:lg],alpha=0.2,facecolor='b')
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=3, fontsize='x-small')
@@ -371,6 +402,7 @@ def moment(mdl,draw=True):
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')
         plt.xlabel('Duration')
         plt.ylabel('Hazard')
+        
          
         #############################################
         # Hazard of Marriage
@@ -378,8 +410,9 @@ def moment(mdl,draw=True):
         fig = plt.figure()
         f1=fig.add_subplot(2,1,1)
         lg=min(len(hazm_d),len(hazm))
-        plt.plot(np.array(range(lg)), hazm[0:lg],'r', linestyle='--',linewidth=1.5, label='Hazard of Marriage - S')
-        plt.plot(np.array(range(lg)), hazm_d[0:lg],'b',linewidth=1.5, label='Hazard of Marriage - D')
+
+        plt.plot(np.array(range(lg)), hazm[0:lg],one, linestyle='--',linewidth=1.5, label='Hazard of Marriage - S')
+        plt.plot(np.array(range(lg)), hazm_d[0:lg],two,linewidth=1.5, label='Hazard of Marriage - D')
         plt.fill_between(np.array(range(lg)), hazm_i[0,0:lg], hazm_i[1,0:lg],alpha=0.2,facecolor='b')
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=3, fontsize='x-small')
@@ -387,7 +420,7 @@ def moment(mdl,draw=True):
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')
         plt.xlabel('Duration')
         plt.ylabel('Hazard')
-                    
+        
         ##########################################
         # Assets Over the Live Cycle
         ##########################################
@@ -424,7 +457,7 @@ def moment(mdl,draw=True):
         f4=fig.add_subplot(2,1,1)
         for ist,sname in enumerate(state_codes):
             plt.plot([],[],color=print(ist/len(state_codes)), label=sname)
-        plt.stackplot(np.array(range(lenn)),relt[0,]/N,relt[1,]/N,relt[2,]/N,relt[3,]/N,
+        plt.stackplot(np.array(range(len(relt1[0,]))),relt1[0,]/N,relt1[1,]/N,relt1[2,]/N,relt1[3,]/N,
                       colors = ['b','y','g','r'])           
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')

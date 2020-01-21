@@ -10,7 +10,6 @@ from rw_approximations import rouw_nonst
 from mc_tools import combine_matrices_two_lists, int_prob,cut_matrix
 from scipy.stats import norm
 from collections import namedtuple
-from optimizers import build_s_grid
 from gridvec import VecOnGrid
 
 from scipy import sparse
@@ -20,7 +19,7 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()       
-        period_year=6#this can be 1,2,3 or 6
+        period_year=2#this can be 1,2,3 or 6
         T = int(52/period_year)
         Tret = int(42/period_year) # first period when the agent is retired
         Tbef=int(2/period_year)
@@ -702,3 +701,22 @@ class DivorceCosts(object):
         return share_f, share_m
         
         
+
+def build_s_grid(agrid,n_between,da_min,da_max):
+    sgrid = np.array([0.0],np.float64)
+    for j in range(agrid.size-1):
+        step = (agrid[j+1] - agrid[j])/n_between
+        if step >= da_min and step <= da_max:
+            s_add = np.linspace(agrid[j],agrid[j+1],n_between)[:-1]
+        elif step < da_min:
+            s_add = np.arange(agrid[j],agrid[j+1],da_min)
+        elif step > da_max:
+            s_add = np.arange(agrid[j],agrid[j+1],da_max)
+        sgrid = np.concatenate((sgrid,s_add))
+    
+    sgrid = np.concatenate((sgrid,np.array([agrid[-1]])))
+            
+    if sgrid[0] == sgrid[1]: 
+        sgrid = sgrid[1:]
+        
+    return sgrid

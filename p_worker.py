@@ -134,8 +134,12 @@ while True:
             raise KeyboardInterrupt()
         except BaseException as e:
             print('error while evaluating function at {}'.format(fname))
-            print('error text is ' + str(e)) 
-            if debug_mode: raise e
+            #print('error text is ' + str(e)) 
+            if debug_mode:
+                raise e
+            else:
+                print(e)
+                
             f = 1e6
             
         print('Response is {}'.format(f))

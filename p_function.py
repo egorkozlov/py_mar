@@ -73,13 +73,13 @@ def fun(x):
             
             
             
-        res=dfols.solve(q, xc, rhoend=1e-4, maxfun=100, bounds=(lb,ub))
+        res=dfols.solve(q, xc, rhobeg = 0.1, rhoend=1e-4, maxfun=100, bounds=(lb,ub))
+        
+        print(res)
         
         fbest = mdl_resid(res.x)[0] # in prnciple, this can be inconsistent with
         # squared sum of residuals
         
-        
-        print(res)
         
         print('fbest is {} and res.f is {}'.format(fbest,res.f))
         

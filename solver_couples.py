@@ -133,7 +133,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
     V_all = uc + psi_r + u_pub + ushift+ beta*np.take_along_axis(np.take_along_axis(EV_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
     def r(x): return x.astype(dtype)
     
-    assert np.allclose(V_all,V_couple,atol=1e-5,rtol=1e-4)
+    assert np.allclose(V_all,V_couple,atol=1e-4,rtol=1e-3)
     
     return r(V_couple), r(V_fem), r(V_mal), r(c_opt), r(s_opt), il_opt, r(V_all_l)
 

@@ -20,13 +20,13 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
     from setup import DivorceCosts
     
  
-    ulost = min(x[0],1.0)
+    ulost = x[0] #min(x[0],1.0)
     mshift=x[5]
-    sigma_psi = max(x[1],0.00001)
-    sigma_psi_init = max(x[2],0.00001)
-    pmeet = min(x[3],1.0)#np.exp(x[3])/(1+np.exp(x[3]))
+    sigma_psi = x[1] # max(x[1],0.00001)
+    sigma_psi_init = x[1]*x[2] # max(x[2],0.00001) # treat x[2] as factor
+    pmeet = x[3] # #min(x[3],1.0)#np.exp(x[3])/(1+np.exp(x[3]))
     uls = x[4]
-    pls = max(min(x[6],1.0),0.0)
+    pls = x[6] #max(min(x[6],1.0),0.0)
     
 
     dc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=0.0)

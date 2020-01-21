@@ -41,15 +41,20 @@ class ModelSetup(object):
         p['beta_t'] = [0.98**period_year]*T
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 2
-        p['couple_rts'] = 0.23
+        p['couple_rts'] = 0.00
         p['sig_partner_a'] = 0.1
         p['sig_partner_z'] = 0.4
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
         
+        p['target_x_share'] = 0.6
+        p['target_x_theta'] = 0.4
+        
+        
+        
         p['wret'] = 0.8
         p['uls'] = 0.3
-        p['uls_x'] = 0.0
+        #p['uls_x'] = 0.0
         p['pls'] = 0.8
         
         
@@ -74,7 +79,18 @@ class ModelSetup(object):
         p['pmeet_t'] = [p_meet]*T
         
         
-        self.pars = p
+        self.pars = p # !!! important
+        
+        
+        
+        shr = p['target_x_share']
+        tht = p['target_x_theta']
+        A_theta = self.u_mult_just_c(np.array([tht]))
+        
+        ulsx = float( A_theta * (shr/(1-shr))**(p['crra_power']) )
+        self.pars['uls_x'] = ulsx
+        p['uls_x'] = ulsx
+        
         
         self.dtype = np.float32 # type for all floats
         
@@ -88,6 +104,11 @@ class ModelSetup(object):
         self.ls_u0 = np.array([p['uls'],0.0],dtype=self.dtype)
         self.ls_pdown = np.array([p['pls'],0.0],dtype=self.dtype)
         self.nls = len(self.ls_levels)     
+        
+        
+        
+        
+        
         self.ls_u1 = np.array([p['uls_x'],p['uls_x']],dtype=self.dtype)
         
         

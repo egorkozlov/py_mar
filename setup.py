@@ -531,7 +531,7 @@ class ModelSetup(object):
            
             income_g[...,l] = self.pars['R_t'][-1]*s + np.exp(zm+mtrend) +  np.exp(zf+ftrend)*self.ls_levels[l]
             kf, km = self.c_mult(theta)        
-            u_couple_g[...,l] = self.u_mult(theta)*self.u(income_g[...,l])+self.ls_utilities[l] 
+            u_couple_g[...,l] = self.u_mult(theta)*self.u(income_g[...,l])+self.ls_utilities[l] + ushift
             util_g[...,l]=self.ls_utilities[l] 
             
         #Get optimal FLS

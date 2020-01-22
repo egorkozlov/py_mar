@@ -21,12 +21,18 @@ def moment(mdl,draw=True):
  
     agents = mdl.agents
     #Import simulated values
-    assets_t=agents.setup.agrid_c[agents.iassets]
+    assets_t_ifc=agents.setup.agrid_c[agents.iassets]
+    assets_t_ifs=agents.setup.agrid_s[agents.iassets]
+    
+    
     iexo=agents.iexo
     state=agents.state
     theta_t=agents.setup.thetagrid_fine[agents.itheta]
     setup = agents.setup
     
+    assets_t = np.zeros_like(assets_t_ifc)
+    assets_t[(state==0) | (state==1)] = assets_t_ifs[(state==0) | (state==1)]
+    assets_t[(state==2) | (state==3)] = assets_t_ifc[(state==2) | (state==3)]
 
         
     mdl.moments = dict()

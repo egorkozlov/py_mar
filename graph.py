@@ -109,7 +109,7 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
         thetf[t,:,:]=thet_ft
         thetf_c[t,:,:]=tcv
         vtoutm[t,:,:]=vout_mt
-            
+        vtoutm_c[t,:,:]=vm_c
         
         
     #Renegotiated Value

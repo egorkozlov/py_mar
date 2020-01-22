@@ -12,7 +12,9 @@ Both versions are needed as it is not clear whether we'll actually use cuda
 import numpy as np
 from numba import jit#, prange, cuda, float32
 from platform import system
+
 from aux_routines import cp_take_along_axis
+
 
 #if system() != 'Darwin' and system() != 'Windows':
 if system() != 'Darwin':
@@ -23,24 +25,7 @@ else:
 
 
 #@jit('float64[:](float64[:], int64, float64, float64)',nopython=True)
-def build_s_grid(agrid,n_between,da_min,da_max):
-    sgrid = np.array([0.0],np.float64)
-    for j in range(agrid.size-1):
-        step = (agrid[j+1] - agrid[j])/n_between
-        if step >= da_min and step <= da_max:
-            s_add = np.linspace(agrid[j],agrid[j+1],n_between)[:-1]
-        elif step < da_min:
-            s_add = np.arange(agrid[j],agrid[j+1],da_min)
-        elif step > da_max:
-            s_add = np.arange(agrid[j],agrid[j+1],da_max)
-        sgrid = np.concatenate((sgrid,s_add))
-    
-    sgrid = np.concatenate((sgrid,np.array([agrid[-1]])))
-            
-    if sgrid[0] == sgrid[1]: 
-        sgrid = sgrid[1:]
-        
-    return sgrid
+
 
 
 def get_EVM(ind,wthis,EVin,use_gpu=False,dtype=np.float32):

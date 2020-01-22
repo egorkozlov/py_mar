@@ -8,6 +8,7 @@ Created on Wed Dec 18 12:52:29 2019
 import pandas as pd
 import numpy as np
 import pickle
+import tabulate
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 
@@ -313,7 +314,7 @@ def compute(hi,period=1):
             
             #Add relationship order
             hi['order'+str(i+1)]=np.nan
-            hi.loc[np.isnan(hi['BEGDAT0'+str(i+1)])==False,'order'+str(i+1)]+=i+1
+            hi.loc[np.isnan(hi['BEGDAT0'+str(i+1)])==False,'order'+str(i+1)]=i+1
             
             #Add number of relationships
             hi.loc[np.isnan(hi['BEGDAT0'+str(i+1)])==False,'numerl']+=1.0
@@ -356,14 +357,50 @@ def compute(hi,period=1):
     #Eliminate if missing
     hi3.replace([np.inf, -np.inf], np.nan)
     hi3.dropna(subset=['imar','unid'])
+    
     #Regression
-    #FE_ols = smf.wls(formula='imar ~ unid+order+C(state)+C(year)',weights=hi3[''], data = hi3.dropna()).fit()
-    #beta_unid=FE_ols.params['unid']
+    FE_ols = smf.wls(formula='imar ~ unid+C(order)+C(iage)+C(state)+C(year)',weights=hi3['SAMWT'], data = hi3.dropna()).fit()
+    beta_unid=FE_ols.params['unid']
+    
+    #Get age at which unilateral divorced was introduced
+    hi['age_unid']=0.0
+    hi.loc[hi['unil']==0,'age_unid']=1000.0
+    hi.loc[hi['unil']!=0,'age_unid']=hi['unil']-hi['birth']  
+      
+    
+    #Get age in the second survey
+    date_age=pd.read_csv('age_drop.csv')
+    
+    #From hi make '-1' if law changed before the guy starts
+    hi.loc[hi['age_unid']<0,'age_unid']=-1
     
     
+    #Function to get frequencies
+    def CountFrequency(my_list): 
+  
+        # Creating an empty dictionary  
+        freq = {} 
+        for item in my_list: 
+            if (item in freq): 
+                freq[item] += 1
+            else: 
+                freq[item] = 1
+      
+        #for key, value in freq.items(): 
+         #   print ("% d : % d"%(key, value)) 
+        
+        return freq
+        
+    #Frequencies for age policy change
+    freq_pc = CountFrequency(hi['age_unid'].tolist())
+    
+    #Frequencies for age in the second wave
+    freq_i= CountFrequency(date_age['age'].tolist())
+    
+    #Drop if errors
     
     #hi3.to_csv(r'D:\Downloads\temp.csv')
-    return hazs,hazm,hazd,emar,ecoh,fls_ratio,mar,coh
+    return hazs,hazm,hazd,emar,ecoh,fls_ratio,mar,coh,freq_pc,freq_i
 
 
 
@@ -380,7 +417,7 @@ def dat_moments(sampling_number=100,weighting=True,covariances=False,period=1):
     data=pd.read_csv('histo.csv')
     
     #Call the routine to compute the moments
-    hazs,hazm,hazd,emar,ecoh,fls_ratio,mar,coh=compute(data.copy(),period=period)
+    hazs,hazm,hazd,emar,ecoh,fls_ratio,mar,coh,freq_pc,freq_i=compute(data.copy(),period=period)
     
     
     #Use bootstrap samples to compute the weighting matrix
@@ -404,7 +441,7 @@ def dat_moments(sampling_number=100,weighting=True,covariances=False,period=1):
     for i in range(boot):
     
         a1=aa[(i*n):((i+1)*n)].copy().reset_index()
-        hazsB[:,i],hazmB[:,i],hazdB[:,i],emarB[:,i],ecohB[:,i],fls_ratioB[:,i],marB[:,i],cohB[:,i]=compute(a1.copy(),period=period)
+        hazsB[:,i],hazmB[:,i],hazdB[:,i],emarB[:,i],ecohB[:,i],fls_ratioB[:,i],marB[:,i],cohB[:,i],freq_pcel,freq_iel=compute(a1.copy(),period=period)
         
     
     #################################
@@ -446,11 +483,19 @@ def dat_moments(sampling_number=100,weighting=True,covariances=False,period=1):
         
     packed_stuff = (hazm,hazs,hazd,emar,ecoh,fls_ratio,W,hazmi,hazsi,hazdi,emari,ecohi,fls_ratioi,mar,coh,mari,cohi)
     
+    
+    #Export Moments
     with open('moments.pkl', 'wb+') as file:
-        pickle.dump(packed_stuff,file)    
-    
-    
-
+        pickle.dump(packed_stuff,file)  
+        
+    #Export Age at Unilateral Divorce
+    with open('age_uni.pkl', 'wb+') as file:
+        pickle.dump(freq_pc,file) 
+        
+    #Export Age at second 
+    with open('age_sw.pkl', 'wb+') as file:
+        pickle.dump(freq_i,file) 
+        
 ###################################################################
 #If script is run as main, it performs a data comparison with SIPP
 ###################################################################

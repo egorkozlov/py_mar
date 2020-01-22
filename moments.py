@@ -230,8 +230,14 @@ def moment(mdl,draw=True):
     state=state[:,agents.setup.pars['Tbef']:agents.setup.pars['T']]
     theta_t=theta_t[:,agents.setup.pars['Tbef']:agents.setup.pars['T']]
     
-    
+    ####################################################################
     #Now drop observation to mimic the actual data gathering process
+    ####################################################################
+    
+    #Get distribution of age conditional on cohabiting on the second wave
+    with open('age_sw.pkl', 'rb') as file:
+        age_sw=pickle.load(file)
+        
     keep=(assets_t[:,0]>-1)
     age_radius=int(10/agents.setup.pars['py'])
 

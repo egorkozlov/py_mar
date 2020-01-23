@@ -24,8 +24,6 @@ import psutil
 #if system() != 'Darwin':
 from setup import ModelSetup
 from graph import graphs
-from moments import moment
-from simulations import Agents
 from solver_couples import v_iter_couple
 from solver_singles import v_iter_single
 from integrator_singles import ev_single
@@ -219,14 +217,6 @@ class Model(object):
                 
         #del self.V,self.decisions    
            
-    def solve_sim(self,simulate=True,show_mem=False,draw_moments=False,verbose_sim=False):
-
-        #Solve the model
-        self.solve(show_mem=show_mem)
-        if not simulate: return
-        self.agents = Agents(self,verbose=verbose_sim)
-        self.agents.simulate()        
-        self.compute_moments(draw=draw_moments)
         
         
     def graph(self,ai,zfi,zmi,psii,ti,thi):        
@@ -234,7 +224,6 @@ class Model(object):
         V=graphs(self,ai,zfi,zmi,psii,ti,thi)        
         return V
       
+
         
-    def compute_moments(self,draw=False):
-        moment(self,draw=draw)
     

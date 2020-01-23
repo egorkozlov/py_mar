@@ -12,16 +12,14 @@ from gridvec import VecOnGrid
 
 class Agents:
     
-    def __init__(self,M,N=15000,T=None,verbose=True):
+    def __init__(self,M,Mb,N=15000,T=None,verbose=True):
         if T is None:
             T = M.setup.pars['T']
             
             
         np.random.seed(18) # TODO: this should be replaced by explicitly supplying shocks  
             
-        
-        
-        
+  
         # take the stuff from the model and arguments
         # note that this does not induce any copying just creates links
         self.M = M

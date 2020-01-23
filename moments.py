@@ -14,12 +14,12 @@ import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf
 import pickle
  
-def moment(mdl,draw=True):
+def moment(mdl,mdlb,agents,draw=True):
 #This function compute moments coming from the simulation
 #Optionally it can also plot graphs about them. It is feeded with
 #matrixes coming from simulations
  
-    agents = mdl.agents
+
     #Import simulated values
     assets_t=agents.setup.agrid_c[agents.iassets]
     iexo=agents.iexo

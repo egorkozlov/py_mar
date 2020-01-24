@@ -203,6 +203,8 @@ class ModelSetup(object):
         self.sgrid_c = build_s_grid(self.agrid_c,s_between,s_da_min,s_da_max)
         self.vsgrid_c = VecOnGrid(self.agrid_c,self.sgrid_c)
         
+        
+         
         #Grid Single
         self.amin_s = 0
         self.amax_s = self.amax/1.1
@@ -277,6 +279,16 @@ class ModelSetup(object):
         self.mar_mats_assets()
         
         self.mar_mats_combine()
+        
+        
+        # building m grid
+        #ezfmin = min([np.min(np.exp(g+t)) for g,t in zip(exogrid['zf_t'],p['f_wage_trend'])])
+        ezmmin = min([np.min(np.exp(g+t)) for g,t in zip(exogrid['zm_t'],p['m_wage_trend'])])
+        
+        self.money_min = 0.95*ezmmin # cause FLS can be up to 0
+        self.mgrid = ezmmin + self.agrid_c # this can be changed later
+        self.u_precompute()
+        
         
     def mar_mats_assets(self,npoints=4,abar=0.1):
         # for each grid point on single's grid it returns npoints positions
@@ -582,8 +594,15 @@ class ModelSetup(object):
         return self.vs_last(s_in,z_in+trend,ushift,return_cs)
         
     
-    
-    
+    def u_precompute(self):
+        print('Precomputing...')
+        mgrid = self.mgrid
+        sigma = self.pars['crra_power']
+        umlt = self.u_mult(self.thetagrid[None,:])
+        uraw = self.u(np.maximum(mgrid[:,None],1e-3))
+        uout = umlt*uraw
+        self.ucouple_precomputed_ce = ((1-sigma)*uout)**(1/(1-sigma))
+        print('Precomputing done')
     
     
     

@@ -10,19 +10,20 @@ Created on Sat Dec 14 10:58:43 2019
 # this defines model residuals
 import numpy as np
 import pickle
+import copy
 xdef = np.array([0.05,0.01,0.02,0.7,0.25,0.0001,0.5])
 
 
 # return format is any combination of 'distance', 'all_residuals' and 'model'
 # we can add more things too for convenience
-def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report=False,draw=False,graphs=False):
+def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report=False,draw=False,graphs=False,solve_uni=True,solve_bil=False):
     from model import Model
     from setup import DivorceCosts
     from simulations import Agents
     from moments import moment
     
  
-    def solve_sim(model_uni,model_bila,solve_uni=True,solve_bil=False,simulate=True,show_mem=False,draw_moments=False,verbose_sim=False):
+    def solve_sim(model_uni,model_bila,solve_uni=solve_uni,solve_bil=solve_bil,simulate=True,show_mem=False,draw_moments=False,verbose_sim=False):
           
         #Solve the model
         if solve_uni:
@@ -31,10 +32,11 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
         if solve_bil:
             model_bila.solve(show_mem=show_mem)
             
+        
         if not simulate: return
-        agents = Agents(model_uni,model_bila,verbose=verbose_sim)
+        agents = Agents(model_uni,model_bila,verbose=verbose_sim,uni=solve_uni,bil=solve_bil)
         agents.simulate() 
-        moment(model_uni,model_bila,agents,draw=draw_moments)
+        moment(model_uni,model_bila,agents,draw=draw_moments,uni=solve_uni,bil=solve_bil)
 
         
         
@@ -60,7 +62,7 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
                 pmeet=pmeet,uls=uls,pls=pls,u_shift_mar=mshift)
     
     #Bilateral Divorce Model-Setup
-    dc_bil = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=0.0)
+    dc_bil = DivorceCosts(unilateral_divorce=False,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=0.0)
        
     iter_name = 'default' if not verbose else 'default-timed'
     
@@ -71,7 +73,7 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
     
     #Solve the model
     solve_sim(mdl_uni,mdl_bil,simulate=True,show_mem=verbose,
-                  verbose_sim=verbose,draw_moments=draw)
+                  verbose_sim=verbose,draw_moments=draw,solve_uni=solve_uni,solve_bil=solve_bil)
     
     
     ############################################################
@@ -92,18 +94,28 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
     fls_d=np.ones(1)*packed_data[5]
     dat=np.concatenate((hazm_d,hazs_d,hazd_d,mar_d,coh_d,fls_d),axis=0)
     W=packed_data[6]
-
-    #Get Simulated Data
-    Tret = mdl_uni.setup.pars['Tret']
-    hazm_s = mdl_uni.moments['hazard mar'][0:len(hazm_d)]
-    hazs_s = mdl_uni.moments['hazard sep'][0:len(hazs_d)]
-    hazd_s = mdl_uni.moments['hazard div'][0:len(hazd_d)]
-    mar_s = mdl_uni.moments['share mar'][0:len(mar_d)]
-    coh_s = mdl_uni.moments['share coh'][0:len(coh_d)]
-    fls_s = np.ones(1)*np.mean(mdl_uni.moments['flsm'][1:Tret])/np.mean(mdl_uni.moments['flsc'][1:Tret])
-    sim=np.concatenate((hazm_s,hazs_s,hazd_s,mar_s,coh_s,fls_s),axis=0)
+    
 
 
+    def sim_dat(mdl):
+        #Get Simulated Data
+        Tret = mdl.setup.pars['Tret']
+        hazm_s = mdl.moments['hazard mar'][0:len(hazm_d)]
+        hazs_s = mdl.moments['hazard sep'][0:len(hazs_d)]
+        hazd_s = mdl.moments['hazard div'][0:len(hazd_d)]
+        mar_s = mdl.moments['share mar'][0:len(mar_d)]
+        coh_s = mdl.moments['share coh'][0:len(coh_d)]
+        fls_s = np.ones(1)*np.mean(mdl.moments['flsm'][1:Tret])/np.mean(mdl.moments['flsc'][1:Tret])
+        sim_a=np.concatenate((hazm_s,hazs_s,hazd_s,mar_s,coh_s,fls_s),axis=0)
+        
+        return sim_a
+
+
+    #For policy
+    if solve_uni:
+        sim=sim_dat(mdl_uni)
+    else:
+        sim=sim_dat(mdl_bil)
 
     if len(dat) != len(sim):
         sim = np.full_like(dat,1.0e6)
@@ -144,14 +156,14 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
         print('')
     
     
-    
+
     out_dict = {'distance':dist,'all residuals':resid_all,
-                'scaled residuals':resid_sc,'model':mdl_uni}
+                'scaled residuals':resid_sc,'model_uni':mdl_uni,'model_bil':mdl_bil}
     out = [out_dict[key] for key in return_format]
     
     #For memory reason:delete stuff
     if not draw:
         if not graphs:
-            del mdl
+            del mdl_uni,mdl_bil
             
     return out

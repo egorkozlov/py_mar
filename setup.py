@@ -286,7 +286,7 @@ class ModelSetup(object):
         ezmmin = min([np.min(np.exp(g+t)) for g,t in zip(exogrid['zm_t'],p['m_wage_trend'])])
         
         self.money_min = 0.95*ezmmin # cause FLS can be up to 0
-        self.mgrid = ezmmin + self.agrid_c # this can be changed later
+        self.mgrid = ezmmin + self.sgrid_c # this can be changed later
         self.u_precompute()
         
         
@@ -601,7 +601,8 @@ class ModelSetup(object):
         umlt = self.u_mult(self.thetagrid[None,:])
         uraw = self.u(np.maximum(mgrid[:,None],1e-3))
         uout = umlt*uraw
-        self.ucouple_precomputed_ce = ((1-sigma)*uout)**(1/(1-sigma))
+        #self.ucouple_precomputed_ce = ((1-sigma)*uout)**(1/(1-sigma))
+        self.ucouple_precomputed_ce = uout
         print('Precomputing done')
     
     

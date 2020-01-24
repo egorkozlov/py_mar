@@ -112,14 +112,17 @@ def v_optimize_couple(money_in,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ug
         if not use_gpu:
             
             # preallocation helps a bit here
-            #V, c, s = np.empty((3,na,nexo,ntheta),dtype=dtype)
-            #i_opt = -np.ones((na,nexo,ntheta),dtype=np.int16)                 
-            #v_couple_local(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift,V,i_opt,c,s)
-            
-            
             V, c, s = np.empty((3,na,nexo,ntheta),dtype=dtype)
             i_opt = -np.ones((na,nexo,ntheta),dtype=np.int16)                 
-            v_couple_local_intu(money_left,sgrid,mgrid,u_on_mgrid_ce,EV_here,sigma,beta,uval+ushift,V,i_opt,c,s)
+            v_couple_local(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift,V,i_opt,c,s)
+            
+            
+            V2, c2, s2 = np.empty((3,na,nexo,ntheta),dtype=dtype)
+            i_opt2 = -np.ones((na,nexo,ntheta),dtype=np.int16)                 
+            v_couple_local_intu(money_left,sgrid,mgrid,u_on_mgrid_ce,EV_here,sigma,beta,uval+ushift,V2,i_opt2,c2,s2)
+            
+            print('max diff V is {}'.format(np.max(np.abs(V-V2))))
+            print('max diff s is {}'.format(np.max(np.abs(s-s2))))
             
             
         else:
@@ -685,7 +688,7 @@ def v_couple_local_intu_0(money,sgrid,mgrid,u_on_mgrid_ce,EV,sigma,beta,uadd,V_o
                 
                 
                 
-#@jit(nopython=True)#,parallel=True)
+@jit(nopython=True,parallel=True)
 def v_couple_local_intu(money,sgrid,mgrid,u_on_mgrid_ce,EV,sigma,beta,uadd,V_opt,i_opt,c_opt,s_opt):
     # this is a looped version of the optimizer
     # the last two things are outputs
@@ -715,8 +718,6 @@ def v_couple_local_intu(money,sgrid,mgrid,u_on_mgrid_ce,EV,sigma,beta,uadd,V_opt
             money_minus_coh = money_i - coh_min
             
             
-            
-            
             if money_minus_coh > sgrid[ns-1]: # if can save the max amount
                 ind_s = ns-1 
             else:
@@ -725,36 +726,15 @@ def v_couple_local_intu(money,sgrid,mgrid,u_on_mgrid_ce,EV,sigma,beta,uadd,V_opt
                     if money_minus_coh <= sgrid[ind_s+1]: break
                 assert money_minus_coh > sgrid[ind_s]
                 
-            #w_interpolation = np.zeros((ind_s,),dtype=np.float32)
-            i_interpolation = np.zeros((ind_s+1,),dtype=np.int16)
             
             
             if money_i > mgrid[-1]:
                 i_m = nm - 2                 
             else:                
                 for i_m in range(nm-2,-1,-1):
-                        if money_i >= mgrid[i_m]: break
-                    
-            i_interpolation[0] = i_m
-            #w_interpolation[0] = (money_i - mgrid[nm-2])/(mgrid[nm-1] - mgrid[nm-2])
-                    
+                        if money_i >= mgrid[i_m]: break # finds position on mgrid
             
-            for i_s in range(1,ind_s+1):
-                coh = money_i - sgrid[i_s]
-                
-                assert coh>0
-                
-                if coh > mgrid[-1]:
-                    i_interpolation[i_s] = nm - 2
-                    #w_interpolation[i_s] = (coh - mgrid[nm-2])/(mgrid[nm-1] - mgrid[nm-2])
-                else:
-                    while coh < mgrid[i_m]:
-                        i_m -= 1
-                    assert i_m >= 0
-                    
-                    i_interpolation[i_s] = i_m
-                    #w_interpolation[i_s] = (coh - mgrid[i_m])/(mgrid[i_m+1] - mgrid[i_m])
-                    #assert 0 <= w_interpolation[i_s] <= 1
+            i_m_start = i_m
             
             for ind_theta in range(ntheta):
                 
@@ -764,20 +744,24 @@ def v_couple_local_intu(money,sgrid,mgrid,u_on_mgrid_ce,EV,sigma,beta,uadd,V_opt
                 io = 0
                 Vo = -1e6
                 
-                
+                i_m = i_m_start
                 
                 for i_cand in range(ind_s+1):
-                    #iint, wint = i_interpolation[i_cand], w_interpolation[i_cand]
-                    iint = i_interpolation[i_cand]
-                    u_cand = ugrid_ce[iint+1]
-                    V_cand = ufun(u_cand) + uadd + beta*EVval[i_cand]
+                    m_after_s = money_i - sgrid[i_cand]
+                    while mgrid[i_m] > m_after_s:
+                        i_m -= 1
+                        
+                    assert i_m >= 0
+                    u_cand = ugrid_ce[i_m]
+                    V_cand = u_cand + uadd + beta*EVval[i_cand]
                     
                     if i_cand == 0 or V_cand > Vo:
                         io, Vo = i_cand, V_cand                     
                     
                 
                 i_opt[ind_a,ind_exo,ind_theta] = io
-                V_opt[ind_a,ind_exo,ind_theta] = Vo
+                V_opt[ind_a,ind_exo,ind_theta] = Vo # NB: this V is imprecise
+                # you can recover V from optimal savings & consumption later
                 c_opt[ind_a,ind_exo,ind_theta] = money_i - sgrid[io]
                 s_opt[ind_a,ind_exo,ind_theta] = sgrid[io]        
                 assert Vo > -1e6

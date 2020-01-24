@@ -8,7 +8,7 @@ from timeit import default_timer
 
 
 from optimizers import get_EVM
-from optimizers import v_optimize_couple_array_int
+from optimizers import v_optimize_couple
 
 from platform import system
 
@@ -96,7 +96,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
         EV_t = (ind,p,EV_by_l[:,istart:ifinish,:,:])
         
         V_pure_i, c_opt_i, s_opt_i, i_opt_i, il_opt_i, V_all_l_i = \
-           v_optimize_couple_array_int(money_t,sgrid,umult_vec,EV_t,sigma,beta,ls,us,ushift,dtype=dtype,
+           v_optimize_couple(money_t,sgrid,umult_vec,EV_t,sigma,beta,ls,us,ushift,dtype=dtype,
                              mugrid=(setup.mgrid,setup.ucouple_precomputed_ce))
         V_ret_i = V_pure_i + psi[None,istart:ifinish,None]
         

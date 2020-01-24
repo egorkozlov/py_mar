@@ -9,27 +9,54 @@ import numpy as np
 
 from mc_tools import mc_simulate
 from gridvec import VecOnGrid
+import pickle
 
 class Agents:
     
-    def __init__(self,M,Mb,N=15000,T=None,verbose=True):
-        if T is None:
-            T = M.setup.pars['T']
+    def __init__(self,Mu,Mb,uni=True,bil=False,N=15000,T=None,verbose=True):
             
             
-        np.random.seed(18) # TODO: this should be replaced by explicitly supplying shocks  
+        np.random.seed(18) # TODO: this should be replaced by explicitly supplying shocks 
+        
+    
             
   
         # take the stuff from the model and arguments
         # note that this does not induce any copying just creates links
-        self.M = M
-        self.V = M.V
-        self.setup = M.setup
+    
+
+        
+        #Unilateral Divorce
+        if uni:
+            self.Mu = Mu
+            self.Vu = Mu.V
+            
+        
+        #Bilateral Divorce
+        if bil:
+            self.Mb=Mb
+            self.Vb=Mb.V
+            
+        if (not uni):
+            self.Mu = Mb
+            self.Vu = Mb.V
+            
+        if (not bil):
+            self.Mb = Mu
+            self.Vb = Mu.V
+            
+            
+        if T is None:
+            T = Mu.setup.pars['T']
+            
+
+        
+        self.setup = Mu.setup
         self.state_names = self.setup.state_names
         self.N = N
         self.T = T
         self.verbose = verbose
-        self.timer = M.time
+        self.timer = Mu.time
         
         
         self.shocks_single_iexo = np.random.random_sample((N,T))
@@ -73,7 +100,28 @@ class Agents:
         self.ils_def = self.setup.nls - 1
         
         
-        
+        #Import File for change in Policy
+        with open('age_uni.pkl', 'rb') as file:
+            age_uni=pickle.load(file)
+            
+            
+        #Create a file with the age of the change foreach person
+        change=-np.ones(N,np.int32)
+   
+
+        summa=0.0
+        summa1=0.0
+        for i in age_uni:
+            summa+=age_uni[i]
+            change[int(summa1*len(change[:])/sum(age_uni.values())):int(summa*len(change[:])/sum(age_uni.values()))]=(i-20)/self.setup.pars['py']
+            summa1+=age_uni[i]
+            
+        #Sort change according to age: this is very important as
+        #later one we will create a new policy function concatenating
+        #those for whom uni or bil apply
+        change=np.sort(change, axis=0)   
+        self.change=change
+    
         
     def simulate(self):
         
@@ -98,16 +146,22 @@ class Agents:
             is_state = (self.state[:,t]==ist)            
             use_theta = self.has_theta[ist]            
             nst = np.sum(is_state)
+        
             
             if nst==0:
                 continue
             
             ind = np.where(is_state)[0]
             
+            #Apply right policy to agents is_state left
+            changes=self.change[(is_state)]
+            
             if not use_theta:
                 
                 # apply for singles
-                anext = self.V[t][sname]['s'][self.iassets[ind,t],self.iexo[ind,t]]
+                anext_uni=self.Vu[t][sname]['s'][self.iassets[ind,t],self.iexo[ind,t]]
+                anext_bil=self.Vb[t][sname]['s'][self.iassets[ind,t],self.iexo[ind,t]]
+                anext = np.concatenate((anext_uni[(t>=changes)],anext_bil[(t<changes)]),axis=0)
                 self.iassets[ind,t+1] = VecOnGrid(self.setup.agrid_s,anext).roll(shocks=self.shocks_single_a[ind,t])
             
             else:
@@ -119,8 +173,12 @@ class Agents:
                 
                 tk = lambda x : self.setup.v_thetagrid_fine.apply(x,axis=2)
                 
-                anext = tk(self.V[t][sname]['s'])[self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
+
                 
+                #Assets next period
+                anext_uni = tk(self.Vu[t][sname]['s'])[self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
+                anext_bil = tk(self.Vb[t][sname]['s'])[self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
+                anext=np.concatenate((anext_uni[(t>=changes)],anext_bil[(t<changes)]),axis=0)
                 #anext2 = self.M.decisions[t][sname]['s'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
                 #assert np.allclose(anext2,anext)
                 
@@ -198,7 +256,11 @@ class Agents:
             if not np.any(is_state):
                 continue
             
+            #Agents of this type
             ind = np.where(is_state)[0]
+            
+            #Apply right policy to agents is_state left
+            changes=self.change[(is_state)]
             
             nind = ind.size
             
@@ -214,7 +276,8 @@ class Agents:
                 pmeet = self.setup.pars['pmeet_t'][t] # TODO: check timing
                 
                 
-                matches = self.M.decisions[t]['Female, single']
+                matches_uni = self.Mu.decisions[t]['Female, single']
+                matches_bil = self.Mb.decisions[t]['Female, single']
                 
                 
                 ia = self.iassets[ind,t+1] # note that timing is slightly inconsistent  
@@ -223,7 +286,7 @@ class Agents:
                 # TODO: fix the seed
                 iznow = self.iexo[ind,t]
                 
-                pmat = matches['p'][ia,iznow,:]
+                pmat = np.concatenate((matches_uni['p'][ia,iznow,:][(t>=changes)],matches_bil['p'][ia,iznow,:][(t<changes)]),axis=0)
                 pmat_cum = pmat.cumsum(axis=1)
                 
                 
@@ -231,9 +294,12 @@ class Agents:
                 
                 i_pmat = (v[:,None] > pmat_cum).sum(axis=1)  # index of the position in pmat
                 
-                ic_out = matches['iexo'][ia,iznow,i_pmat]
-                ia_out = matches['ia'][ia,iznow,i_pmat]
-                it_out = matches['theta'][ia,iznow,i_pmat]
+                ic_out = np.concatenate((matches_uni['iexo'][ia,iznow,i_pmat][(t>=changes)],\
+                                         matches_bil['iexo'][ia,iznow,i_pmat][(t<changes)]),axis=0)
+                ia_out = np.concatenate((matches_uni['ia'][ia,iznow,i_pmat][(t>=changes)],\
+                                         matches_bil['ia'][ia,iznow,i_pmat][(t<changes)]),axis=0)
+                it_out = np.concatenate((matches_uni['theta'][ia,iznow,i_pmat][(t>=changes)],\
+                                         matches_bil['theta'][ia,iznow,i_pmat][(t<changes)]),axis=0)
                 
                 # potential assets position of couple
                 
@@ -248,8 +314,10 @@ class Agents:
                 
                 
                 
-                i_pot_agree = matches['Decision'][ia,iznow,i_pmat]
-                i_m_preferred = matches['M or C'][ia,iznow,i_pmat]
+                i_pot_agree = np.concatenate((matches_uni['Decision'][ia,iznow,i_pmat][(t>=changes)],\
+                                              matches_bil['Decision'][ia,iznow,i_pmat][(t<changes)]),axis=0)
+                i_m_preferred = np.concatenate((matches_uni['M or C'][ia,iznow,i_pmat][(t>=changes)],\
+                                                matches_bil['M or C'][ia,iznow,i_pmat][(t<changes)]),axis=0)
                 
                 i_disagree = (~i_pot_agree)
                 i_disagree_or_nomeet = (i_disagree) | (i_nomeet)
@@ -279,12 +347,20 @@ class Agents:
                     
                     # FLS decision
                     #self.ils_i[ind[i_ren],t+1] = 
-                    tg = self.setup.v_thetagrid_fine                    
-                    fls_policy = self.M.decisions[t+1]['Couple, M']['fls']
+                    tg = self.setup.v_thetagrid_fine 
+                    fls_policy_uni = self.Mu.decisions[t+1]['Couple, M']['fls']
+                    fls_policy_bil = self.Mb.decisions[t+1]['Couple, M']['fls']
                     
-                    self.ils_i[ind[i_agree_mar],t+1] = \
-                        fls_policy[self.iassets[ind[i_agree_mar],t+1],self.iexo[ind[i_agree_mar],t+1],self.itheta[ind[i_agree_mar],t+1]]
-                    
+                   #Create twmporary arrays with uni and bil labor decisions,then concatenate
+                    index_uni=\
+                        fls_policy_uni[self.iassets[ind[i_agree_mar],t+1],self.iexo[ind[i_agree_mar],t+1],self.itheta[ind[i_agree_mar],t+1]]
+                        
+                    index_bil=\
+                        fls_policy_bil[self.iassets[ind[i_agree_mar],t+1],self.iexo[ind[i_agree_mar],t+1],self.itheta[ind[i_agree_mar],t+1]]
+                        
+                        
+                    self.ils_i[ind[i_agree_mar],t+1] = np.concatenate((index_uni[(t>=changes)[i_agree_mar]],index_bil[(t<changes)[i_agree_mar]]),axis=0)
+                
                     
                 if np.any(i_agree_coh):
                     
@@ -296,11 +372,18 @@ class Agents:
                     # FLS decision
                     tg = self.setup.v_thetagrid_fine
                     #fls_policy = self.V[t+1]['Couple, C']['fls']
-                    fls_policy = self.M.decisions[t+1]['Couple, C']['fls']
+                    fls_policy_uni = self.Mu.decisions[t+1]['Couple, C']['fls']
+                    fls_policy_bil = self.Mb.decisions[t+1]['Couple, C']['fls']
                     
-                    self.ils_i[ind[i_agree_coh],t+1] = \
-                        fls_policy[self.iassets[ind[i_agree_coh],t+1],self.iexo[ind[i_agree_coh],t+1],self.itheta[ind[i_agree_coh],t+1]]
-                    
+                    #Create twmporary arrays with uni and bil labor decisions,then concatenate
+                    index_uni=\
+                        fls_policy_uni[self.iassets[ind[i_agree_coh],t+1],self.iexo[ind[i_agree_coh],t+1],self.itheta[ind[i_agree_coh],t+1]]
+                        
+                    index_bil=\
+                        fls_policy_bil[self.iassets[ind[i_agree_coh],t+1],self.iexo[ind[i_agree_coh],t+1],self.itheta[ind[i_agree_coh],t+1]]
+                        
+                        
+                    self.ils_i[ind[i_agree_coh],t+1] = np.concatenate((index_uni[(t>=changes)[i_agree_coh]],index_bil[(t<changes)[i_agree_coh]]),axis=0)
                 
                     
                 if np.any(i_disagree_or_nomeet):
@@ -312,7 +395,8 @@ class Agents:
                     
             elif sname == "Couple, M" or sname == "Couple, C":
                 
-                decision = self.M.decisions[t][sname]
+                decision_uni = self.Mu.decisions[t][sname]
+                decision_bil = self.Mb.decisions[t][sname]
 
                 
                 # by default keep the same theta and weights
@@ -330,16 +414,19 @@ class Agents:
                 agrid =  self.setup.agrid_c                
                 sc = agrid[isc] # needed only for dividing asssets               
                 
-                thts_all = decision['thetas']
-                thts_orig_all = np.broadcast_to(np.arange(nt)[None,None,:],thts_all.shape)
+                thts_all_uni = decision_uni['thetas']
+                thts_all_bil = decision_bil['thetas']
+                thts_orig_all = np.broadcast_to(np.arange(nt)[None,None,:],thts_all_uni.shape)
                 
                 
-                thts = thts_all[isc,iall,itht]
+                thts = np.concatenate((thts_all_uni[isc,iall,itht][(t>=changes)],thts_all_bil[isc,iall,itht][(t<changes)]),axis=0)
                 thts_orig = thts_orig_all[isc,iall,itht]
                 
-                dec = decision['Decision']
+                dec_uni = decision_uni['Decision']
+                dec_bil = decision_bil['Decision']
                 
-                i_stay = dec[isc,iall] if dec.ndim==2 else dec[isc,iall,itht]
+                i_stay = np.concatenate((dec_uni[isc,iall][(t>=changes)],dec_bil[isc,iall][(t<changes)]),axis=0) if dec_uni.ndim==2\
+                    else np.concatenate((dec_uni[isc,iall,itht][(t>=changes)],dec_bil[isc,iall,itht][(t<changes)]),axis=0)
 
                 
                 
@@ -397,16 +484,21 @@ class Agents:
                         
                         
                         ipick = (self.iassets[ind[i_ren],t+1],self.iexo[ind[i_ren],t+1],self.itheta[ind[i_ren],t+1])
-                        self.ils_i[ind[i_ren],t+1] = self.M.decisions[t+1][sname]['fls'][ipick]
+                        self.ils_i[ind[i_ren],t+1] = np.concatenate((self.Mu.decisions[t+1][sname]['fls'][ipick][(t>=changes[i_ren])],\
+                                                                     self.Mb.decisions[t+1][sname]['fls'][ipick][(t<changes[i_ren])]),axis=0)
                     else:
-                        i_coh = decision['Cohabitation preferred to Marriage'][isc,iall,thts]
+                        i_coh = np.concatenate((decision_uni['Cohabitation preferred to Marriage'][isc,iall,thts][(t>=changes)],\
+                                 decision_bil['Cohabitation preferred to Marriage'][isc,iall,thts][(t<changes)]),axis=0)
                         i_coh1=i_coh[i_ren]
                         
                         ipick = (self.iassets[ind[i_ren],t+1],self.iexo[ind[i_ren],t+1],self.itheta[ind[i_ren],t+1])
-                        ils_if_mar = self.M.decisions[t+1]["Couple, M"]['fls'][ipick]
-                        ils_if_coh = self.M.decisions[t+1]["Couple, C"]['fls'][ipick]
+                        ils_if_mar_uni = self.Mu.decisions[t+1]["Couple, M"]['fls'][ipick]
+                        ils_if_coh_uni = self.Mu.decisions[t+1]["Couple, C"]['fls'][ipick]
+                        ils_if_mar_bil = self.Mb.decisions[t+1]["Couple, M"]['fls'][ipick]
+                        ils_if_coh_bil = self.Mb.decisions[t+1]["Couple, C"]['fls'][ipick]
                         
-                        self.ils_i[ind[i_ren],t+1] = i_coh1*ils_if_coh+(1-i_coh1)*ils_if_mar
+                        self.ils_i[ind[i_ren],t+1] = i_coh1*np.concatenate((ils_if_coh_uni[(t>=changes[i_ren])],ils_if_coh_bil[(t<changes[i_ren])]),axis=0)\
+                                                 +(1-i_coh1)*np.concatenate((ils_if_mar_uni[(t>=changes[i_ren])],ils_if_mar_bil[(t<changes[i_ren])]),axis=0)
                         self.state[ind[i_ren],t+1] = i_coh1*self.state_codes["Couple, C"]+(1-i_coh1)*self.state_codes["Couple, M"]
                       
                             
@@ -421,18 +513,23 @@ class Agents:
                         self.state[ind[i_sq],t+1] = self.state_codes[sname]
                         
                         ipick = (self.iassets[ind[i_sq],t+1],self.iexo[ind[i_sq],t+1],self.itheta[ind[i_sq],t+1])
-                        self.ils_i[ind[i_sq],t+1] = self.M.decisions[t+1][sname]['fls'][ipick]
+                        self.ils_i[ind[i_sq],t+1] = np.concatenate((self.Mu.decisions[t+1][sname]['fls'][ipick][(t>=changes[i_sq])],\
+                                                                     self.Mb.decisions[t+1][sname]['fls'][ipick][(t<changes[i_sq])]),axis=0)
                     else:
-                        i_coh = decision['Cohabitation preferred to Marriage'][isc,iall,thts]
+                        i_coh = np.concatenate((decision_uni['Cohabitation preferred to Marriage'][isc,iall,thts][(t>=changes)],\
+                                 decision_bil['Cohabitation preferred to Marriage'][isc,iall,thts][(t<changes)]),axis=0)
                         i_coh1=i_coh[i_sq]
                         self.state[ind[i_sq],t+1] = i_coh1*self.state_codes["Couple, C"]+(1-i_coh1)*self.state_codes["Couple, M"]
                         
                         ipick = (self.iassets[ind[i_sq],t+1],self.iexo[ind[i_sq],t+1],self.itheta[ind[i_sq],t+1])
                         
-                        ils_if_mar = self.M.decisions[t+1]["Couple, M"]['fls'][ipick]
-                        ils_if_coh = self.M.decisions[t+1]["Couple, C"]['fls'][ipick]
-                       
-                        self.ils_i[ind[i_sq],t+1] = i_coh1*ils_if_coh+(1-i_coh1)*ils_if_mar
+                        ils_if_mar_uni = self.Mu.decisions[t+1]["Couple, M"]['fls'][ipick]
+                        ils_if_coh_uni = self.Mu.decisions[t+1]["Couple, C"]['fls'][ipick]
+                        ils_if_mar_bil = self.Mb.decisions[t+1]["Couple, M"]['fls'][ipick]
+                        ils_if_coh_bil = self.Mb.decisions[t+1]["Couple, C"]['fls'][ipick]
+                        
+                        self.ils_i[ind[i_sq],t+1] = i_coh1*np.concatenate((ils_if_coh_uni[(t>=changes[i_sq])],ils_if_coh_bil[(t<changes[i_sq])]),axis=0)\
+                                                 +(1-i_coh1)*np.concatenate((ils_if_mar_uni[(t>=changes[i_sq])],ils_if_mar_bil[(t<changes[i_sq])]),axis=0)
                         self.state[ind[i_sq],t+1] = i_coh1*self.state_codes["Couple, C"]+(1-i_coh1)*self.state_codes["Couple, M"]
             
             else:

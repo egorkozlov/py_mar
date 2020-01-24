@@ -107,29 +107,16 @@ def v_optimize_couple(money_in,sgrid,EV,mgrid,util,ls,us,beta,ushift,use_gpu=ugp
             V, c, s = np.empty((3,na,nexo,ntheta),dtype=dtype)
             i_opt = -np.ones((na,nexo,ntheta),dtype=np.int16)                 
             v_couple_local_intu(money_left,sgrid,EV_here,mgrid,util,beta,uval+ushift,V,i_opt,c,s)
-            #(money,sgrid,EV,mgrid,util,beta,uadd)
             
-            '''
-            V2, i_opt2, _, _ = v_couple_gpu(money_left,sgrid,EV_here,mgrid,util,beta,uval+ushift)
-            
-            print('max diff V is {}'.format(np.max(np.abs(V-V2))))
-            print('max diff i is {}'.format(np.max(np.abs(i_opt-i_opt2))))
-            try:
-                assert np.all(i_opt==i_opt2)
-            except:
-                print(np.where(~(i_opt==i_opt2)))
-                assert False
-            '''
         else:
             
-            # preallocation is pretty unfeasible
             V, i_opt, c, s = v_couple_gpu(money_left,sgrid,EV_here,mgrid,util,beta,uval+ushift)
 
                 
         i_opt_arr[...,i] = i_opt
         c_opt_arr[...,i] = c
         s_opt_arr[...,i] = s
-        V_opt_arr[...,i] = V
+        V_opt_arr[...,i] = V # discard this V later as it is not very precise
         
         
         

@@ -428,7 +428,6 @@ class Agents:
                 if((len(dec_bil.shape)==3) & (len(dec_uni.shape)==2)):
                     dec_uni=np.broadcast_to(dec_uni[...,None],dec_bil.shape)
                 
-                print(dec_uni)
                 
                 i_stay = np.concatenate((dec_uni[isc,iall][(t>=changes)],dec_bil[isc,iall][(t<changes)]),axis=0) if dec_uni.ndim==2\
                     else np.concatenate((dec_uni[isc,iall,itht][(t>=changes)],dec_bil[isc,iall,itht][(t<changes)]),axis=0)

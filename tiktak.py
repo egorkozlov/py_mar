@@ -15,7 +15,7 @@ from time import sleep
 import pickle
 
 def tiktak(nthreads,N,N_st,xl,xu,f,tole=1e-3,nelder=True,refine=False,
-           skip_global=False,skip_local=False):
+           skip_global=False,skip_local=False,uni=True,bil=False):
     
     #Initial cheks
     assert len(xl)==len(xu)
@@ -84,11 +84,6 @@ def tiktak(nthreads,N,N_st,xl,xu,f,tole=1e-3,nelder=True,refine=False,
     ############################################
     #3 TOPPING RULE
     ###########################################
-    #print(999,ite)
-    #Final Refinement
-    if refine:
-        res = minimize(f,param[0][1],method='Nelder-Mead',tol=1e-8)
-        param[0]=(res.fun,res.x)
     
     
     return param[0]

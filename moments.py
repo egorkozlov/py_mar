@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf
 import pickle
  
-def moment(mdl,mdlb,agents,draw=True):
+def moment(mdlu,mdlb,agents,draw=True,uni=True,bil=False):
 #This function compute moments coming from the simulation
 #Optionally it can also plot graphs about them. It is feeded with
 #matrixes coming from simulations
@@ -27,6 +27,11 @@ def moment(mdl,mdlb,agents,draw=True):
     theta_t=agents.setup.thetagrid_fine[agents.itheta]
     setup = agents.setup
     
+    #Unilateral Divorce
+    if uni:
+        mdl=mdlu
+    else:
+        mdl=mdlb
 
         
     mdl.moments = dict()

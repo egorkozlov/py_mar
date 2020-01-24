@@ -41,6 +41,11 @@ if __name__ == '__main__':
     dat_moments(period=2) # refresh
     
     
+    #Decide here which model you want to run
+    uni=True
+    bil=True
+    
+    #Change the default option of mdl_resid according to conditions above
           
     #Create grids of parameters
     sigma_psi_g=np.linspace(0.01,0.3,1)
@@ -86,7 +91,7 @@ if __name__ == '__main__':
     
     #Now Re do the computation with graphs!
     out, mdl = mdl_resid(param[1],return_format=['distance','model'],calibration_report=False,
-                         verbose=True,draw=True)
+                         verbose=True,draw=True,solve_uni=uni,solve_bil=bil)
     
     
    

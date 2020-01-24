@@ -580,13 +580,15 @@ def moment(mdlu,mdlb,agents,draw=True,uni=True,bil=False):
         fig = plt.figure()
         f6=fig.add_subplot(2,1,1)
          
+        
         # create plot
         x=["Data","Simulation"]
         y=np.array([beta_unid_d,beta_unid_s])
         yerr=np.array([(beta_unid_i[1]-beta_unid_i[0])/2.0,0.0])
+        plt.axhline(linewidth=0.1, color='r')
         plt.errorbar(x, y, yerr=yerr, fmt='o', elinewidth=0.03)
         plt.ylabel('OLS Coefficient - UniD')
-        print(9999999999999999999999,beta_unid_i[0],beta_unid_i[1])
+        plt.ylim(ymax=0.1)
         #plt.xticks(index , ('Unilateral', 'Bilateral'))
         
  

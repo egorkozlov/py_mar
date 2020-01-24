@@ -159,14 +159,14 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
         print('')
     
     
-
-    out_dict = {'distance':dist,'all residuals':resid_all,
-                'scaled residuals':resid_sc,'model_uni':mdl_uni,'model_bil':mdl_bil}
-    out = [out_dict[key] for key in return_format]
-    
     #For memory reason:delete stuff
     if not draw:
         if not graphs:
             del mdl_uni,mdl_bil
+            
+    out_dict = {'distance':dist,'all residuals':resid_all,
+                'scaled residuals':resid_sc,'model_uni':mdl_uni,'model_bil':mdl_bil}
+    out = [out_dict[key] for key in return_format]
+    
             
     return out

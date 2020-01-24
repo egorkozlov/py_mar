@@ -400,7 +400,15 @@ def compute(hi,period=1):
     #Drop if errors
     
     #hi3.to_csv(r'D:\Downloads\temp.csv')
-    return hazs,hazm,hazd,emar,ecoh,fls_ratio,mar,coh,freq_pc,freq_i
+    
+    #Create a dictionary for saving simulated moments
+    listofTuples = [("hazs" , hazs), ("hazm" , hazm),("hazd" , hazd),("emar" , emar),\
+                    ("ecoh" , ecoh), ("fls_ratio" , fls_ratio),("mar" , mar),("coh" , coh),\
+                    ("freq_pc" , freq_pc), ("freq_i" , freq_i),("beta_unid" , beta_unid)]
+    dic_mom=dict(listofTuples)
+    
+    del hi,hi2,hi3
+    return dic_mom
 
 
 
@@ -417,7 +425,18 @@ def dat_moments(sampling_number=4,weighting=True,covariances=False,period=1):
     data=pd.read_csv('histo.csv')
     
     #Call the routine to compute the moments
-    hazs,hazm,hazd,emar,ecoh,fls_ratio,mar,coh,freq_pc,freq_i=compute(data.copy(),period=period)
+    dic=compute(data.copy(),period=period)
+    hazs=dic['hazs']
+    hazm=dic['hazm']
+    hazd=dic['hazd']
+    emar=dic['emar']
+    ecoh=dic['ecoh']
+    fls_ratio=dic['fls_ratio']
+    mar=dic['mar']
+    coh=dic['coh']
+    freq_pc=dic['freq_pc']
+    freq_i=dic['freq_i']
+    beta_unid=dic['beta_unid']
     
     
     #Use bootstrap samples to compute the weighting matrix
@@ -433,6 +452,7 @@ def dat_moments(sampling_number=4,weighting=True,covariances=False,period=1):
     emarB=np.zeros((len(emar),boot))
     ecohB=np.zeros((len(ecoh),boot))
     fls_ratioB=np.zeros((1,boot))
+    beta_unidB=np.zeros((1,boot))
     
     aa=data.sample(n=nn,replace=True,weights='SAMWT',random_state=4)
     
@@ -441,7 +461,16 @@ def dat_moments(sampling_number=4,weighting=True,covariances=False,period=1):
     for i in range(boot):
     
         a1=aa[(i*n):((i+1)*n)].copy().reset_index()
-        hazsB[:,i],hazmB[:,i],hazdB[:,i],emarB[:,i],ecohB[:,i],fls_ratioB[:,i],marB[:,i],cohB[:,i],freq_pcel,freq_iel=compute(a1.copy(),period=period)
+        dicti=compute(a1.copy(),period=period)
+        hazsB[:,i]=dicti['hazs']
+        hazmB[:,i]=dicti['hazm']
+        hazdB[:,i]=dicti['hazd']
+        emarB[:,i]=dicti['emar']
+        ecohB[:,i]=dicti['ecoh']
+        fls_ratioB[:,i]=dicti['fls_ratio']
+        marB[:,i]=dicti['mar']
+        beta_unidB[:,i]=dicti['beta_unid']
+    
         
     
     #################################
@@ -455,12 +484,13 @@ def dat_moments(sampling_number=4,weighting=True,covariances=False,period=1):
     emari=np.array((np.percentile(emarB,5,axis=1),np.percentile(emarB,95,axis=1)))
     ecohi=np.array((np.percentile(ecohB,5,axis=1),np.percentile(ecohB,95,axis=1)))
     fls_ratioi=np.array((np.percentile(fls_ratioB,5,axis=1),np.percentile(fls_ratioB,95,axis=1)))
+    beta_unidi=np.array((np.percentile(beta_unidB,5,axis=1),np.percentile(beta_unidB,95,axis=1)))
     
     #Do what is next only if you want the weighting matrix   
     if weighting:
         
         #Compute optimal Weighting Matrix
-        col=np.concatenate((hazmB,hazsB,hazdB,emarB,ecohB,fls_ratioB),axis=0)    
+        col=np.concatenate((hazmB,hazsB,hazdB,emarB,ecohB,fls_ratioB,beta_unidB),axis=0)    
         dim=len(col)
         W_in=np.zeros((dim,dim))
         for i in range(dim):
@@ -479,9 +509,16 @@ def dat_moments(sampling_number=4,weighting=True,covariances=False,period=1):
     else:
         
         #If no weighting, just use sum of squred deviations as the objective function        
-        W=np.diag(np.ones(len(hazm)+len(hazs)+len(hazd)+len(emar)+len(ecoh)+1))#one is for fls
+        W=np.diag(np.ones(len(hazm)+len(hazs)+len(hazd)+len(emar)+len(ecoh)+2))#two is for fls+beta_unid
         
-    packed_stuff = (hazm,hazs,hazd,emar,ecoh,fls_ratio,W,hazmi,hazsi,hazdi,emari,ecohi,fls_ratioi,mar,coh,mari,cohi)
+    listofTuples = [("hazs" , hazs), ("hazm" , hazm),("hazd" , hazd),("emar" , emar),\
+                ("ecoh" , ecoh), ("fls_ratio" , fls_ratio),("mar" , mar),("coh" , coh),\
+                ("beta_unid" , beta_unid),\
+                ("hazsi" , hazsi), ("hazmi" , hazmi),("hazdi" , hazdi),("emari" , emari),\
+                ("ecohi" , ecohi), ("fls_ratioi" , fls_ratioi),("mari" , mari),("cohi" , cohi),\
+                ("beta_unidi" , beta_unidi),("W",W)]
+    packed_stuff=dict(listofTuples)
+    #packed_stuff = (hazm,hazs,hazd,emar,ecoh,fls_ratio,W,hazmi,hazsi,hazdi,emari,ecohi,fls_ratioi,mar,coh,mari,cohi)
     
     
     #Export Moments
@@ -495,6 +532,8 @@ def dat_moments(sampling_number=4,weighting=True,covariances=False,period=1):
     #Export Age at second 
     with open('age_sw.pkl', 'wb+') as file:
         pickle.dump(freq_i,file) 
+        
+    del packed_stuff,freq_i,freq_pc,aa,data
         
 ###################################################################
 #If script is run as main, it performs a data comparison with SIPP

@@ -86,14 +86,16 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
         
     #Unpack Moments (see data_moments.py to check if changes)
     #(hazm,hazs,hazd,mar,coh,fls_ratio,W)
-    hazm_d=packed_data[0]
-    hazs_d=packed_data[1]
-    hazd_d=packed_data[2]
-    mar_d=packed_data[3]
-    coh_d=packed_data[4]
-    fls_d=np.ones(1)*packed_data[5]
-    dat=np.concatenate((hazm_d,hazs_d,hazd_d,mar_d,coh_d,fls_d),axis=0)
-    W=packed_data[6]
+    hazm_d=packed_data['hazm']
+    hazs_d=packed_data['hazs']
+    hazd_d=packed_data['hazd']
+    mar_d=packed_data['emar']
+    coh_d=packed_data['ecoh']
+    fls_d=np.ones(1)*packed_data['fls_ratio']
+    beta_unid_d=np.ones(1)*packed_data['beta_unid']
+    W=packed_data['W']
+    dat=np.concatenate((hazm_d,hazs_d,hazd_d,mar_d,coh_d,fls_d,beta_unid_d),axis=0)
+    
     
 
 
@@ -105,8 +107,9 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
         hazd_s = mdl.moments['hazard div'][0:len(hazd_d)]
         mar_s = mdl.moments['share mar'][0:len(mar_d)]
         coh_s = mdl.moments['share coh'][0:len(coh_d)]
+        beta_unid_s=np.ones(1)*mdl.moments['beta unid']
         fls_s = np.ones(1)*np.mean(mdl.moments['flsm'][1:Tret])/np.mean(mdl.moments['flsc'][1:Tret])
-        sim_a=np.concatenate((hazm_s,hazs_s,hazd_s,mar_s,coh_s,fls_s),axis=0)
+        sim_a=np.concatenate((hazm_s,hazs_s,hazd_s,mar_s,coh_s,fls_s,beta_unid_s),axis=0)
         
         return sim_a
 

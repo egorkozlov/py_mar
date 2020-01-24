@@ -13,6 +13,9 @@ import matplotlib.pyplot as plt
 #from matplotlib.pyplot import plot, draw, show
 import matplotlib.backends.backend_pdf
 import pickle
+import pandas as pd
+import statsmodels.api as sm
+import statsmodels.formula.api as smf
  
 def moment(mdlu,mdlb,agents,draw=True,uni=True,bil=False):
 #This function compute moments coming from the simulation
@@ -28,11 +31,8 @@ def moment(mdlu,mdlb,agents,draw=True,uni=True,bil=False):
     setup = agents.setup
     
     #Unilateral Divorce
-    if uni:
-        mdl=mdlu
-    else:
-        mdl=mdlb
-
+    mdl=mdlu if uni else mdlb
+        
         
     mdl.moments = dict()
      
@@ -98,13 +98,12 @@ def moment(mdlu,mdlb,agents,draw=True,uni=True,bil=False):
     #Now divide spells by relationship nature
     all_spells=dict()
     for ist,sname in enumerate(state_codes):
-        #s = sname.replace(',', '')
-        #s = s.replace(' ', '')
+
          
          
         is_state= (spells[:,0]==ist)
          
-        #if not is_state.any(): continue
+ 
              
     
         all_spells[sname]=spells[is_state,:]
@@ -112,7 +111,70 @@ def moment(mdlu,mdlb,agents,draw=True,uni=True,bil=False):
         is_state= (all_spells[sname][:,1]!=0)
         all_spells[sname]=all_spells[sname][is_state,:]
         
-     
+        
+    ############################################
+    #Construct sample of first relationships
+    ############################################
+    
+    #First get age at policy change
+    with open('age_uni.pkl', 'rb') as file:
+        age_uni=pickle.load(file)
+        
+        
+    #Create a file with the age of the change foreach person
+    changep=-np.ones(N,np.int32)
+   
+
+    summa=0.0
+    summa1=0.0
+    for i in age_uni:
+        summa+=age_uni[i]
+        changep[int(summa1*len(changep[:])/sum(age_uni.values())):int(summa*len(changep[:])/sum(age_uni.values()))]=(i-20)/agents.setup.pars['py']
+        summa1+=age_uni[i]
+    
+    #Sort as in simulations
+    changep=np.sort(changep, axis=0)  
+    
+    #Now define variables
+    rel_end = -1*np.ones((N,9),dtype=np.int16)
+    rel_age= -1*np.ones((N,9),dtype=np.int16)
+    rel_unid= -1*np.ones((N,9),dtype=np.int16)
+    rel_number= -1*np.ones((N,9),dtype=np.int16)
+    isrel = np.zeros((N,),dtype=np.int8)
+    
+    for t in range(1,agents.setup.pars['T']):
+        
+        irchange = ((state[:,t-1] != state[:,t]) & ((state[:,t-1]==0) | (state[:,t-1]==1)))
+        
+        if not np.any(ichange): continue
+    
+        rel_end[irchange,isrel[irchange]]=state[irchange,t]
+        rel_age[irchange,isrel[irchange]]=t
+        rel_unid[irchange,isrel[irchange]]=(t>=changep[irchange])*1.0
+        rel_number[irchange,isrel[irchange]]=isrel[irchange]+1
+        
+        isrel[irchange] = isrel[irchange]+1
+    
+    #Get the final Variables
+    allrel_end=rel_end[(rel_end!=-1)]
+    allrel_age=rel_age[(rel_age!=-1)]
+    allrel_uni=rel_unid[(rel_unid!=-1)]
+    allrel_number=rel_number[(rel_number!=-1)]
+    
+    #Get whetehr marraige
+    allrel_mar=np.zeros((allrel_end.shape))
+    allrel_mar[(allrel_end==2)]=1
+    
+    #Create a Pandas Dataframe
+    data_rel=np.array(np.stack((allrel_mar,allrel_age,allrel_uni,allrel_number),axis=0).T,dtype=np.float64)
+    data_rel_panda=pd.DataFrame(data=data_rel,columns=['mar','age','uni','rnumber'])
+                   
+
+    
+    #Regression
+    FE_ols = smf.ols(formula='mar ~ uni+C(rnumber)+C(age)', data = data_rel_panda.dropna()).fit()
+    beta_unid_s=FE_ols.params['uni']
+    mdl.moments['beta unid']=beta_unid_s 
      
     ##################################
     # Construct the Hazard functions
@@ -179,8 +241,8 @@ def moment(mdlu,mdlb,agents,draw=True,uni=True,bil=False):
     mdl.moments['hazard sep'] = hazs
     mdl.moments['hazard div'] = hazd
     mdl.moments['hazard mar'] = hazm
-     
-     
+    
+
  
      
     #Singles: Marriage vs. cohabitation transition
@@ -365,18 +427,20 @@ def moment(mdlu,mdlb,agents,draw=True,uni=True,bil=False):
          
             #Unpack Moments (see data_moments.py to check if changes)
             #(hazm,hazs,hazd,mar,coh,fls_ratio,W)
-            hazm_d=packed_data[0]
-            hazs_d=packed_data[1]
-            hazd_d=packed_data[2]
-            mar_d=packed_data[3]
-            coh_d=packed_data[4]
-            fls_d=np.ones(1)*packed_data[5]
-            hazm_i=packed_data[7]
-            hazs_i=packed_data[8]
-            hazd_i=packed_data[9]
-            mar_i=packed_data[10]
-            coh_i=packed_data[11]
-            fls_i=np.ones(1)*packed_data[12]
+            hazm_d=packed_data['hazm']
+            hazs_d=packed_data['hazs']
+            hazd_d=packed_data['hazd']
+            mar_d=packed_data['emar']
+            coh_d=packed_data['ecoh']
+            fls_d=np.ones(1)*packed_data['fls_ratio']
+            beta_unid_d=np.ones(1)*packed_data['beta_unid']
+            hazm_i=packed_data['hazmi']
+            hazs_i=packed_data['hazsi']
+            hazd_i=packed_data['hazdi']
+            mar_i=packed_data['emari']
+            coh_i=packed_data['ecohi']
+            fls_i=np.ones(1)*packed_data['fls_ratioi']
+            beta_unid_i=np.ones(1)*packed_data['beta_unidi']
  
          
          
@@ -509,6 +573,22 @@ def moment(mdlu,mdlb,agents,draw=True,uni=True,bil=False):
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')
         plt.xlabel('Time')
         plt.ylabel('FLS')
+        
+        ##########################################
+        # Histogram of Effect of Unilateral Divorce
+        ########################################## 
+        fig = plt.figure()
+        f6=fig.add_subplot(2,1,1)
+         
+        # create plot
+        x=["Data","Simulation"]
+        y=np.array([beta_unid_d,beta_unid_s])
+        yerr=np.array([(beta_unid_i[1]-beta_unid_i[0])/2.0,0.0])
+        plt.errorbar(x, y, yerr=yerr, fmt='o', elinewidth=0.03)
+        plt.ylabel('OLS Coefficient - UniD')
+        print(9999999999999999999999,beta_unid_i[0],beta_unid_i[1])
+        #plt.xticks(index , ('Unilateral', 'Bilateral'))
+        
  
         ##########################################
         # Put graphs together

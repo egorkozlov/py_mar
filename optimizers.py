@@ -112,18 +112,23 @@ def v_optimize_couple(money_in,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ug
         if not use_gpu:
             
             # preallocation helps a bit here
+            #V, c, s = np.empty((3,na,nexo,ntheta),dtype=dtype)
+            #i_opt = -np.ones((na,nexo,ntheta),dtype=np.int16)                 
+            #v_couple_local(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift,V,i_opt,c,s)
+            
+            
+            #V2, c2, s2 = np.empty((3,na,nexo,ntheta),dtype=dtype)
+            #i_opt2 = -np.ones((na,nexo,ntheta),dtype=np.int16)                 
+            #v_couple_local_intu(money_left,sgrid,mgrid,u_on_mgrid_ce,EV_here,sigma,beta,uval+ushift,V2,i_opt2,c2,s2)
+            
+            #print('max diff V is {}'.format(np.max(np.abs(V-V2))))
+            #print('max diff s is {}'.format(np.max(np.abs(s-s2))))
+            
+            
             V, c, s = np.empty((3,na,nexo,ntheta),dtype=dtype)
             i_opt = -np.ones((na,nexo,ntheta),dtype=np.int16)                 
-            v_couple_local(money_left,sgrid,umult,EV_here,sigma,beta,uval+ushift,V,i_opt,c,s)
-            
-            
-            V2, c2, s2 = np.empty((3,na,nexo,ntheta),dtype=dtype)
-            i_opt2 = -np.ones((na,nexo,ntheta),dtype=np.int16)                 
-            v_couple_local_intu(money_left,sgrid,mgrid,u_on_mgrid_ce,EV_here,sigma,beta,uval+ushift,V2,i_opt2,c2,s2)
-            
-            print('max diff V is {}'.format(np.max(np.abs(V-V2))))
-            print('max diff s is {}'.format(np.max(np.abs(s-s2))))
-            
+            v_couple_local_intu(money_left,sgrid,mgrid,u_on_mgrid_ce,EV_here,sigma,beta,uval+ushift,V,i_opt,c,s)
+
             
         else:
             
@@ -160,165 +165,6 @@ def v_optimize_couple(money_in,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ug
         md = np.max(np.abs(Vcomp-V))
         
         if md > 0.0: print('Maximum difference in V is {}'.format(md))
-    
-    
-    return ret(V), ret(c), ret(s), ret(i_opt), ret(i_ls), ret(V_all).astype(dtype)
-
-
-def v_optimize_couple_array_int(money,sgrid,umult,EV,sigma,beta,ls,us,ushift,use_gpu=ugpu,dtype=np.float32,
-                                *,mugrid):
-    # This is an optimizer that uses Numpy/Cupy arrays
-    # it is robust though not completely efficient
-    
-
-    nls = len(ls)
-    
-    mr = cp if use_gpu else np # choose matrix routine
-        
-    if use_gpu:
-        if dtype==np.float32:
-            dtype_here = mr.float32 
-        elif dtype==np.float64:
-            dtype_here = mr.float64
-        else:
-            raise(Exception('unsupported type...'))
-    else:
-        dtype_here = dtype
-    
-    
-    assert isinstance(money,tuple)
-    assert len(money)==3
-    
-    
-    if use_gpu:
-        money = tuple((cp.asarray(x) for x in money))
-        umult = cp.asarray(umult)
-    
-    asset_income, wf, wm = money
-    
-    nexo = wf.size
-    na = asset_income.size
-    
-    
-    
-    mgrid, u_on_mgrid_ce = mugrid
-    mmin = mgrid[0]
-    
-    wf = wf.reshape((1,wf.size))
-    wm = wm.reshape((1,wm.size))
-    asset_income = asset_income.reshape((asset_income.size,1))
-    money = wf + wm + asset_income
-        
-    
-        
-    if isinstance(EV,tuple):
-        assert len(EV) == 3
-        (ind,p,EVin) = (cp.asarray(x) if use_gpu else x for x in EV)
-        EV_by_l = get_EVM(ind,p,EVin,use_gpu,dtype=dtype)
-    
-    
-    if use_gpu: # it is ok to use cp.asarray twice, it does not copy
-        money,sgrid,EV_by_l = (cp.asarray(x) for x in (money,sgrid,EV_by_l))
-    
-    
-    ntheta = EV_by_l.shape[-2]
-    
-    assert money.ndim < EV_by_l.ndim
-    assert (EV_by_l.ndim - money.ndim == 2), 'Shape mismatch?'
-    shp = money.shape + (ntheta,) # shape of the result
-    
-    V, c, s = mr.empty(shp,dtype_here), mr.empty(shp,dtype_here), mr.empty(shp,dtype_here)    
-    
-    oms = 1-sigma
-    
-    def u(c): return (c**(oms))/(oms)   
-    
-    ns = sgrid.size
-    
-    # this will use a weird fact that -2*(1,) = () (empty tuple)
-    
-    s_size = (1,ns,1)
-    
-    s_expanded = sgrid.reshape(s_size)
-    
-    
-    tal = cp_take_along_axis if use_gpu else np.take_along_axis
-    
-    
-    i_opt_arr = mr.empty((na,nexo,ntheta,nls),dtype=mr.int16)
-    c_opt_arr = mr.empty((na,nexo,ntheta,nls),dtype=dtype_here)
-    s_opt_arr = mr.empty((na,nexo,ntheta,nls),dtype=dtype_here)
-    V_opt_arr = mr.empty((na,nexo,ntheta,nls),dtype=dtype_here)
-    
-    for i, (lval, uval) in enumerate(zip(ls,us)):
-        
-        EV_here = EV_by_l[...,i]
-        
-        money_left = money - (1-lval)*wf.reshape((1,nexo))
-        
-        
-        r_mat = mr.expand_dims(money_left,1)  - s_expanded
-        
-        i_r = mr.zeros(r_mat.shape,dtype=mr.int16)
-        wn_r = mr.zeros(r_mat.shape,dtype=dtype_here)
-        ipos = (r_mat>=mmin)
-        
-        i_rp = np.minimum( mr.searchsorted(mgrid,r_mat[ipos])-1, mgrid.size-2 )
-        i_r[ipos] = i_rp
-        wn_r[ipos] = ((r_mat[ipos] - mgrid[i_rp])/(mgrid[i_rp+1] - mgrid[i_rp]))
-        
-        u_mat_theta = mr.full(r_mat.shape + (ntheta,),-mr.inf)
-        for itheta in range(ntheta):
-            u_vals_ce = u_on_mgrid_ce[:,itheta]
-            uce = u_vals_ce[i_r]*(1-wn_r) + u_vals_ce[i_r+1]*wn_r
-            uuce = np.full(uce.shape,-np.inf,dtype=dtype_here)
-            uuce[ipos] = u(uce[ipos])
-            
-            u_mat_theta[...,itheta] = uuce
-            
-        
-        u_mat_total = u_mat_theta + uval + ushift
-        
-        
-        # u_mat_total shape is (na,ns,nexo,ntheta)
-        # EV shape is (ns,nexo,ntheta)
-        V_arr = u_mat_total + beta*mr.expand_dims(EV_here,0) # adds dimension for current a
-        # V_arr shape is (na,ns,nexo,ntheta)
-        i_opt = V_arr.argmax(axis=1) # (na,nexo,ntheta)
-        
-        i_opt_ed = mr.expand_dims(i_opt,1)
-        
-        
-        s = sgrid[i_opt]
-        c = np.expand_dims(money_left,2) - s #tal(mr.expand_dims(c_mat,3),i_opt_ed,1).squeeze(axis=1) #money.reshape( (money.shape+(1,)) ) - s
-        assert np.all(c>0)
-        V = tal(u_mat_total,i_opt_ed,1).squeeze(axis=1) + beta*tal(EV_here,i_opt,0) # squeeze
-    
-    
-        i_opt_arr[...,i] = i_opt
-        c_opt_arr[...,i] = c
-        s_opt_arr[...,i] = s
-        V_opt_arr[...,i] = V
-        
-        
-        
-        
-    i_ls = mr.expand_dims(V_opt_arr.argmax(axis=3),3)
-    
-    V = tal(V_opt_arr,i_ls,axis=3).squeeze(axis=3)
-    c = tal(c_opt_arr,i_ls,axis=3).squeeze(axis=3)
-    s = tal(s_opt_arr,i_ls,axis=3).squeeze(axis=3)
-    i_opt = tal(i_opt_arr,i_ls,axis=3).squeeze(axis=3)
-        
-    i_ls = i_ls.squeeze(axis=3)
-        
-    
-    if use_gpu:
-        ret = lambda x : cp.asnumpy(x)
-    else:
-        ret = lambda x : x
-        
-    V_all = V_opt_arr
     
     
     return ret(V), ret(c), ret(s), ret(i_opt), ret(i_ls), ret(V_all).astype(dtype)
@@ -625,69 +471,6 @@ def v_couple_local(money,sgrid,u_mult,EV,sigma,beta,uadd,V_opt,i_opt,c_opt,s_opt
                 s_opt[ind_a,ind_exo,ind_theta] = sgrid[io]
                 
                 
-                
-@jit(nopython=True)#,parallel=True)               
-def v_couple_local_intu_0(money,sgrid,mgrid,u_on_mgrid_ce,EV,sigma,beta,uadd,V_opt,i_opt,c_opt,s_opt):
-    # this is a looped version of the optimizer
-    # the last two things are outputs
-    
-    na, nexo, ntheta = money.shape[0], money.shape[1], EV.shape[2]
-    
-    ns = sgrid.size
-    
-    assert money.shape == (na,nexo)
-    assert V_opt.shape == (na,nexo,ntheta) == i_opt.shape
-    assert EV.shape == (ns,nexo,ntheta)
-    
-    
-    def ufun(x):
-        return (x**(1-sigma))/(1-sigma)
-    
-    for ind_a in prange(na):
-        for ind_exo in prange(nexo):
-            # finds index of maximum savings
-            money_i = money[ind_a,ind_exo]
-            if money_i > sgrid[ns-1]: # if can save the max amount
-                ind_s = ns-1 
-            else:
-                # if not look for the highest feasible savings
-                for ind_s in range(ns-1):
-                    if money_i <= sgrid[ind_s+1]: break
-                assert money_i > sgrid[ind_s]
-                
-            
-            
-            # finds utility values of all feasible savings
-            # should I make a loop instead?
-            #u_of_s = ufun( money_i - sgrid[0:ind_s+1] )
-            
-            
-            money_left = money_i - sgrid[0:ind_s+1]
-            
-            j = np.minimum( np.searchsorted(mgrid,money_left,side='left')-1, mgrid.size-2 )
-            wnext = np.expand_dims(((money_left - mgrid[j])/(mgrid[j+1] - mgrid[j])),1)
-            
-            ceq = u_on_mgrid_ce[j,:]*(1-wnext) + u_on_mgrid_ce[j+1,:]*(1-wnext)
-            
-            u_of_s = ufun(ceq)
-            
-            # each value of theta corresponds to different EV
-            # so do the maximum search for each theta using these utilities
-            
-            for ind_theta in prange(ntheta):
-                EV_of_s = EV[0:(ind_s+1),ind_exo,ind_theta]                
-                V_of_s = u_of_s[:,ind_theta] + beta*EV_of_s
-                
-                
-                io = V_of_s.argmax()
-                i_opt[ind_a,ind_exo,ind_theta] = io
-                V_opt[ind_a,ind_exo,ind_theta] = V_of_s[io] 
-                c_opt[ind_a,ind_exo,ind_theta] = money_i - sgrid[io]
-                s_opt[ind_a,ind_exo,ind_theta] = sgrid[io]
-                
-                
-                
-                
 @jit(nopython=True,parallel=True)
 def v_couple_local_intu(money,sgrid,mgrid,u_on_mgrid_ce,EV,sigma,beta,uadd,V_opt,i_opt,c_opt,s_opt):
     # this is a looped version of the optimizer
@@ -717,50 +500,43 @@ def v_couple_local_intu(money,sgrid,mgrid,u_on_mgrid_ce,EV,sigma,beta,uadd,V_opt
             money_i = money[ind_a,ind_exo]
             money_minus_coh = money_i - coh_min
             
+            ind_s = np.minimum( np.searchsorted(sgrid,money_minus_coh)-1,ns-1)
             
-            if money_minus_coh > sgrid[ns-1]: # if can save the max amount
-                ind_s = ns-1 
-            else:
-                # if not look for the highest feasible savings
-                for ind_s in range(ns-1):
-                    if money_minus_coh <= sgrid[ind_s+1]: break
-                assert money_minus_coh > sgrid[ind_s]
+            i_m = np.minimum( np.searchsorted(mgrid,money_i)-1,nm-1)
+            
+            i_m_all = np.zeros((ind_s+1,),np.int16)
+            
+            
+            for i_cand in range(1,ind_s+1):
+                m_after_s = money_i - sgrid[i_cand]
+                while mgrid[i_m] > m_after_s:
+                    i_m -= 1                    
+                assert i_m >= 0
+                i_m_all[i_cand] = i_m
                 
-            
-            
-            if money_i > mgrid[-1]:
-                i_m = nm - 2                 
-            else:                
-                for i_m in range(nm-2,-1,-1):
-                        if money_i >= mgrid[i_m]: break # finds position on mgrid
-            
-            i_m_start = i_m
             
             for ind_theta in range(ntheta):
                 
                 ugrid_ce = u_on_mgrid_ce[:,ind_theta]
-                EVval = EV[:,ind_exo,ind_theta]
+                bEVval = beta*EV[:,ind_exo,ind_theta]
                 
                 io = 0
                 Vo = -1e6
                 
-                i_m = i_m_start
                 
                 for i_cand in range(ind_s+1):
-                    m_after_s = money_i - sgrid[i_cand]
-                    while mgrid[i_m] > m_after_s:
-                        i_m -= 1
-                        
-                    assert i_m >= 0
+                    
+                    i_m = i_m_all[i_cand]
                     u_cand = ugrid_ce[i_m]
-                    V_cand = u_cand + uadd + beta*EVval[i_cand]
+                    
+                    V_cand = u_cand + bEVval[i_cand]
                     
                     if i_cand == 0 or V_cand > Vo:
                         io, Vo = i_cand, V_cand                     
                     
                 
                 i_opt[ind_a,ind_exo,ind_theta] = io
-                V_opt[ind_a,ind_exo,ind_theta] = Vo # NB: this V is imprecise
+                V_opt[ind_a,ind_exo,ind_theta] = Vo + uadd# NB: this V is imprecise
                 # you can recover V from optimal savings & consumption later
                 c_opt[ind_a,ind_exo,ind_theta] = money_i - sgrid[io]
                 s_opt[ind_a,ind_exo,ind_theta] = sgrid[io]        

@@ -284,9 +284,16 @@ class ModelSetup(object):
         # building m grid
         #ezfmin = min([np.min(np.exp(g+t)) for g,t in zip(exogrid['zf_t'],p['f_wage_trend'])])
         ezmmin = min([np.min(np.exp(g+t)) for g,t in zip(exogrid['zm_t'],p['m_wage_trend'])])
+        ezfmax = max([np.max(np.exp(g+t)) for g,t in zip(exogrid['zf_t'],p['f_wage_trend'])])
+        ezmmax = max([np.max(np.exp(g+t)) for g,t in zip(exogrid['zm_t'],p['m_wage_trend'])])
+        
+        
         
         self.money_min = 0.95*ezmmin # cause FLS can be up to 0
-        self.mgrid = ezmmin + self.sgrid_c # this can be changed later
+        #self.mgrid = ezmmin + self.sgrid_c # this can be changed later
+        mmin = ezmmin
+        mmax = ezfmax + ezmmax + np.max(self.pars['R_t'])*self.amax
+        self.mgrid = np.linspace(mmin,mmax,600)
         self.u_precompute()
         
         

@@ -58,7 +58,7 @@ def get_EVM(ind,wthis,EVin,use_gpu=False,dtype=np.float32):
 
 
 
-def v_optimize_couple(money_in,sgrid,EV,mgrid,util,ls,us,beta,ushift,use_gpu=ugpu,dtype=np.float32):
+def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,us,beta,ushift,use_gpu=ugpu,dtype=np.float32):
     # This optimizer avoids creating big arrays and uses parallel-CPU on 
     # machines without NUMBA-CUDA codes otherwise
     
@@ -92,29 +92,35 @@ def v_optimize_couple(money_in,sgrid,EV,mgrid,util,ls,us,beta,ushift,use_gpu=ugp
     
     i_opt_arr = np.empty((na,nexo,ntheta,nls),dtype=np.int16)
     c_opt_arr = np.empty((na,nexo,ntheta,nls),dtype=dtype)
+    x_opt_arr = np.empty((na,nexo,ntheta,nls),dtype=dtype)
     s_opt_arr = np.empty((na,nexo,ntheta,nls),dtype=dtype)
     V_opt_arr = np.empty((na,nexo,ntheta,nls),dtype=dtype)
     
     for i, (lval, uval) in enumerate(zip(ls,us)):
         
         EV_here = EV_by_l[...,i]
+        util = utilint[...,i]
+        xvals = xint[...,i]
         
         money_left = money - (1-lval)*wf.reshape((1,nexo))
         
         if not use_gpu:
             
             # preallocation helps a bit here          
-            V, c, s = np.empty((3,na,nexo,ntheta),dtype=dtype)
+            V, c, x, s = np.empty((4,na,nexo,ntheta),dtype=dtype)
             i_opt = -np.ones((na,nexo,ntheta),dtype=np.int16)                 
-            v_couple_local_intu(money_left,sgrid,EV_here,mgrid,util,beta,uval+ushift,V,i_opt,c,s)
+            v_couple_local_intu(money_left,sgrid,EV_here,mgrid,util,xvals,beta,uval+ushift,V,i_opt,c,x,s)
             
         else:
             
-            V, i_opt, c, s = v_couple_gpu(money_left,sgrid,EV_here,mgrid,util,beta,uval+ushift)
+            V, i_opt, c, x, s = v_couple_gpu(money_left,sgrid,EV_here,mgrid,util,xvals,beta,uval+ushift)
 
+
+        
                 
         i_opt_arr[...,i] = i_opt
         c_opt_arr[...,i] = c
+        x_opt_arr[...,i] = x
         s_opt_arr[...,i] = s
         V_opt_arr[...,i] = V # discard this V later as it is not very precise
         
@@ -130,13 +136,13 @@ def v_optimize_couple(money_in,sgrid,EV,mgrid,util,ls,us,beta,ushift,use_gpu=ugp
     i_ls = i_ls.squeeze(axis=3)
         
     
-    ret = lambda x : x
+    ret = lambda q : q
         
     V_all = V_opt_arr
     
     
     
-    return ret(V), ret(c), ret(s), ret(i_opt), ret(i_ls), ret(V_all).astype(dtype)
+    return ret(V), ret(c), ret(x), ret(s), ret(i_opt), ret(i_ls), ret(V_all).astype(dtype)
 
 
 
@@ -245,8 +251,8 @@ def v_optimize_single(money,sgrid,EV,sigma,beta,ushift,use_gpu=False,return_ind=
 
 
 from numba import prange                
-@jit(nopython=True,parallel=True)
-def v_couple_local_intu(money,sgrid,EV,mgrid,u_on_mgrid_ce,beta,uadd,V_opt,i_opt,c_opt,s_opt):
+@jit(nopython=True)#,parallel=True)
+def v_couple_local_intu(money,sgrid,EV,mgrid,u_on_mgrid,x_on_mgrid,beta,uadd,V_opt,i_opt,c_opt,x_opt,s_opt):
     # this is a looped version of the optimizer
     # the last two things are outputs
     
@@ -288,7 +294,7 @@ def v_couple_local_intu(money,sgrid,EV,mgrid,u_on_mgrid_ce,beta,uadd,V_opt,i_opt
             
             for ind_theta in range(ntheta):
                 
-                ugrid_ce = u_on_mgrid_ce[:,ind_theta]
+                ugrid_ce = u_on_mgrid[:,ind_theta]
                 bEVval = beta*EV[:,ind_exo,ind_theta]
                 
                 io = 0
@@ -309,7 +315,9 @@ def v_couple_local_intu(money,sgrid,EV,mgrid,u_on_mgrid_ce,beta,uadd,V_opt,i_opt
                 i_opt[ind_a,ind_exo,ind_theta] = io
                 V_opt[ind_a,ind_exo,ind_theta] = Vo + uadd# NB: this V is imprecise
                 # you can recover V from optimal savings & consumption later
-                c_opt[ind_a,ind_exo,ind_theta] = money_i - sgrid[io]
+                x = x_on_mgrid[i_m_all[io],ind_theta]
+                x_opt[ind_a,ind_exo,ind_theta] = x
+                c_opt[ind_a,ind_exo,ind_theta] = money_i - x - sgrid[io]
                 s_opt[ind_a,ind_exo,ind_theta] = sgrid[io]        
                 assert Vo > -1e6
             
@@ -318,7 +326,7 @@ def v_couple_local_intu(money,sgrid,EV,mgrid,u_on_mgrid_ce,beta,uadd,V_opt,i_opt
 from math import ceil
 from numba import cuda
 
-def v_couple_gpu(money,sgrid,EV,mgrid,util,beta,uadd,use_kernel_pool=False):
+def v_couple_gpu(money,sgrid,EV,mgrid,util,xvals,beta,uadd,use_kernel_pool=False):
     
     
     na, nexo, ntheta = money.shape[0], money.shape[1], EV.shape[2]
@@ -331,15 +339,16 @@ def v_couple_gpu(money,sgrid,EV,mgrid,util,beta,uadd,use_kernel_pool=False):
     assert money.shape == (na,nexo)
     assert EV.shape == (ns,nexo,ntheta)
     
-    V_opt_g = cuda.device_array((na,nexo,ntheta),dtype=EV.dtype)    
+    V_opt_g = cuda.device_array((na,nexo,ntheta),dtype=EV.dtype)  
+    x_opt_g = cuda.device_array((na,nexo,ntheta),dtype=EV.dtype)  
     i_opt_g = cuda.device_array((na,nexo,ntheta),dtype=np.int16)
     
     bEV = beta*EV
     
     
-    money_g, sgrid_g, bEV_g, mgrid_g, util_g = (cuda.to_device(np.ascontiguousarray(x)) for x in (money, sgrid, bEV, mgrid, util))
+    money_g, sgrid_g, bEV_g, mgrid_g, util_g, xvals_g = (cuda.to_device(np.ascontiguousarray(x)) for x in (money, sgrid, bEV, mgrid, util, xvals))
     
-
+    
     threadsperblock = (8, 16, 8)
     # this is a tunning parameter. 8*16*8=1024 is the number of threads per 
     # block. This is GPU specific, on Quests's GPU the maximum is 1024, on 
@@ -350,21 +359,21 @@ def v_couple_gpu(money,sgrid,EV,mgrid,util,beta,uadd,use_kernel_pool=False):
     b_theta = int(ceil(ntheta / threadsperblock[2]))
     blockspergrid = (b_a, b_exo, b_theta)
     
-    cuda_ker[blockspergrid, threadsperblock](money_g, sgrid_g, bEV_g, mgrid_g, util_g, uadd,
-                                                V_opt_g,i_opt_g)
+    cuda_ker[blockspergrid, threadsperblock](money_g, sgrid_g, bEV_g, mgrid_g, util_g, xvals_g, uadd,
+                                                V_opt_g,i_opt_g,x_opt_g)
     
-    V_opt,i_opt = (x.copy_to_host() for x in (V_opt_g,i_opt_g))
+    V_opt, i_opt, x_opt = (x.copy_to_host() for x in (V_opt_g,i_opt_g,x_opt_g))
     
     s_opt = sgrid[i_opt]
-    c_opt = money[:,:,None] - s_opt
+    c_opt = money[:,:,None] - x_opt - s_opt
     
-    return V_opt,i_opt,c_opt,s_opt
+    return V_opt,i_opt,c_opt,x_opt,s_opt
 
 
 #from numba import f4
 
 @cuda.jit
-def cuda_ker(money_g, sgrid_g, bEV_g, mgrid_g, util_g, uadd, V_opt_g,i_opt_g):
+def cuda_ker(money_g, sgrid_g, bEV_g, mgrid_g, util_g, xvals_g, uadd, V_opt_g, i_opt_g, x_opt_g):
     ind_a, ind_exo, ind_theta = cuda.grid(3)
         
     na = money_g.shape[0]
@@ -378,6 +387,7 @@ def cuda_ker(money_g, sgrid_g, bEV_g, mgrid_g, util_g, uadd, V_opt_g,i_opt_g):
         money_i = money_g[ind_a,ind_exo]
         bEV_of_s = bEV_g[:,ind_exo,ind_theta]  
         util_here = util_g[:,ind_theta]
+        xvals_here = xvals_g[:,ind_theta]
         
         mmin = mgrid_g[0]
         
@@ -387,6 +397,7 @@ def cuda_ker(money_g, sgrid_g, bEV_g, mgrid_g, util_g, uadd, V_opt_g,i_opt_g):
         
         iobest = 0
         vbest = util_here[im] + bEV_of_s[0]
+        xbest = xvals_here[im]
         
         for io in range(1,ns):
             money_left = money_i - sgrid_g[io]
@@ -397,12 +408,14 @@ def cuda_ker(money_g, sgrid_g, bEV_g, mgrid_g, util_g, uadd, V_opt_g,i_opt_g):
             
             assert im >= 0            
             
-            vnow = util_here[im] + bEV_of_s[io]                
+            vnow = util_here[im] + bEV_of_s[io] 
             if vnow > vbest:
                 iobest = io
                 vbest = vnow
+                xbest = xvals_here[im] 
             
         i_opt_g[ind_a,ind_exo,ind_theta] = iobest
+        x_opt_g[ind_a,ind_exo,ind_theta] = xbest
         V_opt_g[ind_a,ind_exo,ind_theta] = vbest + uadd
         
     

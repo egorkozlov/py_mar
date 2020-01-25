@@ -300,7 +300,6 @@ class ModelSetup(object):
         mmax = ezfmax + ezmmax + np.max(self.pars['R_t'])*self.amax
         self.mgrid = np.linspace(mmin,mmax,600)
         self.u_precompute()
-        self.u_precompute_2()
         
         
     def mar_mats_assets(self,npoints=4,abar=0.1):
@@ -527,67 +526,73 @@ class ModelSetup(object):
     def u(self,c):
         return u_aux(c,self.pars['crra_power'])#(c**(1-self.pars['crra_power']))/(1-self.pars['crra_power'])
     
-    def u_part(self,c,theta): # this returns utility of each partner out of some c
-        kf, km = self.c_mult(theta)        
-        return self.u(kf*c), self.u(km*c)
     
-    def u_couple(self,c,theta): # this returns utility of each partner out of some c
-        umult = self.u_mult(theta)        
-        return umult*self.u(c)
+    def u_pub(self,x,l):
+        alp = self.pars['util_alp']
+        xi = self.pars['util_xi']
+        lam = self.pars['util_lam']
+        kap = self.pars['util_kap']        
+        return alp*(x**lam + kap*(1-l)**lam)**((1-xi)/lam)/(1-xi)
+    
+    
+    def u_part(self,c,x,il,theta,ushift,psi): # this returns utility of each partner out of some c
+        kf, km = self.c_mult(theta)   
+        l = self.ls_levels[il]
+        upub = self.u_pub(x,l) + ushift + psi
+        return self.u(kf*c) + upub, self.u(km*c) + upub
+    
+    def u_couple(self,c,x,il,theta,ushift,psi): # this returns utility of each partner out of some c
+        umult = self.u_mult(theta) 
+        l = self.ls_levels[il]
+        return umult*self.u(c) + self.u_pub(x,l) + ushift + psi
     
     
     
-    def vm_last(self,s,zm,zf,psi,theta,ushift):
-        # this is the value function for couple that has savings s,
-        # Z = (zm,zf,psi) and bargaining power theta after all decisions are made
+    def vm_last_grid(self,ushift):
+        # this returns value of vm on the grid corresponding to vm
+        s = self.agrid_c[:,None]
+        zm = self.exogrid.all_t[-1][:,1][None,:]
+        zf = self.exogrid.all_t[-1][:,0][None,:]
+        psi = 0*self.exogrid.all_t[-1][:,2][None,:,None]
+        theta = self.thetagrid[None,None,:]
         
         
-        #Get utility for different FLS
-        #TODO check indeces here
-        u_couple_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)),dtype=self.dtype)
-        income_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)),dtype=self.dtype)
-        util_g=np.zeros((self.na,self.pars['nexo_t'][-1],len(self.thetagrid),len(self.ls_levels)),dtype=self.dtype)
+        na, nexo, ntheta, nl = self.na, self.pars['nexo_t'][-1], self.ntheta, self.nls
+        
+        shp = (na,nexo,ntheta,nl)
+        
+        u_couple_g, u_f_g, u_m_g, income_g, c_g, x_g =np.zeros((6,) + shp,dtype=self.dtype)
         
         
         ftrend = self.pars['f_wage_trend'][-1]
         mtrend = self.pars['m_wage_trend'][-1]
         
-        for l in range(len(self.ls_levels)):
+        for il in range(len(self.ls_levels)):
            
-            income_g[...,l] = self.pars['R_t'][-1]*s + np.exp(zm+mtrend) +  np.exp(zf+ftrend)*self.ls_levels[l]
-            kf, km = self.c_mult(theta)        
-            u_couple_g[...,l] = self.u_mult(theta)*self.u(income_g[...,l])+self.ls_utilities[l] + ushift
-            util_g[...,l]=self.ls_utilities[l] 
+            inc = self.pars['R_t'][-1]*s + np.exp(zm+mtrend) +  np.exp(zf+ftrend)*self.ls_levels[il]
+            income_g[...,il]  = inc[...,None]
             
+            for itheta in range(ntheta):
+                
+                vals = self.ucouple_precomputed_x[:,itheta,il]
+                x_g[...,itheta,il] = np.interp(inc,self.mgrid,vals)
+                c_g[...,itheta,il] = inc - x_g[...,itheta,il]
+            
+            u_couple_g[...,il] = self.u_couple(c_g[...,il],x_g[...,il],il,theta,ushift,psi)
+            u_f_g[...,il], u_m_g[...,il] = self.u_part(c_g[...,il],x_g[...,il],il,theta,ushift,psi)
+             
         #Get optimal FLS
         ls=np.argmax(u_couple_g,axis=3)
-        lsi=np.expand_dims(ls,3)
-        u_couple=np.take_along_axis(u_couple_g,lsi,axis=3).squeeze(axis=3)#[:,:,:,0]
-        income=np.take_along_axis(income_g,lsi,axis=3).squeeze(axis=3)#[:,:,:,0]
-        util=np.take_along_axis(util_g,lsi,axis=3).squeeze(axis=3)#[:,:,:,0]
+        lsi=ls[...,None]
+        u_c, u_f, u_m, x, c = (np.take_along_axis(x,lsi,axis=3).squeeze(axis=3)
+                                for x in (u_couple_g,u_f_g,u_m_g,x_g,c_g))
         
-       
         
-        cf, cm = kf*income, km*income
-        u_m = self.u(cm)   
-        u_f = self.u(cf)
-        V = u_couple + psi
-        VM = u_m + psi+util
-        VF = u_f + psi+util
+        V  = u_c 
+        VM = u_m 
+        VF = u_f 
         
-        return V.astype(self.dtype), VF.astype(self.dtype), VM.astype(self.dtype), income.astype(self.dtype), np.zeros_like(income.astype(self.dtype)), ls.astype(np.int16), u_couple_g.astype(self.dtype)
-        
-
-    def vm_last_grid(self,ushift):
-        # this returns value of vm on the grid corresponding to vm
-        s_in = self.agrid_c[:,None,None]
-        zm_in = self.exogrid.all_t[-1][:,1][None,:,None]
-        zf_in = self.exogrid.all_t[-1][:,0][None,:,None]
-        psi_in = self.exogrid.all_t[-1][:,2][None,:,None]
-        theta_in = self.thetagrid[None,None,:]
-                
-        return self.vm_last(s_in,zm_in,zf_in,psi_in,theta_in,ushift)
-        
+        return V.astype(self.dtype), VF.astype(self.dtype), VM.astype(self.dtype), c.astype(self.dtype), x.astype(self.dtype), np.zeros_like(c).astype(self.dtype), ls.astype(np.int16), u_couple_g.astype(self.dtype)
     
     
 
@@ -606,18 +611,9 @@ class ModelSetup(object):
         trend = self.pars['f_wage_trend'][-1] if female else self.pars['m_wage_trend'][-1]        
         return self.vs_last(s_in,z_in+trend,ushift,return_cs)
         
+        
     
     def u_precompute(self):
-        print('Precomputing...')
-        mgrid = self.mgrid
-        umlt = self.u_mult(self.thetagrid[None,:])
-        uraw = self.u(np.maximum(mgrid[:,None],1e-3))
-        uout = umlt*uraw
-        #self.ucouple_precomputed_ce = ((1-sigma)*uout)**(1/(1-sigma))
-        self.ucouple_precomputed_ce = uout
-        print('Precomputing done')
-    
-    def u_precompute_2(self):
         from intratemporal import int_sol
         print('Precomputing new')
         sig = self.pars['crra_power']
@@ -640,6 +636,7 @@ class ModelSetup(object):
                 x, c, u = int_sol(self.mgrid,A=A,alp=alp,sig=sig,xi=xi,lam=lam,kap=kap,lbr=ls)
                 uout[:,itheta,il] = u
                 xout[:,itheta,il] = x
+                
                 
         self.ucouple_precomputed_u = uout
         self.ucouple_precomputed_x = xout

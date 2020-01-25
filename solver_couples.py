@@ -72,13 +72,12 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
     # type conversion
     sgrid,sigma,beta = (dtype(x) for x in (sgrid,sigma,beta))
     
-    V_couple, c_opt, s_opt = np.empty((3,)+shp,dtype)
+    V_couple, c_opt, s_opt, x_opt = np.empty((4,)+shp,dtype)
     i_opt, il_opt = np.empty(shp,np.int16), np.empty(shp,np.int16)
     
     V_all_l = np.empty(shp+(nls,),dtype=dtype)
     
     theta_val = dtype(setup.thetagrid)
-    umult_vec = setup.u_mult(theta_val)
     
     # the original problem is max{umult*u(c) + beta*EV}
     # we need to rescale the problem to max{u(c) + beta*EV_resc}
@@ -95,8 +94,11 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
         money_t = (R*agrid, wf[istart:ifinish], wm[istart:ifinish])
         EV_t = (ind,p,EV_by_l[:,istart:ifinish,:,:])
         
-        V_pure_i, c_opt_i, s_opt_i, i_opt_i, il_opt_i, V_all_l_i = \
-           v_optimize_couple(money_t,sgrid,EV_t,setup.mgrid,setup.ucouple_precomputed_ce,ls,us,beta,ushift,dtype=dtype)
+        
+        V_pure_i, c_opt_i, x_opt_i, s_opt_i, i_opt_i, il_opt_i, V_all_l_i = \
+           v_optimize_couple(money_t,sgrid,EV_t,setup.mgrid,
+                             setup.ucouple_precomputed_u,setup.ucouple_precomputed_x,
+                                 ls,us,beta,ushift,dtype=dtype)
            
         V_ret_i = V_pure_i + psi[None,istart:ifinish,None]
         
@@ -108,6 +110,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
         c_opt[:,istart:ifinish,:] = c_opt_i 
         s_opt[:,istart:ifinish,:] = s_opt_i
         i_opt[:,istart:ifinish,:] = i_opt_i
+        x_opt[:,istart:ifinish,:] = x_opt_i
         il_opt[:,istart:ifinish,:] = il_opt_i
         V_all_l[:,istart:ifinish,:,:] = V_all_l_i # we need this for l choice so it is ok
         
@@ -123,15 +126,14 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
     psi_r = psi[None,:,None].astype(dtype)
     
     # finally obtain value functions of partners
-    uf, um = setup.u_part(c_opt,theta_val[None,None,:])
-    uc = setup.u_couple(c_opt,theta_val[None,None,:])
-    u_pub = us[il_opt]
+    uf, um = setup.u_part(c_opt,x_opt,il_opt,theta_val[None,None,:],ushift,psi_r)
+    uc = setup.u_couple(c_opt,x_opt,il_opt,theta_val[None,None,:],ushift,psi_r)
     
     
     EVf_all, EVm_all, EV_all  = (get_EVM(ind,p,x) for x in (EV_fem_by_l, EV_mal_by_l,EV_by_l))
-    V_fem = uf + psi_r + u_pub + ushift+ beta*np.take_along_axis(np.take_along_axis(EVf_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
-    V_mal = um + psi_r + u_pub + ushift+ beta*np.take_along_axis(np.take_along_axis(EVm_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
-    V_all = uc + psi_r + u_pub + ushift+ beta*np.take_along_axis(np.take_along_axis(EV_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
+    V_fem = uf + beta*np.take_along_axis(np.take_along_axis(EVf_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
+    V_mal = um + beta*np.take_along_axis(np.take_along_axis(EVm_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
+    V_all = uc + beta*np.take_along_axis(np.take_along_axis(EV_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
     def r(x): return x.astype(dtype)
     
     try:
@@ -140,7 +142,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
         #print('max difference in V is {}'.format(np.max(np.abs(V_all-V_couple))))
         pass
     
-    return r(V_all), r(V_fem), r(V_mal), r(c_opt), r(s_opt), il_opt, r(V_all_l)
+    return r(V_all), r(V_fem), r(V_mal), r(c_opt), r(x_opt), r(s_opt), il_opt, r(V_all_l)
 
 
 

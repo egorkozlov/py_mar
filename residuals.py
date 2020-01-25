@@ -9,7 +9,7 @@ Created on Sat Dec 14 10:58:43 2019
 
 # this defines model residuals
 import numpy as np
-import pickle
+import pickle, dill
 
 
 xdef = np.array([0.05,0.01,0.02,0.7,0.25,0.0001,0.5])
@@ -17,7 +17,7 @@ xdef = np.array([0.05,0.01,0.02,0.7,0.25,0.0001,0.5])
 
 # return format is any combination of 'distance', 'all_residuals' and 'model'
 # we can add more things too for convenience
-def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report=False,draw=False,graphs=False):
+def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],verbose=False,calibration_report=False,draw=False,graphs=False):
     from model import Model
     from setup import DivorceCosts
     from simulations import Agents
@@ -38,12 +38,22 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
     
     iter_name = 'default' if not verbose else 'default-timed'
     
-    mdl = Model(iterator_name=iter_name,divorce_costs=dc,
-                separation_costs=sc,sigma_psi=sigma_psi,
-                sigma_psi_init=sigma_psi_init,
-                pmeet=pmeet,uls=uls,pls=pls,u_shift_mar=mshift)
     
-    mdl.solve(show_mem=verbose)
+    
+    if load_from is None:
+        mdl = Model(iterator_name=iter_name,divorce_costs=dc,
+                    separation_costs=sc,sigma_psi=sigma_psi,
+                    sigma_psi_init=sigma_psi_init,
+                    pmeet=pmeet,uls=uls,pls=pls,u_shift_mar=mshift)
+        
+        mdl.solve(show_mem=verbose)
+    else:        
+        mdl = dill.load(open(load_from,'rb+'))
+    
+    
+    if save_to is not None:
+        dill.dump(mdl,open(save_to,'wb+'))
+    
     
     agents = Agents(mdl,verbose=verbose)
     agents.simulate()

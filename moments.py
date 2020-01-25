@@ -239,11 +239,15 @@ def moment(mdl,draw=True):
         age_sw=pickle.load(file)
         
     keep=(assets_t[:,0]>-1)
-    age_radius=int(10/agents.setup.pars['py'])
+   
 
-    for i in range(age_radius):
-        keep[int(len(state[:,0])/age_radius*i):int(len(state[:,0])/age_radius*(i+1))]=\
-        (state[int(len(state[:,0])/age_radius*i):int(len(state[:,0])/age_radius*(i+1)),int(28/agents.setup.pars['py']-i)]!=3)
+    summa=0.0
+    summa1=0.0
+    for i in age_sw:
+        summa+=age_sw[i]
+        keep[int(summa1*len(state[:,0])/sum(age_sw.values())):int(summa*len(state[:,0])/sum(age_sw.values()))]=\
+        (state[int(summa1*len(state[:,0])/sum(age_sw.values())):int(summa*len(state[:,0])/sum(age_sw.values())),int((i-20)/agents.setup.pars['py'])]!=3)
+        summa1+=age_sw[i]
     assets_t=assets_t[keep,]
     iexo=iexo[keep,]
     state=state[keep,]

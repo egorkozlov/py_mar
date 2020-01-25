@@ -30,6 +30,7 @@ if system() != 'Darwin' and system() != 'Windows':
 import numpy as np
 from residuals import mdl_resid
 from data_moments import dat_moments
+from setup import ModelSetup
  
 print('Hi!')
  
@@ -42,7 +43,8 @@ if __name__ == '__main__':
     #For graphs later
     graphs=True
     #Build  data moments and pickle them
-    #dat_moments(period=2)
+    par=ModelSetup()
+    dat_moments(period=par.pars['py'])
     
          
     #Initialize the file with parameters

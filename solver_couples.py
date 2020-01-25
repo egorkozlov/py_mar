@@ -39,8 +39,6 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
     EV_by_l, EV_fem_by_l, EV_mal_by_l = EV_tuple    
     
     ls = setup.ls_levels
-    us = setup.ls_utilities
-    #pd = setup.ls_pdown
     nls = len(ls)
     
     
@@ -98,7 +96,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
         V_pure_i, c_opt_i, x_opt_i, s_opt_i, i_opt_i, il_opt_i, V_all_l_i = \
            v_optimize_couple(money_t,sgrid,EV_t,setup.mgrid,
                              setup.ucouple_precomputed_u,setup.ucouple_precomputed_x,
-                                 ls,us,beta,ushift,dtype=dtype)
+                                 ls,beta,ushift,dtype=dtype)
            
         V_ret_i = V_pure_i + psi[None,istart:ifinish,None]
         

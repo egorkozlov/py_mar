@@ -58,7 +58,7 @@ def get_EVM(ind,wthis,EVin,use_gpu=False,dtype=np.float32):
 
 
 
-def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,us,beta,ushift,use_gpu=ugpu,dtype=np.float32):
+def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,beta,ushift,use_gpu=ugpu,dtype=np.float32):
     # This optimizer avoids creating big arrays and uses parallel-CPU on 
     # machines without NUMBA-CUDA codes otherwise
     
@@ -96,7 +96,7 @@ def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,us,beta,ushift,use
     s_opt_arr = np.empty((na,nexo,ntheta,nls),dtype=dtype)
     V_opt_arr = np.empty((na,nexo,ntheta,nls),dtype=dtype)
     
-    for i, (lval, uval) in enumerate(zip(ls,us)):
+    for i, lval in enumerate(ls):
         
         EV_here = EV_by_l[...,i]
         util = utilint[...,i]
@@ -109,11 +109,11 @@ def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,us,beta,ushift,use
             # preallocation helps a bit here          
             V, c, x, s = np.empty((4,na,nexo,ntheta),dtype=dtype)
             i_opt = -np.ones((na,nexo,ntheta),dtype=np.int16)                 
-            v_couple_local_intu(money_left,sgrid,EV_here,mgrid,util,xvals,beta,uval+ushift,V,i_opt,c,x,s)
+            v_couple_local_intu(money_left,sgrid,EV_here,mgrid,util,xvals,beta,ushift,V,i_opt,c,x,s)
             
         else:
             
-            V, i_opt, c, x, s = v_couple_gpu(money_left,sgrid,EV_here,mgrid,util,xvals,beta,uval+ushift)
+            V, i_opt, c, x, s = v_couple_gpu(money_left,sgrid,EV_here,mgrid,util,xvals,beta,ushift)
 
 
         

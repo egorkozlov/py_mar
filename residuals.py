@@ -10,6 +10,8 @@ Created on Sat Dec 14 10:58:43 2019
 # this defines model residuals
 import numpy as np
 import pickle
+
+
 xdef = np.array([0.05,0.01,0.02,0.7,0.25,0.0001,0.5])
 
 
@@ -18,7 +20,8 @@ xdef = np.array([0.05,0.01,0.02,0.7,0.25,0.0001,0.5])
 def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report=False,draw=False,graphs=False):
     from model import Model
     from setup import DivorceCosts
-    
+    from simulations import Agents
+    from moments import moment
  
     ulost = x[0] #min(x[0],1.0)
     mshift=x[5]
@@ -40,9 +43,11 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
                 sigma_psi_init=sigma_psi_init,
                 pmeet=pmeet,uls=uls,pls=pls,u_shift_mar=mshift)
     
-    mdl.solve_sim(simulate=True,show_mem=verbose,
-                  verbose_sim=verbose,draw_moments=draw)
+    mdl.solve(show_mem=verbose)
     
+    agents = Agents(mdl,verbose=verbose)
+    agents.simulate()
+    moments = moment(mdl,agents,draw=draw)
     
     ############################################################
     #Build data moments and compare them with simulated ones
@@ -65,12 +70,12 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
 
     #Get Simulated Data
     Tret = mdl.setup.pars['Tret']
-    hazm_s = mdl.moments['hazard mar'][0:len(hazm_d)]
-    hazs_s = mdl.moments['hazard sep'][0:len(hazs_d)]
-    hazd_s = mdl.moments['hazard div'][0:len(hazd_d)]
-    mar_s = mdl.moments['share mar'][0:len(mar_d)]
-    coh_s = mdl.moments['share coh'][0:len(coh_d)]
-    fls_s = np.ones(1)*np.mean(mdl.moments['flsm'][1:Tret])/np.mean(mdl.moments['flsc'][1:Tret])
+    hazm_s = moments['hazard mar'][0:len(hazm_d)]
+    hazs_s = moments['hazard sep'][0:len(hazs_d)]
+    hazd_s = moments['hazard div'][0:len(hazd_d)]
+    mar_s = moments['share mar'][0:len(mar_d)]
+    coh_s = moments['share coh'][0:len(coh_d)]
+    fls_s = np.ones(1)*np.mean(moments['flsm'][1:Tret])/np.mean(moments['flsc'][1:Tret])
     sim=np.concatenate((hazm_s,hazs_s,hazd_s,mar_s,coh_s,fls_s),axis=0)
 
 
@@ -116,7 +121,7 @@ def mdl_resid(x=xdef,return_format=['distance'],verbose=False,calibration_report
     
     
     out_dict = {'distance':dist,'all residuals':resid_all,
-                'scaled residuals':resid_sc,'model':mdl}
+                'scaled residuals':resid_sc,'model':mdl,'agents':agents}
     out = [out_dict[key] for key in return_format]
     
     #For memory reason:delete stuff

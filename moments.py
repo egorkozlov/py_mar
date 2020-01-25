@@ -14,22 +14,21 @@ import matplotlib.pyplot as plt
 import matplotlib.backends.backend_pdf
 import pickle
  
-def moment(mdl,draw=True):
+def moment(mdl,agents,draw=True):
 #This function compute moments coming from the simulation
 #Optionally it can also plot graphs about them. It is feeded with
 #matrixes coming from simulations
  
-    agents = mdl.agents
-    #Import simulated values
-    assets_t=agents.setup.agrid_c[agents.iassets]
+    
+    assets_t=mdl.setup.agrid_c[agents.iassets]
     iexo=agents.iexo
     state=agents.state
-    theta_t=agents.setup.thetagrid_fine[agents.itheta]
-    setup = agents.setup
+    theta_t=mdl.setup.thetagrid_fine[agents.itheta]
+    setup = mdl.setup
     
 
         
-    mdl.moments = dict()
+    moments = dict()
      
      
     ##########################################
@@ -40,7 +39,7 @@ def moment(mdl,draw=True):
     N=len(state)
      
     #Get states codes
-    state_codes = {name: i for i, name in enumerate(agents.setup.state_names)}
+    state_codes = {name: i for i, name in enumerate(mdl.setup.state_names)}
     
     
     ###########################################
@@ -62,7 +61,7 @@ def moment(mdl,draw=True):
     is_spell[:,0] = True
     ispell = np.zeros((N,),dtype=np.int8)
      
-    for t in range(1,agents.setup.pars['T']):
+    for t in range(1,mdl.setup.pars['T']):
         ichange = (state[:,t-1] != state[:,t])
         sp_length[~ichange,ispell[~ichange]] += 1
          
@@ -116,7 +115,7 @@ def moment(mdl,draw=True):
     #Hazard of Divorce
     hazd=list()
     lgh=len(all_spells['Couple, M'][:,0])
-    for t in range(agents.setup.pars['Tret']):
+    for t in range(mdl.setup.pars['Tret']):
          
         cond=all_spells['Couple, M'][:,1]==t+1
         temp=all_spells['Couple, M'][cond,2]
@@ -135,7 +134,7 @@ def moment(mdl,draw=True):
     #Hazard of Separation
     hazs=list()
     lgh=len(all_spells['Couple, C'][:,0])
-    for t in range(agents.setup.pars['Tret']):
+    for t in range(mdl.setup.pars['Tret']):
          
         cond=all_spells['Couple, C'][:,1]==t+1
         temp=all_spells['Couple, C'][cond,2]
@@ -154,7 +153,7 @@ def moment(mdl,draw=True):
     #Hazard of Marriage (Cohabitation spells)
     hazm=list()
     lgh=len(all_spells['Couple, C'][:,0])
-    for t in range(agents.setup.pars['Tret']):
+    for t in range(mdl.setup.pars['Tret']):
          
         cond=all_spells['Couple, C'][:,1]==t+1
         temp=all_spells['Couple, C'][cond,2]
@@ -171,9 +170,9 @@ def moment(mdl,draw=True):
     hazm=np.array(hazm).T
      
      
-    mdl.moments['hazard sep'] = hazs
-    mdl.moments['hazard div'] = hazd
-    mdl.moments['hazard mar'] = hazm
+    moments['hazard sep'] = hazs
+    moments['hazard div'] = hazd
+    moments['hazard mar'] = hazm
      
      
  
@@ -191,11 +190,11 @@ def moment(mdl,draw=True):
     ###########################################
      
      
-    flsm=np.ones(agents.setup.pars['Tret'])
-    flsc=np.ones(agents.setup.pars['Tret'])
+    flsm=np.ones(mdl.setup.pars['Tret'])
+    flsc=np.ones(mdl.setup.pars['Tret'])
      
      
-    for t in range(agents.setup.pars['Tret']):
+    for t in range(mdl.setup.pars['Tret']):
          
         pick = agents.state[:,t]==2       
         if pick.any(): flsm[t] = np.array(setup.ls_levels)[agents.ils_i[pick,t]].mean()
@@ -204,8 +203,8 @@ def moment(mdl,draw=True):
          
      
          
-    mdl.moments['flsm'] = flsm
-    mdl.moments['flsc'] = flsc
+    moments['flsm'] = flsm
+    moments['flsc'] = flsc
     
     
     ###########################################
@@ -224,20 +223,20 @@ def moment(mdl,draw=True):
     
     
     #First cut the first two periods give new 'length'
-    lenn=agents.setup.pars['T']-agents.setup.pars['Tbef']
-    assets_t=assets_t[:,agents.setup.pars['Tbef']:agents.setup.pars['T']]
-    iexo=iexo[:,agents.setup.pars['Tbef']:agents.setup.pars['T']]
-    state=state[:,agents.setup.pars['Tbef']:agents.setup.pars['T']]
-    theta_t=theta_t[:,agents.setup.pars['Tbef']:agents.setup.pars['T']]
+    lenn=mdl.setup.pars['T']-mdl.setup.pars['Tbef']
+    assets_t=assets_t[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']]
+    iexo=iexo[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']]
+    state=state[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']]
+    theta_t=theta_t[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']]
     
     
     #Now drop observation to mimic the actual data gathering process
     keep=(assets_t[:,0]>-1)
-    age_radius=int(10/agents.setup.pars['py'])
+    age_radius=int(10/mdl.setup.pars['py'])
 
     for i in range(age_radius):
         keep[int(len(state[:,0])/age_radius*i):int(len(state[:,0])/age_radius*(i+1))]=\
-        (state[int(len(state[:,0])/age_radius*i):int(len(state[:,0])/age_radius*(i+1)),int(28/agents.setup.pars['py']-i)]!=3)
+        (state[int(len(state[:,0])/age_radius*i):int(len(state[:,0])/age_radius*(i+1)),int(28/mdl.setup.pars['py']-i)]!=3)
     assets_t=assets_t[keep,]
     iexo=iexo[keep,]
     state=state[keep,]
@@ -260,9 +259,9 @@ def moment(mdl,draw=True):
     for ist,sname in enumerate(state_codes):
         for t in range(lenn):
              
-            s=agents.setup.pars['Tbef']+t 
-            ftrend = agents.setup.pars['f_wage_trend'][s]
-            mtrend = agents.setup.pars['m_wage_trend'][s]
+            s=mdl.setup.pars['Tbef']+t 
+            ftrend = mdl.setup.pars['f_wage_trend'][s]
+            mtrend = mdl.setup.pars['m_wage_trend'][s]
              
             #Arrays for preparation
             is_state = (np.any(state[:,0:t]==ist,1))       
@@ -274,7 +273,7 @@ def moment(mdl,draw=True):
              
             if not (np.any(is_state) or np.any(is_state1)): continue
          
-            zf,zm,psi=agents.setup.all_indices(t,iexo[ind1,t])[1:4]
+            zf,zm,psi=mdl.setup.all_indices(t,iexo[ind1,t])[1:4]
              
             #Relationship over time
             relt[ist,t]=np.sum(is_state)
@@ -286,23 +285,23 @@ def moment(mdl,draw=True):
              
             #Income over time
             if sname=="Female, single":
-                inc_rel[ist,t]=np.mean(np.exp(agents.setup.exogrid.zf_t[s][zf]  + ftrend ))
+                inc_rel[ist,t]=np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zf]  + ftrend ))
                  
             elif sname=="Male, single":
-                 inc_rel[ist,t]=np.mean(np.exp(agents.setup.exogrid.zf_t[s][zm] + mtrend))
+                 inc_rel[ist,t]=np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zm] + mtrend))
                  
             elif sname=="Couple, C" or sname=="Couple, M":
-                 inc_rel[ist,t]=np.mean(np.exp(agents.setup.exogrid.zf_t[s][zf] + ftrend)+np.exp(agents.setup.exogrid.zf_t[s][zm] + mtrend))
+                 inc_rel[ist,t]=np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zf] + ftrend)+np.exp(mdl.setup.exogrid.zf_t[s][zm] + mtrend))
      
             else:
              
                print('Error: No relationship chosen')
               
     #Now, before saving the moments, take interval of 5 years
-    # if (agents.setup.pars['Tret']>=agents.setup.pars['Tret']):        
-    reltt=relt[:,0:agents.setup.pars['Tret']-agents.setup.pars['Tbef']+1]
+    # if (mdl.setup.pars['Tret']>=mdl.setup.pars['Tret']):        
+    reltt=relt[:,0:mdl.setup.pars['Tret']-mdl.setup.pars['Tbef']+1]
     years=np.linspace(20,50,7)
-    years_model=np.linspace(20,50,30/agents.setup.pars['py'])
+    years_model=np.linspace(20,50,30/mdl.setup.pars['py'])
     
     #Find the right entries for creating moments
     pos=list()
@@ -321,9 +320,9 @@ def moment(mdl,draw=True):
     #else:
      #   reltt=relt
         
-    mdl.moments['share single'] = reltt[0,:]/N
-    mdl.moments['share mar'] = reltt[2,:]/N
-    mdl.moments['share coh'] = reltt[3,:]/N
+    moments['share single'] = reltt[0,:]/N
+    moments['share mar'] = reltt[2,:]/N
+    moments['share coh'] = reltt[3,:]/N
                
      
     if draw:
@@ -332,10 +331,10 @@ def moment(mdl,draw=True):
         print('The share of singles choosing marriage is {0:.2f}'.format(sharem))
         cond=(state<2)
         if assets_t[cond].size:
-            print('The max level of assets for singles is {:.2f}, the grid upper bound is {:.2f}'.format(np.amax(assets_t[cond]),max(agents.setup.agrid_s)))
+            print('The max level of assets for singles is {:.2f}, the grid upper bound is {:.2f}'.format(np.amax(assets_t[cond]),max(mdl.setup.agrid_s)))
         cond=(state>1)
         if assets_t[cond].size:
-            print('The max level of assets for couples is {:.2f}, the grid upper bound is {:.2f}'.format(np.amax(assets_t[cond]),max(agents.setup.agrid_c)))
+            print('The max level of assets for couples is {:.2f}, the grid upper bound is {:.2f}'.format(np.amax(assets_t[cond]),max(mdl.setup.agrid_c)))
          
         #Setup a file for the graphs
         pdf = matplotlib.backends.backend_pdf.PdfPages("moments_graphs.pdf")
@@ -488,8 +487,8 @@ def moment(mdl,draw=True):
         fig = plt.figure()
         f5=fig.add_subplot(2,1,1)
  
-        plt.plot(np.array(range(agents.setup.pars['Tret'])), flsm,color='r', label='Marriage')
-        plt.plot(np.array(range(agents.setup.pars['Tret'])), flsc,color='k', label='Cohabitation')         
+        plt.plot(np.array(range(mdl.setup.pars['Tret'])), flsm,color='r', label='Marriage')
+        plt.plot(np.array(range(mdl.setup.pars['Tret'])), flsc,color='k', label='Cohabitation')         
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')
         plt.xlabel('Time')
@@ -504,5 +503,6 @@ def moment(mdl,draw=True):
         
         pdf.close()
         matplotlib.pyplot.close("all")
-         
+    
+    return moments
         

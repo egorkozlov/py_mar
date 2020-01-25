@@ -51,7 +51,7 @@ if __name__ == '__main__':
     #x0 = np.array([0.419146,0.12785496,0.34224688,0.56194163,0.18066626,0.04687082,0.48315671])
     x0 = np.array([1.42219318, 3.52403022, 0.76691598, 0.89285592, 0.18171488,0.08080125, 0.48178463])
     
-    out, mdl, res = mdl_resid(x0,return_format=['distance','model','scaled residuals'],verbose=True,calibration_report=False,draw=True,graphs=graphs)
+    out, mdl, agents, res = mdl_resid(x0,return_format=['distance','model','agents','scaled residuals'],verbose=True,calibration_report=False,draw=True,graphs=graphs)
                          
     print('Done. Residual in point x0 is {}'.format(out))
      

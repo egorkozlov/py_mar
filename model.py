@@ -187,7 +187,7 @@ class Model(object):
             del v
         
     
-    def solve(self,show_mem=False):
+    def solve(self,show_mem=False,save=False):
         T = self.setup.pars['T']
         self.V = list()
         self.decisions = list()
@@ -216,18 +216,9 @@ class Model(object):
             if show_mem:
                 print('The size of V is {} giga'.format(asizeof(self.V)/1000000000))
                 print('The size of decisions is {} giga'.format(asizeof(self.decisions)/1000000000))
-                
-        #del self.V,self.decisions    
-           
-    def solve_sim(self,simulate=True,show_mem=False,draw_moments=False,verbose_sim=False):
-
-        #Solve the model
-        self.solve(show_mem=show_mem)
-        if not simulate: return
-        self.agents = Agents(self,verbose=verbose_sim)
-        self.agents.simulate()        
-        self.compute_moments(draw=draw_moments)
-        
+        if save:
+            import pickle
+            pickle.dump(self,open('model_save.pkl','wb+'))
         
     def graph(self,ai,zfi,zmi,psii,ti,thi):        
         #Draw some graph of Value and Policy Functions
@@ -235,6 +226,4 @@ class Model(object):
         return V
       
         
-    def compute_moments(self,draw=False):
-        moment(self,draw=draw)
     

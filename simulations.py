@@ -9,6 +9,7 @@ import numpy as np
 
 from mc_tools import mc_simulate
 from gridvec import VecOnGrid
+import pickle
 
 class Agents:
     
@@ -89,6 +90,11 @@ class Agents:
             self.statenext(t)
             self.timer('Simulations, iteration',verbose=self.verbose)
         
+        del self.timer
+        del self.M
+        del self.V
+        del self.setup
+        pickle.dump(self,open('sim_saved.pkl','wb+'))
         
         #return self.gsavings, self.iexo, self.state,self.gtheta
     

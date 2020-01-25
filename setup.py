@@ -59,6 +59,11 @@ class ModelSetup(object):
         p['m_wage_trend'] = [0.0 + 0.0*min(t,Tret) - 0.000*(min(t,Tret)**2) for t in range(T)]
         
         
+        p['util_lam'] = 0.4
+        p['util_alp'] = 0.5
+        p['util_xi'] = 1.5
+        p['util_kap'] = 0.5
+        
         
         for key, value in kwargs.items():
             assert (key in p), 'wrong name?'
@@ -295,6 +300,7 @@ class ModelSetup(object):
         mmax = ezfmax + ezmmax + np.max(self.pars['R_t'])*self.amax
         self.mgrid = np.linspace(mmin,mmax,600)
         self.u_precompute()
+        self.u_precompute_2()
         
         
     def mar_mats_assets(self,npoints=4,abar=0.1):
@@ -604,7 +610,6 @@ class ModelSetup(object):
     def u_precompute(self):
         print('Precomputing...')
         mgrid = self.mgrid
-        sigma = self.pars['crra_power']
         umlt = self.u_mult(self.thetagrid[None,:])
         uraw = self.u(np.maximum(mgrid[:,None],1e-3))
         uout = umlt*uraw
@@ -612,7 +617,34 @@ class ModelSetup(object):
         self.ucouple_precomputed_ce = uout
         print('Precomputing done')
     
-    
+    def u_precompute_2(self):
+        from intratemporal import int_sol
+        print('Precomputing new')
+        sig = self.pars['crra_power']
+        alp = self.pars['util_alp']
+        xi = self.pars['util_xi']
+        lam = self.pars['util_lam']
+        kap = self.pars['util_kap']
+        
+        nm = self.mgrid.size
+        ntheta = self.ntheta
+        nl = self.nls
+        
+        uout = np.empty((nm,ntheta,nl),dtype=np.float32)
+        xout = np.empty((nm,ntheta,nl),dtype=np.float32)
+        
+        for il in range(nl):
+            for itheta in range(ntheta):
+                A = self.u_mult(self.thetagrid[itheta])
+                ls = self.ls_levels[il]
+                x, c, u = int_sol(self.mgrid,A=A,alp=alp,sig=sig,xi=xi,lam=lam,kap=kap,lbr=ls)
+                uout[:,itheta,il] = u
+                xout[:,itheta,il] = x
+                
+        self.ucouple_precomputed_u = uout
+        self.ucouple_precomputed_x = xout
+        print('done!')
+                
     
 
 #from numba import jit

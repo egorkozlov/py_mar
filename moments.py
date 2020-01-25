@@ -24,7 +24,7 @@ def moment(mdlu,mdlb,agents,draw=True,uni=True,bil=False):
  
 
     #Import simulated values
-    assets_t=agents.setup.agrid_c[agents.iassets]
+    assets_t=agents.setup.agrid_c[agents.iassets] # FIXME
     iexo=agents.iexo
     state=agents.state
     theta_t=agents.setup.thetagrid_fine[agents.itheta]
@@ -99,13 +99,9 @@ def moment(mdlu,mdlb,agents,draw=True,uni=True,bil=False):
     all_spells=dict()
     for ist,sname in enumerate(state_codes):
 
-         
-         
         is_state= (spells[:,0]==ist)
          
  
-             
-    
         all_spells[sname]=spells[is_state,:]
 
         is_state= (all_spells[sname][:,1]!=0)
@@ -172,8 +168,14 @@ def moment(mdlu,mdlb,agents,draw=True,uni=True,bil=False):
 
     
     #Regression
-    FE_ols = smf.ols(formula='mar ~ uni+C(rnumber)+C(age)', data = data_rel_panda.dropna()).fit()
-    beta_unid_s=FE_ols.params['uni']
+    try:
+        FE_ols = smf.ols(formula='mar ~ uni+C(rnumber)+C(age)', data = data_rel_panda.dropna()).fit()
+        beta_unid_s=FE_ols.params['uni']
+    except:
+        print('No data for unilateral divorce regression...')
+        beta_unid_s=0.0
+    
+    
     mdl.moments['beta unid']=beta_unid_s 
      
     ##################################

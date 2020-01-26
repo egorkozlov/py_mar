@@ -33,17 +33,17 @@ from integrator_couples import ev_couple_m_c
 
 
 class Model(object):
-    def __init__(self,iterator_name='default',**kwargs):
+    def __init__(self,iterator_name='default',verbose=False,**kwargs):
         self.mstart = self.get_mem()
         self.mlast = self.get_mem()
-        
+        self.verbose = verbose
         self.setup = ModelSetup(**kwargs)
         self.dtype = self.setup.dtype
         self.iterator, self.initializer = self._get_iterator(iterator_name)
         self.start = default_timer()
-        self.last = default_timer()
-        
-        self.time_dict = dict()
+        self.last = default_timer()        
+        self.time_dict = dict()        
+        self.solve()
         
     def get_mem(self):
         return psutil.Process(os.getpid()).memory_info().rss/1e6
@@ -187,7 +187,10 @@ class Model(object):
             del v
         
     
-    def solve(self,show_mem=False,save=False):
+    def solve(self,save=False):
+        
+        show_mem = self.verbose
+        
         T = self.setup.pars['T']
         self.V = list()
         self.decisions = list()

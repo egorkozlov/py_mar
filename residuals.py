@@ -45,18 +45,22 @@ def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],verb
                     separation_costs=sc,sigma_psi=sigma_psi,
                     sigma_psi_init=sigma_psi_init,
                     pmeet=pmeet,uls=uls,pls=pls,u_shift_mar=mshift)
-        
-        mdl.solve(show_mem=verbose)
-    else:        
-        mdl = dill.load(open(load_from,'rb+'))
-    
+        mdl_list = [mdl]
+    else:
+        if type(load_from) is not list:
+            load_from = [load_from]
+       
+        mdl_list = [dill.load(open(l,'rb+')) for l in load_from]
+        mdl = mdl_list[0]
     
     if save_to is not None:
         dill.dump(mdl,open(save_to,'wb+'))
     
+    # these are Markov transition processes for models
     
-    agents = Agents(mdl,verbose=verbose)
-    agents.simulate()
+    transition_matrices = [np.array([[0.5,0.5],[0,1]]) for _ in range(mdl.setup.pars['T'])]
+    
+    agents = Agents( mdl_list ,pswitchlist=transition_matrices,verbose=verbose)
     moments = moment(mdl,agents,draw=draw)
     
     ############################################################

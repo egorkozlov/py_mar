@@ -32,7 +32,7 @@ def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],verb
     pls = x[6] #max(min(x[6],1.0),0.0)
     
 
-    dc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=0.0)
+    dc = DivorceCosts(unilateral_divorce=False,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=0.0)
     sc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.00,u_lost_f=0.00)
     
     
@@ -56,9 +56,38 @@ def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],verb
     if save_to is not None:
         dill.dump(mdl,open(save_to,'wb+'))
     
-    # these are Markov transition processes for models
+    ##############################################################
+    # Build Markov transition processes for models from the data
+    #############################################################
     
-    transition_matrices = [np.array([[0.5,0.5],[0,1]]) for _ in range(mdl.setup.pars['T'])]
+    #Import Data
+    with open('age_uni.pkl', 'rb') as file:
+        age_uni=pickle.load(file)
+    
+    #Transfrom distribution of age at Unilateral Divorce into conditional Probabilities
+    #The Probability of Transitioning from Unilateral to Bilateral is always zero
+    
+    #Transformation of age at uni from actual age to model periods
+    change=-np.ones(1000,np.int32)#the bigger is the size of this array, the more precise the final distribution
+   
+    summa=0.0
+    summa1=0.0
+    for i in age_uni:
+        summa+=age_uni[i]
+        change[int(summa1*len(change[:])/sum(age_uni.values())):int(summa*len(change[:])/sum(age_uni.values()))]=(i-18)/mdl.setup.pars['py']
+        summa1+=age_uni[i]
+    change=np.sort(change, axis=0) 
+    
+    #Now we compute the actual conditional probabilities
+    transition_matrices=list()
+    
+    #First period treated differently
+    pr=np.sum(change<=0)/(np.sum(change<=np.inf))
+    transition_matrices=transition_matrices+[np.array([[1-pr,pr],[0,1]])]
+    for t in range(mdl.setup.pars['T']-1):
+        pr=np.sum(change==t+1)/(np.sum(change<=np.inf))
+        transition_matrices=transition_matrices+[np.array([[1-pr,pr],[0,1]])]
+        
     
     agents = Agents( mdl_list ,pswitchlist=transition_matrices,verbose=verbose)
     moments = moment(mdl,agents,draw=draw)

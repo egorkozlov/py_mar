@@ -42,18 +42,18 @@ if __name__ == '__main__':
     #For graphs later
     graphs=True
     #Build  data moments and pickle them
-    #dat_moments(period=2)
+    dat_moments(period=6)
     
          
     #Initialize the file with parameters
     #x0 = np.array([0.01,0.39,0.56,0.16,0.34,0.0001,0.5])
     
-    #x0 = np.array([0.419146,0.12785496,0.34224688,0.56194163,0.18066626,0.04687082,0.48315671])
-    x0 = np.array([1.42219318, 3.52403022, 0.76691598, 0.89285592, 0.18171488,0.08080125, 0.48178463])
+    x0 = np.array([0.419146,0.12785496,0.34224688,0.56194163,0.18066626,0.04687082,0.48315671])
+    #x0 = np.array([1.42219318, 3.52403022, 0.76691598, 0.89285592, 0.18171488,0.08080125, 0.48178463])
     
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','model','agents','scaled residuals'],
-                                      #load_from=['mdl_save_uni.pkl','mdl_save_bil.pkl'],
-                                      save_to='mdl_save_uni.pkl',
+                                      load_from=['mdl_save_uni.pkl','mdl_save_bil.pkl'],
+                                      #save_to='mdl_save_bil.pkl',
                                       verbose=True,calibration_report=False,draw=True,graphs=graphs)
                          
     print('Done. Residual in point x0 is {}'.format(out))

@@ -109,12 +109,14 @@ class Agents:
         # this simulates "exogenous" transitions of polciy functions
         # policy_ind stands for index of the policies to apply, they are
         # from 0 to (self.npol-1)
+        zeros = np.zeros((N,),dtype=np.int8)
+        mat_init = pswitchlist[0]
         
-        self.policy_ind[:,0] = 0 # everyone starts with 0
+        self.policy_ind[:,0] = mc_simulate(zeros,mat_init,shocks=self.shocks_transition[:,0]) # everyone starts with 0
         if self.npol > 1:
             for t in range(T-1):    
-                mat = pswitchlist[t]
-                self.policy_ind[:,t+1] = mc_simulate(self.policy_ind[:,t],mat,shocks=self.shocks_transition[:,t])
+                mat = pswitchlist[t+1]
+                self.policy_ind[:,t+1] = mc_simulate(self.policy_ind[:,t],mat,shocks=self.shocks_transition[:,t+1])
         else:
             self.policy_ind[:] = 0
             

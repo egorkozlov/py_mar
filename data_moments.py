@@ -371,7 +371,7 @@ def compute(hi,period=1):
 #Actual moments computation + weighting matrix
 ################################################
 
-def dat_moments(sampling_number=100,weighting=True,covariances=False,period=1):
+def dat_moments(sampling_number=4,weighting=True,covariances=False,period=1):
     
     
     

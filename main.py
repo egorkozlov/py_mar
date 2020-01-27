@@ -38,25 +38,16 @@ if __name__ == '__main__':
     
     
     #Build  data moments and pickle them
-    dat_moments(period=2) # refresh
-    
-    
-          
-    #Create grids of parameters
-    sigma_psi_g=np.linspace(0.01,0.3,1)
-    sigma_psi_init_g=np.linspace(0.02,0.5,1)
-    di_co_g=np.linspace(0.05,0.3,1)
-    bila=np.array([False,True])
+    dat_moments(period=1) # refresh
     
     
     
     #Initialize the file with parameters
 
 
-    x0 = np.array([0.01,0.01,0.02,0.7,0.25,0.0001,0.5])
-    lb= np.array([0.0,0.005, 0.5,0.4,0.01,0.0,0.0])
-    ub= np.array([3.0,1.0,  10.0,1.0,0.4,0.2,1.0])
-    ub[3]=min(ub[3],1.0)
+    x0 = np.array([0.01,0.01,0.02,0.7,0.25,0.0001,0.5,0.5])
+    lb= np.array([0.0,0.005, 0.5,0.4,0.01,0.0,0.0,0.01])
+    ub= np.array([1.0,0.5,  10.0,1.0,0.4,0.2,1.0,2.0])
     
     
     
@@ -80,7 +71,7 @@ if __name__ == '__main__':
 
     #Tik Tak Optimization
     param=tiktak(200,200,12,lb,ub,mdl_resid,tole=1e-3,nelder=False,refine=False,
-                 skip_local=False,skip_global=True)
+                 skip_local=True,skip_global=False)
     
     print('f is {} and x is {}'.format(param[0],param[1]))
     

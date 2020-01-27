@@ -26,6 +26,7 @@ def int_sol(m_in,newton=True,step=1e-6,nint=2000,*,A,alp,sig,xi,lam,kap,lbr):
             x0 = brentq(rf_res,step,m_in[0]-step)
             break
         except:
+            step = step/10
             pass
         
         
@@ -35,7 +36,7 @@ def int_sol(m_in,newton=True,step=1e-6,nint=2000,*,A,alp,sig,xi,lam,kap,lbr):
     
     m_implied = foc_expression(xgrid)
           
-    x_interpolated = np.interp(m_in,m_implied,xgrid)
+    x_interpolated = np.minimum(np.interp(m_in,m_implied,xgrid),x0)
     
     if not newton:
         xout = x_interpolated

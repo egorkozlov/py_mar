@@ -19,7 +19,7 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()       
-        period_year=6 #this can be 1,2,3 or 6
+        period_year=1 #this can be 1,2,3 or 6
         T = int(52/period_year)
         Tret = int(42/period_year) # first period when the agent is retired
         Tbef=int(2/period_year)
@@ -615,7 +615,6 @@ class ModelSetup(object):
     
     def u_precompute(self):
         from intratemporal import int_sol
-        print('Precomputing new')
         sig = self.pars['crra_power']
         alp = self.pars['util_alp']
         xi = self.pars['util_xi']
@@ -640,7 +639,6 @@ class ModelSetup(object):
                 
         self.ucouple_precomputed_u = uout
         self.ucouple_precomputed_x = xout
-        print('done!')
                 
     
 

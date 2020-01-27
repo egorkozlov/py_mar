@@ -110,25 +110,9 @@ def moment(mdl,agents,draw=True):
     ############################################ 
     #Construct sample of first relationships 
     ############################################ 
-     
-    #First get age at policy change 
-    with open('age_uni.pkl', 'rb') as file: 
-        age_uni=pickle.load(file) 
-         
-         
+  
     #Create a file with the age of the change foreach person 
-    changep=-np.ones(N,np.int32) 
-    
- 
-    summa=0.0 
-    summa1=0.0 
-    for i in age_uni: 
-        summa+=age_uni[i] 
-        changep[int(summa1*len(changep[:])/sum(age_uni.values())):int(summa*len(changep[:])/sum(age_uni.values()))]=(i-20)/mdl.setup.pars['py'] 
-        summa1+=age_uni[i] 
-     
-    #Sort as in simulations 
-    changep=np.sort(changep, axis=0)   
+    changep=agents.policy_ind
      
     #Now define variables 
     rel_end = -1*np.ones((N,9),dtype=np.int16) 
@@ -145,7 +129,7 @@ def moment(mdl,agents,draw=True):
      
         rel_end[irchange,isrel[irchange]]=state[irchange,t] 
         rel_age[irchange,isrel[irchange]]=t 
-        rel_unid[irchange,isrel[irchange]]=(t>=changep[irchange])*1.0 
+        rel_unid[irchange,isrel[irchange]]=changep[irchange,t] 
         rel_number[irchange,isrel[irchange]]=isrel[irchange]+1 
          
         isrel[irchange] = isrel[irchange]+1 

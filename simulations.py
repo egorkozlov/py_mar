@@ -121,6 +121,7 @@ class Agents:
             self.policy_ind[:] = 0
             
         if not nosim: self.simulate()
+        print(11)
             
         
     def simulate(self):

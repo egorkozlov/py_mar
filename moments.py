@@ -189,6 +189,14 @@ def moment(mdl,agents,draw=True,validation=False):
     try: 
         FE_ols = smf.ols(formula='duration ~ uni+C(age)', data = data_coh_panda.dropna()).fit() 
         beta_dur_s=FE_ols.params['uni'] 
+        
+        from lifelines import CoxPHFitter
+        data_coh_panda['endd']=1.0
+        data_coh_panda.loc[data_coh_panda['end']==3.0,'endd']=0.0
+        cph = CoxPHFitter()
+        data_coh_panda.drop(['end'], axis=1)
+        cox=cph.fit(data_coh_panda, duration_col='duration', event_col='endd')
+        
     except: 
         print('No data for unilateral divorce regression...') 
         beta_unid_s=0.0 

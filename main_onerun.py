@@ -14,6 +14,7 @@ if __name__ == '__main__':
      
     try:
         from IPython import get_ipython
+        
         get_ipython().magic('reset -f')
     except:
         pass
@@ -67,7 +68,7 @@ if __name__ == '__main__':
     
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','model','agents','scaled residuals'],
                                       load_from=[filename_uni,filename_bil],
-                                      #save_to=filename_uni,
+                                      #save_to=filename_bil,
                                       verbose=True,calibration_report=False,draw=True,graphs=graphs)
                          
     print('Done. Residual in point x0 is {}'.format(out))

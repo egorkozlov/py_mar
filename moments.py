@@ -16,8 +16,9 @@ import pickle
 import pandas as pd 
 import statsmodels.api as sm 
 import statsmodels.formula.api as smf 
+
   
-def moment(mdl,agents,draw=True): 
+def moment(mdl,agents,draw=True,validation=False): 
 #This function compute moments coming from the simulation 
 #Optionally it can also plot graphs about them. It is feeded with 
 #matrixes coming from simulations 
@@ -39,6 +40,10 @@ def moment(mdl,agents,draw=True):
     ########################################## 
     #START COMPUTATION OF SIMULATED MOMENTS 
     ######################################### 
+    
+      
+    #Create a file with the age of the change foreach person 
+    changep=agents.policy_ind
      
     #As a first thing we unpack assets and theta 
     N=len(state) 
@@ -58,6 +63,8 @@ def moment(mdl,agents,draw=True):
     state_end = -1*np.ones((N,nspells),dtype=np.int8) 
     time_end = -1*np.ones((N,nspells),dtype=np.bool) 
     sp_length = -1*np.ones((N,nspells),dtype=np.int16) 
+    is_unid = -1*np.ones((N,nspells),dtype=np.int16) 
+    is_unid_end = -1*np.ones((N,nspells),dtype=np.int16) 
     is_spell = np.zeros((N,nspells),dtype=np.bool) 
       
     state_beg[:,0] = 0 # THIS ASSUMES EVERYONE STARTS AS SINGLE 
@@ -79,7 +86,10 @@ def moment(mdl,agents,draw=True):
         state_end[ichange,ispell[ichange]] = state[ichange,t] 
         time_end[ichange,ispell[ichange]] = t-1 
         state_beg[ichange,ispell[ichange]+1] = state[ichange,t]  
-        time_beg[ichange,ispell[ichange]] = t 
+        time_beg[ichange,ispell[ichange]+1] = t 
+        is_unid[ichange,ispell[ichange]+1]=changep[ichange,t]
+        is_unid_end[ichange,ispell[ichange]]=changep[ichange,t-1]
+        
           
         ispell[ichange] = ispell[ichange]+1 
           
@@ -87,11 +97,22 @@ def moment(mdl,agents,draw=True):
     allspells_beg = state_beg[is_spell] 
     allspells_len = sp_length[is_spell] 
     allspells_end = state_end[is_spell] # may be -1 if not ended 
+    allspells_timeb = time_beg[is_spell]
+    allspells_isunid=is_unid[is_spell]
+    allspells_isunidend=is_unid_end[is_spell]
       
     # If the spell did not end mark it as ended with the state at its start 
     allspells_end[allspells_end==-1] = allspells_beg[allspells_end==-1] 
-      
+     
+    #Use this to construct hazards
     spells = np.stack((allspells_beg,allspells_len,allspells_end),axis=1) 
+    
+    #Use this for empirical analysis
+    spells_empirical=np.stack((allspells_beg,allspells_timeb,allspells_len,allspells_end,allspells_isunid,allspells_isunidend),axis=1)
+    is_coh=((spells_empirical[:,0]==3) & (spells_empirical[:,4]==spells_empirical[:,5]))
+    spells_empirical=spells_empirical[is_coh,1:5]
+    
+   
       
       
     #Now divide spells by relationship nature 
@@ -110,9 +131,7 @@ def moment(mdl,agents,draw=True):
     ############################################ 
     #Construct sample of first relationships 
     ############################################ 
-  
-    #Create a file with the age of the change foreach person 
-    changep=agents.policy_ind
+
      
     #Now define variables 
     rel_end = -1*np.ones((N,9),dtype=np.int16) 
@@ -160,6 +179,19 @@ def moment(mdl,agents,draw=True):
      
      
     moments['beta unid']=beta_unid_s  
+    
+    ###################################################
+    # Second regression for the length of cohabitation
+    ###################################################
+    data_coh_panda=pd.DataFrame(data=spells_empirical,columns=['age','duration','end','uni']) 
+    
+    #Regression 
+    try: 
+        FE_ols = smf.ols(formula='duration ~ uni+C(age)', data = data_coh_panda.dropna()).fit() 
+        beta_dur_s=FE_ols.params['uni'] 
+    except: 
+        print('No data for unilateral divorce regression...') 
+        beta_unid_s=0.0 
       
     ################################## 
     # Construct the Hazard functions 

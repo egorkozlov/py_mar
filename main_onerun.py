@@ -42,7 +42,7 @@ if __name__ == '__main__':
     #For graphs later
     graphs=True
     #Build  data moments and pickle them
-    dat_moments(period=6)
+    dat_moments(period=3)
     
          
     #Initialize the file with parameters
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','model','agents','scaled residuals'],
                                       load_from=[filename_uni,filename_bil],
-                                      #save_to=filename_bil,
+                                      #save_to=filename_uni,
                                       verbose=True,calibration_report=False,draw=True,graphs=graphs)
                          
     print('Done. Residual in point x0 is {}'.format(out))

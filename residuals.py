@@ -32,7 +32,7 @@ def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],verb
     pls = x[6] #max(min(x[6],1.0),0.0)
     
 
-    dc = DivorceCosts(unilateral_divorce=False,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=0.0)
+    dc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=0.0)
     sc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.00,u_lost_f=0.00)
     
     
@@ -90,7 +90,7 @@ def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],verb
         
     
     agents = Agents( mdl_list ,pswitchlist=transition_matrices,verbose=verbose)
-    moments = moment(mdl,agents,draw=draw)
+    moments = moment(mdl,agents,draw=draw,validation=False)
     
     ############################################################
     #Build data moments and compare them with simulated ones

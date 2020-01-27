@@ -20,7 +20,8 @@ xdef = np.array([0.05,0.01,0.02,0.7,0.25,0.0001,0.5,0.5])
 def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],
               solve_transition=False,
               store_path = None,
-              verbose=False,calibration_report=False,draw=False,graphs=False):
+              verbose=False,calibration_report=False,draw=False,graphs=False,
+              rel_diff=True):
     
     
     
@@ -207,14 +208,19 @@ def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],
     if len(dat) != len(sim):
         sim = np.full_like(dat,1.0e6)
         
-        
-    res_all=dat-sim
+    if not rel_diff:    
+        res_all=(dat-sim)
+    else:
+        res_all = 100*(dat-sim)/(dat)
+    
     
     if verbose:
         print('data moments are {}'.format(dat))
         print('simulated moments are {}'.format(sim))
     
     resid_all = np.array([x if (not np.isnan(x) and not np.isinf(x)) else 1e6 for x in res_all])
+    
+    
     
     resid_sc = resid_all*np.sqrt(np.diag(W)) # all residuals scaled
     

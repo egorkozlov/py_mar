@@ -416,7 +416,7 @@ def compute(hi,period=1):
 #Actual moments computation + weighting matrix 
 ################################################ 
  
-def dat_moments(sampling_number=4,weighting=True,covariances=False,period=1): 
+def dat_moments(sampling_number=4,weighting=False,covariances=False,period=1): 
      
      
      
@@ -508,9 +508,13 @@ def dat_moments(sampling_number=4,weighting=True,covariances=False,period=1):
          
     else: 
          
+        
         #If no weighting, just use sum of squred deviations as the objective function         
         W=np.diag(np.ones(len(hazm)+len(hazs)+len(hazd)+len(emar)+len(ecoh)+2))#two is for fls+beta_unid 
-         
+        
+            
+            
+            
     listofTuples = [("hazs" , hazs), ("hazm" , hazm),("hazd" , hazd),("emar" , emar), 
                 ("ecoh" , ecoh), ("fls_ratio" , fls_ratio),("mar" , mar),("coh" , coh), 
                 ("beta_unid" , beta_unid),

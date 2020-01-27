@@ -53,21 +53,15 @@ if __name__ == '__main__':
     
     #Name and location of files
     if system() == 'Windows':   
-        
-        import os
-
         path='D:/blasutto/store_model'
-        filename_uni='mdl_save_uni.pkl'
-        filename_bil='mdl_save_bil.pkl'
-        filename_uni = os.path.join(path, filename_uni)
-        filename_bil = os.path.join(path, filename_bil)
     else:
-        filename_uni='mdl_save_uni.pkl'
-        filename_bil='mdl_save_bil.pkl'
+        path = None
     
-    out, mdl, agents, res = mdl_resid(x0,return_format=['distance','model','agents','scaled residuals'],
-                                      load_from=[filename_uni,filename_bil],
-                                      #save_to=filename_bil,
+    out, mdl, agents, res = mdl_resid(x0,return_format=['distance','models','agents','scaled residuals'],
+                                      #load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
+                                      solve_transition=True,                                      
+                                      save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
+                                      store_path=path,
                                       verbose=True,calibration_report=False,draw=True,graphs=graphs)
                          
     print('Done. Residual in point x0 is {}'.format(out))
@@ -83,7 +77,7 @@ if __name__ == '__main__':
         thi=10
          
         #Actual Graphs
-        mdl.graph(ai,zfi,zmi,psii,ti,thi)
+        mdl[0].graph(ai,zfi,zmi,psii,ti,thi)
          
         #If you plan to use graphs only once, deselect below to save space on disk
         #os.remove('name_model.pkl')

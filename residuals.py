@@ -10,14 +10,20 @@ Created on Sat Dec 14 10:58:43 2019
 # this defines model residuals
 import numpy as np
 import pickle, dill
-
+import os
 
 xdef = np.array([0.05,0.01,0.02,0.7,0.25,0.0001,0.5])
 
 
-# return format is any combination of 'distance', 'all_residuals' and 'model'
+# return format is any combination of 'distance', 'all_residuals' and 'models'
 # we can add more things too for convenience
-def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],verbose=False,calibration_report=False,draw=False,graphs=False):
+def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],
+              solve_transition=False,
+              store_path = None,
+              verbose=False,calibration_report=False,draw=False,graphs=False):
+    
+    
+    
     from model import Model
     from setup import DivorceCosts
     from simulations import Agents
@@ -31,30 +37,98 @@ def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],verb
     uls = x[4]
     pls = x[6] #max(min(x[6],1.0),0.0)
     
-
-    dc = DivorceCosts(unilateral_divorce=False,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=0.0)
+    
+    # this is for the default model
+    dc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=0.0)
     sc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.00,u_lost_f=0.00)
+    
+    
     
     
     iter_name = 'default' if not verbose else 'default-timed'
     
     
+    def join_path(name,path):
+        return os.path.join(path,name)
     
-    if load_from is None:
-        mdl = Model(iterator_name=iter_name,divorce_costs=dc,
-                    separation_costs=sc,sigma_psi=sigma_psi,
-                    sigma_psi_init=sigma_psi_init,
-                    pmeet=pmeet,uls=uls,pls=pls,u_shift_mar=mshift)
-        mdl_list = [mdl]
-    else:
+    
+    
+    
+    
+    
+    if load_from is not None:
         if type(load_from) is not list:
             load_from = [load_from]
-       
-        mdl_list = [dill.load(open(l,'rb+')) for l in load_from]
-        mdl = mdl_list[0]
+        if store_path is not None:
+            load_from = [join_path(n,store_path) for n in load_from]
+    
     
     if save_to is not None:
-        dill.dump(mdl,open(save_to,'wb+'))
+        if type(save_to) is not list:
+            save_to = [save_to]
+        if store_path is not None:
+            save_to = [join_path(n,store_path) for n in save_to]
+    
+    
+                
+    
+    
+    if load_from is None:
+        
+        if not solve_transition:
+            
+            mdl = Model(iterator_name=iter_name,divorce_costs=dc,
+                        separation_costs=sc,sigma_psi=sigma_psi,
+                        sigma_psi_init=sigma_psi_init,
+                        pmeet=pmeet,uls=uls,pls=pls,u_shift_mar=mshift)
+            mdl_list = [mdl]
+            
+        else:
+            # specify the changes here manually
+            dc_before = DivorceCosts(unilateral_divorce=False,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=0.0)
+            dc_after  = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=0.0)
+            
+            mdl_before = Model(iterator_name=iter_name,divorce_costs=dc_before,
+                        separation_costs=sc,sigma_psi=sigma_psi,
+                        sigma_psi_init=sigma_psi_init,
+                        pmeet=pmeet,uls=uls,pls=pls,u_shift_mar=mshift)
+            
+            mdl_after = Model(iterator_name=iter_name,divorce_costs=dc_after,
+                        separation_costs=sc,sigma_psi=sigma_psi,
+                        sigma_psi_init=sigma_psi_init,
+                        pmeet=pmeet,uls=uls,pls=pls,u_shift_mar=mshift)  
+            
+            mdl = mdl_after # !!! check if this makes a difference
+            # I think that it is not used for anything other than getting 
+            # setup for plotting
+            
+            mdl_list = [mdl_before,mdl_after]
+            
+    else:       
+        mdl_list = [dill.load(open(l,'rb+')) for l in load_from]
+        mdl = mdl_list[0]
+        
+        if solve_transition:
+            if len(mdl_list) < 2:
+                print('Warning: you supplied only one model, so no transition is computed')
+    
+    if save_to is not None:
+        
+        if not solve_transition:
+            if len(save_to) > 1:
+                print('warning: too much stuff is save_to')
+            dill.dump(mdl,open(save_to[0],'wb+'))            
+            
+        else:            
+            if len(save_to) > 1:
+                [dill.dump(m_i,open(n_i,'wb+')) 
+                    for (m_i,n_i) in zip(mdl_list,save_to)]
+            else:
+                print('Warning: file names have change to write two models, \
+                      please provide the list of names if you do not want this')
+                dill.dump(mdl_before,open(save_to[0] + '_before','wb+'))
+                dill.dump(mdl_after, open(save_to[0] + '_after','wb+'))
+                
     
     ##############################################################
     # Build Markov transition processes for models from the data
@@ -167,7 +241,7 @@ def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],verb
     
     
     out_dict = {'distance':dist,'all residuals':resid_all,
-                'scaled residuals':resid_sc,'model':mdl,'agents':agents}
+                'scaled residuals':resid_sc,'models':mdl_list,'agents':agents}
     out = [out_dict[key] for key in return_format]
     
   

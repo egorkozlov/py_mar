@@ -19,7 +19,7 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()       
-        period_year=1 #this can be 1,2,3 or 6
+        period_year=3 #this can be 1,2,3 or 6
         T = int(52/period_year)
         Tret = int(42/period_year) # first period when the agent is retired
         Tbef=int(2/period_year)
@@ -553,7 +553,7 @@ class ModelSetup(object):
         s = self.agrid_c[:,None]
         zm = self.exogrid.all_t[-1][:,1][None,:]
         zf = self.exogrid.all_t[-1][:,0][None,:]
-        psi = 0*self.exogrid.all_t[-1][:,2][None,:,None]
+        psi = self.exogrid.all_t[-1][:,2][None,:,None]
         theta = self.thetagrid[None,None,:]
         
         

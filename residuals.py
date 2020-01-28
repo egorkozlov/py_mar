@@ -208,10 +208,9 @@ def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],
     if len(dat) != len(sim):
         sim = np.full_like(dat,1.0e6)
         
-    if not rel_diff:    
-        res_all=(dat-sim)
-    else:
-        res_all = 100*(dat-sim)/(dat)
+   
+    res_all=(dat-sim)
+  
     
     
     if verbose:

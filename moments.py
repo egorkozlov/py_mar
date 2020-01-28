@@ -45,13 +45,77 @@ def moment(mdl,agents,draw=True,validation=False):
     #Create a file with the age of the change foreach person 
     changep=agents.policy_ind
      
-    #As a first thing we unpack assets and theta 
-    N=len(state) 
       
     #Get states codes 
     state_codes = {name: i for i, name in enumerate(mdl.setup.state_names)} 
+    
+     ########################################### 
+    #Sample selection 
+    ########################################### 
+     
+    #Sample Selection to replicate the fact that 
+    #in NSFH wave two cohabitning couples were 
+    #excluded. 
+    #Birth cohorts: 45-55 
+    #Second wave of NLSFH:1992-1994. 
+    # 
+    #Assume that people are interviewd in 1993 and that age is uniformly 
+    #distributed. Clearly we can adjust this later on. 
      
      
+     
+    #First cut the first two periods give new 'length' 
+    assets_t=assets_t[:,0:mdl.setup.pars['T']] 
+    iexo=iexo[:,0:mdl.setup.pars['T']] 
+    state=state[:,0:mdl.setup.pars['T']] 
+    theta_t=theta_t[:,0:mdl.setup.pars['T']] 
+    
+     
+    #################################################################### 
+    #Now drop observation to mimic the actual data gathering process 
+    #################################################################### 
+     
+    #Get distribution of age conditional on cohabiting on the second wave 
+    with open('age_sw.pkl', 'rb') as file: 
+        age_sw=pickle.load(file) 
+         
+    keep=(assets_t[:,0]>-1) 
+    
+ 
+    summa=0.0 
+    summa1=0.0 
+    for i in age_sw: 
+        summa+=age_sw[i] 
+        keep[int(summa1*len(state[:,0])/sum(age_sw.values())):int(summa*len(state[:,0])/sum(age_sw.values()))]=\
+        (state[int(summa1*len(state[:,0])/sum(age_sw.values())):int(summa*len(state[:,0])/sum(age_sw.values())),int((i-20)/mdl.setup.pars['py'])]!=3) 
+        summa1+=age_sw[i] 
+    assets_t=assets_t[keep,] 
+    iexo=iexo[keep,] 
+    state=state[keep,] 
+    theta_t=theta_t[keep,] 
+    changep=changep[keep,]
+    
+    index=np.array(np.linspace(1,len(state[:,0]),len(state[:,0]))-1,dtype=np.int16)
+    
+    N=len(iexo[:,0])
+     
+    ###################################################################
+    #Get age we stop observing spells
+    ###################################################################
+    with open('age_sint.pkl', 'rb') as file: 
+        age_sint=pickle.load(file) 
+         
+    aged=np.ones((state.shape))
+    
+ 
+    summa=0.0
+    summa1=0.0
+    for i in age_sint:
+        summa+=age_sint[int(i)]
+        aged[int(summa1*len(aged[:])/sum(age_sint.values())):int(summa*len(aged[:])/sum(age_sint.values()))]=round((i-20)/mdl.setup.pars['py'],0)
+        summa1+=age_sint[int(i)]
+    
+    aged=np.array(aged,dtype=np.int16)
     ########################################### 
     #Moments: Construction of Spells 
     ########################################### 
@@ -63,9 +127,13 @@ def moment(mdl,agents,draw=True,validation=False):
     state_end = -1*np.ones((N,nspells),dtype=np.int8) 
     time_end = -1*np.ones((N,nspells),dtype=np.bool) 
     sp_length = -1*np.ones((N,nspells),dtype=np.int16) 
+    sp_person = -1*np.ones((N,nspells),dtype=np.int16) 
     is_unid = -1*np.ones((N,nspells),dtype=np.int16) 
     is_unid_end = -1*np.ones((N,nspells),dtype=np.int16) 
+    is_unid_lim = -1*np.ones((N,nspells),dtype=np.int16) 
+    n_spell = -1*np.ones((N,nspells),dtype=np.int16) 
     is_spell = np.zeros((N,nspells),dtype=np.bool) 
+    
       
     state_beg[:,0] = 0 # THIS ASSUMES EVERYONE STARTS AS SINGLE 
     time_beg[:,0] = 0 
@@ -74,8 +142,10 @@ def moment(mdl,agents,draw=True,validation=False):
     ispell = np.zeros((N,),dtype=np.int8) 
       
     for t in range(1,mdl.setup.pars['T']): 
-        ichange = (state[:,t-1] != state[:,t]) 
-        sp_length[~ichange,ispell[~ichange]] += 1 
+        ichange = ((state[:,t-1] != state[:,t])) 
+        sp_length[((~ichange)),ispell[((~ichange))]] += 1 
+        #ichange = ((state[:,t-1] != state[:,t]) & (t<=aged[:,t])) 
+        #sp_length[((~ichange) & (t<=aged[:,t])),ispell[((~ichange) & (t<=aged[:,t]))]] += 1 
           
         if not np.any(ichange): continue 
           
@@ -84,10 +154,13 @@ def moment(mdl,agents,draw=True,validation=False):
         is_spell[ichange,ispell[ichange]+1] = True 
         sp_length[ichange,ispell[ichange]+1] = 1 # if change then 1 year right 
         state_end[ichange,ispell[ichange]] = state[ichange,t] 
+        sp_person[ichange,ispell[ichange]] = index[ichange]
         time_end[ichange,ispell[ichange]] = t-1 
         state_beg[ichange,ispell[ichange]+1] = state[ichange,t]  
         time_beg[ichange,ispell[ichange]+1] = t 
+        n_spell[ichange,ispell[ichange]+1]=ispell[ichange]+1
         is_unid[ichange,ispell[ichange]+1]=changep[ichange,t]
+        is_unid_lim[ichange,ispell[ichange]+1]=changep[ichange,aged[ichange,0]]
         is_unid_end[ichange,ispell[ichange]]=changep[ichange,t-1]
         
           
@@ -100,17 +173,25 @@ def moment(mdl,agents,draw=True,validation=False):
     allspells_timeb = time_beg[is_spell]
     allspells_isunid=is_unid[is_spell]
     allspells_isunidend=is_unid_end[is_spell]
+    allspells_isunidlim=is_unid_lim[is_spell]
+    allspells_person=sp_person[is_spell]
+    allspells_nspells=n_spell[is_spell]
+    
+    
       
     # If the spell did not end mark it as ended with the state at its start 
     allspells_end[allspells_end==-1] = allspells_beg[allspells_end==-1] 
+    allspells_isunidend[allspells_isunidend==-1] = allspells_isunidlim[allspells_isunidend==-1]
+    allspells_nspells[allspells_nspells==-1]=0
+    allspells_nspells=allspells_nspells+1
      
     #Use this to construct hazards
     spells = np.stack((allspells_beg,allspells_len,allspells_end),axis=1) 
     
     #Use this for empirical analysis
-    spells_empirical=np.stack((allspells_beg,allspells_timeb,allspells_len,allspells_end,allspells_isunid,allspells_isunidend),axis=1)
-    is_coh=((spells_empirical[:,0]==3) & (spells_empirical[:,4]==spells_empirical[:,5]))
-    spells_empirical=spells_empirical[is_coh,1:5]
+    spells_empirical=np.stack((allspells_beg,allspells_timeb,allspells_len,allspells_end,allspells_nspells,allspells_isunid,allspells_isunidend),axis=1)
+    is_coh=((spells_empirical[:,0]==3) & (spells_empirical[:,5]==spells_empirical[:,6]))
+    spells_empirical=spells_empirical[is_coh,1:6]
     
    
       
@@ -140,7 +221,7 @@ def moment(mdl,agents,draw=True,validation=False):
     rel_number= -1*np.ones((N,9),dtype=np.int16) 
     isrel = np.zeros((N,),dtype=np.int8) 
      
-    for t in range(1,mdl.setup.pars['T']): 
+    for t in range(1,mdl.setup.pars['Tret']): 
          
         irchange = ((state[:,t-1] != state[:,t]) & ((state[:,t-1]==0) | (state[:,t-1]==1))) 
          
@@ -183,23 +264,45 @@ def moment(mdl,agents,draw=True,validation=False):
     ###################################################
     # Second regression for the length of cohabitation
     ###################################################
-    data_coh_panda=pd.DataFrame(data=spells_empirical,columns=['age','duration','end','uni']) 
+    data_coh_panda=pd.DataFrame(data=spells_empirical,columns=['age','duration','end','rel','uni']) 
     
     #Regression 
-    try: 
-        FE_ols = smf.ols(formula='duration ~ uni+C(age)', data = data_coh_panda.dropna()).fit() 
-        beta_dur_s=FE_ols.params['uni'] 
+   # try: 
+    FE_ols = smf.ols(formula='duration ~ uni+C(age)', data = data_coh_panda.dropna()).fit() 
+    beta_dur_s=FE_ols.params['uni'] 
+    
+    from lifelines import CoxPHFitter
+    cph = CoxPHFitter()
+    data_coh_panda['age2']=data_coh_panda['age']**2
+    data_coh_panda['age3']=data_coh_panda['age']**3
+    data_coh_panda['rel2']=data_coh_panda['rel']**2
+    data_coh_panda['rel3']=data_coh_panda['rel']**3
+    #data_coh_panda=pd.get_dummies(data_coh_panda, columns=['age'])
+    
+    #Standard Cox
+    data_coh_panda['endd']=1.0
+    data_coh_panda.loc[data_coh_panda['end']==3.0,'endd']=0.0
+    data_coh_panda1=data_coh_panda.drop(['end'], axis=1)
+    cox_join=cph.fit(data_coh_panda1, duration_col='duration', event_col='endd')
+    haz_join=cox_join.hazard_ratios_['uni']
+    
+    #Cox where risk is marriage
+    data_coh_panda['endd']=0.0
+    data_coh_panda.loc[data_coh_panda['end']==2.0,'endd']=1.0
+    data_coh_panda2=data_coh_panda.drop(['end'], axis=1)
+    cox_mar=cph.fit(data_coh_panda2, duration_col='duration', event_col='endd')
+    haz_mar=cox_mar.hazard_ratios_['uni']
+    
+    #Cox where risk is separatio
+    data_coh_panda['endd']=0.0
+    data_coh_panda.loc[data_coh_panda['end']==0.0,'endd']=1.0
+    data_coh_panda3=data_coh_panda.drop(['end'], axis=1)
+    cox_sep=cph.fit(data_coh_panda3, duration_col='duration', event_col='endd')
+    haz_sep=cox_sep.hazard_ratios_['uni']
         
-        from lifelines import CoxPHFitter
-        data_coh_panda['endd']=1.0
-        data_coh_panda.loc[data_coh_panda['end']==3.0,'endd']=0.0
-        cph = CoxPHFitter()
-        data_coh_panda.drop(['end'], axis=1)
-        cox=cph.fit(data_coh_panda, duration_col='duration', event_col='endd')
-        
-    except: 
-        print('No data for unilateral divorce regression...') 
-        beta_unid_s=0.0 
+  #  except: 
+   #     print('No data for unilateral divorce regression...') 
+       # beta_unid_s=0.0 
       
     ################################## 
     # Construct the Hazard functions 
@@ -208,7 +311,7 @@ def moment(mdl,agents,draw=True,validation=False):
     #Hazard of Divorce 
     hazd=list() 
     lgh=len(all_spells['Couple, M'][:,0]) 
-    for t in range(mdl.setup.pars['Tret']): 
+    for t in range(mdl.setup.pars['T']): 
           
         cond=all_spells['Couple, M'][:,1]==t+1 
         temp=all_spells['Couple, M'][cond,2] 
@@ -227,7 +330,7 @@ def moment(mdl,agents,draw=True,validation=False):
     #Hazard of Separation 
     hazs=list() 
     lgh=len(all_spells['Couple, C'][:,0]) 
-    for t in range(mdl.setup.pars['Tret']): 
+    for t in range(mdl.setup.pars['T']): 
           
         cond=all_spells['Couple, C'][:,1]==t+1 
         temp=all_spells['Couple, C'][cond,2] 
@@ -246,7 +349,7 @@ def moment(mdl,agents,draw=True,validation=False):
     #Hazard of Marriage (Cohabitation spells) 
     hazm=list() 
     lgh=len(all_spells['Couple, C'][:,0]) 
-    for t in range(mdl.setup.pars['Tret']): 
+    for t in range(mdl.setup.pars['T']): 
           
         cond=all_spells['Couple, C'][:,1]==t+1 
         temp=all_spells['Couple, C'][cond,2] 
@@ -277,6 +380,14 @@ def moment(mdl,agents,draw=True,validation=False):
     spells_sc=spells_s[cond,2] 
     condm=spells_sc==2 
     sharem=len(spells_sc[condm])/max(len(spells_sc),0.0001) 
+    
+    
+    #Cut the first two periods give new 'length' 
+    lenn=mdl.setup.pars['T']-mdl.setup.pars['Tbef'] 
+    assets_t=assets_t[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']] 
+    iexo=iexo[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']] 
+    state=state[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']] 
+    theta_t=theta_t[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']] 
       
     ########################################### 
     #Moments: FLS over time by Relationship 
@@ -300,50 +411,7 @@ def moment(mdl,agents,draw=True,validation=False):
     moments['flsc'] = flsc 
      
      
-    ########################################### 
-    #Sample selection 
-    ########################################### 
-     
-    #Sample Selection to replicate the fact that 
-    #in NSFH wave two cohabitning couples were 
-    #excluded. 
-    #Birth cohorts: 45-55 
-    #Second wave of NLSFH:1992-1994. 
-    # 
-    #Assume that people are interviewd in 1993 and that age is uniformly 
-    #distributed. Clearly we can adjust this later on. 
-     
-     
-     
-    #First cut the first two periods give new 'length' 
-    lenn=mdl.setup.pars['T']-mdl.setup.pars['Tbef'] 
-    assets_t=assets_t[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']] 
-    iexo=iexo[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']] 
-    state=state[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']] 
-    theta_t=theta_t[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']] 
-     
-    #################################################################### 
-    #Now drop observation to mimic the actual data gathering process 
-    #################################################################### 
-     
-    #Get distribution of age conditional on cohabiting on the second wave 
-    with open('age_sw.pkl', 'rb') as file: 
-        age_sw=pickle.load(file) 
-         
-    keep=(assets_t[:,0]>-1) 
-    
- 
-    summa=0.0 
-    summa1=0.0 
-    for i in age_sw: 
-        summa+=age_sw[i] 
-        keep[int(summa1*len(state[:,0])/sum(age_sw.values())):int(summa*len(state[:,0])/sum(age_sw.values()))]=\
-        (state[int(summa1*len(state[:,0])/sum(age_sw.values())):int(summa*len(state[:,0])/sum(age_sw.values())),int((i-20)/mdl.setup.pars['py'])]!=3) 
-        summa1+=age_sw[i] 
-    assets_t=assets_t[keep,] 
-    iexo=iexo[keep,] 
-    state=state[keep,] 
-    theta_t=theta_t[keep,] 
+   
       
     ########################################### 
     #Moments: Variables over Age 
@@ -607,15 +675,36 @@ def moment(mdl,agents,draw=True,validation=False):
           
          
         # create plot 
-        x=["Data","Simulation"] 
+        x=np.array([0.25,0.75])
         y=np.array([beta_unid_d,beta_unid_s]) 
         yerr=np.array([(beta_unid_i[1]-beta_unid_i[0])/2.0,0.0]) 
         plt.axhline(linewidth=0.1, color='r') 
         plt.errorbar(x, y, yerr=yerr, fmt='o', elinewidth=0.03) 
         plt.ylabel('OLS Coefficient - UniD') 
+        plt.xticks(x, ["Data","Simulation"] )
         plt.ylim(ymax=0.1) 
+        plt.xlim(xmax=1.0,xmin=0.0) 
         #plt.xticks(index , ('Unilateral', 'Bilateral')) 
          
+        
+        ##########################################################
+        # Histogram of Unilateral Divorce on Cohabitation Length
+        #############################################################
+        fig = plt.figure() 
+        f6=fig.add_subplot(2,1,1) 
+          
+         
+        # create plot 
+        x=np.array([0.2,0.5,0.8])
+        y=np.array([haz_join,haz_mar,haz_sep]) 
+        yerr=y*0.0 
+        plt.axhline(y=1.0,linewidth=0.1, color='r') 
+        plt.errorbar(x, y, yerr=yerr, fmt='o', elinewidth=0.03) 
+        plt.ylabel('Relative Hazard - UniD vs. Bil') 
+        plt.xticks(x, ["Overall Risk","Risk of Marriage","Risk of Separation"] )
+        plt.ylim(ymax=1.2,ymin=0.7) 
+        plt.xlim(xmax=1.0,xmin=0.0) 
+        #plt.xticks(index , ('Unilateral', 'Bilateral')) 
   
         ########################################## 
         # Put graphs together 

@@ -77,6 +77,9 @@ def compute(hi,period=1):
      
     #Get date at interview 
     hi['int']=hi['IDATMM']+(hi['IDATYY']-1900)*12 
+    
+    #Gen age at interview
+    hi['ageint']=round((((hi['IDATYY']-1900)*12+hi['IDATMM'])-hi['birth_month'])/12,0)
      
     #Take only if cohabitations 
     coh=hi[(hi['NUMUNION']-hi['NUMMAR']>0) |  (hi['NUMCOHMR']>0)].copy() 
@@ -396,6 +399,9 @@ def compute(hi,period=1):
      
     #Frequencies for age in the second wave 
     freq_i= CountFrequency(date_age['age'].tolist()) 
+    
+    #Frequencies for age at intervire
+    freq_ai=CountFrequency(hi['ageint'].tolist()) 
      
     #Drop if errors 
      
@@ -404,7 +410,7 @@ def compute(hi,period=1):
     #Create a dictionary for saving simulated moments 
     listofTuples = [("hazs" , hazs), ("hazm" , hazm),("hazd" , hazd),("emar" , emar),
                     ("ecoh" , ecoh), ("fls_ratio" , fls_ratio),("mar" , mar),("coh" , coh),
-                    ("freq_pc" , freq_pc), ("freq_i" , freq_i),("beta_unid" , beta_unid)] 
+                    ("freq_pc" , freq_pc), ("freq_i" , freq_i),("beta_unid" , beta_unid),("freq_ai" , freq_ai)] 
     dic_mom=dict(listofTuples) 
      
     del hi,hi2,hi3 
@@ -436,6 +442,7 @@ def dat_moments(sampling_number=4,weighting=True,covariances=False,period=1):
     coh=dic['coh'] 
     freq_pc=dic['freq_pc'] 
     freq_i=dic['freq_i'] 
+    freq_ai=dic['freq_ai'] 
     beta_unid=dic['beta_unid'] 
      
      
@@ -532,8 +539,12 @@ def dat_moments(sampling_number=4,weighting=True,covariances=False,period=1):
     #Export Age at second  
     with open('age_sw.pkl', 'wb+') as file: 
         pickle.dump(freq_i,file)  
+        
+    #Export Age at interview
+    with open('age_sint.pkl', 'wb+') as file: 
+        pickle.dump(freq_ai,file)  
          
-    del packed_stuff,freq_i,freq_pc,aa,data 
+    del packed_stuff,freq_i,freq_pc,aa,data,freq_ai 
          
 ################################################################### 
 #If script is run as main, it performs a data comparison with SIPP 

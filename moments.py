@@ -215,10 +215,10 @@ def moment(mdl,agents,draw=True,validation=False):
  
       
     #Now define variables  
-    rel_end = -1*np.ones((N,9),dtype=np.int16)  
-    rel_age= -1*np.ones((N,9),dtype=np.int16)  
-    rel_unid= -1*np.ones((N,9),dtype=np.int16)  
-    rel_number= -1*np.ones((N,9),dtype=np.int16)  
+    rel_end = -1*np.ones((N,99),dtype=np.int16)  
+    rel_age= -1*np.ones((N,99),dtype=np.int16)  
+    rel_unid= -1*np.ones((N,99),dtype=np.int16)  
+    rel_number= -1*np.ones((N,99),dtype=np.int16)  
     isrel = np.zeros((N,),dtype=np.int8)  
       
     for t in range(1,mdl.setup.pars['Tret']):  

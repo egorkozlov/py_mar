@@ -56,7 +56,7 @@ def hazards(dataset,event,duration,end,listh,number,wgt):
 #####################################  
 #Routine that computes moments  
 #####################################  
-def compute(hi,period=1):  
+def compute(hi,period=3):  
     #compute moments, period  
     #says how many years correspond to one  
     #period  
@@ -245,11 +245,15 @@ def compute(hi,period=1):
         hi['everc_'+str(20+(j)*5)]=0.0  
           
         for i in range(9):  
-            hi.loc[(hi['everc_'+str(20+(max(j-1,0))*5)]>=0.1),'everc_'+str(20+(j)*5)]=1.0  
-            if(np.any(hi['HOWBEG0'+str(i+1)])=='coh'): 
+             
+            #if(np.any(hi['HOWBEG0'+str(i+1)])=='coh'): 
                 #Get if ever cohabited   
-                hi.loc[((hi['everc_'+str(20+(max(j-1,0))*5)]>=0.1) | ((hi['HOWBEG0'+str(i+1)]=='coh') & (hi['time_'+str(20+(j)*5)]>=hi['BEGDAT0'+str(i+1)]))),'everc_'+str(20+(j)*5)]=1.0  
-            
+                #hi.loc[((hi['everc_'+str(20+(max(j-1,0))*5)]>=0.1) | ((hi['HOWBEG0'+str(i+1)]=='coh') & (hi['time_'+str(20+(j)*5)]>=hi['BEGDAT0'+str(i+1)]))),'everc_'+str(20+(j)*5)]=1.0  
+            hi.loc[(hi['everc_'+str(20+(max(j-1,0))*5)]>=0.1),'everc_'+str(20+(j)*5)]=1.0 
+            try:
+                hi.loc[((hi['HOWBEG0'+str(i+1)]=='coh') & (hi['time_'+str(20+(j)*5)]>=hi['BEGDAT0'+str(i+1)])),'everc_'+str(20+(j)*5)]=1.0  
+            except:
+                pass
                  
                 #Get if ever married  
             hi.loc[((hi['everm_'+str(20+(max(j-1,0))*5)]>=0.1) |  (hi['time_'+str(20+(j)*5)]>=hi['MARDAT0'+str(i+1)])),'everm_'+str(20+(j)*5)]=1.0  
@@ -423,7 +427,7 @@ def compute(hi,period=1):
 #Actual moments computation + weighting matrix  
 ################################################  
   
-def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=False,period=1):  
+def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=False,period=3):  
       
       
       

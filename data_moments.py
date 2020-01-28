@@ -68,7 +68,7 @@ def compute(hi,period=1):
     hi['res']=hi['NUMUNION']+hi['NUMCOHMR'] 
      
     #Get Duration bins 
-    bins_d=np.linspace(0,1200,(100/period)+1) 
+    bins_d=np.linspace(0,1200,int((100/period)+1)) 
     bins_d_label=np.linspace(1,len(bins_d)-1,len(bins_d)-1) 
      
     ########################## 
@@ -86,9 +86,10 @@ def compute(hi,period=1):
      
      
     #Create number of cohabitations 
-    coh['num']=0 
+    coh['num']=0.0
     for i in range(9): 
-        coh.loc[coh['HOWBEG0'+str(i+1)]=='coh','num']=coh.loc[coh['HOWBEG0'+str(i+1)]=='coh','num']+1 
+        if(np.any(coh['HOWBEG0'+str(i+1)])=='coh'):
+            coh.loc[coh['HOWBEG0'+str(i+1)]=='coh','num']=coh.loc[coh['HOWBEG0'+str(i+1)]=='coh','num']+1.0 
              
     #Expand the data     
     cohe=coh.loc[coh.index.repeat(coh.num)] 
@@ -99,8 +100,9 @@ def compute(hi,period=1):
     cohe['cou']=1 
     cohe['rel']=None 
     for i in range(9): 
-        cohe.loc[(cohe['HOWBEG0'+str(i+1)]=='coh') & (cohe['rell']==cohe['cou']),'rel']=i+1 
-        cohe.loc[cohe['HOWBEG0'+str(i+1)]=='coh','cou']= cohe.loc[cohe['HOWBEG0'+str(i+1)]=='coh','cou']+1 
+        if(np.any(coh['HOWBEG0'+str(i+1)])=='coh'):
+            cohe.loc[(cohe['HOWBEG0'+str(i+1)]=='coh') & (cohe['rell']==cohe['cou']),'rel']=i+1 
+            cohe.loc[cohe['HOWBEG0'+str(i+1)]=='coh','cou']= cohe.loc[cohe['HOWBEG0'+str(i+1)]=='coh','cou']+1 
          
     #Get beginning and end of relationhip 
     cohe['beg']=-1 
@@ -219,23 +221,23 @@ def compute(hi,period=1):
  
          
         for i in range(9): 
+            if(np.any(hi['HOWBEG0'+str(i+1)])!=None):
              
-             
-            #Get if in couple 
-            hi.loc[(hi['time_'+str(20+(j)*5)]>=hi['BEGDAT0'+str(i+1)]) & (hi['BEGDAT0'+str(i+1)]<3999) & 
-                   (((hi['time_'+str(20+(j)*5)]<=hi['ENDDAT0'+str(i+1)]) & (hi['ENDDAT0'+str(i+1)]>0))  | 
-                    (hi['ENDDAT0'+str(i+1)]==0) | (hi['WIDDAT0'+str(i+1)]>0) )
-                   ,'status_'+str(20+(j)*5)]='mar' 
-                    
-                   
-            #Substitute if actually cohabitation  
-            hi.loc[(hi['time_'+str(20+(j)*5)]>=hi['BEGDAT0'+str(i+1)]) & (hi['BEGDAT0'+str(i+1)]<3999) & 
-                   (((hi['time_'+str(20+(j)*5)]<=hi['ENDDAT0'+str(i+1)]) & (hi['ENDDAT0'+str(i+1)]>0))  |  
-                    (hi['ENDDAT0'+str(i+1)]==0) | (hi['WIDDAT0'+str(i+1)]>0) ) &  
-                    (hi['status_'+str(20+(j)*5)]=='mar') &  
-                   (hi['HOWBEG0'+str(i+1)]=='coh')    &  
-                   ((hi['MARDAT0'+str(i+1)]==0) | (hi['MARDAT0'+str(i+1)]>hi['time_'+str(20+(j)*5)]))      
-                   ,'status_'+str(20+(j)*5)]='coh'  
+                #Get if in couple 
+                hi.loc[(hi['time_'+str(20+(j)*5)]>=hi['BEGDAT0'+str(i+1)]) & (hi['BEGDAT0'+str(i+1)]<3999) & 
+                       (((hi['time_'+str(20+(j)*5)]<=hi['ENDDAT0'+str(i+1)]) & (hi['ENDDAT0'+str(i+1)]>0))  | 
+                        (hi['ENDDAT0'+str(i+1)]==0) | (hi['WIDDAT0'+str(i+1)]>0) )
+                       ,'status_'+str(20+(j)*5)]='mar' 
+                        
+            if(np.any(hi['HOWBEG0'+str(i+1)])=='coh'):           
+                #Substitute if actually cohabitation  
+                hi.loc[(hi['time_'+str(20+(j)*5)]>=hi['BEGDAT0'+str(i+1)]) & (hi['BEGDAT0'+str(i+1)]<3999) & 
+                       (((hi['time_'+str(20+(j)*5)]<=hi['ENDDAT0'+str(i+1)]) & (hi['ENDDAT0'+str(i+1)]>0))  |  
+                        (hi['ENDDAT0'+str(i+1)]==0) | (hi['WIDDAT0'+str(i+1)]>0) ) &  
+                        (hi['status_'+str(20+(j)*5)]=='mar') &  
+                       (hi['HOWBEG0'+str(i+1)]=='coh')    &  
+                       ((hi['MARDAT0'+str(i+1)]==0) | (hi['MARDAT0'+str(i+1)]>hi['time_'+str(20+(j)*5)]))      
+                       ,'status_'+str(20+(j)*5)]='coh'  
                     
     #Create the variables ever cohabited and ever married 
     for j in range(7): 
@@ -245,13 +247,15 @@ def compute(hi,period=1):
         hi['everc_'+str(20+(j)*5)]=0.0 
          
         for i in range(9): 
-                    
-            #Get if ever cohabited  
-            hi.loc[((hi['everc_'+str(20+(max(j-1,0))*5)]>=0.1) | ((hi['HOWBEG0'+str(i+1)]=='coh') & (hi['time_'+str(20+(j)*5)]>=hi['BEGDAT0'+str(i+1)]))),'everc_'+str(20+(j)*5)]=1.0 
-             
-            #Get if ever cohabited  
-            hi.loc[((hi['everm_'+str(20+(max(j-1,0))*5)]>=0.1) |  (hi['time_'+str(20+(j)*5)]>=hi['MARDAT0'+str(i+1)])),'everm_'+str(20+(j)*5)]=1.0 
-             
+            if(np.any(hi['HOWBEG0'+str(i+1)])=='coh'):
+                #Get if ever cohabited  
+                hi.loc[((hi['everc_'+str(20+(max(j-1,0))*5)]>=0.1) | ((hi['HOWBEG0'+str(i+1)]=='coh') & (hi['time_'+str(20+(j)*5)]>=hi['BEGDAT0'+str(i+1)]))),'everc_'+str(20+(j)*5)]=1.0 
+            else:
+                hi.loc[((hi['everc_'+str(20+(max(j-1,0))*5)]>=0.1)),'everc_'+str(20+(j)*5)]=1.0 
+                
+                #Get if ever cohabited  
+                hi.loc[((hi['everm_'+str(20+(max(j-1,0))*5)]>=0.1) |  (hi['time_'+str(20+(j)*5)]>=hi['MARDAT0'+str(i+1)])),'everm_'+str(20+(j)*5)]=1.0 
+                 
     ###################################### 
     #Build employment by status in 1986 
     ###################################### 
@@ -280,12 +284,12 @@ def compute(hi,period=1):
     ######################################## 
     #Construct share of each relationship 
     ####################################### 
-    mar=np.zeros(7) 
-    coh=np.zeros(7) 
-    emar=np.zeros(7) 
-    ecoh=np.zeros(7) 
+    mar=np.zeros(6) 
+    coh=np.zeros(6) 
+    emar=np.zeros(6) 
+    ecoh=np.zeros(6) 
      
-    for j in range(7): 
+    for j in range(6): 
         mar[j]=np.average(hi['status_'+str(20+(j)*5)]=='mar', weights=np.array(hi['SAMWT'])) 
         coh[j]=np.average(hi['status_'+str(20+(j)*5)]=='coh', weights=np.array(hi['SAMWT'])) 
         emar[j]=np.average(hi['everm_'+str(20+(j)*5)], weights=np.array(hi['SAMWT'])) 
@@ -296,8 +300,7 @@ def compute(hi,period=1):
     # Femle Labor Supply 
     ######################################### 
     fls_ratio=np.average(empl.loc[empl['stat']=='mar','work'], weights=np.array(empl.loc[empl['stat']=='mar','SAMWT']))/np.average(empl.loc[empl['stat']=='coh','work'], weights=np.array(empl.loc[empl['stat']=='coh','SAMWT'])) 
-         
-     
+   
     ######################################### 
     #Create the age at unilateral divorce+ 
     #regression on the effect of unilateral divorce 
@@ -422,7 +425,7 @@ def compute(hi,period=1):
 #Actual moments computation + weighting matrix 
 ################################################ 
  
-def dat_moments(sampling_number=4,weighting=True,covariances=False,period=1): 
+def dat_moments(sampling_number=4,weighting=False,covariances=False,relative=False,period=1): 
      
      
      
@@ -512,7 +515,16 @@ def dat_moments(sampling_number=4,weighting=True,covariances=False,period=1):
          
         # normalize 
         W = W/W.sum() 
-         
+        
+    elif relative:
+        
+        #Compute optimal Weighting Matrix 
+        col=np.concatenate((hazm,hazs,hazd,emar,ecoh,fls_ratio*np.ones(1),beta_unid*np.ones(1)),axis=0)     
+        dim=len(col) 
+        W=np.zeros((dim,dim)) 
+        for i in range(dim): 
+                W[i,i]=1.0/col[i]**2
+               
     else: 
          
         #If no weighting, just use sum of squred deviations as the objective function         

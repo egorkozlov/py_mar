@@ -34,16 +34,18 @@ from data_moments import dat_moments
  
 print('Hi!')
  
- 
+
  
  
 if __name__ == '__main__':
      
      
+    import warnings
+    warnings.filterwarnings("error")
     #For graphs later
     graphs=True
     #Build  data moments and pickle them
-    dat_moments(period=3)
+    dat_moments(period=3,relative=True,weighting=False)
     
          
     #Initialize the file with parameters

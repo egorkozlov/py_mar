@@ -627,13 +627,14 @@ def moment(mdl,agents,draw=True,validation=False):
         ##########################################       
         fig = plt.figure() 
         f4=fig.add_subplot(2,1,1) 
+        xa=(mdl.setup.pars['py']*np.array(range(len(relt1[0,])))+20)
         for ist,sname in enumerate(state_codes): 
             plt.plot([],[],color=print(ist/len(state_codes)), label=sname) 
-        plt.stackplot(np.array(range(len(relt1[0,]))),relt1[0,]/N,relt1[1,]/N,relt1[2,]/N,relt1[3,]/N, 
+        plt.stackplot(xa,relt1[0,]/N,relt1[1,]/N,relt1[2,]/N,relt1[3,]/N, 
                       colors = ['b','y','g','r'])            
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3), 
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small') 
-        plt.xlabel('Time') 
+        plt.xlabel('Age') 
         plt.ylabel('Share') 
           
         ########################################## 
@@ -642,16 +643,17 @@ def moment(mdl,agents,draw=True,validation=False):
         fig = plt.figure() 
         f4=fig.add_subplot(2,1,1) 
         lg=min(len(mar_d),len(relt[1,:])) 
-        plt.plot(np.array(range(lg)), mar_d[0:lg],'g',linewidth=1.5, label='Share Married - D') 
-        plt.fill_between(np.array(range(lg)), mar_i[0,0:lg], mar_i[1,0:lg],alpha=0.2,facecolor='g') 
-        plt.plot(np.array(range(lg)), reltt[2,0:lg]/N,'g',linestyle='--',linewidth=1.5, label='Share Married - S') 
-        plt.plot(np.array(range(lg)), coh_d[0:lg],'r',linewidth=1.5, label='Share Cohabiting - D') 
-        plt.fill_between(np.array(range(lg)), coh_i[0,0:lg], coh_i[1,0:lg],alpha=0.2,facecolor='r') 
-        plt.plot(np.array(range(lg)), reltt[3,0:lg]/N,'r',linestyle='--',linewidth=1.5, label='Share Cohabiting - S') 
+        xa=(5*np.array(range(lg))+20)
+        plt.plot(xa, mar_d[0:lg],'g',linewidth=1.5, label='Share Married - D') 
+        plt.fill_between(xa, mar_i[0,0:lg], mar_i[1,0:lg],alpha=0.2,facecolor='g') 
+        plt.plot(xa, reltt[2,0:lg]/N,'g',linestyle='--',linewidth=1.5, label='Share Married - S') 
+        plt.plot(xa, coh_d[0:lg],'r',linewidth=1.5, label='Share Cohabiting - D') 
+        plt.fill_between(xa, coh_i[0,0:lg], coh_i[1,0:lg],alpha=0.2,facecolor='r') 
+        plt.plot(xa, reltt[3,0:lg]/N,'r',linestyle='--',linewidth=1.5, label='Share Cohabiting - S') 
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3), 
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small') 
         plt.ylim(ymax=1.0) 
-        plt.xlabel('Time') 
+        plt.xlabel('Age') 
         plt.ylabel('Share') 
           
         ########################################## 
@@ -659,12 +661,12 @@ def moment(mdl,agents,draw=True,validation=False):
         ##########################################       
         fig = plt.figure() 
         f5=fig.add_subplot(2,1,1) 
-  
-        plt.plot(np.array(range(mdl.setup.pars['Tret'])), flsm,color='r', label='Marriage') 
-        plt.plot(np.array(range(mdl.setup.pars['Tret'])), flsc,color='k', label='Cohabitation')          
+        xa=(mdl.setup.pars['py']*np.array(range(mdl.setup.pars['Tret']))+20)
+        plt.plot(xa, flsm,color='r', label='Marriage') 
+        plt.plot(xa, flsc,color='k', label='Cohabitation')          
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3), 
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small') 
-        plt.xlabel('Time') 
+        plt.xlabel('Age') 
         plt.ylabel('FLS') 
          
         ########################################## 

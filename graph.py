@@ -294,7 +294,8 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     
     #Graph for the Surplus
     zero = np.array([0.0] * psig)
-    fig5 = fig.add_subplot(2,1,1)
+    fig = plt.figure()
+    f5 = fig.add_subplot(2,1,1)
     plt.plot(psig, zero,'k',linewidth=1)
     plt.plot(psig, surpM,'b',linewidth=1.5, label='Man')
     plt.plot(psig, surpW,'r',linewidth=1.5, label='Women')
@@ -338,13 +339,14 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     
     #Graph for the Surplus
     zero = np.array([0.0] * agrid)
-    fig7 = fig.add_subplot(2,1,1)
+    fig = plt.figure()
+    f7 = fig.add_subplot(2,1,1)
     plt.plot(agrid, zero,'k',linewidth=1)
     plt.plot(agrid, surpM,'b',linewidth=1.5, label='Man')
     plt.plot(agrid, surpW,'r',linewidth=1.5, label='Women')
     #plt.axvline(x=treb, color='b', label='Tresh Bilateral')
     #plt.axvline(x=treu, color='r', linestyle='--', label='Tresh Unilateral')
-    plt.ylim(-0.1*max(max(surpM),max(surpW),max(surpM),max(surpW)),1.1*max(max(surpM),max(surpW)))
+    plt.ylim(-0.1*max(max(surpM),max(surpW),max(surpM),max(surpW))-0.0001,1.1*max(max(surpM),max(surpW))+0.0001)
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=3, fontsize='x-small')
     plt.xlabel('Assets')
@@ -435,13 +437,13 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     #Graph for the Surplus
     zero = np.array([0.0] * np.array(range(T)))
     fig = plt.figure()
-    fig12 = fig.add_subplot(2,1,1)
+    f12 = fig.add_subplot(2,1,1)
     plt.plot(np.array(range(T)), zero,'k',linewidth=1)
     plt.plot(np.array(range(T)), surpM,'b',linewidth=1.5, label='Man')
     plt.plot(np.array(range(T)), surpW,'r',linewidth=1.5, label='Women')
     #plt.axvline(x=treb, color='b', label='Tresh Bilateral')
     #plt.axvline(x=treu, color='r', linestyle='--', label='Tresh Unilateral')
-    plt.ylim(-0.1*max(max(surpM),max(surpW),max(surpM),max(surpW)),1.1*max(max(surpM),max(surpW)))
+    plt.ylim(-0.1*max(max(surpM),max(surpW),max(surpM)-0.0001,max(surpW)),1.1*max(max(surpM),max(surpW))+0.0001)
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),
                   fancybox=True, shadow=True, ncol=3, fontsize='x-small')
     plt.xlabel('Time')
@@ -463,7 +465,7 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     #Graph for the Surplus
     zero = np.array([0.0] * psig)
     fig = plt.figure()
-    fig13 = fig.add_subplot(2,1,1)
+    f13 = fig.add_subplot(2,1,1)
     plt.plot(psig, zero,'k',linewidth=1)
     plt.plot(psig, surpM,'b',linewidth=1.5, label='Man')
     plt.plot(psig, surpW,'r',linewidth=1.5, label='Women')
@@ -475,7 +477,7 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
                   fancybox=True, shadow=True, ncol=3, fontsize='x-small')
     plt.xlabel('Love')
     plt.ylabel('Marriage Surplus wrt Cohab.')
-    print(333,surpM,surpW)
+   
     
     ##########################################
     # Initial thetas
@@ -493,7 +495,7 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     #Graph for the Surplus
     zero = np.array([0.0] * psig)
     fig = plt.figure()
-    fig14 = fig.add_subplot(2,1,1)
+    f14 = fig.add_subplot(2,1,1)
     plt.plot(psig, zero,'k',linewidth=1)
     plt.plot(psig,  thetf[ti,ai,0:len(psig)],'b',linewidth=1.5, label='Theta Marriage')
     plt.plot(psig,  thetf_c[ti,ai,0:len(psig)],'r', linestyle='--',linewidth=1.5, label='Theta Cohabitation')
@@ -509,7 +511,7 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     ########################################## 
     zero = np.array([0.0] * psig)
     fig = plt.figure()
-    fig15 = fig.add_subplot(2,1,1)
+    f15 = fig.add_subplot(2,1,1)
     plt.plot(psig, zero,'k',linewidth=1)
     plt.plot(psig,  thetam_R[ai,zfi,zmi,0:len(psig),0,ti],'b',linewidth=1.5, label='Theta Marriage')
     plt.plot(psig,  thetac_R[ai,zfi,zmi,0:len(psig),0,ti],'r', linestyle='--',linewidth=1.5, label='Theta Cohabitation')
@@ -526,7 +528,7 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     ########################################## 
     zero = np.array([0.0] * psig)
     fig = plt.figure()
-    fig16 = fig.add_subplot(2,1,1)
+    f16 = fig.add_subplot(2,1,1)
     #plt.plot(psig, zero,'k',linewidth=1)
     plt.plot(setup.thetagrid,  sm[ai,zfi,zmi,psii,0:len(setup.thetagrid),ti],'b',linewidth=1.5, label='Savings Marriage')
     #plt.plot(setup.thetagrid,  sc[ai,zfi,zmi,psii,ti,0:len(setup.thetagrid)],'r', linestyle='--',linewidth=1.5, label='Savings Cohabitation')
@@ -541,7 +543,7 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     ########################################## 
     zero = np.array([0.0] * psig)
     fig = plt.figure()
-    fig17 = fig.add_subplot(2,1,1)
+    f17 = fig.add_subplot(2,1,1)
     #plt.plot(psig, zero,'k',linewidth=1)
     plt.plot(agrid,  thetam_R[0:len(agrid),zfi,zmi,psii,0,ti],'b',linewidth=1.5, label='Theta Marriage')
     plt.plot(agrid,  thetac_R[0:len(agrid),zfi,zmi,psii,0,ti],'r', linestyle='--',linewidth=1.5, label='Theta Cohabitation')

@@ -617,7 +617,8 @@ def moment(mdl,agents,draw=True,validation=False):
            
         for ist,sname in enumerate(state_codes):  
              
-            plt.plot(np.array(range(lenn)), inc_rel[ist,],color=print(ist/len(state_codes)),markersize=6, label=sname)  
+            plt.plot(np.array(range(lenn)), inc_rel[ist,],color=print(ist/len(state_codes)),markersize=6, label=sname)
+       
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),  
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')  
         plt.xlabel('Time')  

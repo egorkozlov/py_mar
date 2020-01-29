@@ -35,18 +35,19 @@ class ModelSetup(object):
         p['n_zm_t']      = [5]*Tret + [1]*(T-Tret)
         p['sigma_psi_init'] = 0.28
         p['sigma_psi']   = 0.11
-        p['R_t'] = [1.04**period_year]*T
+        p['R_t'] = [1.03**period_year]*T
         p['n_psi_t']     = [12]*T
         p['beta_t'] = [0.98**period_year]*T
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
-        p['couple_rts'] = 0.4  
+        p['couple_rts'] = 0.0 
         p['sig_partner_a'] = 0.1
         p['sig_partner_z'] = 0.4
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
         
-        p['wret'] = 0.8
+        p['wage_gap'] = 0.6
+        p['wret'] = 0.2#0.5
         p['uls'] = 0.2
         p['pls'] = 0.8
         
@@ -54,9 +55,25 @@ class ModelSetup(object):
         p['u_shift_mar'] = 0.0
         p['u_shift_coh'] = 0.0
         
+       
+        p['f_wage_trend'] = [0.0 + 0.06*min(t,Tret) - 0.0008*(min(t,Tret)**2) for t in range(T)]
+        p['m_wage_trend'] = [0.0 + 0.06*min(t,Tret) - 0.0008*(min(t,Tret)**2) for t in range(T)]
         
-        p['f_wage_trend'] = [0.0 + 0.0*min(t,Tret) - 0.000*(min(t,Tret)**2) for t in range(T)]
-        p['m_wage_trend'] = [0.0 + 0.0*min(t,Tret) - 0.000*(min(t,Tret)**2) for t in range(T)]
+#        #Use Gourinchas and parker trend in income     
+#        aa=-47985.32533
+#        bb=7732.726535
+#        ccc=-379.6634578
+#        dd=9.729756322
+#        ee=-0.121709668
+#        ff=0.000579381
+#        J=20
+#        wf = np.array([aa+bb*(t*period_year+J)+ccc*(t*period_year+J)**2+dd*(t*period_year+J)**3+ee*(t*period_year+J)**4+ff*(t*period_year+J)**5 for t in range(T)])
+#        wm = np.array([aa+bb*(t*period_year+J)+ccc*(t*period_year+J)**2+dd*(t*period_year+J)**3+ee*(t*period_year+J)**4+ff*(t*period_year+J)**5 for t in range(T)])
+#        
+#        #Rescale
+#        p['f_wage_trend']=list(np.log(p['wage_gap']*wf/wf[0]))
+#        p['m_wage_trend']=list(np.log(wm/wm[0]))
+
         
         
         p['util_lam'] = 0.4
@@ -195,7 +212,7 @@ class ModelSetup(object):
         #Grid Couple
         self.na = 40
         self.amin = 0
-        self.amax =60
+        self.amax =90
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
         tune=1.5
         #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune

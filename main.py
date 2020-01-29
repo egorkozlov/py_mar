@@ -47,8 +47,8 @@ if __name__ == '__main__':
 
     x0 = np.array([0.01,0.01,0.02,0.7,0.25,0.0001,0.5,0.5])
     lb= np.array([0.0,0.005, 0.5,0.4,0.01,0.0,0.0,0.01])
-    ub= np.array([1.0,0.5,  10.0,1.0,0.4,0.2,1.0,2.0])
-    
+    ub= np.array([1.0,0.8,  5.0,1.0,0.4,0.2,1.0,2.0])
+   
     
     
     ##### FIRST LET'S TRY TO RUN THE FUNCTION IN FEW POINTS
@@ -70,8 +70,8 @@ if __name__ == '__main__':
    
 
     #Tik Tak Optimization
-    param=tiktak(200,200,12,lb,ub,mdl_resid,tole=1e-3,nelder=False,refine=False,
-                 skip_local=True,skip_global=False)
+    param=tiktak(200,600,20,lb,ub,mdl_resid,tole=1e-3,nelder=False,refine=False,
+                 skip_local=False,skip_global=False)
     
     print('f is {} and x is {}'.format(param[0],param[1]))
     

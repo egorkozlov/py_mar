@@ -44,15 +44,23 @@ if __name__ == '__main__':
     #For graphs later
     graphs=True
     #Build  data moments and pickle them
-    dat_moments(period=3,relative=True,weighting=False)
+    dat_moments(period=1)
     
          
     #Initialize the file with parameters
     #x0 = np.array([0.01,0.39,0.56,0.16,0.34,0.0001,0.5])
     
     #x0 = np.array([0.419146,0.12785496,0.34224688,0.56194163,0.18066626,0.04687082,0.48315671])
-    x0 = np.array([0.5390625,0.31824219,4.58203125,0.9109375,0.01304687,0.1953125,0.6328125,1.23820313])
+    x0 = np.array([0.22556613, 0.27110245, 2.21692011, 0.95382882, 0.14945953, 0.06212699,0.69860811, 1.25394819])
     
+
+
+
+
+
+
+
+
     #Name and location of files
     if system() == 'Windows':   
         path='D:/blasutto/store_model'
@@ -61,7 +69,7 @@ if __name__ == '__main__':
     
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','models','agents','scaled residuals'],
                                       #load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
-                                      solve_transition=False,                                      
+                                      #solve_transition=False,                                      
                                       #save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       store_path=path,
                                       verbose=True,calibration_report=False,draw=True,graphs=graphs)

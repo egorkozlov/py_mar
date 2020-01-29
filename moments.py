@@ -706,7 +706,7 @@ def moment(mdl,agents,draw=True,validation=False):
         plt.errorbar(x, y, yerr=yerr, fmt='o', elinewidth=0.03)  
         plt.ylabel('Relative Hazard - UniD vs. Bil')  
         plt.xticks(x, ["Overall Risk","Risk of Marriage","Risk of Separation"] ) 
-        plt.ylim(ymax=1.2,ymin=0.7)  
+        #plt.ylim(ymax=1.2,ymin=0.7)  
         plt.xlim(xmax=1.0,xmin=0.0)  
         #plt.xticks(index , ('Unilateral', 'Bilateral'))  
    

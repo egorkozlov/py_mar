@@ -142,6 +142,8 @@ def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],
     #Import Data
     with open('age_uni.pkl', 'rb') as file:
         age_uni=pickle.load(file)
+        
+
     
     #Transfrom distribution of age at Unilateral Divorce into conditional Probabilities
     #The Probability of Transitioning from Unilateral to Bilateral is always zero
@@ -152,6 +154,7 @@ def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],
     summa=0.0
     summa1=0.0
     for i in age_uni:
+        print(i)
         summa+=age_uni[i]
         change[int(summa1*len(change[:])/sum(age_uni.values())):int(summa*len(change[:])/sum(age_uni.values()))]=(i-18)/mdl.setup.pars['py']
         summa1+=age_uni[i]
@@ -211,7 +214,7 @@ def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],
    
     res_all=(dat-sim)
   
-    
+ 
     
     if verbose:
         print('data moments are {}'.format(dat))

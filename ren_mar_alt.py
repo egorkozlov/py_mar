@@ -108,6 +108,47 @@ def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
 
 
 
+
+def v_no_ren(setup,V,marriage,t):
+    
+    # this works live v_ren_new but does not actually run renegotiation
+    
+    expnd = lambda x : setup.v_thetagrid_fine.apply(x,axis=2)
+    
+    if marriage:
+        # if couple is married already
+        v_y = expnd(V['Couple, M']['V'])
+        vf_y = expnd(V['Couple, M']['VF'])
+        vm_y = expnd(V['Couple, M']['VM'])
+    else:
+        # stay in cohabitation
+        v_y = expnd(V['Couple, C']['V'])
+        vf_y = expnd(V['Couple, C']['VF'])
+        vm_y = expnd(V['Couple, C']['VM'])
+        switch = np.full(vf_y.shape,False,dtype=np.bool)
+     
+        
+    def r(x): return x.astype(np.float32)
+    
+    shape_notheta = v_y.shape[:-1]
+    yes = np.full(shape_notheta,True)
+    ntheta = setup.ntheta_fine
+    i_theta_out = np.broadcast_to(np.arange(ntheta,dtype=np.int16)[None,None,:],v_y.shape).copy()
+        
+    vf_n, vm_n = np.full((2,) + shape_notheta,-np.inf,dtype=np.float32)
+    
+    result =  {'Decision': yes, 'thetas': i_theta_out,
+            'Values': (r(v_y), r(vf_y), r(vm_y)),'Divorce':(vf_n,vm_n)}
+    
+    if not marriage:
+        result['Cohabitation preferred to Marriage'] = ~switch
+        
+        
+        
+    return result
+
+
+
 def v_mar_igrid(setup,t,V,icouple,ind_or_inds,*,female,marriage,interpolate=True,return_all=False):
     # this returns value functions for couple that entered the last period with
     # (s,Z,theta) from the grid and is allowed to renegotiate them or breakup
@@ -182,6 +223,21 @@ def v_mar_igrid(setup,t,V,icouple,ind_or_inds,*,female,marriage,interpolate=True
     return {'Values': (vfout, vmout), 'NBS': nbsout, 'theta': ithetaout, 'Decision':agree}
 
 
+
+def v_no_mar(setup,t,V,icouple,ind_or_inds,*,female,marriage):
+    # emulates v_mar_igrid but with no marriage
+    
+    
+    ind, izf, izm, ipsi = setup.all_indices(t,ind_or_inds)
+    
+    vmout, vfout = V['Male, single']['V'][:,izm], V['Female, single']['V'][:,izf]
+    
+    
+    nbsout = np.zeros_like(vmout,dtype=np.float32)
+    ithetaout = -np.ones_like(vmout,dtype=np.int16)
+    agree = np.full_like(vmout,False,dtype=np.bool)
+    
+    return {'Values': (vfout, vmout), 'NBS': nbsout, 'theta': ithetaout, 'Decision':agree}
 
 def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,Vmale,Vfemale,izf,izm,cost_fem=0.0,cost_mal=0.0):
     # this produces value of divorce for gridpoints given possibly different

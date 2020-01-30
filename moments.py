@@ -225,7 +225,7 @@ def moment(mdl,agents,draw=True,validation=False):
           
         irchange = ((state[:,t-1] != state[:,t]) & ((state[:,t-1]==0) | (state[:,t-1]==1)))  
           
-        if not np.any(ichange): continue  
+        if not np.any(irchange): continue  
       
         rel_end[irchange,isrel[irchange]]=state[irchange,t]  
         rel_age[irchange,isrel[irchange]]=t  

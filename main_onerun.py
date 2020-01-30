@@ -76,8 +76,8 @@ if __name__ == '__main__':
         path = None
     
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','models','agents','scaled residuals'],
-                                      #load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
-                                      #solve_transition=False,                                      
+                                      load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
+                                      #solve_transition=True,                                      
                                       #save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       store_path=path,
                                       verbose=True,calibration_report=False,draw=True,graphs=graphs)

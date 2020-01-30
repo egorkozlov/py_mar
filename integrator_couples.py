@@ -7,15 +7,18 @@ This is integrator for couples
 
 import numpy as np
 #from renegotiation import v_last_period_renegotiated, v_renegotiated_loop
-from ren_mar_alt import v_ren_new
+from ren_mar_alt import v_ren_new, v_no_ren
     
 
 def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True):
     # computes expected value of couple entering the next period with an option
     # to renegotiate or to break up
     
-    
-    out = v_ren_new(setup,Vpostren,marriage,t)
+    can_divorce = setup.pars['can divorce'][t]
+    if can_divorce:
+        out = v_ren_new(setup,Vpostren,marriage,t)
+    else:
+        out = v_no_ren(setup,Vpostren,marriage,t)
     _Vren2 = out.pop('Values') 
     #_Vren2=out['Values']
     dec = out

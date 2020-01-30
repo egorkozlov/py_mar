@@ -23,6 +23,8 @@ class ModelSetup(object):
         T = int(52/period_year)
         Tret = int(42/period_year) # first period when the agent is retired
         Tbef=int(2/period_year)
+        Tren  = int(42/period_year) # period starting which people do not renegotiate/divroce
+        Tmeet = int(42/period_year) # period starting which you do not meet anyone
         p['py']=period_year
         p['T'] = T
         p['Tret'] = Tret
@@ -91,7 +93,11 @@ class ModelSetup(object):
         for j in range(period_year-1):
             p_meet=p_meet+(1-p_meet)*p['pmeet']
             
-        p['pmeet_t'] = [p_meet]*T
+            
+        # timing here    
+            
+        p['pmeet_t'] = [p_meet]*Tmeet + [0.0]*(T-Tmeet)
+        p['can divorce'] = [True]*Tren + [False]*(T-Tren)
         
         
         self.pars = p

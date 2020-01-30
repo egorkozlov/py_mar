@@ -7,7 +7,7 @@ This contains routines for intergation for singles
 import numpy as np
 #import dill as pickle
 
-from ren_mar_alt import v_mar_igrid
+from ren_mar_alt import v_mar_igrid, v_no_mar
     
 
 
@@ -16,7 +16,12 @@ def ev_single(setup,V,sown,female,t,trim_lvl=0.001):
     # expected value of single person meeting a partner with a chance pmeet
     pmeet = setup.pars['pmeet_t'][t]
     
-    EV_meet, dec = ev_single_meet(setup,V,sown,female,t,trim_lvl=trim_lvl)
+    skip_mar = (pmeet < 1e-5)
+    
+    EV_meet, dec = ev_single_meet(setup,V,sown,female,t,
+                                      skip_mar=skip_mar,trim_lvl=trim_lvl)
+    
+    
     
     if female:
         M = setup.exogrid.zf_t_mat[t].T
@@ -28,7 +33,7 @@ def ev_single(setup,V,sown,female,t,trim_lvl=0.001):
     return (1-pmeet)*EV_nomeet + pmeet*EV_meet, dec
     
 
-def ev_single_meet(setup,V,sown,female,t,trim_lvl=0.001):
+def ev_single_meet(setup,V,sown,female,t,skip_mar=False,trim_lvl=0.001):
     # computes expected value of single person meeting a partner
     
     # this creates potential partners and integrates over them
@@ -63,15 +68,26 @@ def ev_single_meet(setup,V,sown,female,t,trim_lvl=0.001):
     iconv = matches['iconv']
     
     for i in range(npart):
+        if not skip_mar:
+            # try marriage
+            res_m = v_mar_igrid(setup,t,V,i_assets_c[:,i],inds,
+                                     female=female,marriage=True)
+            
+            
+            res_c = v_mar_igrid(setup,t,V,i_assets_c[:,i],inds,
+                                     female=female,marriage=False)
+        else:
+            # try marriage
+            res_m = v_no_mar(setup,t,V,i_assets_c[:,i],inds,
+                                     female=female,marriage=True)
+            
+            
+            res_c = v_no_mar(setup,t,V,i_assets_c[:,i],inds,
+                                     female=female,marriage=False)
         
-        # try marriage
-        res_m = v_mar_igrid(setup,t,V,i_assets_c[:,i],inds,
-                                 female=female,marriage=True)
+        
         
         (vfoutm,vmoutm), nprm, decm, thtm = res_m['Values'], res_m['NBS'], res_m['Decision'], res_m['theta']
-        
-        res_c = v_mar_igrid(setup,t,V,i_assets_c[:,i],inds,
-                                 female=female,marriage=False)
         
         # try cohabitation
         (vfoutc, vmoutc), nprc, decc, thtc =  res_c['Values'], res_c['NBS'], res_c['Decision'], res_c['theta']

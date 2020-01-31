@@ -36,7 +36,7 @@ def int_sol(m_in,newton=True,step=1e-6,nint=2000,*,A,alp,sig,xi,lam,kap,lbr):
     
     m_implied = foc_expression(xgrid)
           
-    x_interpolated = np.minimum(np.interp(m_in,m_implied,xgrid),x0)
+    x_interpolated = np.maximum(np.interp(m_in,m_implied,xgrid),x0)
     
     if not newton:
         xout = x_interpolated

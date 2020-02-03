@@ -42,7 +42,7 @@ def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],
     
     
     # this is for the default model
-    dc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=0.0)
+    dc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)
     sc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.00,u_lost_f=0.00)
     
     
@@ -191,8 +191,9 @@ def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],
     coh_d=packed_data['ecoh']
     fls_d=np.ones(1)*packed_data['fls_ratio']
     beta_unid_d=np.ones(1)*packed_data['beta_unid']
+    mean_fls_d=np.ones(1)*packed_data['mean_fls']
     W=packed_data['W']
-    dat=np.concatenate((hazm_d,hazs_d,hazd_d,mar_d,coh_d,fls_d,beta_unid_d),axis=0)
+    dat=np.concatenate((hazm_d,hazs_d,hazd_d,mar_d,coh_d,fls_d,beta_unid_d,mean_fls_d),axis=0)
     
 
     #Get Simulated Data
@@ -203,8 +204,9 @@ def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],
     mar_s = moments['share mar'][0:len(mar_d)]
     coh_s = moments['share coh'][0:len(coh_d)]
     beta_unid_s=np.ones(1)*moments['beta unid']
-    fls_s = np.ones(1)*np.mean(moments['flsm'][1:Tret])/np.mean(moments['flsc'][1:Tret])
-    sim=np.concatenate((hazm_s,hazs_s,hazd_s,mar_s,coh_s,fls_s,beta_unid_s),axis=0)
+    mean_fls_s=np.ones(1)*moments['mean_fls']
+    fls_s = np.ones(1)*moments['fls_ratio']
+    sim=np.concatenate((hazm_s,hazs_s,hazd_s,mar_s,coh_s,fls_s,beta_unid_s,mean_fls_s),axis=0)
 
 
 

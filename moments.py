@@ -411,6 +411,24 @@ def moment(mdl,agents,draw=True,validation=False):
            
     moments['flsm'] = flsm  
     moments['flsc'] = flsc  
+    
+    #Average FLS
+    mean_fls=0.0
+    pick=((agents.state[:,:]==2)  | (agents.state[:,:]==3))
+    if pick.any():mean_fls=np.array(setup.ls_levels)[agents.ils_i[pick]].mean()
+    
+    moments['mean_fls'] = mean_fls
+    
+    #Ratio of fls
+    mean_fls_m=0.0
+    pick=(agents.state[:,:]==2)
+    if pick.any():mean_fls_m=np.array(setup.ls_levels)[agents.ils_i[pick]].mean()
+      
+    mean_fls_c=0.0
+    pick=(agents.state[:,:]==3)
+    if pick.any():mean_fls_c=np.array(setup.ls_levels)[agents.ils_i[pick]].mean()
+    
+    moments['fls_ratio']=mean_fls_m/max(mean_fls_c,0.0001)
       
       
     
@@ -527,7 +545,8 @@ def moment(mdl,agents,draw=True,validation=False):
             hazd_d=packed_data['hazd']  
             mar_d=packed_data['emar']  
             coh_d=packed_data['ecoh']  
-            fls_d=np.ones(1)*packed_data['fls_ratio']  
+            fls_d=np.ones(1)*packed_data['fls_ratio'] 
+            mean_fls_d=np.ones(1)*packed_data['mean_fls'] 
             beta_unid_d=np.ones(1)*packed_data['beta_unid']  
             hazm_i=packed_data['hazmi']  
             hazs_i=packed_data['hazsi']  
@@ -535,6 +554,7 @@ def moment(mdl,agents,draw=True,validation=False):
             mar_i=packed_data['emari']  
             coh_i=packed_data['ecohi']  
             fls_i=np.ones(1)*packed_data['fls_ratioi']  
+            mean_fls_i=np.ones(1)*packed_data['mean_flsi']
             beta_unid_i=np.ones(1)*packed_data['beta_unidi']  
    
            
@@ -672,9 +692,10 @@ def moment(mdl,agents,draw=True,validation=False):
         plt.xlabel('Age')  
         plt.ylabel('FLS')  
           
+ 
         ##########################################  
-        # Histogram of Effect of Unilateral Divorce  
-        ##########################################   
+        # DID of unilateral fivorce on part choice  
+        ##########################################  
         fig = plt.figure()  
         f6=fig.add_subplot(2,1,1)  
            
@@ -689,7 +710,43 @@ def moment(mdl,agents,draw=True,validation=False):
         plt.xticks(x, ["Data","Simulation"] ) 
         plt.ylim(ymax=0.1)  
         plt.xlim(xmax=1.0,xmin=0.0)  
-        #plt.xticks(index , ('Unilateral', 'Bilateral'))  
+        
+        ##########################################  
+        # FLS: Marriage vs. cohabitation
+        ##########################################   
+        fig = plt.figure()  
+        f6=fig.add_subplot(2,1,1)  
+           
+          
+        # create plot  
+        x=np.array([0.25,0.75]) 
+        y=np.array([fls_d,mean_fls_m/max(mean_fls_c,0.0001)])  
+        yerr=np.array([(fls_i[1]-fls_i[0])/2.0,0.0])  
+        plt.axhline(y=1.0,linewidth=0.1, color='r')  
+        plt.errorbar(x, y, yerr=yerr, fmt='o', elinewidth=0.03)  
+        plt.ylabel('Ratio of Female Hrs: Mar/Coh')  
+        plt.xticks(x, ["Data","Simulation"] ) 
+        #plt.ylim(ymax=0.1)  
+        plt.xlim(xmax=1.0,xmin=0.0)  
+        
+        
+        ##########################################  
+        # FLS
+        ##########################################    
+        fig = plt.figure()  
+        f6=fig.add_subplot(2,1,1)  
+           
+          
+        # create plot  
+        x=np.array([0.25,0.75]) 
+        y=np.array([mean_fls_d,mean_fls])  
+        yerr=np.array([(mean_fls_i[1]-mean_fls_i[0])/2.0,0.0])  
+        plt.errorbar(x, y, yerr=yerr, fmt='o', elinewidth=0.03)  
+        plt.ylabel('Female Labor Hours')  
+        plt.xticks(x, ["Data","Simulation"] ) 
+        #plt.ylim(ymax=0.1)  
+        plt.xlim(xmax=1.0,xmin=0.0)  
+        
           
          
         ########################################################## 

@@ -37,7 +37,7 @@ class ModelSetup(object):
         p['n_zm_t']      = [5]*Tret + [1]*(T-Tret)
         p['sigma_psi_init'] = 0.28
         p['sigma_psi']   = 0.11
-        p['R_t'] = [1.03**period_year]*T
+        p['R_t'] = [1.02**period_year]*T
         p['n_psi_t']     = [12]*T
         p['beta_t'] = [0.98**period_year]*T
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
@@ -58,7 +58,7 @@ class ModelSetup(object):
         p['u_shift_coh'] = 0.0
         
        
-        p['f_wage_trend'] = [0.0 + 0.06*min(t,Tret) - 0.0008*(min(t,Tret)**2) for t in range(T)]
+        p['f_wage_trend'] = [0.0 + 0.03*min(t,Tret) - 0.0008*(min(t,Tret)**2) for t in range(T)]
         p['m_wage_trend'] = [0.0 + 0.06*min(t,Tret) - 0.0008*(min(t,Tret)**2) for t in range(T)]
         
 #        #Use Gourinchas and parker trend in income     

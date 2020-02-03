@@ -56,7 +56,7 @@ def hazards(dataset,event,duration,end,listh,number,wgt):
 #####################################  
 #Routine that computes moments  
 #####################################  
-def compute(hi,period=3):  
+def compute(hi,d_hrs,period=3):  
     #compute moments, period  
     #says how many years correspond to one  
     #period  
@@ -408,13 +408,39 @@ def compute(hi,period=3):
     #Frequencies for age at intervire 
     freq_ai=CountFrequency(hi['ageint'].tolist())  
       
-    #Drop if errors  
+    ##############################
+    #Compute hours using the psid
+    ################################
+    
+    #Account for the survey to be retrospective
+    d_hrs['age']=d_hrs['age']-1.0
+    
+    #Trim if hrs>2000
+    d_hrs.loc[d_hrs['wls']>=2000,'wls']=2000
+    
+    #First keep the right birth cohorts
+    d_hrs['birth']=d_hrs['year']-d_hrs['age']
+    d_hrs=d_hrs[(d_hrs['birth']>=1945) & (d_hrs['birth']<1955)]
+ 
+    #Generate variables of interest
+    d_hrs['mar']=-1.0
+    d_hrs.loc[(d_hrs['mls']==1),'mar']=1.0
+    d_hrs.loc[(d_hrs['mls']>1) & (d_hrs['mls']<100),'mar']=0.0
+    
+    #Get mean labor supply
+    mean_fls=np.average(d_hrs.loc[(d_hrs['age']>=25) & (d_hrs['age']<=45),'wls'])/2000
       
-    #hi3.to_csv(r'D:\Downloads\temp.csv')  
+    #New dataset 
+    d_hrs2=d_hrs[(d_hrs['mar']>=0) & (d_hrs['year']>=1977)]
+   
+    #Get Ratio of Female to Male FLP
+    fls_ratio=np.average(d_hrs2.loc[d_hrs2['mar']==1.0,'wls'])/np.average(d_hrs2.loc[d_hrs2['mar']==0.0,'wls'])  
+    
+       
       
     #Create a dictionary for saving simulated moments  
     listofTuples = [("hazs" , hazs), ("hazm" , hazm),("hazd" , hazd),("emar" , emar), 
-                    ("ecoh" , ecoh), ("fls_ratio" , fls_ratio),("mar" , mar),("coh" , coh), 
+                    ("ecoh" , ecoh), ("fls_ratio" , fls_ratio),("mean_fls" , mean_fls),("mar" , mar),("coh" , coh), 
                     ("freq_pc" , freq_pc), ("freq_i" , freq_i),("beta_unid" , beta_unid),("freq_ai" , freq_ai)]  
     dic_mom=dict(listofTuples)  
       
@@ -433,16 +459,18 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
       
           
     #Import Data  
-    data=pd.read_csv('histo.csv')  
+    data=pd.read_csv('histo.csv')     
+    data_h=pd.read_csv('hrs.csv')
       
     #Call the routine to compute the moments  
-    dic=compute(data.copy(),period=period)  
+    dic=compute(data.copy(),data_h.copy(),period=period)  
     hazs=dic['hazs']  
     hazm=dic['hazm']  
     hazd=dic['hazd']  
     emar=dic['emar']  
     ecoh=dic['ecoh']  
     fls_ratio=dic['fls_ratio']  
+    mean_fls=dic['mean_fls']
     mar=dic['mar']  
     coh=dic['coh']  
     freq_pc=dic['freq_pc']  
@@ -453,8 +481,10 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
       
     #Use bootstrap samples to compute the weighting matrix  
     n=len(data)  
+    n_h=len(data_h)
     boot=sampling_number  
-    nn=n*boot  
+    nn=n*boot
+    nn_h=n_h*boot
       
     hazsB=np.zeros((len(hazs),boot))  
     hazmB=np.zeros((len(hazm),boot))  
@@ -463,23 +493,27 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
     cohB=np.zeros((len(coh),boot))  
     emarB=np.zeros((len(emar),boot))  
     ecohB=np.zeros((len(ecoh),boot))  
-    fls_ratioB=np.zeros((1,boot))  
+    fls_ratioB=np.zeros((1,boot)) 
+    mean_flsB=np.zeros((1,boot)) 
     beta_unidB=np.zeros((1,boot))  
       
-    aa=data.sample(n=nn,replace=True,weights='SAMWT',random_state=4)  
+    aa=data.sample(n=nn,replace=True,weights='SAMWT',random_state=4)
+    a_h=data_h.sample(n=nn_h,replace=True,random_state=5)
       
     #Make weights useless, we already used them for sampling  
     aa['SAMWT']=1  
     for i in range(boot):  
       
         a1=aa[(i*n):((i+1)*n)].copy().reset_index()  
-        dicti=compute(a1.copy(),period=period)  
+        a1h=a_h[(i*n_h):((i+1)*n_h)].copy().reset_index() 
+        dicti=compute(a1.copy(),a1h.copy(),period=period)  
         hazsB[:,i]=dicti['hazs']  
         hazmB[:,i]=dicti['hazm']  
         hazdB[:,i]=dicti['hazd']  
         emarB[:,i]=dicti['emar']  
         ecohB[:,i]=dicti['ecoh']  
-        fls_ratioB[:,i]=dicti['fls_ratio']  
+        fls_ratioB[:,i]=dicti['fls_ratio'] 
+        mean_flsB[:,i]=dicti['mean_fls'] 
         marB[:,i]=dicti['mar']  
         beta_unidB[:,i]=dicti['beta_unid']  
       
@@ -496,13 +530,14 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
     emari=np.array((np.percentile(emarB,2.5,axis=1),np.percentile(emarB,97.5,axis=1)))  
     ecohi=np.array((np.percentile(ecohB,2.5,axis=1),np.percentile(ecohB,97.5,axis=1)))  
     fls_ratioi=np.array((np.percentile(fls_ratioB,2.5,axis=1),np.percentile(fls_ratioB,97.5,axis=1)))  
+    mean_flsi=np.array((np.percentile(mean_flsB,2.5,axis=1),np.percentile(mean_flsB,97.5,axis=1)))  
     beta_unidi=np.array((np.percentile(beta_unidB,2.5,axis=1),np.percentile(beta_unidB,97.5,axis=1)))  
       
     #Do what is next only if you want the weighting matrix     
     if weighting:  
           
         #Compute optimal Weighting Matrix  
-        col=np.concatenate((hazmB,hazsB,hazdB,emarB,ecohB,fls_ratioB,beta_unidB),axis=0)      
+        col=np.concatenate((hazmB,hazsB,hazdB,emarB,ecohB,fls_ratioB,beta_unidB,mean_flsB),axis=0)      
         dim=len(col)  
         W_in=np.zeros((dim,dim))  
         for i in range(dim):  
@@ -521,7 +556,7 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
     elif relative: 
          
         #Compute optimal Weighting Matrix  
-        col=np.concatenate((hazm,hazs,hazd,emar,ecoh,fls_ratio*np.ones(1),beta_unid*np.ones(1)),axis=0)      
+        col=np.concatenate((hazm,hazs,hazd,emar,ecoh,fls_ratio*np.ones(1),beta_unid*np.ones(1),mean_fls*np.ones(1)),axis=0)      
         dim=len(col)  
         W=np.zeros((dim,dim))  
         for i in range(dim):  
@@ -530,14 +565,14 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
     else:  
           
         #If no weighting, just use sum of squred deviations as the objective function          
-        W=np.diag(np.ones(len(hazm)+len(hazs)+len(hazd)+len(emar)+len(ecoh)+2))#two is for fls+beta_unid  
+        W=np.diag(np.ones(len(hazm)+len(hazs)+len(hazd)+len(emar)+len(ecoh)+3))#two is for fls+beta_unid  
           
     listofTuples = [("hazs" , hazs), ("hazm" , hazm),("hazd" , hazd),("emar" , emar),  
                 ("ecoh" , ecoh), ("fls_ratio" , fls_ratio),("mar" , mar),("coh" , coh),  
-                ("beta_unid" , beta_unid), 
+                ("beta_unid" , beta_unid),("mean_fls" , mean_fls), 
                 ("hazsi" , hazsi), ("hazmi" , hazmi),("hazdi" , hazdi),("emari" , emari), 
                 ("ecohi" , ecohi), ("fls_ratioi" , fls_ratioi),("mari" , mari),("cohi" , cohi), 
-                ("beta_unidi" , beta_unidi),("W",W)]  
+                ("beta_unidi" , beta_unidi),("mean_flsi" , mean_flsi),("W",W)]  
     packed_stuff=dict(listofTuples)  
     #packed_stuff = (hazm,hazs,hazd,emar,ecoh,fls_ratio,W,hazmi,hazsi,hazdi,emari,ecohi,fls_ratioi,mar,coh,mari,cohi)  
       
@@ -572,7 +607,7 @@ if __name__ == '__main__':
   
     #Get stuff about moments  
     dat_moments(period=1)  
-    print(11111111111111) 
+   
     ##########################  
     #Import and work SIPP data  
     ##########################  

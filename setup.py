@@ -32,8 +32,8 @@ class ModelSetup(object):
         p['sig_zf_0']  = 0.25
         p['sig_zf']    = 0.075
         p['n_zf_t']      = [7]*Tret + [1]*(T-Tret)
-        p['sig_zm_0']  = 0.25
-        p['sig_zm']    = 0.05
+        p['sig_zm_0']  = 0.12476
+        p['sig_zm']    = 0.0439
         p['n_zm_t']      = [5]*Tret + [1]*(T-Tret)
         p['sigma_psi_init'] = 0.28
         p['sigma_psi']   = 0.11
@@ -58,23 +58,9 @@ class ModelSetup(object):
         p['u_shift_coh'] = 0.0
         
        
-        p['f_wage_trend'] = [0.0 + 0.03*min(t,Tret) - 0.0008*(min(t,Tret)**2) for t in range(T)]
-        p['m_wage_trend'] = [0.0 + 0.06*min(t,Tret) - 0.0008*(min(t,Tret)**2) for t in range(T)]
+        p['f_wage_trend'] = [-0.3414349 +0.0437961*min(t,Tret) -0.0008865*(min(t,Tret)**2) for t in range(T)]
+        p['m_wage_trend'] = [-0.3414349 +0.0437961*min(t,Tret) -0.0008865*(min(t,Tret)**2) for t in range(T)]
         
-#        #Use Gourinchas and parker trend in income     
-#        aa=-47985.32533
-#        bb=7732.726535
-#        ccc=-379.6634578
-#        dd=9.729756322
-#        ee=-0.121709668
-#        ff=0.000579381
-#        J=20
-#        wf = np.array([aa+bb*(t*period_year+J)+ccc*(t*period_year+J)**2+dd*(t*period_year+J)**3+ee*(t*period_year+J)**4+ff*(t*period_year+J)**5 for t in range(T)])
-#        wm = np.array([aa+bb*(t*period_year+J)+ccc*(t*period_year+J)**2+dd*(t*period_year+J)**3+ee*(t*period_year+J)**4+ff*(t*period_year+J)**5 for t in range(T)])
-#        
-#        #Rescale
-#        p['f_wage_trend']=list(np.log(p['wage_gap']*wf/wf[0]))
-#        p['m_wage_trend']=list(np.log(wm/wm[0]))
 
         
         
@@ -244,7 +230,7 @@ class ModelSetup(object):
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)
         
         # grid for theta
-        self.ntheta = 11
+        self.ntheta = 31
         self.thetamin = 0.01
         self.thetamax = 0.99
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta,dtype=self.dtype)
@@ -255,7 +241,7 @@ class ModelSetup(object):
         
         
         # construct finer grid for bargaining
-        ntheta_fine = 10*self.ntheta # actual number may be a bit bigger
+        ntheta_fine = 60*self.ntheta # actual number may be a bit bigger
         self.thetagrid_fine = np.unique(np.concatenate( (self.thetagrid,np.linspace(self.thetamin,self.thetamax,ntheta_fine,dtype=self.dtype)) ))
         self.ntheta_fine = self.thetagrid_fine.size
         

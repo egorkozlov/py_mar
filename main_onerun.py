@@ -51,7 +51,7 @@ if __name__ == '__main__':
     #x0 = np.array([0.01,0.39,0.56,0.16,0.34,0.0001,0.5])
     
     #x0 = np.array([0.419146,0.12785496,0.34224688,0.56194163,0.18066626,0.04687082,0.48315671])
-    x0 = np.array([0.701399,0.310307,1.11501,0.643047,0.280264,0.117317,0.21854,1.39109])
+    x0 = np.array([0.701399,0.310307,1.11501,0.643047,0.280264,0.0117317,0.21854,1.39109])
     #x0 = np.array([0.22556613, 0.27110245, 2.21692011, 0.95382882, 0.14945953, 0.06212699,0.69860811, 1.25394819])
     #0.22136894 0.25683229 1.03726908 0.83861264 0.12209574 0.0529578 0.85163831 1.09797727
 
@@ -77,8 +77,8 @@ if __name__ == '__main__':
         path = None
     
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','models','agents','scaled residuals'],
-                                      load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
-                                      #solve_transition=True,                                      
+                                      #load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
+                                      solve_transition=False,                                      
                                       #save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       store_path=path,
                                       verbose=True,calibration_report=False,draw=True,graphs=graphs)
@@ -93,7 +93,7 @@ if __name__ == '__main__':
         zmi=4
         psii=3
         ti=1
-        thi=10
+        thi=15
          
         #Actual Graphs
         mdl[0].graph(ai,zfi,zmi,psii,ti,thi)

@@ -50,7 +50,7 @@ def int_sol(m_in,newton=True,step=1e-6,nint=2000,*,A,alp,sig,xi,lam,kap,lbr):
         f_res = foc_expression(x_interpolated) - m_in
         f_der = foc_deriv(x_interpolated)
     
-        x_improved = x_interpolated - f_res/f_der
+        x_improved = np.maximum( x_interpolated - f_res/f_der, x0)
     
         x_interpolated = x_improved
             

@@ -109,10 +109,10 @@ class Model(object):
             if desc == 'Female, single' or desc == 'Male, single':
                 female = (desc == 'Female, single')
                 if EV is None:            
-                    V, c, s = setup.vs_last_grid(female,ushift,return_cs=True)
+                    V, c, x, s = setup.vs_last_grid(female,ushift)
                 else:
-                    V, c, s = v_iter_single(setup,t,EV,female,ushift)             
-                return {desc: {'V':V,'c':c,'s':s}}   
+                    V, c, x, s = v_iter_single(setup,t,EV,female,ushift)             
+                return {desc: {'V':V,'c':c,'x':x,'s':s}}   
              
             elif desc== 'Couple, M' or desc == 'Couple, C':
                 if EV is None:

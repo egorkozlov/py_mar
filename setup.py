@@ -310,16 +310,16 @@ class ModelSetup(object):
         
         
         # building m grid
-        #ezfmin = min([np.min(np.exp(g+t)) for g,t in zip(exogrid['zf_t'],p['f_wage_trend'])])
+        ezfmin = min([np.min(np.exp(g+t)) for g,t in zip(exogrid['zf_t'],p['f_wage_trend'])])
         ezmmin = min([np.min(np.exp(g+t)) for g,t in zip(exogrid['zm_t'],p['m_wage_trend'])])
         ezfmax = max([np.max(np.exp(g+t)) for g,t in zip(exogrid['zf_t'],p['f_wage_trend'])])
         ezmmax = max([np.max(np.exp(g+t)) for g,t in zip(exogrid['zm_t'],p['m_wage_trend'])])
         
         
         
-        self.money_min = 0.95*ezmmin # cause FLS can be up to 0
+        self.money_min = 0.95*min(ezmmin,ezfmin) # cause FLS can be up to 0
         #self.mgrid = ezmmin + self.sgrid_c # this can be changed later
-        mmin = ezmmin
+        mmin = self.money_min
         mmax = ezfmax + ezmmax + np.max(self.pars['R_t'])*self.amax
         self.mgrid = np.linspace(mmin,mmax,600)
         self.u_precompute()
@@ -569,6 +569,9 @@ class ModelSetup(object):
         l = self.ls_levels[il]
         return umult*self.u(c) + self.u_pub(x,l) + ushift + psi
     
+    def u_single_pub(self,c,x,l):
+        return self.u(c) + self.u_pub(x,l)
+    
     
     
     def vm_last_grid(self,ushift):
@@ -619,20 +622,23 @@ class ModelSetup(object):
     
     
 
-    def vs_last(self,s,z_plus_trend,ushift,return_cs=False):  
+    def vs_last(self,s,z_plus_trend,ushift):  
         # generic last period utility for single agent
         income = self.pars['R_t'][-1]*s+np.exp(z_plus_trend) 
-        if return_cs:
-            return self.u(income).astype(self.dtype) + ushift, income.astype(self.dtype), np.zeros_like(income.astype(self.dtype))
-        else:
-            return self.u(income)
     
-    def vs_last_grid(self,female,ushift,return_cs=False):
+        x = np.interp(income,self.mgrid,self.usingle_precomputed_x)
+        c = income - x
+        u = self.u_single_pub(c,x,1.0)
+        
+        return u.astype(self.dtype) + ushift, c.astype(self.dtype), x.astype(self.dtype), np.zeros_like(income).astype(self.dtype)
+        
+    
+    def vs_last_grid(self,female,ushift):
         # this returns value of vs on the grid corresponding to vs
         s_in = self.agrid_s[:,None]
         z_in = self.exogrid.zf_t[-1][None,:] if female else self.exogrid.zm_t[-1][None,:]
         trend = self.pars['f_wage_trend'][-1] if female else self.pars['m_wage_trend'][-1]        
-        return self.vs_last(s_in,z_in+trend,ushift,return_cs)
+        return self.vs_last(s_in,z_in+trend,ushift)
         
         
     
@@ -663,6 +669,12 @@ class ModelSetup(object):
         self.ucouple_precomputed_u = uout
         self.ucouple_precomputed_x = xout
                 
+        
+        # singles have just one level of labor supply (work all the time)
+        
+        xout, cout, uout = int_sol(self.mgrid,A=1,alp=alp,sig=sig,xi=xi,lam=lam,kap=kap,lbr=1.0)
+        self.usingle_precomputed_u = uout
+        self.usingle_precomputed_x = xout
     
 
 #from numba import jit

@@ -258,6 +258,19 @@ def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],
                 'scaled residuals':resid_sc,'models':mdl_list,'agents':agents}
     out = [out_dict[key] for key in return_format]
     
+    
+    
+    del(out_dict)
+    
+    # memory management
+    if 'models' not in return_format:
+        for m in mdl_list:
+            del(m)
+        del mdl_list
+        
+    if 'agents' not in return_format:
+        del(agents)
+        
   
             
     return out

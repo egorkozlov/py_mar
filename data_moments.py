@@ -281,7 +281,7 @@ def compute(hi,d_hrs,period=3):
       
     #Hazard of Divorce  
     hazd=list()  
-    hazd=hazards(mare,'div','dury','fine',hazd,int(6/period),'SAMWT')  
+    hazd=hazards(mare,'div','dury','fine',hazd,int(12/period),'SAMWT')  
       
     ########################################  
     #Construct share of each relationship  

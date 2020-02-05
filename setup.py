@@ -6,7 +6,8 @@ This contains things relevant for setting up the model
 
 import numpy as np
 
-from rw_approximations import rouw_nonst
+#from rw_approximations import rouw_nonst
+from rw_approximations import tauchen_nonst as rouw_nonst
 from mc_tools import combine_matrices_two_lists, int_prob,cut_matrix
 from scipy.stats import norm
 from collections import namedtuple
@@ -29,11 +30,11 @@ class ModelSetup(object):
         p['T'] = T
         p['Tret'] = Tret
         p['Tbef'] = Tbef
-        p['sig_zf_0']  = 0.25
-        p['sig_zf']    = 0.075
+        p['sig_zf_0']  = 0.4096
+        p['sig_zf']    = 0.0399528
         p['n_zf_t']      = [7]*Tret + [1]*(T-Tret)
-        p['sig_zm_0']  = 0.12476
-        p['sig_zm']    = 0.0439
+        p['sig_zm_0']  = 0.405769
+        p['sig_zm']    = 0.0417483
         p['n_zm_t']      = [5]*Tret + [1]*(T-Tret)
         p['sigma_psi_init'] = 0.28
         p['sigma_psi']   = 0.11
@@ -58,8 +59,8 @@ class ModelSetup(object):
         p['u_shift_coh'] = 0.0
         
        
-        p['f_wage_trend'] = [-0.3414349 +0.0437961*min(t,Tret) -0.0008865*(min(t,Tret)**2) for t in range(T)]
-        p['m_wage_trend'] = [-0.3414349 +0.0437961*min(t,Tret) -0.0008865*(min(t,Tret)**2) for t in range(T)]
+        p['f_wage_trend'] = [-0.3835511 +0.0244082*min(t,Tret) -0.0005329*(min(t,Tret)**2) for t in range(T)]
+        p['m_wage_trend'] = [-0.3424399 +0.0495159*min(t,Tret)  -0.0009392*(min(t,Tret)**2) for t in range(T)]
         
 
         
@@ -96,7 +97,7 @@ class ModelSetup(object):
         self.state_names = ['Female, single','Male, single','Couple, M', 'Couple, C']
         
         # female labor supply
-        self.ls_levels = np.array([0.2,1.0],dtype=self.dtype)
+        self.ls_levels = np.array([0.0,1.0],dtype=self.dtype)
         #self.ls_utilities = np.array([p['uls'],0.0],dtype=self.dtype)
         self.ls_pdown = np.array([p['pls'],0.0],dtype=self.dtype)
         self.nls = len(self.ls_levels)
@@ -204,7 +205,7 @@ class ModelSetup(object):
         #Grid Couple
         self.na = 40
         self.amin = 0
-        self.amax =90
+        self.amax =50
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
         tune=1.5
         #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
@@ -230,7 +231,7 @@ class ModelSetup(object):
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)
         
         # grid for theta
-        self.ntheta = 31
+        self.ntheta = 11
         self.thetamin = 0.01
         self.thetamax = 0.99
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta,dtype=self.dtype)
@@ -241,7 +242,7 @@ class ModelSetup(object):
         
         
         # construct finer grid for bargaining
-        ntheta_fine = 60*self.ntheta # actual number may be a bit bigger
+        ntheta_fine = 10*self.ntheta # actual number may be a bit bigger
         self.thetagrid_fine = np.unique(np.concatenate( (self.thetagrid,np.linspace(self.thetamin,self.thetamax,ntheta_fine,dtype=self.dtype)) ))
         self.ntheta_fine = self.thetagrid_fine.size
         

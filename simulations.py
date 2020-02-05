@@ -7,7 +7,7 @@ This contains things relevant for simulations
 import numpy as np
 
 
-from mc_tools import mc_simulate
+from mc_tools import mc_simulate, int_prob
 from gridvec import VecOnGrid
 import pickle
 
@@ -50,7 +50,13 @@ class Agents:
         self.shocks_couple_iexo = np.random.random_sample((N,T))
         self.shocks_single_a = np.random.random_sample((N,T))
         self.shocks_couple_a = np.random.random_sample((N,T))
-        iexoinit = np.random.randint(0,self.setup.pars['n_zf_t'][0],size=N) # initial state
+        
+        fem_prob = int_prob(self.setup.exogrid.zf_t[0], sig = self.setup.pars['sig_zf_0'])
+        shocks_init = np.random.random_sample((N,))        
+        i_fem = np.sum((shocks_init[:,None] > np.cumsum(fem_prob)[None,:]), axis=1)
+        iexoinit = i_fem # initial state        
+        
+        
         self.shocks_transition = np.random.random_sample((N,T))
         # no randomnes past this line please
         

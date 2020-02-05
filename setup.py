@@ -6,8 +6,7 @@ This contains things relevant for setting up the model
 
 import numpy as np
 
-#from rw_approximations import rouw_nonst
-from rw_approximations import tauchen_nonst as rouw_nonst
+from rw_approximations import rouw_nonst, normcdf_tr
 from mc_tools import combine_matrices_two_lists, int_prob,cut_matrix
 from scipy.stats import norm
 from collections import namedtuple
@@ -48,6 +47,9 @@ class ModelSetup(object):
         p['sig_partner_z'] = 0.4
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
+        
+        p['z_drift'] = -0.1
+        
         
         p['wage_gap'] = 0.6
         p['wret'] = 0.2#0.5
@@ -168,9 +170,10 @@ class ModelSetup(object):
             #Create a new bad version of transition matrix p(zf_t)
             
             
-            zf_bad = [cut_matrix(exogrid['zf_t_mat'][t]) if t < Tret -1 
-                          else (exogrid['zf_t_mat'][t] if t < T - 1 else None) 
-                              for t in range(self.pars['T'])]
+            zf_bad = [tauchen_drift(exogrid['zf_t'][t], exogrid['zf_t'][t+1], 
+                                    1.0, p['sig_zf'], p['z_drift'])
+                        for t in range(self.pars['T']-1) ] + [None]
+            
             
             zf_t_mat_down = zf_bad
             
@@ -707,7 +710,29 @@ class DivorceCosts(object):
         share_m = self.assets_kept*(1-shf) - self.money_lost_m
         
         return share_f, share_m
+       
         
+def tauchen_drift(z_now,z_next,rho,sigma,mu):
+    z_now = np.atleast_1d(z_now)
+    z_next = np.atleast_1d(z_next)
+    if z_next.size == 1:
+        return np.ones((z_now.size,1),dtype=np.float32)
+    
+    d = np.diff(z_next)
+    assert np.ptp(d) < 1e-5, 'Step size should be fixed'
+    
+    h_half = d[0]/2
+    
+    Pi = np.zeros((z_now.size,z_next.size),dtype=np.float32)
+    
+    ez = rho*z_now + mu
+    
+    Pi[:,0] = normcdf_tr( ( z_next[0] + h_half - ez )/sigma)
+    Pi[:,-1] = 1 - normcdf_tr( (z_next[-1] - h_half - ez ) / sigma )
+    for j in range(1,z_next.size - 1):
+        Pi[:,j] = normcdf_tr( ( z_next[j] + h_half - ez )/sigma) - \
+                    normcdf_tr( ( z_next[j] - h_half - ez )/sigma)
+    return Pi
         
 
 def build_s_grid(agrid,n_between,da_min,da_max):

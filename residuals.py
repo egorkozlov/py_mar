@@ -12,12 +12,12 @@ import numpy as np
 import pickle, dill
 import os
 
-xdef = np.array([0.05,0.01,0.02,0.7,0.25,0.0001,0.5,0.5])
+
 
 
 # return format is any combination of 'distance', 'all_residuals' and 'models'
 # we can add more things too for convenience
-def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],
+def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
               solve_transition=False,
               store_path = None,
               verbose=False,calibration_report=False,draw=False,graphs=False,
@@ -29,16 +29,25 @@ def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],
     from setup import DivorceCosts
     from simulations import Agents
     from moments import moment
- 
-    ulost = x[0] #min(x[0],1.0)
-    mshift=x[5]
-    sigma_psi = x[1] # max(x[1],0.00001)
-    sigma_psi_init = x[1]*x[2] # max(x[2],0.00001) # treat x[2] as factor
-    pmeet = x[3] # #min(x[3],1.0)#np.exp(x[3])/(1+np.exp(x[3]))
-    pls = x[6] #max(min(x[6],1.0),0.0)
-    util_alp = x[4]
-    util_kap = x[7]
     
+    
+    
+    if type(x) is dict:
+        params = x
+    else:
+        from calibration_params import calibration_params     
+        lb, ub, x0, keys, translator = calibration_params()        
+        if verbose: print('Calibration adjusts {}'.format(keys))        
+        if x is None: x = x0
+        params = translator(x) # this converts x to setup parameters according to what is in calibration_params
+    
+    
+    
+    
+    
+    
+    
+    ulost = params.pop('ulost') # ulost does not belong to setup parameters so this pop removes it
     
     
     # this is for the default model
@@ -53,8 +62,6 @@ def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],
     
     def join_path(name,path):
         return os.path.join(path,name)
-    
-    
     
     
     
@@ -78,15 +85,12 @@ def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],
     
     if load_from is None:
         
-        kwords = dict(sigma_psi=sigma_psi,
-                        sigma_psi_init=sigma_psi_init,
-                        pmeet=pmeet,util_alp=util_alp,util_kap=util_kap,
-                        pls=pls,u_shift_mar=mshift)
+        
         
         if not solve_transition:
             
             mdl = Model(iterator_name=iter_name,divorce_costs=dc,
-                        separation_costs=sc,**kwords)
+                        separation_costs=sc,**params)
             mdl_list = [mdl]
             
         else:
@@ -96,12 +100,11 @@ def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],
             
             
             
-            
             mdl_before = Model(iterator_name=iter_name,divorce_costs=dc_before,
-                        separation_costs=sc,**kwords)
+                        separation_costs=sc,**params)
             
             mdl_after = Model(iterator_name=iter_name,divorce_costs=dc_after,
-                        separation_costs=sc,**kwords)  
+                        separation_costs=sc,**params)  
             
             mdl = mdl_after # !!! check if this makes a difference
             # I think that it is not used for anything other than getting 

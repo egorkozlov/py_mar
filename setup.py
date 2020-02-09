@@ -35,7 +35,7 @@ class ModelSetup(object):
         p['sig_zm_0']  = 0.25
         p['sig_zm']    = 0.05
         p['n_zm_t']      = [5]*Tret + [1]*(T-Tret)
-        p['sigma_psi_init'] = 0.28
+        p['sigma_psi_mult'] = 28/11
         p['sigma_psi']   = 0.11
         p['R_t'] = [1.02**period_year]*T
         p['n_psi_t']     = [12]*T
@@ -90,6 +90,12 @@ class ModelSetup(object):
         for key, value in kwargs.items():
             assert (key in p), 'wrong name?'
             p[key] = value
+        
+        # no replacements after this pint
+        
+        p['sigma_psi_init'] = p['sigma_psi_mult']*p['sigma_psi']
+        
+        
         
         #Get the probability of meeting, adjusting for year-period
         p_meet=p['pmeet']

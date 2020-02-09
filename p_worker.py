@@ -48,7 +48,7 @@ except KeyboardInterrupt:
 except BaseException as a:
     print('I cannot compute the function in the default point, sorry...')
     raise a
-   
+
 
 try:
     mkdir('Job')

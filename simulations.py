@@ -84,6 +84,16 @@ class Agents:
         
         
         
+        # NB: the last column of these things will not be filled
+        # c refers to consumption expenditures (real consumption of couples
+        # may be higher b/c of returns to scale)
+        self.c = np.zeros((N,T),np.float32)
+        self.x = np.zeros((N,T),np.float32)
+        self.s = np.zeros((N,T),np.float32)
+        
+        
+        
+        
         # initialize state
         self.state = np.zeros((N,T),dtype=np.int32)       
         self.state[:,0] = 0  # everyone starts as female
@@ -167,12 +177,16 @@ class Agents:
                 
                 ind = np.where(is_state)[0]
                 
+                pol = self.Mlist[ipol].decisions[t][sname]
+                
                 if not use_theta:
                     
                     # apply for singles
-                    anext = self.Vlist[ipol][t][sname]['s'][self.iassets[ind,t],self.iexo[ind,t]]
+                    anext = pol['s'][self.iassets[ind,t],self.iexo[ind,t]]
                     self.iassets[ind,t+1] = VecOnGrid(self.setup.agrid_s,anext).roll(shocks=self.shocks_single_a[ind,t])
-                
+                    self.s[ind,t] = anext
+                    self.c[ind,t] = pol['c'][self.iassets[ind,t],self.iexo[ind,t]]
+                    self.x[ind,t] = pol['x'][self.iassets[ind,t],self.iexo[ind,t]]
                 else:
                     
                     # interpolate in both assets and theta
@@ -180,9 +194,10 @@ class Agents:
                     
                     # apply for couples
                     
-                    tk = lambda x : self.setup.v_thetagrid_fine.apply(x,axis=2)
-                    
-                    anext = tk(self.Vlist[ipol][t][sname]['s'])[self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
+                    anext = pol['s'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
+                    self.s[ind,t] = anext
+                    self.x[ind,t] = pol['x'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
+                    self.c[ind,t] = pol['c'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
                     
                     self.iassets[ind,t+1] = VecOnGrid(self.setup.agrid_c,anext).roll(shocks=self.shocks_couple_a[ind,t])
                     

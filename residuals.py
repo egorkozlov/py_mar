@@ -37,7 +37,7 @@ def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],
     pmeet = x[3] # #min(x[3],1.0)#np.exp(x[3])/(1+np.exp(x[3]))
     pls = x[6] #max(min(x[6],1.0),0.0)
     util_alp = x[4]
-    util_kap = x[7]
+    util_kap = (1-0.21)/0.21#x[7]
     
     
     

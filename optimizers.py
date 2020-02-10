@@ -334,7 +334,7 @@ def v_couple_gpu(money,sgrid,EV,mgrid,util,xvals,beta,uadd,use_kernel_pool=False
     ns = sgrid.size
     
     
-    assert ns < 1000, 'Please alter the array size in cuda_ker_pool'
+    #assert ns < 2000, 'Please alter the array size in cuda_ker_pool'
     
     assert money.shape == (na,nexo)
     assert EV.shape == (ns,nexo,ntheta)

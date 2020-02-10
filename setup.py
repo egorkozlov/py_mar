@@ -29,11 +29,11 @@ class ModelSetup(object):
         p['T'] = T
         p['Tret'] = Tret
         p['Tbef'] = Tbef
-        p['sig_zf_0']  = 0.4096
-        p['sig_zf']    = 0.0399528
+        p['sig_zf_0']  = 0.4096**(0.5)
+        p['sig_zf']    = 0.0399528**(0.5)
         p['n_zf_t']      = [7]*Tret + [1]*(T-Tret)
-        p['sig_zm_0']  = 0.405769
-        p['sig_zm']    = 0.0417483
+        p['sig_zm_0']  = 0.405769**(0.5)
+        p['sig_zm']    = 0.0417483**(0.5)
         p['n_zm_t']      = [5]*Tret + [1]*(T-Tret)
         p['sigma_psi_init'] = 0.28
         p['sigma_psi']   = 0.11
@@ -67,9 +67,9 @@ class ModelSetup(object):
 
         
         
-        p['util_lam'] = 0.4
+        p['util_lam'] = 0.19#0.4
         p['util_alp'] = 0.5
-        p['util_xi'] = 1.5
+        p['util_xi'] = 3.11
         p['util_kap'] = 0.5
         
         
@@ -206,12 +206,12 @@ class ModelSetup(object):
             #assert False
             
         #Grid Couple
-        self.na = 40
+        self.na = 80
         self.amin = 0
-        self.amax =50
+        self.amax =250
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
-        tune=1.5
-        #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
+        tune=2.5
+        self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         
         # this builds finer grid for potential savings
         s_between = 7 # default numer of points between poitns on agrid
@@ -227,8 +227,8 @@ class ModelSetup(object):
         self.amin_s = 0
         self.amax_s = self.amax/1.1
         self.agrid_s = np.linspace(self.amin_s,self.amax_s,self.na,dtype=self.dtype)
-        tune_s=1.5
-        #self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
+        tune_s=2.5
+        self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
         
         self.sgrid_s = build_s_grid(self.agrid_s,s_between,s_da_min,s_da_max)
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)

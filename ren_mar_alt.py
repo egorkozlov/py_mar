@@ -41,7 +41,10 @@ def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
     zfgrid = setup.exo_grids['Female, single'][t+1]
     zmgrid = setup.exo_grids['Male, single'][t+1]
     
-    income_share_f = (np.exp(zfgrid[izf]) / ( np.exp(zmgrid[izm]) + np.exp(zfgrid[izf]) ) ).squeeze()
+    share=(np.exp(zfgrid[izf]) / ( np.exp(zmgrid[izm]) + np.exp(zfgrid[izf]) ) )
+    relat=np.ones(share.shape)*0.5
+    income_share_f=(1.0*share+0.0*relat).squeeze()
+    #income_share_f = (np.exp(zfgrid[izf]) / ( np.exp(zmgrid[izm]) + np.exp(zfgrid[izf]) ) ).squeeze()
     
     share_f, share_m = dc.shares_if_split(income_share_f)
     
@@ -256,7 +259,7 @@ def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,Vmale,Vfemale,izf,izm,cost_f
     # find utilities of divorce for different divisions of assets
     for i, shr in enumerate(shrs):
         sv_m = VecOnGrid(setup.agrid_s, shr*sc - cost_mal)
-        sv_f = sv_m if cost_fem == cost_mal else VecOnGrid(setup.agrid,shr*sc - cost_fem)
+        sv_f = sv_m if cost_fem == cost_mal else VecOnGrid(setup.agrid_s,shr*sc - cost_fem)
         
         Vm_divorce_M[...,i] = sv_m.apply(Vmale,    axis=0,take=(1,izm),reshape_i=True) - dc.u_lost_m
         Vf_divorce_M[...,i] = sv_f.apply(Vfemale,  axis=0,take=(1,izf),reshape_i=True) - dc.u_lost_f

@@ -13,10 +13,11 @@ from scipy.optimize import minimize
 from p_client import compute_for_values
 from time import sleep
 import pickle
+from calibration_params import calibration_params
 
-def tiktak(nthreads,N,N_st,xl,xu,f,tole=1e-3,nelder=True,refine=False,
-           skip_global=False,skip_local=False):
+def tiktak(*,N,N_st,xfix=None,skip_global=False,skip_local=False):
     
+    xl, xu, x0, keys, translator = calibration_params(xfix=xfix)
     #Initial cheks
     assert len(xl)==len(xu)
     
@@ -26,6 +27,7 @@ def tiktak(nthreads,N,N_st,xl,xu,f,tole=1e-3,nelder=True,refine=False,
     ############################################
     #1 INITIALIZATION
     ###########################################
+    
     
     
     if not skip_global:
@@ -40,7 +42,7 @@ def tiktak(nthreads,N,N_st,xl,xu,f,tole=1e-3,nelder=True,refine=False,
     
         #Get fitness of initial points
         
-        pts = [ ('compute',x_init[:,j]) for j in range(N)]
+        pts = [ ('compute',translator(x_init[:,j])) for j in range(N)]
         fx_init = compute_for_values(pts)
         
         fx_init = (np.array(fx_init)).squeeze()
@@ -75,7 +77,7 @@ def tiktak(nthreads,N,N_st,xl,xu,f,tole=1e-3,nelder=True,refine=False,
     filer('wisdom.pkl',param,True)
          
     
-    vals = [('minimize',(i,N_st,xl,xu)) for i in range(N_st)]
+    vals = [('minimize',(i,N_st,xfix)) for i in range(N_st)]
     
     compute_for_values(vals,timeout=3600.0)
     
@@ -85,10 +87,6 @@ def tiktak(nthreads,N,N_st,xl,xu,f,tole=1e-3,nelder=True,refine=False,
     #3 TOPPING RULE
     ###########################################
     #print(999,ite)
-    #Final Refinement
-    if refine:
-        res = minimize(f,param[0][1],method='Nelder-Mead',tol=1e-8)
-        param[0]=(res.fun,res.x)
     
     
     return param[0]

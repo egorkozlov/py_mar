@@ -301,7 +301,7 @@ def compute(hi,d_hrs,period=3):
     #########################################  
     # Femle Labor Supply  
     #########################################  
-    fls_ratio=np.average(empl.loc[empl['stat']=='mar','work'], weights=np.array(empl.loc[empl['stat']=='mar','SAMWT']))/np.average(empl.loc[empl['stat']=='coh','work'], weights=np.array(empl.loc[empl['stat']=='coh','SAMWT']))  
+    #fls_ratio=np.average(empl.loc[empl['stat']=='mar','work'], weights=np.array(empl.loc[empl['stat']=='mar','SAMWT']))/np.average(empl.loc[empl['stat']=='coh','work'], weights=np.array(empl.loc[empl['stat']=='coh','SAMWT']))  
     
     #########################################  
     #Create the age at unilateral divorce+  

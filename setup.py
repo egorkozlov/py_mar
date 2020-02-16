@@ -19,7 +19,7 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()       
-        period_year=1#this can be 1,2,3 or 6
+        period_year=6#this can be 1,2,3 or 6
         T = int(52/period_year)
         Tret = int(42/period_year) # first period when the agent is retired
         Tbef=int(2/period_year)
@@ -206,12 +206,13 @@ class ModelSetup(object):
             #assert False
             
         #Grid Couple
-        self.na = 80
+        self.na = 40
         self.amin = 0
-        self.amax =250
+        self.amax =150
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
+        #self.agrid_c[self.na-1]=250
         tune=2.5
-        self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
+        #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         
         # this builds finer grid for potential savings
         s_between = 7 # default numer of points between poitns on agrid
@@ -227,8 +228,9 @@ class ModelSetup(object):
         self.amin_s = 0
         self.amax_s = self.amax/1.1
         self.agrid_s = np.linspace(self.amin_s,self.amax_s,self.na,dtype=self.dtype)
+        #self.agrid_s[self.na-1]=250
         tune_s=2.5
-        self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
+        #self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
         
         self.sgrid_s = build_s_grid(self.agrid_s,s_between,s_da_min,s_da_max)
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)

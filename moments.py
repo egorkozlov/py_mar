@@ -12,6 +12,18 @@ import numpy as np
 import matplotlib.pyplot as plt  
 #from matplotlib.pyplot import plot, draw, show  
 import matplotlib.backends.backend_pdf  
+
+#For nice graphs with matplotlib do the following
+matplotlib.use("pgf")
+matplotlib.rcParams.update({
+    "pgf.texsystem": "pdflatex",
+    'font.family': 'serif',
+    'font.size' : 11,
+    'text.usetex': True,
+    'pgf.rcfonts': False,
+})
+
+
 import pickle  
 import pandas as pd  
 import statsmodels.api as sm  
@@ -564,38 +576,40 @@ def moment(mdl,agents,draw=True,validation=False):
         #############################################  
         fig = plt.figure()  
         f1=fig.add_subplot(2,1,1)  
-        lg=min(len(hazd_d),len(hazd))  
+        lg=min(len(hazd_d),len(hazd))
         if lg<2:  
             one='o'  
             two='o'  
         else:  
             one='r'  
             two='b'  
-        plt.plot(np.array(range(lg)), hazd[0:lg],one, linestyle='--',linewidth=1.5, label='Hazard of Divorce - S')  
-        plt.plot(np.array(range(lg)), hazd_d[0:lg],two,linewidth=1.5, label='Hazard of Divorce - D')  
-        plt.fill_between(np.array(range(lg)), hazd_i[0,0:lg], hazd_i[1,0:lg],alpha=0.2,facecolor='b')  
+        plt.plot(np.array(range(lg))+1, hazd[0:lg],one, linestyle='--',linewidth=1.5, label='Hazard of Divorce - S')  
+        plt.plot(np.array(range(lg))+1, hazd_d[0:lg],two,linewidth=1.5, label='Hazard of Divorce - D')  
+        plt.fill_between(np.array(range(lg))+1, hazd_i[0,0:lg], hazd_i[1,0:lg],alpha=0.2,facecolor='b')  
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),  
                   fancybox=True, shadow=True, ncol=3, fontsize='x-small')  
         plt.ylim(ymin=0)  
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')  
-        plt.xlabel('Duration')  
+        plt.xlabel('Duration - Years')  
         plt.ylabel('Hazard')  
+        plt.savefig('hazd.pgf', bbox_inches = 'tight',pad_inches = 0)
            
         #############################################  
         # Hazard of Separation  
         #############################################  
         fig = plt.figure()  
         f1=fig.add_subplot(2,1,1)  
-        lg=min(len(hazs_d),len(hazs))  
-        plt.plot(np.array(range(lg)), hazs[0:lg],one, linestyle='--',linewidth=1.5, label='Hazard of Separation - S')  
-        plt.plot(np.array(range(lg)), hazs_d[0:lg],two,linewidth=1.5, label='Hazard of Separation - D')  
-        plt.fill_between(np.array(range(lg)), hazs_i[0,0:lg], hazs_i[1,0:lg],alpha=0.2,facecolor='b')  
+        lg=min(len(hazs_d),len(hazs))
+        plt.plot(np.array(range(lg))+1, hazs[0:lg],one, linestyle='--',linewidth=1.5, label='Hazard of Separation - S')  
+        plt.plot(np.array(range(lg))+1, hazs_d[0:lg],two,linewidth=1.5, label='Hazard of Separation - D')  
+        plt.fill_between(np.array(range(lg))+1, hazs_i[0,0:lg], hazs_i[1,0:lg],alpha=0.2,facecolor='b')  
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),  
                   fancybox=True, shadow=True, ncol=3, fontsize='x-small')  
         plt.ylim(ymin=0)  
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')  
-        plt.xlabel('Duration')  
+        plt.xlabel('Duration - Years')  
         plt.ylabel('Hazard')  
+        plt.savefig('hazs.pgf', bbox_inches = 'tight',pad_inches = 0)
           
            
         #############################################  
@@ -603,17 +617,18 @@ def moment(mdl,agents,draw=True,validation=False):
         #############################################  
         fig = plt.figure()  
         f1=fig.add_subplot(2,1,1)  
-        lg=min(len(hazm_d),len(hazm))  
+        lg=min(len(hazm_d),len(hazm))
   
-        plt.plot(np.array(range(lg)), hazm[0:lg],one, linestyle='--',linewidth=1.5, label='Hazard of Marriage - S')  
-        plt.plot(np.array(range(lg)), hazm_d[0:lg],two,linewidth=1.5, label='Hazard of Marriage - D')  
-        plt.fill_between(np.array(range(lg)), hazm_i[0,0:lg], hazm_i[1,0:lg],alpha=0.2,facecolor='b')  
+        plt.plot(np.array(range(lg))+1, hazm[0:lg],one, linestyle='--',linewidth=1.5, label='Hazard of Marriage - S')  
+        plt.plot(np.array(range(lg))+1, hazm_d[0:lg],two,linewidth=1.5, label='Hazard of Marriage - D')  
+        plt.fill_between(np.array(range(lg))+1, hazm_i[0,0:lg], hazm_i[1,0:lg],alpha=0.2,facecolor='b')  
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),  
                   fancybox=True, shadow=True, ncol=3, fontsize='x-small')  
         plt.ylim(ymin=0)  
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')  
-        plt.xlabel('Duration')  
+        plt.xlabel('Duration - Years')  
         plt.ylabel('Hazard')  
+        plt.savefig('hazm.pgf', bbox_inches = 'tight',pad_inches = 0)
           
         ##########################################  
         # Assets Over the Live Cycle  
@@ -667,17 +682,19 @@ def moment(mdl,agents,draw=True,validation=False):
         f4=fig.add_subplot(2,1,1)  
         lg=min(len(mar_d),len(relt[1,:]))  
         xa=(5*np.array(range(lg))+20) 
-        plt.plot(xa, mar_d[0:lg],'g',linewidth=1.5, label='Share Married - D')  
+        plt.plot(xa, mar_d[0:lg],'g',linewidth=1.5, label='Married - D')  
         plt.fill_between(xa, mar_i[0,0:lg], mar_i[1,0:lg],alpha=0.2,facecolor='g')  
-        plt.plot(xa, reltt[2,0:lg]/N,'g',linestyle='--',linewidth=1.5, label='Share Married - S')  
-        plt.plot(xa, coh_d[0:lg],'r',linewidth=1.5, label='Share Cohabiting - D')  
+        plt.plot(xa, reltt[2,0:lg]/N,'g',linestyle='--',linewidth=1.5, label='Married - S')  
+        plt.plot(xa, coh_d[0:lg],'r',linewidth=1.5, label='Cohabiting - D')  
         plt.fill_between(xa, coh_i[0,0:lg], coh_i[1,0:lg],alpha=0.2,facecolor='r')  
-        plt.plot(xa, reltt[3,0:lg]/N,'r',linestyle='--',linewidth=1.5, label='Share Cohabiting - S')  
+        plt.plot(xa, reltt[3,0:lg]/N,'r',linestyle='--',linewidth=1.5, label='Cohabiting - S')  
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),  
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')  
         plt.ylim(ymax=1.0)  
         plt.xlabel('Age')  
         plt.ylabel('Share')  
+        plt.margins(0,0)
+        plt.savefig('erel.pgf', bbox_inches = 'tight',pad_inches = 0)
            
         ##########################################  
         # FLS Over the Live Cycle  
@@ -767,6 +784,7 @@ def moment(mdl,agents,draw=True,validation=False):
         #plt.ylim(ymax=1.2,ymin=0.7)  
         plt.xlim(xmax=1.0,xmin=0.0)  
         #plt.xticks(index , ('Unilateral', 'Bilateral'))  
+        
    
         ##########################################  
         # Put graphs together  

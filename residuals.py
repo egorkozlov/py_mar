@@ -91,8 +91,8 @@ def mdl_resid(x=xdef,save_to=None,load_from=None,return_format=['distance'],
             
         else:
             # specify the changes here manually
-            dc_before = DivorceCosts(unilateral_divorce=False,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=0.0)
-            dc_after  = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=0.0)
+            dc_before = DivorceCosts(unilateral_divorce=False,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)
+            dc_after  = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)
             
             
             

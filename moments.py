@@ -40,9 +40,25 @@ def moment(mdl,agents,draw=True,validation=False):
     assets_t=mdl.setup.agrid_c[agents.iassets] # FIXME  
     iexo=agents.iexo  
     state=agents.state  
+    cons=agents.c
+    consx=agents.x
+    labor=agents.ils_i
+    shks = agents.shocks_single_iexo 
     theta_t=mdl.setup.thetagrid_fine[agents.itheta]  
     setup = mdl.setup  
-      
+    
+  
+    
+    
+    #Create
+    wage_f=np.zeros(state.shape)
+    wage_m=np.zeros(state.shape)
+    psis=np.zeros(state.shape)
+    
+    for i in range(mdl.setup.pars['T']-1):
+        wage_f[:,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo[:,i]))[0])]) 
+        wage_m[:,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo[:,i]))[2])])
+        psis[:,i]=((setup.exogrid.psi_t[i][(setup.all_indices(i,iexo[:,i]))[3]]))      
     
           
           
@@ -106,7 +122,12 @@ def moment(mdl,agents,draw=True,validation=False):
     state=state[keep,]  
     theta_t=theta_t[keep,]  
     changep=changep[keep,] 
-     
+    wage_f=wage_f[keep,]
+    wage_m=wage_m[keep,]
+    psis=psis[keep,]
+    cons=cons[keep,]
+    consx=consx[keep,]
+    
     index=np.array(np.linspace(1,len(state[:,0]),len(state[:,0]))-1,dtype=np.int16) 
      
     N=len(iexo[:,0]) 
@@ -402,6 +423,12 @@ def moment(mdl,agents,draw=True,validation=False):
     iexo=iexo[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']]  
     state=state[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']]  
     theta_t=theta_t[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']]  
+    wage_f=wage_f[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']]  
+    wage_m=wage_m[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']]  
+    psis=psis[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']] 
+    labor=labor[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']] 
+    cons=cons[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']] 
+    consx=consx[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']] 
        
     ###########################################  
     #Moments: FLS over time by Relationship  
@@ -483,19 +510,18 @@ def moment(mdl,agents,draw=True,validation=False):
             relt1[ist,t]=np.sum(is_state1)  
                
             #Assets over time    
-            ass_rel[ist,t]=np.mean(assets_t[ind1,t])  
+            ass_rel[ist,t]=np.median(assets_t[ind1,t]) #np.mean(assets_t[(state[:,t]==ist)])# 
               
                
             #Income over time  
             if sname=="Female, single":  
-                inc_rel[ist,t]=np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zf]  + ftrend ))  
+                inc_rel[ist,t]=np.mean(wage_f[ind1,t])#max(np.mean(np.log(wage_f[ind1,t])),-0.2)#np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zf]  + ftrend ))  # 
                    
             elif sname=="Male, single":  
-                 inc_rel[ist,t]=np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zm] + mtrend))  
+                 inc_rel[ist,t]=np.mean(wage_f[ind1,t])#np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zm] + mtrend))  #np.mean(wage_m[(state[:,t]==ist)])#
                    
             elif sname=="Couple, C" or sname=="Couple, M":  
-                 inc_rel[ist,t]=np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zf] + ftrend)+np.exp(mdl.setup.exogrid.zf_t[s][zm] + mtrend))  
-       
+                 inc_rel[ist,t]=np.mean(wage_f[ind1,t])+np.mean(wage_m[ind1,t])#np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zf] + ftrend)+np.exp(mdl.setup.exogrid.zf_t[s][zm] + mtrend))  
             else:  
                
                print('Error: No relationship chosen')  
@@ -526,6 +552,33 @@ def moment(mdl,agents,draw=True,validation=False):
     moments['share single'] = reltt[0,:]/N  
     moments['share mar'] = reltt[2,:]/N  
     moments['share coh'] = reltt[3,:]/N  
+
+
+    def gini(x):
+        # (Warning: This is a concise implementation, but it is O(n**2)
+        # in time and memory, where n = len(x).  *Don't* pass in huge
+        # samples!)
+    
+        # Mean absolute difference
+        mad = np.abs(np.subtract.outer(x, x)).mean()
+        # Relative mean absolute difference
+        rmad = mad/np.mean(x)
+        # Gini coefficient
+        g = 0.5 * rmad
+        return g    
+    
+    
+    #Create wages for cohabitation and marriage
+   
+    wage_m_mar=wage_m*(state==2)
+    wage_f_mar=wage_f*(state==2)
+    psi_mar=psis*(state==2)
+    
+    wage_f_coh=wage_f*(state==3)
+    wage_m_coh=wage_m*(state==3)
+    psi_coh=psis*(state==3)
+    
+
                  
        
     if draw:  

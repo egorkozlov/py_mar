@@ -6,7 +6,9 @@ This contains things relevant for setting up the model
 
 import numpy as np
 
-from rw_approximations import rouw_nonst, normcdf_tr
+from rw_approximations import rouw_st,rouw_nonst, normcdf_tr
+#from rw_approximations import normcdf_tr
+#from rw_approximations import tauchen_nonst as rouw_nonst
 from mc_tools import combine_matrices_two_lists, int_prob,cut_matrix
 from scipy.stats import norm
 from collections import namedtuple
@@ -19,9 +21,9 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()       
-        period_year=6#this can be 1,2,3 or 6
-        T = int(52/period_year)
-        Tret = int(42/period_year) # first period when the agent is retired
+        period_year=1#this can be 1,2,3 or 6
+        T = int(62/period_year)
+        Tret = int(47/period_year) # first period when the agent is retired
         Tbef=int(2/period_year)
         Tren  = int(42/period_year) # period starting which people do not renegotiate/divroce
         Tmeet = int(42/period_year) # period starting which you do not meet anyone
@@ -29,22 +31,22 @@ class ModelSetup(object):
         p['T'] = T
         p['Tret'] = Tret
         p['Tbef'] = Tbef
-        p['sig_zf_0']  = 0.4096**(0.5)
-        p['sig_zf']    = 0.0399528**(0.5)
+        p['sig_zf_0']  = 0.592
+        p['sig_zf']    =0.0399528**(0.5)#0.0316691**(0.5)#0.0417483**(0.5)#0.0417483**(0.5)#0.0399528**(0.5)#0.2#
         p['n_zf_t']      = [7]*Tret + [1]*(T-Tret)
-        p['sig_zm_0']  = 0.405769**(0.5)
-        p['sig_zm']    = 0.0417483**(0.5)
-        p['n_zm_t']      = [5]*Tret + [1]*(T-Tret)
-        p['sigma_psi_mult'] = 28/11
+        p['sig_zm_0']  = 0.52**(0.5)
+        p['sig_zm']    = 0.0316691**(0.5)
+        p['n_zm_t']      = [3]*Tret + [1]*(T-Tret)
+        p['sigma_psi_mult'] = 1.1
         p['sigma_psi']   = 0.11
-        p['R_t'] = [1.02**period_year]*T
-        p['n_psi_t']     = [12]*T
-        p['beta_t'] = [0.98**period_year]*T
-        p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
+        p['R_t'] = [1.00**period_year]*T
+        p['n_psi_t']     = [2]*T
+        p['beta_t'] = [1.0**period_year]*T
+        p['A'] = 0.0000000000000001#1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.0 
         p['sig_partner_a'] = 0.1
-        p['sig_partner_z'] = 0.4
+        p['sig_partner_z'] = 1.1#0.4
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
         
@@ -52,7 +54,7 @@ class ModelSetup(object):
         
         
         p['wage_gap'] = 0.6
-        p['wret'] = 0.2#0.5
+        p['wret'] = 0.00001#0.5
         p['uls'] = 0.2
         p['pls'] = 0.8
         
@@ -61,15 +63,17 @@ class ModelSetup(object):
         p['u_shift_coh'] = 0.0
         
        
-        p['f_wage_trend'] = [-0.3835511 +0.0244082*min(t,Tret) -0.0005329*(min(t,Tret)**2) for t in range(T)]
-        p['m_wage_trend'] = [-0.3424399 +0.0495159*min(t,Tret)  -0.0009392*(min(t,Tret)**2) for t in range(T)]
+        p['f_wage_trend'] = [0.3424399+-0.3835511 +0.0244082*min(t,Tret) -0.0005329*(min(t,Tret)**2) for t in range(T)]
+        p['m_wage_trend'] = [0.3424399+-0.3424399 +0.0495159*min(t,Tret)  -0.0009392*(min(t,Tret)**2) for t in range(T)]
+        #p['f_wage_trend'] = [-0.3835511 +0.644082*min(t,Tret) -0.0005329*(min(t,Tret)**2) for t in range(T)]
+        #p['m_wage_trend'] = [-0.3424399 +0.895159*min(t,Tret)  -0.0009392*(min(t,Tret)**2) for t in range(T)]
         
 
         
         
         p['util_lam'] = 0.19#0.4
         p['util_alp'] = 0.5
-        p['util_xi'] = 3.11
+        p['util_xi'] = 1.5#3.11
         p['util_kap'] = 0.5
         
         
@@ -154,7 +158,9 @@ class ModelSetup(object):
             
             exogrid['zf_t'],  exogrid['zf_t_mat'] = rouw_nonst(p['T'],p['sig_zf']*period_year,p['sig_zf_0'],p['n_zf_t'][0])
             exogrid['zm_t'],  exogrid['zm_t_mat'] = rouw_nonst(p['T'],p['sig_zm']*period_year,p['sig_zm_0'],p['n_zm_t'][0])
-            
+            #exogrid['zf_t'],  exogrid['zf_t_mat'] = rouw_nonst(p['T'],p['sig_zf'],p['sig_zf_0'],p['n_zf_t'][0])
+            #exogrid['zm_t'],  exogrid['zm_t_mat'] = rouw_nonst(p['T'],p['sig_zm'],p['sig_zm_0'],p['n_zm_t'][0])
+ 
             for t in range(Tret,T):
                 exogrid['zf_t'][t] = np.array([np.log(p['wret'])])
                 exogrid['zm_t'][t] = np.array([np.log(p['wret'])])
@@ -212,18 +218,19 @@ class ModelSetup(object):
             #assert False
             
         #Grid Couple
-        self.na = 40
+        self.na = 60
         self.amin = 0
-        self.amax =150
+        self.amax =100
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
-        #self.agrid_c[self.na-1]=250
-        tune=2.5
-        #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
-        
+        tune=0.1
+        self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
+        self.amax1=400
+        self.agrid_c[-1]=self.amax1
+        self.agrid_c[-2]=200
         # this builds finer grid for potential savings
-        s_between = 7 # default numer of points between poitns on agrid
-        s_da_min = 0.001 # minimal step (does not create more points)
-        s_da_max = 0.1 # maximal step (creates more if not enough)
+        s_between = 17 # default numer of points between poitns on agrid
+        s_da_min = 0.01 # minimal step (does not create more points)
+        s_da_max = 5.0 # maximal step (creates more if not enough)
         
         self.sgrid_c = build_s_grid(self.agrid_c,s_between,s_da_min,s_da_max)
         self.vsgrid_c = VecOnGrid(self.agrid_c,self.sgrid_c)
@@ -232,17 +239,17 @@ class ModelSetup(object):
          
         #Grid Single
         self.amin_s = 0
-        self.amax_s = self.amax/1.1
+        self.amax_s = self.amax
         self.agrid_s = np.linspace(self.amin_s,self.amax_s,self.na,dtype=self.dtype)
-        #self.agrid_s[self.na-1]=250
-        tune_s=2.5
-        #self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
-        
+        tune_s=0.1
+        self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
+        self.agrid_s[-1]=self.amax1
+        self.agrid_s[-2]=200 
         self.sgrid_s = build_s_grid(self.agrid_s,s_between,s_da_min,s_da_max)
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)
         
         # grid for theta
-        self.ntheta = 11
+        self.ntheta = 3
         self.thetamin = 0.01
         self.thetamax = 0.99
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta,dtype=self.dtype)
@@ -253,7 +260,7 @@ class ModelSetup(object):
         
         
         # construct finer grid for bargaining
-        ntheta_fine = 10*self.ntheta # actual number may be a bit bigger
+        ntheta_fine = 1*self.ntheta # actual number may be a bit bigger
         self.thetagrid_fine = np.unique(np.concatenate( (self.thetagrid,np.linspace(self.thetamin,self.thetamax,ntheta_fine,dtype=self.dtype)) ))
         self.ntheta_fine = self.thetagrid_fine.size
         
@@ -318,7 +325,7 @@ class ModelSetup(object):
         self.money_min = 0.95*min(ezmmin,ezfmin) # cause FLS can be up to 0
         #self.mgrid = ezmmin + self.sgrid_c # this can be changed later
         mmin = self.money_min
-        mmax = ezfmax + ezmmax + np.max(self.pars['R_t'])*self.amax
+        mmax = ezfmax + ezmmax + np.max(self.pars['R_t'])*self.amax1
         self.mgrid = np.linspace(mmin,mmax,600)
         self.u_precompute()
         
@@ -402,10 +409,10 @@ class ModelSetup(object):
         for iz in range(n_zown):
             p_psi = int_prob(psi_couple,mu=0,sig=sigma_psi_init)
             if female:
-                p_zm  = int_prob(z_partner, mu=z_own[iz],sig=sig_z_partner)
+                p_zm  = int_prob(z_partner, mu=z_own[iz]+1,sig=sig_z_partner)
                 p_zf  = zmat_own[iz,:]
             else:
-                p_zf  = int_prob(z_partner, mu=z_own[iz],sig=sig_z_partner)
+                p_zf  = int_prob(z_partner, mu=z_own[iz]-1,sig=sig_z_partner)
                 p_zm  = zmat_own[iz,:]
             #sm = sf
         

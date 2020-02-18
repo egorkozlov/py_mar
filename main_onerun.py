@@ -44,14 +44,16 @@ if __name__ == '__main__':
     #For graphs later
     graphs=True
     #Build  data moments and pickle them
-    dat_moments(period=6)
+    dat_moments(period=1)
     
          
     #Initialize the file with parameters
     
     
     
-    x0 = np.array([0.701399,0.310307,1.11501,0.643047,0.280264,0.117317,0.21854,1.39109])
+    #x0 = np.array([0.701399,0.1810307,1.11501,0.643047,0.180264,0.0,0.71854,1.39109])
+    #x0 = np.array([0.701399,0.1810307,1.11501,0.643047,0.380264,0.0,0.0,(1-0.21)/0.21])
+    x0 = np.array([0.701399,0.00000000001810307,1.11501,0.643047,0.000001,0.0,0.0,(1-0.21)/0.21])
 
 
     #Name and location of files
@@ -62,8 +64,8 @@ if __name__ == '__main__':
     
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','models','agents','scaled residuals'],
                                       #load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
-                                      solve_transition=True,                                    
-                                      save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
+                                      solve_transition=False,                                    
+                                      save_to=['mdl_save_bil.pkl'],#'mdl_save_uni.pkl'],
                                       store_path=path,
                                       verbose=True,calibration_report=False,draw=True,graphs=graphs)
                          
@@ -74,14 +76,14 @@ if __name__ == '__main__':
     if graphs:
         ai=30
         zfi=0
-        zmi=4
-        psii=3
+        zmi=2
+        psii=1
         ti=1
-        thi=5
+        thi=2
          
         #Actual Graphs
         mdl[0].graph(ai,zfi,zmi,psii,ti,thi)
-        get_ipython().magic('reset -f')
+        #get_ipython().magic('reset -f')
         #If you plan to use graphs only once, deselect below to save space on disk
         #os.remove('name_model.pkl')
      

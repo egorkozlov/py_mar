@@ -138,6 +138,7 @@ class Agents:
             
         if not nosim: self.simulate()
         
+        
             
         
     def simulate(self):

@@ -37,7 +37,7 @@ def moment(mdl,agents,draw=True,validation=False):
    
   
     #Import simulated values  
-    assets_t=mdl.setup.agrid_c[agents.iassets] # FIXME  
+    assets_t=agents.s#mdl.setup.agrid_c[agents.iassets] # FIXME  
     iexo=agents.iexo  
     state=agents.state  
     cons=agents.c

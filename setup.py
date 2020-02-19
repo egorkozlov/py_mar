@@ -42,7 +42,7 @@ class ModelSetup(object):
         p['R_t'] = [1.00**period_year]*T
         p['n_psi_t']     = [2]*T
         p['beta_t'] = [1.0**period_year]*T
-        p['A'] = 0.0000000000000001#1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
+        p['A'] = 0.1#1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.0 
         p['sig_partner_a'] = 0.1

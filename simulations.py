@@ -184,12 +184,19 @@ class Agents:
                 if not use_theta:
                     
                     # apply for singles
-                    anext =self.tempo.wthis*pol['s'][self.tempo.i,self.iexo[ind,t]]+(1-self.tempo.wthis)*pol['s'][self.tempo.i+1,self.iexo[ind,t]]
-                    self.tempo=VecOnGrid(self.setup.agrid_s,anext)
-                    self.iassets[ind,t+1] = self.tempo.i#roll(shocks=self.shocks_single_a[ind,t])
+#                    anext =self.tempo.wthis[ind]*pol['s'][self.tempo.i[ind],self.iexo[ind,t]]+(1-self.tempo.wthis[ind])*pol['s'][self.tempo.i[ind]+1,self.iexo[ind,t]]
+#                    self.c[ind,t] = self.tempo.wthis[ind]*pol['c'][self.tempo.i[ind],self.iexo[ind,t]]+(1-self.tempo.wthis[ind])*pol['c'][self.tempo.i[ind]+1,self.iexo[ind,t]]
+#                    self.x[ind,t] = self.tempo.wthis[ind]*pol['x'][self.tempo.i[ind],self.iexo[ind,t]]+(1-self.tempo.wthis[ind])*pol['x'][self.tempo.i[ind]+1,self.iexo[ind,t]]
+#                    self.tempo=VecOnGrid(self.setup.agrid_s,anext)
+#                    self.iassets[ind,t+1] = VecOnGrid(self.setup.agrid_s,anext).roll(shocks=self.shocks_single_a[ind,t])
+#                    self.s[ind,t] = anext
+                    # apply for singles
+                    anext = pol['s'][self.iassets[ind,t],self.iexo[ind,t]]
+                    self.iassets[ind,t+1] = VecOnGrid(self.setup.agrid_s,anext).roll(shocks=self.shocks_single_a[ind,t])
                     self.s[ind,t] = anext
-                    self.c[ind,t] = self.tempo.wthis*pol['c'][self.tempo.i,self.iexo[ind,t]]+(1-self.tempo.wthis)*pol['c'][self.tempo.i+1,self.iexo[ind,t]]
-                    self.x[ind,t] = self.tempo.wthis*pol['x'][self.tempo.i,self.iexo[ind,t]]+(1-self.tempo.wthis)*pol['x'][self.tempo.i+1,self.iexo[ind,t]]
+                    self.c[ind,t] = pol['c'][self.iassets[ind,t],self.iexo[ind,t]]
+                    self.x[ind,t] = pol['x'][self.iassets[ind,t],self.iexo[ind,t]]
+                   
                 else:
                     
                     # interpolate in both assets and theta

@@ -54,7 +54,7 @@ class ModelSetup(object):
         
         
         p['wage_gap'] = 0.6
-        p['wret'] = 0.00001#0.5
+        p['wret'] = 0.1#0.5
         p['uls'] = 0.2
         p['pls'] = 0.8
         
@@ -224,6 +224,7 @@ class ModelSetup(object):
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
         tune=0.1
         self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
+        
         self.amax1=17
         self.agrid_c[-1]=self.amax1
         self.agrid_c[-2]=16        # this builds finer grid for potential savings
@@ -325,7 +326,7 @@ class ModelSetup(object):
         #self.mgrid = ezmmin + self.sgrid_c # this can be changed later
         mmin = self.money_min
         mmax = ezfmax + ezmmax + np.max(self.pars['R_t'])*self.amax1
-        self.mgrid = np.linspace(mmin,mmax,600)
+        self.mgrid = np.linspace(mmin,mmax,1200)
         self.u_precompute()
         
         

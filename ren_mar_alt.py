@@ -385,7 +385,7 @@ def v_ren_core_interp(setup,vy1,vfy1,vmy1,vf_n,vm_n,unilateral,show_sc=False,res
     agree = (i_sf_expand) & (i_sm_expand)
     # any agreement     
     yes = np.any(agree,axis=-1)
-    
+    assert yes.ndim == 3
     
     
     # then we divide the agreement points for single crossing and 
@@ -469,14 +469,16 @@ def v_ren_core_interp(setup,vy1,vfy1,vmy1,vf_n,vm_n,unilateral,show_sc=False,res
         vm_out1=np.zeros(vy1.shape)
         i_theta_out1=np.zeros(vy1.shape,dtype=np.int16)
         yes1=np.zeros(vy1.shape,dtype=np.bool)
+        
         for i in range(setup.ntheta):
             v_out1[:,:,i]=v_out[:,:,i,setup.theta_orig_on_fine[i]]
             vf_out1[:,:,i]=vf_out[:,:,i,setup.theta_orig_on_fine[i]]
             vm_out1[:,:,i]=vm_out[:,:,i,setup.theta_orig_on_fine[i]]
             i_theta_out1[:,:,i]=i_theta_out[:,:,i,setup.theta_orig_on_fine[i]]
-            yes1[:,:,i]=yes[:,:,i,setup.theta_orig_on_fine[i]]
+            yes1[:,:,i]=yes[:,:,i,setup.theta_orig_on_fine[i]] if yes.ndim==4 else yes[:,:,i]
             
-        
+            
+      
     
     return {'Decision': yes1, 'thetas': i_theta_out1,
             'Values': (r(v_out1), r(vf_out1), r(vm_out1)),'Divorce':(vf_n,vm_n)}

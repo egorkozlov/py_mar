@@ -63,7 +63,7 @@ def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
                 'Value of Divorce, female': vf_n}
     
     
-   # assert vf_n.ndim == vm_n.ndim == 2
+    assert vf_n.ndim == vm_n.ndim == 2
     
     
     
@@ -278,39 +278,61 @@ def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,inde,Vmale,Vfemale,izf,izm,c
         Vm_divorce_M[:,:,i] = (1-wm)*Vmale_temp[sv_m.i,:] +(wm)*Vmale_temp[sv_m.i+1,:]- dc.u_lost_m
         Vf_divorce_M[:,:,i] = (1-wf)*Vfemale_temp[sv_f.i,:] +(wf)*Vfemale_temp[sv_f.i+1,:] - dc.u_lost_f
     
-  
+    # share of assets that goes to the female
+    # this has many repetative values but it turns out it does not matter much
+    
+    fem_gets = VecOnGrid(np.array(shrs),share_fem)
+    mal_gets = VecOnGrid(np.array(shrs),share_mal)
+    
+    i_fem = fem_gets.i
+    wn_fem = fem_gets.wnext
+    
+    i_mal = mal_gets.i
+    wn_mal = mal_gets.wnext
+    
+    inds_exo = np.arange(setup.pars['nexo_t'][t+1])
+    
+    
+    
+    Vf_divorce = (1-wn_fem[None,:])*Vf_divorce_M[:,inds_exo,i_fem] + \
+                wn_fem[None,:]*Vf_divorce_M[:,inds_exo,i_fem+1]
+    
+    Vm_divorce = (1-wn_mal[None,:])*Vm_divorce_M[:,inds_exo,i_mal] + \
+                wn_mal[None,:]*Vm_divorce_M[:,inds_exo,i_mal+1]
                 
     
                 
-    return Vf_divorce_M, Vm_divorce_M
+    return Vf_divorce, Vm_divorce
 
 
-def v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral,show_sc=False,rescale=False):
+def v_ren_core_interp(setup,vy1,vfy1,vmy1,vf_n,vm_n,unilateral,show_sc=False,rescale=False):
     # this takes values of value functions (interpolated on fine grid)
     # and does discrete 
     # version of renegotiation.
     
     
-    # compute the surplus
+     # Expand to account that initial pareto weight matter
+    vfy=np.reshape(vfy1[...,None]*np.ones(setup.thetagrid.shape),(len(vfy1[:,0,0]),len(vfy1[0,:,0]),setup.ntheta,len(vfy1[0,0,:])))
+    vmy=np.reshape(vmy1[...,None]*np.ones(setup.thetagrid.shape),(len(vfy1[:,0,0]),len(vfy1[0,:,0]),setup.ntheta,len(vfy1[0,0,:])))
+    vy=np.reshape(vy1[...,None]*np.ones(setup.thetagrid.shape),(len(vfy1[:,0,0]),len(vfy1[0,:,0]),setup.ntheta,len(vfy1[0,0,:])))
     
+    
+    #setup.v_thetagrid_fine.apply(x,axis=2)
+    sf_expand = vfy - vf_n[...,None,None]
+    sm_expand = vmy - vm_n[...,None,None]
+    
+  
+    exp_shape = sf_expand.shape
     
     
     # compute couple's value of divroce
     # make large arrays with values for each theta
-    exp_shape = sf_expand.shape
+    
     tgrid = setup.thetagrid_fine[None,None,:]
     ntheta = tgrid.size
-    vf_div_full = np.broadcast_to(vf_n[...,None],exp_shape)
-    vm_div_full = np.broadcast_to(vm_n[...,None],exp_shape)
+    vf_div_full = np.broadcast_to(vf_n[...,None,None],exp_shape)
+    vm_div_full = np.broadcast_to(vm_n[...,None,None],exp_shape)
     v_div_full = vf_div_full*tgrid + vm_div_full*(1-tgrid)
-    
-    sf_expand = vfy - vf_div_full
-    sm_expand = vmy - vm_div_full
-    
-    exp_shape = sf_expand.shape
-    
-    
-
     
     
     
@@ -335,8 +357,16 @@ def v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral,show_sc=False,rescal
         
         def r(x): return x.astype(np.float32)
         
+        v_out1=np.zeros(vy1.shape)
+        vf_out1=np.zeros(vy1.shape)
+        vm_out1=np.zeros(vy1.shape)
+        for i in range(setup.ntheta):
+            v_out1[:,:,i]=v_out[:,:,i,setup.theta_orig_on_fine[i]]
+            vf_out1[:,:,i]=vf_out[:,:,i,setup.theta_orig_on_fine[i]]
+            vm_out1[:,:,i]=vm_out[:,:,i,setup.theta_orig_on_fine[i]]
+        
         return {'Decision': yes, 'thetas': i_theta_out,
-                'Values': (r(v_out), r(vf_out), r(vm_out)),'Divorce':(vf_n,vm_n)}
+                'Values': (r(v_out1), r(vf_out1), r(vm_out1)),'Divorce':(vf_n,vm_n)}
         
     # the rest handles unilateral divorce
     
@@ -429,9 +459,19 @@ def v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral,show_sc=False,rescal
         assert np.allclose(v_out_resc[no,:],v_out[no,:])
         v_out = v_out_resc
         
+        
+        v_out1=np.zeros(vy1.shape)
+        vf_out1=np.zeros(vy1.shape)
+        vm_out1=np.zeros(vy1.shape)
+        i_theta_out1=np.zeros(vy1.shape,dtype=np.int16)
+        for i in range(setup.ntheta):
+            v_out1[:,:,i]=v_out[:,:,i,setup.theta_orig_on_fine[i]]
+            vf_out1[:,:,i]=vf_out[:,:,i,setup.theta_orig_on_fine[i]]
+            vm_out1[:,:,i]=vm_out[:,:,i,setup.theta_orig_on_fine[i]]
+        
     
-    return {'Decision': yes, 'thetas': i_theta_out,
-            'Values': (r(v_out), r(vf_out), r(vm_out)),'Divorce':(vf_n,vm_n)}
+    return {'Decision': yes, 'thetas': i_theta_out1,
+            'Values': (r(v_out1), r(vf_out1), r(vm_out1)),'Divorce':(vf_n,vm_n)}
     
     
 @njit

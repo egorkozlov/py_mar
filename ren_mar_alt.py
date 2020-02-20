@@ -57,6 +57,8 @@ def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
         izf, izm, cost_fem=dc.money_lost_f, cost_mal=dc.money_lost_m)
     
     
+    
+    
     if return_vdiv_only:
         return {'Value of Divorce, male': vm_n,
                 'Value of Divorce, female': vf_n}
@@ -91,7 +93,8 @@ def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
         vf_y = switch*vf_y_mar + (~switch)*vf_y_coh
         vm_y = switch*vm_y_mar + (~switch)*vm_y_coh
         
-        
+    vf_n, vm_n = [x.astype(v_y.dtype) for x in (vf_n,vm_n)] # type conversion
+    
     result  = v_ren_core_interp(setup,v_y, vf_y, vm_y, vf_n, vm_n, is_unil, rescale=rescale)
     
     if not marriage:
@@ -414,10 +417,11 @@ def v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral,show_sc=False,rescal
         
     if not np.all(vf_out>=vf_div_full - 1e-4):
         print('Warning: f is broken is {} cases'.format(np.sum(vf_out<=vf_div_full - 1e-4)))
+        raise Exception('regenotiation problems...')
         
     if not np.all(vm_out>=vm_div_full - 1e-4):
         print('Warning: m is broken is {} cases'.format(np.sum(vm_out<=vm_div_full - 1e-4)))
-        
+        raise Exception('regenotiation problems...')
     
     def r(x): return x.astype(np.float32)
     

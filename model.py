@@ -109,12 +109,13 @@ class Model(object):
             if desc == 'Female, single' or desc == 'Male, single':
                 female = (desc == 'Female, single')
                 if EV is None:            
-                    V, c, x, s = setup.vs_last_grid(female,ushift)
+                    #V, c, x, s = setup.vs_last_grid(female,ushift)
+                    V, c, x, s = v_iter_single(setup,t,None,female,ushift)  
                 else:
                     V, c, x, s = v_iter_single(setup,t,EV,female,ushift)             
                 return {desc: {'V':V,'c':c,'x':x,'s':s}}   
              
-            elif desc== 'Couple, M' or desc == 'Couple, C':
+            elif desc == 'Couple, M' or desc == 'Couple, C':
                 if EV is None:
                     V, VF, VM, c, x, s, fls, V_all_l = setup.vm_last_grid(ushift)
                 else:
@@ -152,7 +153,7 @@ class Model(object):
                 
                 return vout, dec
             def initialize(desc,t):
-                vout = v_iterator(self.setup,desc,None)
+                vout = v_iterator(self.setup,desc,t,None)
                 if timed: self.time('Initialization for {}'.format(desc))
                 dec = {}
                 self.wrap_decisions(desc,dec,vout)

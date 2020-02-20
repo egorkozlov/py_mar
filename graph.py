@@ -72,7 +72,7 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     # TODO: vectorize this part too (I do not understand what exactly it does...) 
    
     # Here I get the renegotiated values 
-    for t in range(T): 
+    for t in range(T-1): 
          
         npsi = setup.pars['n_psi_t'][t+1] 
         inds = setup.all_indices(t+1,(zfi*np.ones(npsi,dtype=np.int16),zmi*np.ones(npsi,dtype=np.int16),np.arange(npsi,dtype=np.int16)))[0] 

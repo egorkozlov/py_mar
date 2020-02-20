@@ -56,7 +56,7 @@ def moment(mdl,agents,draw=True,validation=False):
     psis=np.zeros(state.shape)
     
     for i in range(mdl.setup.pars['T']-1):
-        wage_f[:,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo[:,i]))[0])]) 
+        wage_f[:,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo[:,i]))[1])]) 
         wage_m[:,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo[:,i]))[2])])
         psis[:,i]=((setup.exogrid.psi_t[i][(setup.all_indices(i,iexo[:,i]))[3]]))      
     

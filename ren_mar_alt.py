@@ -37,11 +37,12 @@ def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
     
     
     ind, izf, izm, ipsi = setup.all_indices(t+1)
+    inde=np.linspace(0,setup.ntheta-1,setup.ntheta,dtype=np.int16)
     
     zfgrid = setup.exo_grids['Female, single'][t+1]
     zmgrid = setup.exo_grids['Male, single'][t+1]
     
-    share=(np.exp(zfgrid[izf]) / ( np.exp(zmgrid[izm]) + np.exp(zfgrid[izf]) ) )
+    share=(np.exp(zfgrid[izf]+setup.pars['f_wage_trend'][t]) / ( np.exp(zmgrid[izm]+setup.pars['m_wage_trend'][t]) + np.exp(zfgrid[izf]+setup.pars['f_wage_trend'][t]) ) )
     relat=np.ones(share.shape)*0.5
     income_share_f=(1.0*share+0.0*relat).squeeze()
     #income_share_f = (np.exp(zfgrid[izf]) / ( np.exp(zmgrid[izm]) + np.exp(zfgrid[izf]) ) ).squeeze()
@@ -52,7 +53,7 @@ def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
     
     # values of divorce
     vf_n, vm_n = v_div_byshare(
-        setup, dc, t, sc, share_f, share_m,
+        setup, dc, t, sc, share_f, share_m,inde,
         V['Male, single']['V'], V['Female, single']['V'],
         izf, izm, cost_fem=dc.money_lost_f, cost_mal=dc.money_lost_m)
     
@@ -242,7 +243,7 @@ def v_no_mar(setup,t,V,icouple,ind_or_inds,*,female,marriage):
     
     return {'Values': (vfout, vmout), 'NBS': nbsout, 'theta': ithetaout, 'Decision':agree}
 
-def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,Vmale,Vfemale,izf,izm,cost_fem=0.0,cost_mal=0.0):
+def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,inde,Vmale,Vfemale,izf,izm,cost_fem=0.0,cost_mal=0.0):
     # this produces value of divorce for gridpoints given possibly different
     # shares of how assets are divided. 
     # Returns Vf_divorce, Vm_divorce -- values of singles in case of divorce
@@ -251,6 +252,57 @@ def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,Vmale,Vfemale,izf,izm,cost_f
     # optional cost_fem and cost_mal are monetary costs of divorce
     
     
+#    shrs = setup.thetagrid#[0.2,0.35,0.5,0.65,0.8]  # grid on possible assets divisions    
+#    shp  =  (sc.size,izm.size,len(shrs))  
+#    Vm_divorce_M = np.zeros(shp) 
+#    Vf_divorce_M = np.zeros(shp)
+#    
+#    
+#    Vmale_temp=np.zeros((len(setup.agrid_c),izm.size))
+#    Vfemale_temp=np.zeros((len(setup.agrid_c),izf.size))
+#    #Reshape first
+#    for i in izf:          
+#        Vfemale_temp[:,i] =Vfemale[:,izf[i]]
+#        
+#    for i in izm:          
+#        Vmale_temp[:,i] =Vmale[:,izm[i]]
+#                
+#                
+#    # find utilities of divorce for different divisions of assets
+#    for i, shr in enumerate(shrs):
+#        sv_m = VecOnGrid(setup.agrid_s, shr*sc - cost_mal)
+#        sv_f = sv_m if cost_fem == cost_mal else VecOnGrid(setup.agrid_s,shr*sc - cost_fem)
+#        
+#        wm=sv_m.wthis[...,None]*np.ones_like(izm)
+#        wf=sv_f.wthis[...,None]*np.ones_like(izf)
+#        Vm_divorce_M[:,:,i] = (1-wm)*Vmale_temp[sv_m.i,:] +(wm)*Vmale_temp[sv_m.i+1,:]- dc.u_lost_m
+#        Vf_divorce_M[:,:,i] = (1-wf)*Vfemale_temp[sv_f.i,:] +(wf)*Vfemale_temp[sv_f.i+1,:] - dc.u_lost_f
+#    
+#    # share of assets that goes to the female
+#    # this has many repetative values but it turns out it does not matter much
+#    
+#    fem_gets = VecOnGrid(np.array(shrs),share_fem)
+#    mal_gets = VecOnGrid(np.array(shrs),share_mal)
+#    
+#    i_fem = fem_gets.i
+#    wn_fem = fem_gets.wnext
+#    
+#    i_mal = mal_gets.i
+#    wn_mal = mal_gets.wnext
+#    
+#    inds_exo = np.arange(setup.pars['nexo_t'][t+1])
+#    
+#    
+#    
+#    Vf_divorce = (1-wn_fem[None,:])*Vf_divorce_M[:,inds_exo,i_fem] + \
+#                wn_fem[None,:]*Vf_divorce_M[:,inds_exo,i_fem+1]
+#    
+#    Vm_divorce = (1-wn_mal[None,:])*Vm_divorce_M[:,inds_exo,i_mal] + \
+#                wn_mal[None,:]*Vm_divorce_M[:,inds_exo,i_mal+1]
+                
+    
+                
+ #   return Vf_divorce, Vm_divorce
     shrs = [0.2,0.35,0.5,0.65,0.8]  # grid on possible assets divisions    
     shp  =  (sc.size,izm.size,len(shrs))  
     Vm_divorce_M = np.zeros(shp) 
@@ -291,19 +343,23 @@ def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,Vmale,Vfemale,izf,izm,cost_f
     return Vf_divorce, Vm_divorce
 
 
-def v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral,show_sc=False,rescale=False):
+def v_ren_core_interp(setup,vy1,vfy1,vmy1,vf_n,vm_n,unilateral,show_sc=False,rescale=False):
     # this takes values of value functions (interpolated on fine grid)
     # and does discrete 
     # version of renegotiation.
     
     
-    # compute the surplus
+     # Expand to account that initial pareto weight matter
+    vfy=np.swapaxes(vfy1[...,None]*np.ones(setup.thetagrid.shape),2,3)
+    vmy=np.swapaxes(vmy1[...,None]*np.ones(setup.thetagrid.shape),2,3)
+    vy=np.swapaxes(vy1[...,None]*np.ones(setup.thetagrid.shape),2,3)
     
     
+    #setup.v_thetagrid_fine.apply(x,axis=2)
+    sf_expand = vfy - vf_n[...,None,None]
+    sm_expand = vmy - vm_n[...,None,None]
     
-    sf_expand = vfy - vf_n[...,None]
-    sm_expand = vmy - vm_n[...,None]
-    
+  
     exp_shape = sf_expand.shape
     
     
@@ -312,8 +368,8 @@ def v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral,show_sc=False,rescal
     
     tgrid = setup.thetagrid_fine[None,None,:]
     ntheta = tgrid.size
-    vf_div_full = np.broadcast_to(vf_n[...,None],exp_shape)
-    vm_div_full = np.broadcast_to(vm_n[...,None],exp_shape)
+    vf_div_full = np.broadcast_to(vf_n[...,None,None],exp_shape)
+    vm_div_full = np.broadcast_to(vm_n[...,None,None],exp_shape)
     v_div_full = vf_div_full*tgrid + vm_div_full*(1-tgrid)
     
     
@@ -338,9 +394,17 @@ def v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral,show_sc=False,rescal
         i_theta_out[no] = -1
         
         def r(x): return x.astype(np.float32)
+    
         
-        return {'Decision': yes, 'thetas': i_theta_out,
-                'Values': (r(v_out), r(vf_out), r(vm_out)),'Divorce':(vf_n,vm_n)}
+        v_out1=v_out[:,:,setup.v_thetagrid_fine.i[range(setup.ntheta_fine)]+1,range(setup.ntheta_fine)]
+        vf_out1=vf_out[:,:,setup.v_thetagrid_fine.i[range(setup.ntheta_fine)]+1,range(setup.ntheta_fine)]
+        vm_out1=vm_out[:,:,setup.v_thetagrid_fine.i[range(setup.ntheta_fine)]+1,range(setup.ntheta_fine)]
+        i_theta_out1=i_theta_out[:,:,setup.v_thetagrid_fine.i[range(setup.ntheta_fine)]+1,range(setup.ntheta_fine)]
+        yes1=yes[:,:,setup.v_thetagrid_fine.i[range(setup.ntheta_fine)]+1,range(setup.ntheta_fine)]
+
+        
+        return {'Decision': yes1, 'thetas': i_theta_out1,
+                'Values': (r(v_out1), r(vf_out1), r(vm_out1)),'Divorce':(vf_n,vm_n)}
         
     # the rest handles unilateral divorce
     
@@ -355,7 +419,7 @@ def v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral,show_sc=False,rescal
     agree = (i_sf_expand) & (i_sm_expand)
     # any agreement     
     yes = np.any(agree,axis=-1)
-    
+    assert yes.ndim == 3
     
     
     # then we divide the agreement points for single crossing and 
@@ -433,9 +497,19 @@ def v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral,show_sc=False,rescal
         assert np.allclose(v_out_resc[no,:],v_out[no,:])
         v_out = v_out_resc
         
+        
+        v_out1=v_out[:,:,setup.v_thetagrid_fine.i[range(setup.ntheta_fine)]+1,range(setup.ntheta_fine)]
+        vf_out1=vf_out[:,:,setup.v_thetagrid_fine.i[range(setup.ntheta_fine)]+1,range(setup.ntheta_fine)]
+        vm_out1=vm_out[:,:,setup.v_thetagrid_fine.i[range(setup.ntheta_fine)]+1,range(setup.ntheta_fine)]
+        i_theta_out1=i_theta_out[:,:,setup.v_thetagrid_fine.i[range(setup.ntheta_fine)]+1,range(setup.ntheta_fine)]
+        yes1=yes[:,:,setup.v_thetagrid_fine.i[range(setup.ntheta_fine)]+1]
+
+            
+            
+      
     
-    return {'Decision': yes, 'thetas': i_theta_out,
-            'Values': (r(v_out), r(vf_out), r(vm_out)),'Divorce':(vf_n,vm_n)}
+    return {'Decision': yes1, 'thetas': i_theta_out1,
+            'Values': (r(v_out1), r(vf_out1), r(vm_out1)),'Divorce':(vf_n,vm_n)}
     
     
 @njit

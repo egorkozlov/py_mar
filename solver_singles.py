@@ -35,8 +35,13 @@ def v_iter_single(setup,t,EV,female,ushift):
     #V_ret, c_opt, s_opt = v_optimize_single(money_t,sgrid_s,EV_t,sigma,beta,ushift,dtype=dtype)
     
     
-    money_t = money_t = (R*agrid_s,np.exp(zvals + ztrend),np.zeros_like(zvals))
+    money_t = (R*agrid_s,np.exp(zvals + ztrend),np.zeros_like(zvals))
     ls = np.array([1.0])
+    
+    
+    if EV is None:
+        EV = np.zeros((agrid_s.size,zvals.size))
+    
     
     V_0, c_opt, x_opt, s_opt, i_opt, _, _ = \
         v_optimize_couple(money_t,sgrid_s,(ind,p,EV[:,:,None,None]),setup.mgrid,

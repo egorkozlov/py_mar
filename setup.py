@@ -29,11 +29,11 @@ class ModelSetup(object):
         p['T'] = T
         p['Tret'] = Tret
         p['Tbef'] = Tbef
-        p['sig_zf_0']  = 0.4096**(0.5)
-        p['sig_zf']    = 0.0399528**(0.5)
+        p['sig_zf_0']  = 0.04096**(0.5)
+        p['sig_zf']    = 0.00399528**(0.5)
         p['n_zf_t']      = [7]*Tret + [1]*(T-Tret)
-        p['sig_zm_0']  = 0.405769**(0.5)
-        p['sig_zm']    = 0.0417483**(0.5)
+        p['sig_zm_0']  = 0.0405769**(0.5)
+        p['sig_zm']    = 0.00417483**(0.5)
         p['n_zm_t']      = [5]*Tret + [1]*(T-Tret)
         p['sigma_psi_mult'] = 28/11
         p['sigma_psi']   = 0.11
@@ -319,7 +319,19 @@ class ModelSetup(object):
         #self.mgrid = ezmmin + self.sgrid_c # this can be changed later
         mmin = self.money_min
         mmax = ezfmax + ezmmax + np.max(self.pars['R_t'])*self.amax
-        self.mgrid = np.linspace(mmin,mmax,600)
+        mint = (ezfmax + ezmmax) # poin where more dense grid begins
+        
+        ndense = 600
+        nm = 1500
+        
+        gsparse = np.linspace(mint,mmax,nm-ndense)
+        gdense = np.linspace(mmin,mint,ndense+1) # +1 as there is a common pt
+        
+        self.mgrid = np.zeros(nm,dtype=np.float32)
+        self.mgrid[ndense:] = gsparse
+        self.mgrid[:(ndense+1)] = gdense
+        assert np.all(np.diff(self.mgrid)>0)
+        
         self.u_precompute()
         
         
@@ -570,73 +582,6 @@ class ModelSetup(object):
     def u_single_pub(self,c,x,l):
         return self.u(c) + self.u_pub(x,l)
     
-    
-    
-    def vm_last_grid(self,ushift):
-        # this returns value of vm on the grid corresponding to vm
-        s = self.agrid_c[:,None]
-        zm = self.exogrid.all_t[-1][:,1][None,:]
-        zf = self.exogrid.all_t[-1][:,0][None,:]
-        psi = self.exogrid.all_t[-1][:,2][None,:,None]
-        theta = self.thetagrid[None,None,:]
-        
-        
-        na, nexo, ntheta, nl = self.na, self.pars['nexo_t'][-1], self.ntheta, self.nls
-        
-        shp = (na,nexo,ntheta,nl)
-        
-        u_couple_g, u_f_g, u_m_g, income_g, c_g, x_g =np.zeros((6,) + shp,dtype=self.dtype)
-        
-        
-        ftrend = self.pars['f_wage_trend'][-1]
-        mtrend = self.pars['m_wage_trend'][-1]
-        
-        for il in range(len(self.ls_levels)):
-           
-            inc = self.pars['R_t'][-1]*s + np.exp(zm+mtrend) +  np.exp(zf+ftrend)*self.ls_levels[il]
-            income_g[...,il]  = inc[...,None]
-            
-            for itheta in range(ntheta):
-                
-                vals = self.ucouple_precomputed_x[:,itheta,il]
-                x_g[...,itheta,il] = np.interp(inc,self.mgrid,vals)
-                c_g[...,itheta,il] = inc - x_g[...,itheta,il]
-            
-            u_couple_g[...,il] = self.u_couple(c_g[...,il],x_g[...,il],il,theta,ushift,psi)
-            u_f_g[...,il], u_m_g[...,il] = self.u_part(c_g[...,il],x_g[...,il],il,theta,ushift,psi)
-             
-        #Get optimal FLS
-        ls=np.argmax(u_couple_g,axis=3)
-        lsi=ls[...,None]
-        u_c, u_f, u_m, x, c = (np.take_along_axis(x,lsi,axis=3).squeeze(axis=3)
-                                for x in (u_couple_g,u_f_g,u_m_g,x_g,c_g))
-        
-        
-        V  = u_c 
-        VM = u_m 
-        VF = u_f 
-        
-        return V.astype(self.dtype), VF.astype(self.dtype), VM.astype(self.dtype), c.astype(self.dtype), x.astype(self.dtype), np.zeros_like(c).astype(self.dtype), ls.astype(np.int16), u_couple_g.astype(self.dtype)
-    
-    
-
-    def vs_last(self,s,z_plus_trend,ushift):  
-        # generic last period utility for single agent
-        income = self.pars['R_t'][-1]*s+np.exp(z_plus_trend) 
-    
-        x = np.interp(income,self.mgrid,self.usingle_precomputed_x)
-        c = income - x
-        u = self.u_single_pub(c,x,1.0)
-        
-        return u.astype(self.dtype) + ushift, c.astype(self.dtype), x.astype(self.dtype), np.zeros_like(income).astype(self.dtype)
-        
-    
-    def vs_last_grid(self,female,ushift):
-        # this returns value of vs on the grid corresponding to vs
-        s_in = self.agrid_s[:,None]
-        z_in = self.exogrid.zf_t[-1][None,:] if female else self.exogrid.zm_t[-1][None,:]
-        trend = self.pars['f_wage_trend'][-1] if female else self.pars['m_wage_trend'][-1]        
-        return self.vs_last(s_in,z_in+trend,ushift)
         
         
     

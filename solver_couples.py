@@ -36,8 +36,6 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
     
     dtype = setup.dtype
     
-    EV_by_l, EV_fem_by_l, EV_mal_by_l = EV_tuple    
-    
     ls = setup.ls_levels
     nls = len(ls)
     
@@ -54,18 +52,24 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
     sigma = setup.pars['crra_power']
     R = setup.pars['R_t'][t]
 
+
+    
+    nexo = setup.pars['nexo_t'][t]
+    shp = (setup.na,nexo,setup.ntheta)
     
     
     wf = np.exp(zf + zftrend)
     wm = np.exp(zm + zmtrend)
     
-    #labor_income = np.exp(zf) + np.exp(zm)
     
-    #money = R*agrid[:,None] + wf[None,:] 
+
+    if EV_tuple is None:
+        EV_by_l, EV_fem_by_l, EV_mal_by_l = np.zeros(((3,) + shp + (nls,)),dtype=np.float32 )
+    else:
+        EV_by_l, EV_fem_by_l, EV_mal_by_l = EV_tuple
     
     
-    nexo = setup.pars['nexo_t'][t]
-    shp = (setup.na,nexo,setup.ntheta)
+    
     
     # type conversion
     sgrid,sigma,beta = (dtype(x) for x in (sgrid,sigma,beta))

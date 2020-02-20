@@ -31,7 +31,7 @@ class ModelSetup(object):
         p['T'] = T
         p['Tret'] = Tret
         p['Tbef'] = Tbef
-        p['sig_zf_0']  = 0.00592
+        p['sig_zf_0']  = 0.0592
         p['sig_zf']    =0.00001##0.0399528**(0.5)#0.0316691**(0.5)#0.0417483**(0.5)#0.0417483**(0.5)#0.0399528**(0.5)#0.2#
         p['n_zf_t']      = [7]*Tret + [1]*(T-Tret)
         p['sig_zm_0']  = 0.52**(0.5)
@@ -54,7 +54,7 @@ class ModelSetup(object):
         
         
         p['wage_gap'] = 0.6
-        p['wret'] = 0.1#0.5
+        p['wret'] = 1.0#0.5
         p['uls'] = 0.2
         p['pls'] = 0.8
         
@@ -65,7 +65,7 @@ class ModelSetup(object):
        
         p['f_wage_trend'] = [0.3424399+-0.3835511 +0.0244082*min(t,Tret) -0.0005329*(min(t,Tret)**2) for t in range(T)]
         p['m_wage_trend'] = [0.3424399+-0.3424399 +0.0495159*min(t,Tret)  -0.0009392*(min(t,Tret)**2) for t in range(T)]
-        p['f_wage_trend'] = [0.3 for t in range(T)]
+       # p['f_wage_trend'] = [0.3 for t in range(T)]
         #p['m_wage_trend'] = [-0.3424399 +0.895159*min(t,Tret)  -0.0009392*(min(t,Tret)**2) for t in range(T)]
         
 
@@ -225,9 +225,9 @@ class ModelSetup(object):
         tune=0.1
         self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         
-        self.amax1=17
+        self.amax1=37
         self.agrid_c[-1]=self.amax1
-        self.agrid_c[-2]=16        # this builds finer grid for potential savings
+        self.agrid_c[-2]=26        # this builds finer grid for potential savings
         s_between = 7 # default numer of points between poitns on agrid
         s_da_min = 0.01 # minimal step (does not create more points)
         s_da_max = 5.0 # maximal step (creates more if not enough)
@@ -244,7 +244,7 @@ class ModelSetup(object):
         tune_s=0.1
         self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
         self.agrid_s[-1]=self.amax1
-        self.agrid_s[-2]=16
+        self.agrid_s[-2]=26
         self.sgrid_s = build_s_grid(self.agrid_s,s_between,s_da_min,s_da_max)
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)
         
@@ -327,6 +327,8 @@ class ModelSetup(object):
         mmin = self.money_min
         mmax = ezfmax + ezmmax + np.max(self.pars['R_t'])*self.amax1
         self.mgrid = np.linspace(mmin,mmax,1200)
+        tune_s=1.0
+        self.mgrid = np.geomspace(mmin+tune_s,mmax+tune_s,num=1200)-tune_s
         self.u_precompute()
         
         

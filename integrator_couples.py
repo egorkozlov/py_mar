@@ -33,7 +33,6 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True):
     
     # accounts for exogenous transitions
     
-    
     EV, EVf, EVm = ev_couple_exo(setup,Vren['M'],t,use_sparse,down=False)
     
     

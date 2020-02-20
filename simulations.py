@@ -420,8 +420,7 @@ class Agents:
                     
                     dec = decision['Decision']
                     
-                    i_stay = dec[isc,iall,self.setup.theta_orig_on_fine[itht]] if len(dec[0,0,:])==self.setup.ntheta else dec[isc,iall,itht]
-                    
+                    i_stay = dec[isc,iall] if dec.ndim==2 else dec[isc,iall,itht]
                     
                     
                     i_div = ~i_stay    

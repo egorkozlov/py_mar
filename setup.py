@@ -19,7 +19,7 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()       
-        period_year=6#this can be 1,2,3 or 6
+        period_year=1#this can be 1,2,3 or 6
         T = int(52/period_year)
         Tret = int(42/period_year) # first period when the agent is retired
         Tbef=int(2/period_year)
@@ -29,11 +29,11 @@ class ModelSetup(object):
         p['T'] = T
         p['Tret'] = Tret
         p['Tbef'] = Tbef
-        p['sig_zf_0']  = 0.04096**(0.5)
-        p['sig_zf']    = 0.00399528**(0.5)
+        p['sig_zf_0']  = 0.4096**(0.5)
+        p['sig_zf']    = 0.0399528**(0.5)
         p['n_zf_t']      = [7]*Tret + [1]*(T-Tret)
-        p['sig_zm_0']  = 0.0405769**(0.5)
-        p['sig_zm']    = 0.00417483**(0.5)
+        p['sig_zm_0']  = 0.405769**(0.5)
+        p['sig_zm']    = 0.0417483**(0.5)
         p['n_zm_t']      = [5]*Tret + [1]*(T-Tret)
         p['sigma_psi_mult'] = 28/11
         p['sigma_psi']   = 0.11

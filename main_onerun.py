@@ -48,15 +48,10 @@ if __name__ == '__main__':
     
          
     #Initialize the file with parameters
-    #x0 = np.array([0.01,0.39,0.56,0.16,0.34,0.0001,0.5])
     
-    #x0 = np.array([0.419146,0.12785496,0.34224688,0.56194163,0.18066626,0.04687082,0.48315671])#117317
-    x0 = np.array([0.701399,0.1810307,1.11501,0.643047,0.280264,0.0,0.21854,1.39109])
-    x0 = np.array([0.701399,0.1810307,1.11501,0.643047,0.180264,0.0,0.71854,1.39109])
-    x0 = np.array([0.701399,0.1810307,1.11501,0.643047,0.180264,0.0,0.71854,1.39109])
-    #x0 = np.array([0.22556613, 0.27110245, 2.21692011, 0.95382882, 0.14945953, 0.06212699,0.69860811, 1.25394819])
-    #0.22136894 0.25683229 1.03726908 0.83861264 0.12209574 0.0529578 0.85163831 1.09797727
-
+    
+    
+    x0 = np.array([0.701399,0.1810307,1.11501,0.643047,0.180264,0.0,0.71854,(1-0.21)/0.21])
 
 
     #Name and location of files
@@ -67,7 +62,7 @@ if __name__ == '__main__':
     
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','models','agents','scaled residuals'],
                                       #load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
-                                      solve_transition=False,#                                    
+                                      solve_transition=False,                                    
                                       save_to=['mdl_save_bil.pkl'],#'mdl_save_uni.pkl'],
                                       store_path=path,
                                       verbose=True,calibration_report=False,draw=True,graphs=graphs)
@@ -86,7 +81,7 @@ if __name__ == '__main__':
          
         #Actual Graphs
         mdl[0].graph(ai,zfi,zmi,psii,ti,thi)
-         
+        get_ipython().magic('reset -f')
         #If you plan to use graphs only once, deselect below to save space on disk
         #os.remove('name_model.pkl')
      

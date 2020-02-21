@@ -152,7 +152,7 @@ class Model(object):
                 
                 return vout, dec
             def initialize(desc,t):
-                vout = v_iterator(self.setup,desc,None)
+                vout = v_iterator(self.setup,desc,t,None)
                 if timed: self.time('Initialization for {}'.format(desc))
                 dec = {}
                 self.wrap_decisions(desc,dec,vout)

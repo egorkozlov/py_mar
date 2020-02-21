@@ -173,6 +173,8 @@ class Model(object):
             
             #cint = self.setup.v_thetagrid_fine.apply(v['c'],axis=2)
             sint = self.setup.v_thetagrid_fine.apply(v['s'],axis=2).astype(self.dtype)
+            cint = self.setup.v_thetagrid_fine.apply(v['c'],axis=2).astype(self.dtype)
+            xint = self.setup.v_thetagrid_fine.apply(v['x'],axis=2).astype(self.dtype)
             
             Vint = self.setup.v_thetagrid_fine.apply(v['V_all_l'],axis=2).astype(self.dtype)
             
@@ -180,10 +182,10 @@ class Model(object):
             
             fls = Vint.argmax(axis=3).astype(np.int8)
             
-            dec.update({'s':sint,'fls':fls})
+            dec.update({'s':sint,'fls':fls,'c':cint,'x':xint})
             del sint,fls
         else:
-            dec.update({'s':v['s']})
+            dec.update({'s':v['s'],'c':v['c'],'x':v['x']})
             del v
         
     

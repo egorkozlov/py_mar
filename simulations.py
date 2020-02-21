@@ -63,6 +63,7 @@ class Agents:
         # initialize assets
         
         self.iassets = np.zeros((N,T),np.int32)
+        self.tempo=VecOnGrid(self.setup.agrid_s,self.iassets[:,0])
         
         # initialize FLS
         #self.ils=np.ones((N,T),np.float64)
@@ -81,6 +82,16 @@ class Agents:
         
         
         self.iexo[:,0] = iexoinit
+        
+        
+        
+        # NB: the last column of these things will not be filled
+        # c refers to consumption expenditures (real consumption of couples
+        # may be higher b/c of returns to scale)
+        self.c = np.zeros((N,T),np.float32)
+        self.x = np.zeros((N,T),np.float32)
+        self.s = np.zeros((N,T),np.float32)
+        
         
         
         
@@ -128,6 +139,7 @@ class Agents:
             
         if not nosim: self.simulate()
         
+        
             
         
     def simulate(self):
@@ -167,12 +179,24 @@ class Agents:
                 
                 ind = np.where(is_state)[0]
                 
+                pol = self.Mlist[ipol].decisions[t][sname]
+                
                 if not use_theta:
                     
                     # apply for singles
-                    anext = self.Vlist[ipol][t][sname]['s'][self.iassets[ind,t],self.iexo[ind,t]]
+#                    anext =self.tempo.wthis[ind]*pol['s'][self.tempo.i[ind],self.iexo[ind,t]]+(1-self.tempo.wthis[ind])*pol['s'][self.tempo.i[ind]+1,self.iexo[ind,t]]
+#                    self.c[ind,t] = self.tempo.wthis[ind]*pol['c'][self.tempo.i[ind],self.iexo[ind,t]]+(1-self.tempo.wthis[ind])*pol['c'][self.tempo.i[ind]+1,self.iexo[ind,t]]
+#                    self.x[ind,t] = self.tempo.wthis[ind]*pol['x'][self.tempo.i[ind],self.iexo[ind,t]]+(1-self.tempo.wthis[ind])*pol['x'][self.tempo.i[ind]+1,self.iexo[ind,t]]
+#                    self.tempo=VecOnGrid(self.setup.agrid_s,anext)
+#                    self.iassets[ind,t+1] = VecOnGrid(self.setup.agrid_s,anext).roll(shocks=self.shocks_single_a[ind,t])
+#                    self.s[ind,t] = anext
+                    # apply for singles
+                    anext = pol['s'][self.iassets[ind,t],self.iexo[ind,t]]
                     self.iassets[ind,t+1] = VecOnGrid(self.setup.agrid_s,anext).roll(shocks=self.shocks_single_a[ind,t])
-                
+                    self.s[ind,t] = anext
+                    self.c[ind,t] = pol['c'][self.iassets[ind,t],self.iexo[ind,t]]
+                    self.x[ind,t] = pol['x'][self.iassets[ind,t],self.iexo[ind,t]]
+                   
                 else:
                     
                     # interpolate in both assets and theta
@@ -180,9 +204,10 @@ class Agents:
                     
                     # apply for couples
                     
-                    tk = lambda x : self.setup.v_thetagrid_fine.apply(x,axis=2)
-                    
-                    anext = tk(self.Vlist[ipol][t][sname]['s'])[self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
+                    anext = pol['s'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
+                    self.s[ind,t] = anext
+                    self.x[ind,t] = pol['x'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
+                    self.c[ind,t] = pol['c'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
                     
                     self.iassets[ind,t+1] = VecOnGrid(self.setup.agrid_c,anext).roll(shocks=self.shocks_couple_a[ind,t])
                     
@@ -395,8 +420,8 @@ class Agents:
                     
                     dec = decision['Decision']
                     
-                    i_stay = dec[isc,iall] if dec.ndim==2 else dec[isc,iall,itht]
-    
+                    i_stay = dec[isc,iall] if dec.ndim==2 else dec[isc,iall,itht]#i_stay = dec[isc,iall,itht] 
+                    
                     
                     
                     i_div = ~i_stay    

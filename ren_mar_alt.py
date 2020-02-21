@@ -47,13 +47,15 @@ def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
     income_share_f=(1.0*share+0.0*relat).squeeze()
     #income_share_f = (np.exp(zfgrid[izf]) / ( np.exp(zmgrid[izm]) + np.exp(zfgrid[izf]) ) ).squeeze()
     
-    share_f, share_m = dc.shares_if_split(income_share_f)
+    
+    #Get the share of female assets upon separation/divorce
+    share_f= dc.shares_if_split_theta(setup,setup.thetagrid)#dc.shares_if_split(income_share_f)
     
     sc = setup.agrid_c
     
     # values of divorce
     vf_n, vm_n = v_div_byshare(
-        setup, dc, t, sc, share_f, share_m,inde,
+        setup, dc, t, sc, share_f,inde,
         V['Male, single']['V'], V['Female, single']['V'],
         izf, izm, cost_fem=dc.money_lost_f, cost_mal=dc.money_lost_m)
     
@@ -63,7 +65,7 @@ def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
                 'Value of Divorce, female': vf_n}
     
     
-    assert vf_n.ndim == vm_n.ndim == 2
+    assert vf_n.ndim == vm_n.ndim == 3
     
     
     
@@ -243,7 +245,7 @@ def v_no_mar(setup,t,V,icouple,ind_or_inds,*,female,marriage):
     
     return {'Values': (vfout, vmout), 'NBS': nbsout, 'theta': ithetaout, 'Decision':agree}
 
-def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,inde,Vmale,Vfemale,izf,izm,cost_fem=0.0,cost_mal=0.0):
+def v_div_byshare(setup,dc,t,sc,share_fem,inde,Vmale,Vfemale,izf,izm,cost_fem=0.0,cost_mal=0.0):
     # this produces value of divorce for gridpoints given possibly different
     # shares of how assets are divided. 
     # Returns Vf_divorce, Vm_divorce -- values of singles in case of divorce
@@ -252,95 +254,35 @@ def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,inde,Vmale,Vfemale,izf,izm,c
     # optional cost_fem and cost_mal are monetary costs of divorce
     
     
-#    shrs = setup.thetagrid#[0.2,0.35,0.5,0.65,0.8]  # grid on possible assets divisions    
-#    shp  =  (sc.size,izm.size,len(shrs))  
-#    Vm_divorce_M = np.zeros(shp) 
-#    Vf_divorce_M = np.zeros(shp)
-#    
-#    
-#    Vmale_temp=np.zeros((len(setup.agrid_c),izm.size))
-#    Vfemale_temp=np.zeros((len(setup.agrid_c),izf.size))
-#    #Reshape first
-#    for i in izf:          
-#        Vfemale_temp[:,i] =Vfemale[:,izf[i]]
-#        
-#    for i in izm:          
-#        Vmale_temp[:,i] =Vmale[:,izm[i]]
-#                
-#                
-#    # find utilities of divorce for different divisions of assets
-#    for i, shr in enumerate(shrs):
-#        sv_m = VecOnGrid(setup.agrid_s, shr*sc - cost_mal)
-#        sv_f = sv_m if cost_fem == cost_mal else VecOnGrid(setup.agrid_s,shr*sc - cost_fem)
-#        
-#        wm=sv_m.wthis[...,None]*np.ones_like(izm)
-#        wf=sv_f.wthis[...,None]*np.ones_like(izf)
-#        Vm_divorce_M[:,:,i] = (1-wm)*Vmale_temp[sv_m.i,:] +(wm)*Vmale_temp[sv_m.i+1,:]- dc.u_lost_m
-#        Vf_divorce_M[:,:,i] = (1-wf)*Vfemale_temp[sv_f.i,:] +(wf)*Vfemale_temp[sv_f.i+1,:] - dc.u_lost_f
-#    
-#    # share of assets that goes to the female
-#    # this has many repetative values but it turns out it does not matter much
-#    
-#    fem_gets = VecOnGrid(np.array(shrs),share_fem)
-#    mal_gets = VecOnGrid(np.array(shrs),share_mal)
-#    
-#    i_fem = fem_gets.i
-#    wn_fem = fem_gets.wnext
-#    
-#    i_mal = mal_gets.i
-#    wn_mal = mal_gets.wnext
-#    
-#    inds_exo = np.arange(setup.pars['nexo_t'][t+1])
-#    
-#    
-#    
-#    Vf_divorce = (1-wn_fem[None,:])*Vf_divorce_M[:,inds_exo,i_fem] + \
-#                wn_fem[None,:]*Vf_divorce_M[:,inds_exo,i_fem+1]
-#    
-#    Vm_divorce = (1-wn_mal[None,:])*Vm_divorce_M[:,inds_exo,i_mal] + \
-#                wn_mal[None,:]*Vm_divorce_M[:,inds_exo,i_mal+1]
-                
-    
-                
- #   return Vf_divorce, Vm_divorce
-    shrs = [0.2,0.35,0.5,0.65,0.8]  # grid on possible assets divisions    
+    shrs = share_fem  # grid on possible assets divisions femle based    
     shp  =  (sc.size,izm.size,len(shrs))  
     Vm_divorce_M = np.zeros(shp) 
     Vf_divorce_M = np.zeros(shp)
     
+    
+    Vmale_temp=np.zeros((len(setup.agrid_c),izm.size))
+    Vfemale_temp=np.zeros((len(setup.agrid_c),izf.size))
+    #Reshape first
+    for i in izf:          
+        Vfemale_temp[:,i] =Vfemale[:,izf[i]]
+        
+    for i in izm:          
+        Vmale_temp[:,i] =Vmale[:,izm[i]]
+                
+                
     # find utilities of divorce for different divisions of assets
     for i, shr in enumerate(shrs):
         sv_m = VecOnGrid(setup.agrid_s, shr*sc - cost_mal)
-        sv_f = sv_m if cost_fem == cost_mal else VecOnGrid(setup.agrid_s,shr*sc - cost_fem)
+        sv_f = VecOnGrid(setup.agrid_s,shr*sc - cost_fem)
         
-        Vm_divorce_M[...,i] = sv_m.apply(Vmale,    axis=0,take=(1,izm),reshape_i=True) - dc.u_lost_m
-        Vf_divorce_M[...,i] = sv_f.apply(Vfemale,  axis=0,take=(1,izf),reshape_i=True) - dc.u_lost_f
+        wm=sv_m.wthis[...,None]*np.ones_like(izm)
+        wf=sv_f.wthis[...,None]*np.ones_like(izf)
+        Vm_divorce_M[:,:,i] = (1-wm)*Vmale_temp[sv_m.i,:] +(wm)*Vmale_temp[sv_m.i+1,:]- dc.u_lost_m
+        Vf_divorce_M[:,:,i] = (1-wf)*Vfemale_temp[sv_f.i,:] +(wf)*Vfemale_temp[sv_f.i+1,:] - dc.u_lost_f
     
-    # share of assets that goes to the female
-    # this has many repetative values but it turns out it does not matter much
-    
-    fem_gets = VecOnGrid(np.array(shrs),share_fem)
-    mal_gets = VecOnGrid(np.array(shrs),share_mal)
-    
-    i_fem = fem_gets.i
-    wn_fem = fem_gets.wnext
-    
-    i_mal = mal_gets.i
-    wn_mal = mal_gets.wnext
-    
-    inds_exo = np.arange(setup.pars['nexo_t'][t+1])
-    
-    
-    
-    Vf_divorce = (1-wn_fem[None,:])*Vf_divorce_M[:,inds_exo,i_fem] + \
-                wn_fem[None,:]*Vf_divorce_M[:,inds_exo,i_fem+1]
-    
-    Vm_divorce = (1-wn_mal[None,:])*Vm_divorce_M[:,inds_exo,i_mal] + \
-                wn_mal[None,:]*Vm_divorce_M[:,inds_exo,i_mal+1]
+
                 
-    
-                
-    return Vf_divorce, Vm_divorce
+    return Vf_divorce_M, Vm_divorce_M
 
 
 def v_ren_core_interp(setup,vy1,vfy1,vmy1,vf_n,vm_n,unilateral,show_sc=False,rescale=False):
@@ -356,8 +298,8 @@ def v_ren_core_interp(setup,vy1,vfy1,vmy1,vf_n,vm_n,unilateral,show_sc=False,res
     
     
     #setup.v_thetagrid_fine.apply(x,axis=2)
-    sf_expand = vfy - vf_n[...,None,None]
-    sm_expand = vmy - vm_n[...,None,None]
+    sf_expand = vfy - vf_n[...,None]
+    sm_expand = vmy - vm_n[...,None]
     
   
     exp_shape = sf_expand.shape
@@ -368,8 +310,8 @@ def v_ren_core_interp(setup,vy1,vfy1,vmy1,vf_n,vm_n,unilateral,show_sc=False,res
     
     tgrid = setup.thetagrid_fine[None,None,:]
     ntheta = tgrid.size
-    vf_div_full = np.broadcast_to(vf_n[...,None,None],exp_shape)
-    vm_div_full = np.broadcast_to(vm_n[...,None,None],exp_shape)
+    vf_div_full = np.broadcast_to(vf_n[...,None],exp_shape)
+    vm_div_full = np.broadcast_to(vm_n[...,None],exp_shape)
     v_div_full = vf_div_full*tgrid + vm_div_full*(1-tgrid)
     
     
@@ -396,6 +338,7 @@ def v_ren_core_interp(setup,vy1,vfy1,vmy1,vf_n,vm_n,unilateral,show_sc=False,res
         def r(x): return x.astype(np.float32)
     
         
+        #The indexing below is a bit crazy but it seems to work
         v_out1=v_out[:,:,setup.v_thetagrid_fine.i[range(setup.ntheta_fine)]+1,range(setup.ntheta_fine)]
         vf_out1=vf_out[:,:,setup.v_thetagrid_fine.i[range(setup.ntheta_fine)]+1,range(setup.ntheta_fine)]
         vm_out1=vm_out[:,:,setup.v_thetagrid_fine.i[range(setup.ntheta_fine)]+1,range(setup.ntheta_fine)]
@@ -498,6 +441,7 @@ def v_ren_core_interp(setup,vy1,vfy1,vmy1,vf_n,vm_n,unilateral,show_sc=False,res
         v_out = v_out_resc
         
         
+        #The indexing below is a bit crazy but it seems to work
         v_out1=v_out[:,:,setup.v_thetagrid_fine.i[range(setup.ntheta_fine)]+1,range(setup.ntheta_fine)]
         vf_out1=vf_out[:,:,setup.v_thetagrid_fine.i[range(setup.ntheta_fine)]+1,range(setup.ntheta_fine)]
         vm_out1=vm_out[:,:,setup.v_thetagrid_fine.i[range(setup.ntheta_fine)]+1,range(setup.ntheta_fine)]

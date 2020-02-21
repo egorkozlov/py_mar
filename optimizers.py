@@ -298,7 +298,7 @@ def v_couple_local_intu(money,sgrid,EV,mgrid,u_on_mgrid,x_on_mgrid,beta,uadd,V_o
                 bEVval = beta*EV[:,ind_exo,ind_theta]
                 
                 io = 0
-                Vo = -1e6
+                Vo = -1e20
                 
                 
                 for i_cand in range(ind_s+1):

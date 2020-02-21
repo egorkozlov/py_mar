@@ -65,10 +65,17 @@
 \definecolor{currentstroke}{rgb}{0.000000,0.000000,0.000000}%
 \pgfsetstrokecolor{currentstroke}%
 \pgfsetdash{}{0pt}%
+<<<<<<< HEAD
 \pgfpathmoveto{\pgfqpoint{2.883334in}{1.222207in}}%
 \pgfpathlineto{\pgfqpoint{2.883334in}{1.110921in}}%
 \pgfpathlineto{\pgfqpoint{2.883334in}{1.222207in}}%
 \pgfpathlineto{\pgfqpoint{2.883334in}{1.222207in}}%
+=======
+\pgfpathmoveto{\pgfqpoint{2.807292in}{1.945352in}}%
+\pgfpathlineto{\pgfqpoint{2.807292in}{1.693810in}}%
+\pgfpathlineto{\pgfqpoint{2.807292in}{1.945352in}}%
+\pgfpathlineto{\pgfqpoint{2.807292in}{1.945352in}}%
+>>>>>>> earnings-trend
 \pgfpathclose%
 \pgfusepath{fill}%
 \end{pgfscope}%
@@ -243,7 +250,11 @@
 \pgfusepath{stroke,fill}%
 }%
 \begin{pgfscope}%
+<<<<<<< HEAD
 \pgfsys@transformshift{0.558334in}{1.039609in}%
+=======
+\pgfsys@transformshift{0.482292in}{1.002102in}%
+>>>>>>> earnings-trend
 \pgfsys@useobject{currentmarker}{}%
 \end{pgfscope}%
 \end{pgfscope}%
@@ -251,7 +262,11 @@
 \definecolor{textcolor}{rgb}{0.000000,0.000000,0.000000}%
 \pgfsetstrokecolor{textcolor}%
 \pgfsetfillcolor{textcolor}%
+<<<<<<< HEAD
 \pgftext[x=0.190741in,y=0.986803in,left,base]{\color{textcolor}\rmfamily\fontsize{11.000000}{13.200000}\selectfont \(\displaystyle 0.25\)}%
+=======
+\pgftext[x=0.190741in,y=0.949295in,left,base]{\color{textcolor}\rmfamily\fontsize{11.000000}{13.200000}\selectfont \(\displaystyle 0.1\)}%
+>>>>>>> earnings-trend
 \end{pgfscope}%
 \begin{pgfscope}%
 \pgfsetbuttcap%
@@ -268,7 +283,11 @@
 \pgfusepath{stroke,fill}%
 }%
 \begin{pgfscope}%
+<<<<<<< HEAD
 \pgfsys@transformshift{0.558334in}{1.430799in}%
+=======
+\pgfsys@transformshift{0.482292in}{1.355784in}%
+>>>>>>> earnings-trend
 \pgfsys@useobject{currentmarker}{}%
 \end{pgfscope}%
 \end{pgfscope}%
@@ -276,7 +295,11 @@
 \definecolor{textcolor}{rgb}{0.000000,0.000000,0.000000}%
 \pgfsetstrokecolor{textcolor}%
 \pgfsetfillcolor{textcolor}%
+<<<<<<< HEAD
 \pgftext[x=0.190741in,y=1.377992in,left,base]{\color{textcolor}\rmfamily\fontsize{11.000000}{13.200000}\selectfont \(\displaystyle 0.50\)}%
+=======
+\pgftext[x=0.190741in,y=1.302977in,left,base]{\color{textcolor}\rmfamily\fontsize{11.000000}{13.200000}\selectfont \(\displaystyle 0.2\)}%
+>>>>>>> earnings-trend
 \end{pgfscope}%
 \begin{pgfscope}%
 \pgfsetbuttcap%
@@ -293,7 +316,11 @@
 \pgfusepath{stroke,fill}%
 }%
 \begin{pgfscope}%
+<<<<<<< HEAD
 \pgfsys@transformshift{0.558334in}{1.821988in}%
+=======
+\pgfsys@transformshift{0.482292in}{1.709466in}%
+>>>>>>> earnings-trend
 \pgfsys@useobject{currentmarker}{}%
 \end{pgfscope}%
 \end{pgfscope}%
@@ -301,7 +328,11 @@
 \definecolor{textcolor}{rgb}{0.000000,0.000000,0.000000}%
 \pgfsetstrokecolor{textcolor}%
 \pgfsetfillcolor{textcolor}%
+<<<<<<< HEAD
 \pgftext[x=0.190741in,y=1.769181in,left,base]{\color{textcolor}\rmfamily\fontsize{11.000000}{13.200000}\selectfont \(\displaystyle 0.75\)}%
+=======
+\pgftext[x=0.190741in,y=1.656660in,left,base]{\color{textcolor}\rmfamily\fontsize{11.000000}{13.200000}\selectfont \(\displaystyle 0.3\)}%
+>>>>>>> earnings-trend
 \end{pgfscope}%
 \begin{pgfscope}%
 \definecolor{textcolor}{rgb}{0.000000,0.000000,0.000000}%
@@ -318,7 +349,11 @@
 \definecolor{currentstroke}{rgb}{1.000000,0.000000,0.000000}%
 \pgfsetstrokecolor{currentstroke}%
 \pgfsetdash{{5.550000pt}{2.400000pt}}{0.000000pt}%
+<<<<<<< HEAD
 \pgfpathmoveto{\pgfqpoint{2.883334in}{1.977434in}}%
+=======
+\pgfpathmoveto{\pgfqpoint{2.807292in}{2.004725in}}%
+>>>>>>> earnings-trend
 \pgfusepath{stroke}%
 \end{pgfscope}%
 \begin{pgfscope}%
@@ -330,7 +365,11 @@
 \definecolor{currentstroke}{rgb}{0.000000,0.000000,1.000000}%
 \pgfsetstrokecolor{currentstroke}%
 \pgfsetdash{}{0pt}%
+<<<<<<< HEAD
 \pgfpathmoveto{\pgfqpoint{2.883334in}{1.103165in}}%
+=======
+\pgfpathmoveto{\pgfqpoint{2.807292in}{1.676281in}}%
+>>>>>>> earnings-trend
 \pgfusepath{stroke}%
 \end{pgfscope}%
 \begin{pgfscope}%

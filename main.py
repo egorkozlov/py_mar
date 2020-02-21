@@ -33,7 +33,6 @@ from tiktak import tiktak
 print('Hi!')
 
 from residuals import mdl_resid
-from calibration_params import calibration_params
 
 if __name__ == '__main__':
     
@@ -45,15 +44,19 @@ if __name__ == '__main__':
     
     #Initialize the file with parameters
 
-    lb, ub, x0, keys, translator = calibration_params() # bounds are set in a separate file
+
+    x0 = np.array([0.01,0.01,0.02,0.7,0.25,0.0001,0.5,0.5])
+    lb= np.array([0.0,0.005, 0.5,0.4,0.01,0.0,0.0,0.01])
+    ub= np.array([1.0,0.8,  5.0,1.0,0.4,0.2,1.0,2.0])
+   
     
     
     ##### FIRST LET'S TRY TO RUN THE FUNCTION IN FEW POINTS
     
     print('Testing the workers...')
     from p_client import compute_for_values
-    pts = [lb + rs(lb.shape)*(ub-lb) for _ in range(1)]
-    pts = [('compute',translator(x)) for x in pts]    
+    pts = [lb + rs(lb.shape)*(ub-lb) for _ in range(3)]
+    pts = [('compute',x) for x in pts]    
     outs = compute_for_values(pts,timeout=3600.0)
     print('Everything worked, output is {}'.format(outs))
     
@@ -64,10 +67,11 @@ if __name__ == '__main__':
     print('')
     print('')
     
-    
+   
 
     #Tik Tak Optimization
-    param=tiktak(N=500,N_st=20,skip_local=False,skip_global=False)
+    param=tiktak(200,600,20,lb,ub,mdl_resid,tole=1e-3,nelder=False,refine=False,
+                 skip_local=False,skip_global=False)
     
     print('f is {} and x is {}'.format(param[0],param[1]))
     

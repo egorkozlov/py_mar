@@ -35,7 +35,7 @@ class ModelSetup(object):
         p['sig_zm_0']  = 0.405769**(0.5)
         p['sig_zm']    = 0.0417483**(0.5)
         p['n_zm_t']      = [5]*Tret + [1]*(T-Tret)
-        p['sigma_psi_init'] = 0.28
+        p['sigma_psi_mult'] = 0.28
         p['sigma_psi']   = 0.11
         p['R_t'] = [1.02**period_year]*T
         p['n_psi_t']     = [12]*T
@@ -76,6 +76,11 @@ class ModelSetup(object):
         for key, value in kwargs.items():
             assert (key in p), 'wrong name?'
             p[key] = value
+            
+            
+        # no replacements after this pint      
+        p['sigma_psi_init'] = p['sigma_psi_mult']*p['sigma_psi']
+        
         
         #Get the probability of meeting, adjusting for year-period
         p_meet=p['pmeet']
@@ -710,6 +715,15 @@ class DivorceCosts(object):
         share_m = self.assets_kept*(1-shf) - self.money_lost_m
         
         return share_f, share_m
+    
+    def shares_if_split_theta(self,setup,theta):
+        
+        #First build the title based sharing rule
+        sharef=setup.c_mult(theta)[0]
+        shf=(0.5*self.eq_split + sharef*(1-self.eq_split))
+        share_f = self.assets_kept*shf
+        
+        return share_f
        
         
 def tauchen_drift(z_now,z_next,rho,sigma,mu):

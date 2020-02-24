@@ -35,14 +35,32 @@ def moment(mdl,agents,draw=True,validation=False):
 #Optionally it can also plot graphs about them. It is feeded with   
 #matrixes coming from simulations   
     
-   
+
+    
     #Import simulated values   
     assets_t=mdl.setup.agrid_c[agents.iassets] # FIXME   
     iexo=agents.iexo   
     state=agents.state   
     theta_t=mdl.setup.thetagrid_fine[agents.itheta]   
     setup = mdl.setup   
-       
+    cons=agents.c
+    consx=agents.x
+    labor=agents.ils_i
+    shks = agents.shocks_single_iexo 
+    
+    #Create
+    wage_f=np.zeros(state.shape)
+    wage_m=np.zeros(state.shape)
+    psis=np.zeros(state.shape)
+    
+    for i in range(mdl.setup.pars['T']-1):
+        #Check if single women
+        single=(state[:,i]==0)
+        nsingle=~single
+        if (np.any(single)): wage_f[single,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exo_grids['Female, single'][i][iexo[single,i]]) 
+        if (np.any(nsingle)): wage_f[nsingle,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo[nsingle,i]))[1])])
+        wage_m[:,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo[:,i]))[2])])
+        psis[:,i]=((setup.exogrid.psi_t[i][(setup.all_indices(i,iexo[:,i]))[3]])) 
      
            
            
@@ -462,7 +480,7 @@ def moment(mdl,agents,draw=True,validation=False):
     for ist,sname in enumerate(state_codes):   
         for t in range(lenn):   
                 
-            s=mdl.setup.pars['Tbef']+t    
+            s=t#mdl.setup.pars['Tbef']+t    
             ftrend = mdl.setup.pars['f_wage_trend'][s]   
             mtrend = mdl.setup.pars['m_wage_trend'][s]   
                 
@@ -486,19 +504,18 @@ def moment(mdl,agents,draw=True,validation=False):
             ass_rel[ist,t]=np.mean(assets_t[ind1,t])   
                
                 
-            #Income over time   
-            if sname=="Female, single":   
-                inc_rel[ist,t]=np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zf]  + ftrend ))   
-                    
-            elif sname=="Male, single":   
-                 inc_rel[ist,t]=np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zm] + mtrend))   
-                    
-            elif sname=="Couple, C" or sname=="Couple, M":   
-                 inc_rel[ist,t]=np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zf] + ftrend)+np.exp(mdl.setup.exogrid.zf_t[s][zm] + mtrend))   
-        
-            else:   
-                
-               print('Error: No relationship chosen')   
+            #Income over time  
+            if sname=="Female, single":  
+                inc_rel[ist,t]=np.mean(wage_f[ind1,t])#max(np.mean(np.log(wage_f[ind1,t])),-0.2)#np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zf]  + ftrend ))  # 
+                   
+            elif sname=="Male, single":  
+                 inc_rel[ist,t]=np.mean(wage_f[ind1,t])#np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zm] + mtrend))  #np.mean(wage_m[(state[:,t]==ist)])#
+                   
+            elif sname=="Couple, C" or sname=="Couple, M":  
+                 inc_rel[ist,t]=np.mean(wage_f[ind1,t])+np.mean(wage_m[ind1,t])#np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zf] + ftrend)+np.exp(mdl.setup.exogrid.zm_t[s][zm] + mtrend))  
+            else:  
+               
+               print('Error: No relationship chosen')  
                  
     #Now, before saving the moments, take interval of 5 years   
     # if (mdl.setup.pars['Tret']>=mdl.setup.pars['Tret']):           

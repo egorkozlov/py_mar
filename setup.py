@@ -19,8 +19,8 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()       
-        period_year=1#this can be 1,2,3 or 6
-        T = int(52/period_year)
+        period_year=6#this can be 1,2,3 or 6
+        T = int(62/period_year)
         Tret = int(42/period_year) # first period when the agent is retired
         Tbef=int(2/period_year)
         Tren  = int(42/period_year) # period starting which people do not renegotiate/divroce
@@ -44,7 +44,11 @@ class ModelSetup(object):
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.0 
         p['sig_partner_a'] = 0.1
-        p['sig_partner_z'] = 0.4
+        p['sig_partner_z'] = 1.0#0.4
+        p['mean_partner_z_female'] = 0.8#0.4
+        p['mean_partner_z_male'] = -0.8#0.4
+        p['mean_partner_a_female'] = 0.1#0.4
+        p['mean_partner_a_male'] = -0.1#0.4
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
         
@@ -52,17 +56,18 @@ class ModelSetup(object):
         
         
         p['wage_gap'] = 0.6
-        p['wret'] = 0.2#0.5
+        p['wret'] = 0.6#0.5
         p['uls'] = 0.2
-        p['pls'] = 0.8
+        p['pls'] = 1.0
         
         
         p['u_shift_mar'] = 0.0
         p['u_shift_coh'] = 0.0
         
        
-        p['f_wage_trend'] = [-0.3835511 +0.0244082*min(t,Tret) -0.0005329*(min(t,Tret)**2) for t in range(T)]
-        p['m_wage_trend'] = [-0.3424399 +0.0495159*min(t,Tret)  -0.0009392*(min(t,Tret)**2) for t in range(T)]
+        p['f_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-0.3835511 +0.0244082*t -0.0005329*t**2) for t in range(T)]
+        p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-0.3424399 +0.0495159*t  -0.0009392*t**2) for t in range(T)]
+
         
 
         
@@ -78,9 +83,9 @@ class ModelSetup(object):
             p[key] = value
             
             
-        # no replacements after this pint      
-        p['sigma_psi_init'] = p['sigma_psi_mult']*p['sigma_psi']
+        # no replacements after this pint
         
+        p['sigma_psi_init'] = p['sigma_psi_mult']*p['sigma_psi']
         
         #Get the probability of meeting, adjusting for year-period
         p_meet=p['pmeet']
@@ -151,8 +156,10 @@ class ModelSetup(object):
             # FIXME: this uses number of points from 0th entry. 
             # in principle we can generalize this
             
-            exogrid['zf_t'],  exogrid['zf_t_mat'] = rouw_nonst(p['T'],p['sig_zf']*period_year,p['sig_zf_0'],p['n_zf_t'][0])
-            exogrid['zm_t'],  exogrid['zm_t_mat'] = rouw_nonst(p['T'],p['sig_zm']*period_year,p['sig_zm_0'],p['n_zm_t'][0])
+            p['n_zf_t']      = [7]*Tret + [7]*(T-Tret)
+            p['n_zm_t']      = [5]*Tret + [5]*(T-Tret)
+            exogrid['zf_t'],  exogrid['zf_t_mat'] = rouw_nonst(p['T'],p['sig_zf']*period_year**0.5,p['sig_zf_0'],p['n_zf_t'][0])
+            exogrid['zm_t'],  exogrid['zm_t_mat'] = rouw_nonst(p['T'],p['sig_zm']*period_year**0.5,p['sig_zm_0'],p['n_zm_t'][0])
             
             for t in range(Tret,T):
                 exogrid['zf_t'][t] = np.array([np.log(p['wret'])])
@@ -165,7 +172,23 @@ class ModelSetup(object):
             exogrid['zf_t_mat'][Tret-1] = np.ones((p['n_zf_t'][Tret-1],1))
             exogrid['zm_t_mat'][Tret-1] = np.ones((p['n_zm_t'][Tret-1],1))
             
-            exogrid['psi_t'], exogrid['psi_t_mat'] = rouw_nonst(p['T'],p['sigma_psi']*period_year,p['sigma_psi_init'],p['n_psi_t'][0])
+            #Comment out the following if you dont want retirment based on income
+            for t in range(Tret,T):
+                exogrid['zf_t'][t] = np.log(p['wret']*np.exp(p['f_wage_trend'][Tret-1]+exogrid['zf_t'][Tret-1]))#np.array([np.log(p['wret'])])
+                exogrid['zm_t'][t] = np.log(p['wret']*np.exp(p['m_wage_trend'][Tret-1]+exogrid['zm_t'][Tret-1]))
+                exogrid['zf_t_mat'][t] = np.diag(np.ones(len(exogrid['zf_t'][t])))#p.atleast_2d(1.0)
+                exogrid['zm_t_mat'][t] = np.diag(np.ones(len(exogrid['zm_t'][t])))
+                
+            # fix transition from non-retired to retired    
+            exogrid['zf_t_mat'][Tret-1] = np.diag(np.ones(len(exogrid['zf_t'][Tret-1])))
+            exogrid['zm_t_mat'][Tret-1] = np.diag(np.ones(len(exogrid['zm_t'][Tret-1])))
+
+
+            
+            exogrid['psi_t'], exogrid['psi_t_mat'] = rouw_nonst(p['T'],p['sigma_psi']*period_year**0.5,p['sigma_psi_init'],p['n_psi_t'][0])
+            exogrid['psi_t_mat'][Tret-1] = np.diag(np.ones(len(exogrid['psi_t_mat'][Tret-1])))
+            exogrid['psi_t_mat'][Tret] = np.diag(np.ones(len(exogrid['psi_t_mat'][Tret-1])))
+            exogrid['psi_t_mat'][Tret+1] = np.diag(np.ones(len(exogrid['psi_t_mat'][Tret-1])))
             
             zfzm, zfzmmat = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], exogrid['zf_t_mat'], exogrid['zm_t_mat'])
             all_t, all_t_mat = combine_matrices_two_lists(zfzm,exogrid['psi_t'],zfzmmat,exogrid['psi_t_mat'])
@@ -177,8 +200,10 @@ class ModelSetup(object):
             
             zf_bad = [tauchen_drift(exogrid['zf_t'][t], exogrid['zf_t'][t+1], 
                                     1.0, p['sig_zf'], p['z_drift'])
-                        for t in range(self.pars['T']-1) ] + [None]
+                        for t in range(self.pars['Tret']-1) ]
             
+            #Account for retirement here
+            zf_bad = zf_bad+[exogrid['zf_t_mat'][t] for t in range(self.pars['Tret']-1,self.pars['T']-1)]+ [None]
             
             zf_t_mat_down = zf_bad
             
@@ -211,16 +236,18 @@ class ModelSetup(object):
             #assert False
             
         #Grid Couple
-        self.na = 40
+        self.na = 80#40
         self.amin = 0
-        self.amax =150
-        self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
+        self.amax =30#100
+        self.amax1=40#400
+        self.agrid_c = np.linspace(self.amin,self.amax1,self.na,dtype=self.dtype)
+        #self.agrid_c[self.na-1]=250
         tune=2.5
         #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
-        
+        self.agrid_c[-1]=self.amax1
         # this builds finer grid for potential savings
         s_between = 7 # default numer of points between poitns on agrid
-        s_da_min = 0.001 # minimal step (does not create more points)
+        s_da_min = 0.01 # minimal step (does not create more points)
         s_da_max = 0.1 # maximal step (creates more if not enough)
         
         self.sgrid_c = build_s_grid(self.agrid_c,s_between,s_da_min,s_da_max)
@@ -232,9 +259,10 @@ class ModelSetup(object):
         self.amin_s = 0
         self.amax_s = self.amax/1.1
         self.agrid_s = np.linspace(self.amin_s,self.amax_s,self.na,dtype=self.dtype)
+        #self.agrid_s[self.na-1]=250
         tune_s=2.5
         #self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
-        
+        self.agrid_s[-1]=self.amax1/1.1
         self.sgrid_s = build_s_grid(self.agrid_s,s_between,s_da_min,s_da_max)
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)
         
@@ -315,8 +343,20 @@ class ModelSetup(object):
         self.money_min = 0.95*min(ezmmin,ezfmin) # cause FLS can be up to 0
         #self.mgrid = ezmmin + self.sgrid_c # this can be changed later
         mmin = self.money_min
-        mmax = ezfmax + ezmmax + np.max(self.pars['R_t'])*self.amax
-        self.mgrid = np.linspace(mmin,mmax,600)
+        mmax = ezfmax + ezmmax + np.max(self.pars['R_t'])*self.amax1
+        mint = (ezfmax + ezmmax) # poin where more dense grid begins
+        
+        ndense = 600
+        nm = 1500
+        
+        gsparse = np.linspace(mint,mmax,nm-ndense)
+        gdense = np.linspace(mmin,mint,ndense+1) # +1 as there is a common pt
+        
+        self.mgrid = np.zeros(nm,dtype=np.float32)
+        self.mgrid[ndense:] = gsparse
+        self.mgrid[:(ndense+1)] = gdense
+        assert np.all(np.diff(self.mgrid)>0)
+        
         self.u_precompute()
         
         
@@ -325,6 +365,8 @@ class ModelSetup(object):
         # on (potential) couple's grid's and assets of potential partner 
         # (that can be off grid) and correpsonding probabilities. 
         
+        self.prob_a_mat = dict()
+        self.i_a_mat = dict()
         
         na = self.agrid_s.size
         
@@ -333,35 +375,39 @@ class ModelSetup(object):
         
         s_a_partner = self.pars['sig_partner_a']
         
-        
-        prob_a_mat = np.zeros((na,npoints),dtype=self.dtype)
-        i_a_mat = np.zeros((na,npoints),dtype=np.int16)
-        
-        
-        
-        for ia, a in enumerate(agrid_s):
-            lagrid_t = np.zeros_like(agrid_c)
-            
-            i_neg = (agrid_c <= max(abar,a) - 1e-6)
-            
-            lagrid_t[~i_neg] = np.log(2e-6 + (agrid_c[~i_neg] - a)/max(abar,a))
-            lmin = lagrid_t[~i_neg].min()
-            # just fill with very negative values so this is never chosen
-            lagrid_t[i_neg] = lmin - s_a_partner*10 - \
-                s_a_partner*np.flip(np.arange(i_neg.sum())) 
-            
-            # TODO: this needs to be checked
-            p_a = int_prob(lagrid_t,mu=0,sig=s_a_partner,n_points=npoints)
-            i_pa = (-p_a).argsort()[:npoints] # this is more robust then nonzero
-            p_pa = p_a[i_pa]
-            prob_a_mat[ia,:] = p_pa
-            i_a_mat[ia,:] = i_pa
-        
-        
-        self.prob_a_mat = prob_a_mat
-        self.i_a_mat = i_a_mat
+        for female in [True,False]:
+            prob_a_mat = np.zeros((na,npoints),dtype=self.dtype)
+            i_a_mat = np.zeros((na,npoints),dtype=np.int16)
             
             
+            
+            for ia, a in enumerate(agrid_s):
+                lagrid_t = np.zeros_like(agrid_c)
+                
+                i_neg = (agrid_c <= max(abar,a) - 1e-6)
+                
+                lagrid_t[~i_neg] = np.log(2e-6 + (agrid_c[~i_neg] - a)/max(abar,a))
+                lmin = lagrid_t[~i_neg].min()
+                # just fill with very negative values so this is never chosen
+                lagrid_t[i_neg] = lmin - s_a_partner*10 - \
+                    s_a_partner*np.flip(np.arange(i_neg.sum())) 
+                
+                # TODO: this needs to be checked
+                if female:
+                    mean=self.pars['mean_partner_a_female']
+                else:
+                    mean=self.pars['mean_partner_a_male']
+                p_a = int_prob(lagrid_t,mu=mean,sig=s_a_partner,n_points=npoints)
+                i_pa = (-p_a).argsort()[:npoints] # this is more robust then nonzero
+                p_pa = p_a[i_pa]
+                prob_a_mat[ia,:] = p_pa
+                i_a_mat[ia,:] = i_pa
+            
+            
+            self.prob_a_mat[female] = prob_a_mat
+            self.i_a_mat[female] = i_a_mat
+            
+
         
     
     def mar_mats_iexo(self,t,female=True,trim_lvl=0.001):
@@ -399,10 +445,10 @@ class ModelSetup(object):
         for iz in range(n_zown):
             p_psi = int_prob(psi_couple,mu=0,sig=sigma_psi_init)
             if female:
-                p_zm  = int_prob(z_partner, mu=z_own[iz],sig=sig_z_partner)
+                p_zm  = int_prob(z_partner, mu=z_own[iz]+setup.pars['mean_partner_z_female'],sig=sig_z_partner)
                 p_zf  = zmat_own[iz,:]
             else:
-                p_zf  = int_prob(z_partner, mu=z_own[iz],sig=sig_z_partner)
+                p_zf  = int_prob(z_partner, mu=z_own[iz]+setup.pars['mean_partner_z_male'],sig=sig_z_partner)
                 p_zm  = zmat_own[iz,:]
             #sm = sf
         
@@ -433,13 +479,15 @@ class ModelSetup(object):
         # this is relevant for testing and simulations
         
         
-        pmat_a = self.prob_a_mat
-        imat_a = self.i_a_mat
+
         
         self.matches = dict()
         
         for female in [True,False]:
             desc = 'Female, single' if female else 'Male, single'
+            
+            pmat_a = self.prob_a_mat[female]
+            imat_a = self.i_a_mat[female]
             
             pmats = self.part_mats[desc] 
             
@@ -567,73 +615,6 @@ class ModelSetup(object):
     def u_single_pub(self,c,x,l):
         return self.u(c) + self.u_pub(x,l)
     
-    
-    
-    def vm_last_grid(self,ushift):
-        # this returns value of vm on the grid corresponding to vm
-        s = self.agrid_c[:,None]
-        zm = self.exogrid.all_t[-1][:,1][None,:]
-        zf = self.exogrid.all_t[-1][:,0][None,:]
-        psi = self.exogrid.all_t[-1][:,2][None,:,None]
-        theta = self.thetagrid[None,None,:]
-        
-        
-        na, nexo, ntheta, nl = self.na, self.pars['nexo_t'][-1], self.ntheta, self.nls
-        
-        shp = (na,nexo,ntheta,nl)
-        
-        u_couple_g, u_f_g, u_m_g, income_g, c_g, x_g =np.zeros((6,) + shp,dtype=self.dtype)
-        
-        
-        ftrend = self.pars['f_wage_trend'][-1]
-        mtrend = self.pars['m_wage_trend'][-1]
-        
-        for il in range(len(self.ls_levels)):
-           
-            inc = self.pars['R_t'][-1]*s + np.exp(zm+mtrend) +  np.exp(zf+ftrend)*self.ls_levels[il]
-            income_g[...,il]  = inc[...,None]
-            
-            for itheta in range(ntheta):
-                
-                vals = self.ucouple_precomputed_x[:,itheta,il]
-                x_g[...,itheta,il] = np.interp(inc,self.mgrid,vals)
-                c_g[...,itheta,il] = inc - x_g[...,itheta,il]
-            
-            u_couple_g[...,il] = self.u_couple(c_g[...,il],x_g[...,il],il,theta,ushift,psi)
-            u_f_g[...,il], u_m_g[...,il] = self.u_part(c_g[...,il],x_g[...,il],il,theta,ushift,psi)
-             
-        #Get optimal FLS
-        ls=np.argmax(u_couple_g,axis=3)
-        lsi=ls[...,None]
-        u_c, u_f, u_m, x, c = (np.take_along_axis(x,lsi,axis=3).squeeze(axis=3)
-                                for x in (u_couple_g,u_f_g,u_m_g,x_g,c_g))
-        
-        
-        V  = u_c 
-        VM = u_m 
-        VF = u_f 
-        
-        return V.astype(self.dtype), VF.astype(self.dtype), VM.astype(self.dtype), c.astype(self.dtype), x.astype(self.dtype), np.zeros_like(c).astype(self.dtype), ls.astype(np.int16), u_couple_g.astype(self.dtype)
-    
-    
-
-    def vs_last(self,s,z_plus_trend,ushift):  
-        # generic last period utility for single agent
-        income = self.pars['R_t'][-1]*s+np.exp(z_plus_trend) 
-    
-        x = np.interp(income,self.mgrid,self.usingle_precomputed_x)
-        c = income - x
-        u = self.u_single_pub(c,x,1.0)
-        
-        return u.astype(self.dtype) + ushift, c.astype(self.dtype), x.astype(self.dtype), np.zeros_like(income).astype(self.dtype)
-        
-    
-    def vs_last_grid(self,female,ushift):
-        # this returns value of vs on the grid corresponding to vs
-        s_in = self.agrid_s[:,None]
-        z_in = self.exogrid.zf_t[-1][None,:] if female else self.exogrid.zm_t[-1][None,:]
-        trend = self.pars['f_wage_trend'][-1] if female else self.pars['m_wage_trend'][-1]        
-        return self.vs_last(s_in,z_in+trend,ushift)
         
         
     
@@ -715,6 +696,7 @@ class DivorceCosts(object):
         share_m = self.assets_kept*(1-shf) - self.money_lost_m
         
         return share_f, share_m
+    
     
     def shares_if_split_theta(self,setup,theta):
         

@@ -7,7 +7,7 @@ This is integrator for couples
 
 import numpy as np
 #from renegotiation import v_last_period_renegotiated, v_renegotiated_loop
-from ren_mar_alt import v_ren_new, v_no_ren
+from ren_mar_pareto import v_ren_new, v_no_ren
     
 
 def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True):

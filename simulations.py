@@ -454,8 +454,9 @@ class Agents:
                         costs = self.Mlist[ipol].setup.div_costs if sname == 'Couple, M' else self.Mlist[ipol].setup.sep_costs
                                    
                         share_f, share_m = costs.shares_if_split(income_share_fem)
+                        share_f= costs.shares_if_split_theta(self.setup,self.setup.thetagrid[self.setup.v_thetagrid_fine.i[itht]+1])
                         
-                        sf = share_f*sc[i_div]
+                        sf = share_f[i_div]*sc[i_div]
                         
                         shks = self.shocks_couple_a[ind[i_div],t]
                         self.iassets[ind[i_div],t+1] = VecOnGrid(agrid,sf).roll(shocks=shks)

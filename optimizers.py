@@ -319,7 +319,7 @@ def v_couple_local_intu(money,sgrid,EV,mgrid,u_on_mgrid,x_on_mgrid,beta,uadd,V_o
                 x_opt[ind_a,ind_exo,ind_theta] = x
                 c_opt[ind_a,ind_exo,ind_theta] = money_i - x - sgrid[io]
                 s_opt[ind_a,ind_exo,ind_theta] = sgrid[io]        
-                assert Vo > -1e6
+                assert Vo > -1e20
             
     
 

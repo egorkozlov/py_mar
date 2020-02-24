@@ -7,7 +7,7 @@ This contains routines for intergation for singles
 import numpy as np
 #import dill as pickle
 
-from ren_mar_alt import v_mar_igrid, v_no_mar
+from ren_mar_pareto import v_mar_igrid, v_no_mar
     
 
 
@@ -54,7 +54,7 @@ def ev_single_meet(setup,V,sown,female,t,skip_mar=False,trim_lvl=0.000001):
     
     EV = 0.0
     
-    i_assets_c, p_assets_c = setup.i_a_mat, setup.prob_a_mat
+    i_assets_c, p_assets_c = setup.i_a_mat[female], setup.prob_a_mat[female]
     
     npart = i_assets_c.shape[1]
     

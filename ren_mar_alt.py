@@ -92,6 +92,8 @@ def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
         vf_y = switch*vf_y_mar + (~switch)*vf_y_coh
         vm_y = switch*vm_y_mar + (~switch)*vm_y_coh
         
+    vf_n, vm_n = [x.astype(v_y.dtype) for x in (vf_n,vm_n)] # type conversion
+        
         
     result  = v_ren_core_interp(setup,v_y, vf_y, vm_y, vf_n, vm_n, is_unil, rescale=rescale)
     
@@ -252,54 +254,7 @@ def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,inde,Vmale,Vfemale,izf,izm,c
     # optional cost_fem and cost_mal are monetary costs of divorce
     
     
-#    shrs = setup.thetagrid#[0.2,0.35,0.5,0.65,0.8]  # grid on possible assets divisions    
-#    shp  =  (sc.size,izm.size,len(shrs))  
-#    Vm_divorce_M = np.zeros(shp) 
-#    Vf_divorce_M = np.zeros(shp)
-#    
-#    
-#    Vmale_temp=np.zeros((len(setup.agrid_c),izm.size))
-#    Vfemale_temp=np.zeros((len(setup.agrid_c),izf.size))
-#    #Reshape first
-#    for i in izf:          
-#        Vfemale_temp[:,i] =Vfemale[:,izf[i]]
-#        
-#    for i in izm:          
-#        Vmale_temp[:,i] =Vmale[:,izm[i]]
-#                
-#                
-#    # find utilities of divorce for different divisions of assets
-#    for i, shr in enumerate(shrs):
-#        sv_m = VecOnGrid(setup.agrid_s, shr*sc - cost_mal)
-#        sv_f = sv_m if cost_fem == cost_mal else VecOnGrid(setup.agrid_s,shr*sc - cost_fem)
-#        
-#        wm=sv_m.wthis[...,None]*np.ones_like(izm)
-#        wf=sv_f.wthis[...,None]*np.ones_like(izf)
-#        Vm_divorce_M[:,:,i] = (1-wm)*Vmale_temp[sv_m.i,:] +(wm)*Vmale_temp[sv_m.i+1,:]- dc.u_lost_m
-#        Vf_divorce_M[:,:,i] = (1-wf)*Vfemale_temp[sv_f.i,:] +(wf)*Vfemale_temp[sv_f.i+1,:] - dc.u_lost_f
-#    
-#    # share of assets that goes to the female
-#    # this has many repetative values but it turns out it does not matter much
-#    
-#    fem_gets = VecOnGrid(np.array(shrs),share_fem)
-#    mal_gets = VecOnGrid(np.array(shrs),share_mal)
-#    
-#    i_fem = fem_gets.i
-#    wn_fem = fem_gets.wnext
-#    
-#    i_mal = mal_gets.i
-#    wn_mal = mal_gets.wnext
-#    
-#    inds_exo = np.arange(setup.pars['nexo_t'][t+1])
-#    
-#    
-#    
-#    Vf_divorce = (1-wn_fem[None,:])*Vf_divorce_M[:,inds_exo,i_fem] + \
-#                wn_fem[None,:]*Vf_divorce_M[:,inds_exo,i_fem+1]
-#    
-#    Vm_divorce = (1-wn_mal[None,:])*Vm_divorce_M[:,inds_exo,i_mal] + \
-#                wn_mal[None,:]*Vm_divorce_M[:,inds_exo,i_mal+1]
-                
+
     
                 
  #   return Vf_divorce, Vm_divorce
@@ -393,6 +348,9 @@ def v_ren_core_interp(setup,vy1,vfy1,vmy1,vf_n,vm_n,unilateral,show_sc=False,res
         
         i_theta_out[no] = -1
         
+        
+    
+        
         def r(x): return x.astype(np.float32)
     
         
@@ -478,9 +436,12 @@ def v_ren_core_interp(setup,vy1,vfy1,vmy1,vf_n,vm_n,unilateral,show_sc=False,res
         
     if not np.all(vf_out>=vf_div_full - 1e-4):
         print('Warning: f is broken is {} cases'.format(np.sum(vf_out<=vf_div_full - 1e-4)))
+        raise Exception('regenotiation problems...')
         
     if not np.all(vm_out>=vm_div_full - 1e-4):
         print('Warning: m is broken is {} cases'.format(np.sum(vm_out<=vm_div_full - 1e-4)))
+        raise Exception('regenotiation problems...')
+    
         
     
     def r(x): return x.astype(np.float32)

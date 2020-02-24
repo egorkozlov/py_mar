@@ -44,7 +44,7 @@ if __name__ == '__main__':
     #For graphs later
     graphs=True
     #Build  data moments and pickle them
-    dat_moments(period=1)
+    #dat_moments(period=6)
     
          
     #Initialize the file with parameters
@@ -52,6 +52,8 @@ if __name__ == '__main__':
     
     
     x0 = np.array([0.701399,0.1810307,1.11501,0.643047,0.180264,0.0,0.71854,(1-0.21)/0.21])
+    x0 = np.array([0.701399,0.1810307,1.11501,0.643047,0.180264,0.07,0.71854,(1-0.21)/0.21])
+    
 
 
     #Name and location of files
@@ -61,9 +63,9 @@ if __name__ == '__main__':
         path = None
     
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','models','agents','scaled residuals'],
-                                      #load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
-                                      solve_transition=False,                                    
-                                      save_to=['mdl_save_bil.pkl'],#'mdl_save_uni.pkl'],
+                                      #load_from=['mdl_save_bil.pkl'],#'mdl_save_uni.pkl'],
+                                      solve_transition=True,                                    
+                                      save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       store_path=path,
                                       verbose=True,calibration_report=False,draw=True,graphs=graphs)
                          

@@ -103,22 +103,19 @@ class Model(object):
             # If None is feeded for EV this assumes that we are in the last period
             # and returns last period value
             #get_ipython().magic('reset -sf')
+            # v_iter should work fine ifor EV == None
             
-            ushift = self.setup.utility_shifters[desc]
+            ushift = self.setup.utility_shifters[desc]            
             
             if desc == 'Female, single' or desc == 'Male, single':
-                female = (desc == 'Female, single')
-                if EV is None:            
-                    V, c, x, s = setup.vs_last_grid(female,ushift)
-                else:
-                    V, c, x, s = v_iter_single(setup,t,EV,female,ushift)             
+                
+                female = (desc == 'Female, single')                
+                V, c, x, s = v_iter_single(setup,t,EV,female,ushift)                            
                 return {desc: {'V':V,'c':c,'x':x,'s':s}}   
              
-            elif desc== 'Couple, M' or desc == 'Couple, C':
-                if EV is None:
-                    V, VF, VM, c, x, s, fls, V_all_l = setup.vm_last_grid(ushift)
-                else:
-                    V, VF, VM, c, x, s, fls, V_all_l = v_iter_couple(setup,t,EV,ushift)            
+            elif desc == 'Couple, M' or desc == 'Couple, C':
+                
+                V, VF, VM, c, x, s, fls, V_all_l = v_iter_couple(setup,t,EV,ushift)                            
                 return {desc: {'V':V,'VF':VF,'VM':VM,'c':c,'x':x,'s':s,'fls':fls,'V_all_l':V_all_l}}
           
             

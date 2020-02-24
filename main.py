@@ -39,7 +39,7 @@ if __name__ == '__main__':
     
     
     #Build  data moments and pickle them
-    dat_moments(period=6) # refresh
+    dat_moments(period=1) # refresh
     
     
     
@@ -54,7 +54,7 @@ if __name__ == '__main__':
     from p_client import compute_for_values
     pts = [lb + rs(lb.shape)*(ub-lb) for _ in range(1)]
     pts = [('compute',translator(x)) for x in pts]    
-    outs = compute_for_values(pts,timeout=3600.0)
+    outs = compute_for_values(pts,timeout=7200.0)
     print('Everything worked, output is {}'.format(outs))
     
     
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     
 
     #Tik Tak Optimization
-    param=tiktak(N=500,N_st=20,skip_local=False,skip_global=False)
+    param=tiktak(N=300,N_st=20,skip_local=True,skip_global=False)
     
     print('f is {} and x is {}'.format(param[0],param[1]))
     

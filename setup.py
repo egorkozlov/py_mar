@@ -19,7 +19,7 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()       
-        period_year=6#this can be 1,2,3 or 6
+        period_year=1#this can be 1,2,3 or 6
         T = int(62/period_year)
         Tret = int(42/period_year) # first period when the agent is retired
         Tbef=int(2/period_year)
@@ -52,7 +52,7 @@ class ModelSetup(object):
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
         
-        p['z_drift'] = -0.1
+        p['z_drift'] = -0.09#-0.1
         
         
         p['wage_gap'] = 0.6
@@ -236,10 +236,10 @@ class ModelSetup(object):
             #assert False
             
         #Grid Couple
-        self.na = 80#40
+        self.na = 40#40
         self.amin = 0
-        self.amax =30#100
-        self.amax1=40#400
+        self.amax =100#100
+        self.amax1=200#400
         self.agrid_c = np.linspace(self.amin,self.amax1,self.na,dtype=self.dtype)
         #self.agrid_c[self.na-1]=250
         tune=2.5
@@ -248,7 +248,7 @@ class ModelSetup(object):
         # this builds finer grid for potential savings
         s_between = 7 # default numer of points between poitns on agrid
         s_da_min = 0.01 # minimal step (does not create more points)
-        s_da_max = 0.1 # maximal step (creates more if not enough)
+        s_da_max = 1.0 # maximal step (creates more if not enough)
         
         self.sgrid_c = build_s_grid(self.agrid_c,s_between,s_da_min,s_da_max)
         self.vsgrid_c = VecOnGrid(self.agrid_c,self.sgrid_c)

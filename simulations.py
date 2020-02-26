@@ -13,7 +13,7 @@ import pickle
 
 class Agents:
     
-    def __init__(self,Mlist,pswitchlist=None,N=15000,T=None,verbose=True,nosim=False):
+    def __init__(self,Mlist,female=False,pswitchlist=None,N=15000,T=None,verbose=True,nosim=False):
             
             
         np.random.seed(18)
@@ -24,7 +24,8 @@ class Agents:
         if type(Mlist) is not list:
             Mlist = [Mlist]
             
-
+        
+        
         
         #Unilateral Divorce
         self.Mlist = Mlist
@@ -44,6 +45,10 @@ class Agents:
         self.verbose = verbose
         self.timer = self.Mlist[0].time
         
+        self.female = female
+        self.single_state = 'Female, single' if female else 'Male, single'        
+        
+        
         # all the randomness is here
         self.shocks_single_iexo = np.random.random_sample((N,T))
         self.shocks_single_meet = np.random.random_sample((N,T))
@@ -51,10 +56,13 @@ class Agents:
         self.shocks_single_a = np.random.random_sample((N,T))
         self.shocks_couple_a = np.random.random_sample((N,T))
         
-        fem_prob = int_prob(self.setup.exogrid.zf_t[0], sig = self.setup.pars['sig_zf_0'])
+        
+        z_t = self.setup.exogrid.zf_t if female else self.setup.exogrid.zm_t
+        sig = self.setup.pars['sig_zf_0'] if female else self.setup.pars['sig_zm_0']
+        z_prob = int_prob(z_t[0], sig = sig )
         shocks_init = np.random.random_sample((N,))        
-        i_fem = np.sum((shocks_init[:,None] > np.cumsum(fem_prob)[None,:]), axis=1)
-        iexoinit = i_fem # initial state        
+        i_z = np.sum((shocks_init[:,None] > np.cumsum(z_prob)[None,:]), axis=1)
+        iexoinit = i_z # initial state        
         
         
         self.shocks_transition = np.random.random_sample((N,T))
@@ -95,9 +103,6 @@ class Agents:
         
         
         
-        # initialize state
-        self.state = np.zeros((N,T),dtype=np.int32)       
-        self.state[:,0] = 0  # everyone starts as female
         
         
         self.state_codes = dict()
@@ -105,6 +110,11 @@ class Agents:
         for i, name in enumerate(self.setup.state_names):
             self.state_codes[name] = i
             self.has_theta.append((name=='Couple, C' or name=='Couple, M'))
+        
+        
+        # initialize state
+        self.state = np.zeros((N,T),dtype=np.int32)       
+        self.state[:,0] = self.state_codes[self.single_state]  # everyone starts as female
         
         
         self.timer('Simulations, creation',verbose=self.verbose)
@@ -285,18 +295,17 @@ class Agents:
                 
                 
                 
-                if sname == "Female, single":
-                    # TODO: this is temporary version, it computes partners for
-                    # everyone and after that imposes meet / no meet, this should
-                    # not happen.
+                if sname == self.single_state:
+                    # !!! You can either simulate males or females but not both
+                    
+                    ss = self.single_state
                     
                     # meet a partner
                     
                     pmeet = self.Mlist[ipol].setup.pars['pmeet_t'][t] # TODO: check timing
                     
                     
-                    matches = self.Mlist[ipol].decisions[t]['Female, single']
-                    
+                    matches = self.Mlist[ipol].decisions[t][ss]
                     
                     ia = self.iassets[ind,t+1] # note that timing is slightly inconsistent  
                     
@@ -319,6 +328,8 @@ class Agents:
                     # potential assets position of couple
                     
                     iall, izf, izm, ipsi = self.Mlist[ipol].setup.all_indices(t,ic_out)
+                    
+                    iz = izf if self.female else izm
                     
                     
                     # compute for everyone
@@ -386,12 +397,14 @@ class Agents:
                         
                     if np.any(i_disagree_or_nomeet):
                         # do not touch assets
-                        self.iexo[ind[i_disagree_or_nomeet],t+1] = izf[i_disagree_or_nomeet]
-                        self.state[ind[i_disagree_or_nomeet],t+1] = self.state_codes['Female, single']
+                        self.iexo[ind[i_disagree_or_nomeet],t+1]  = iz[i_disagree_or_nomeet]
+                        self.state[ind[i_disagree_or_nomeet],t+1] = self.state_codes[ss]
                         self.ils_i[ind[i_disagree_or_nomeet],t+1] = self.ils_def
                         
                         
                 elif sname == "Couple, M" or sname == "Couple, C":
+                    
+                    ss = self.single_state
                     
                     decision = self.Mlist[ipol].decisions[t][sname]
     
@@ -406,6 +419,8 @@ class Agents:
                     # initiate renegotiation
                     isc = self.iassets[ind,t+1]
                     iall, izf, izm, ipsi = self.Mlist[ipol].setup.all_indices(t+1,self.iexo[ind,t+1])
+                    
+                    iz = izf if self.female else izm
                     
                     itht = self.itheta[ind,t+1] 
                     agrid =  self.Mlist[ipol].setup.agrid_c                
@@ -454,15 +469,21 @@ class Agents:
                         costs = self.Mlist[ipol].setup.div_costs if sname == 'Couple, M' else self.Mlist[ipol].setup.sep_costs
                                    
                         share_f, share_m = costs.shares_if_split(income_share_fem)
-                        share_f= costs.shares_if_split_theta(self.setup,self.setup.thetagrid[self.setup.v_thetagrid_fine.i[itht]+1])
+                        share_f = costs.shares_if_split_theta(self.setup,self.setup.thetagrid[self.setup.v_thetagrid_fine.i[itht]+1])
                         
                         sf = share_f[i_div]*sc[i_div]
+                        assert np.all(share_f[i_div]>=0) and np.all(share_f[i_div]<=1)
+                        sm = (1-share_f[i_div])*sc[i_div]
+                        
+                        s = sf if self.female else sm
+                        
+                        
                         
                         shks = self.shocks_couple_a[ind[i_div],t]
-                        self.iassets[ind[i_div],t+1] = VecOnGrid(agrid,sf).roll(shocks=shks)
+                        self.iassets[ind[i_div],t+1] = VecOnGrid(agrid,s).roll(shocks=shks)
                         self.itheta[ind[i_div],t+1] = -1
-                        self.iexo[ind[i_div],t+1] = izf[i_div]
-                        self.state[ind[i_div],t+1] = self.state_codes['Female, single']
+                        self.iexo[ind[i_div],t+1] = iz[i_div]
+                        self.state[ind[i_div],t+1] = self.state_codes[ss]
                         
                         #FLS
                         self.ils_i[ind[i_div],t+1] = self.ils_def

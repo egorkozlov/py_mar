@@ -21,12 +21,14 @@ if __name__ == '__main__':
  
 from platform import system
      
-if system() != 'Darwin' and system() != 'Windows':  
-    import os
+import os
+if system() != 'Darwin' and system() != 'Windows':      
     os.environ['QT_QPA_PLATFORM']='offscreen'
- 
- 
- 
+    
+if system() == 'Darwin':
+    os.environ["PATH"] += os.pathsep + '/Library/TeX/texbin/'
+   
+
 import numpy as np
 from residuals import mdl_resid
 from data_moments import dat_moments
@@ -66,9 +68,9 @@ if __name__ == '__main__':
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','models','agents','scaled residuals'],
                                       #load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       solve_transition=True,                                    
-                                      save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
+                                      #save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       store_path=path,
-                                      verbose=True,calibration_report=False,draw=True,graphs=graphs)
+                                      verbose=True,calibration_report=False,draw=graphs,graphs=graphs)
                          
     print('Done. Residual in point x0 is {}'.format(out))
      

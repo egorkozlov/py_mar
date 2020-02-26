@@ -512,9 +512,43 @@ def ren_loop(vy,vfy,vmy,vfn,vmn,thtgrid):
      
     return vout, vfout, vmout, thetaout 
                      
-                     
-                     
-                     
+'''
+def ren_loop_bribe(vy,vfy,vmy,vfn,vmn,thtgrid,agrid_c,agrid_s): 
+    vout = vy.copy() 
+    vfout = vfy.copy() 
+    vmout = vmy.copy() 
+    
+    na, nexo, nt = vy.shape 
+     
+    ithetaout = -1*np.ones(vout.shape,dtype=np.int32) 
+    iassetsout_f = -2*np.ones(vout.shape,dtype=np.int32) 
+    iassetsout_m = -2*np.ones(vout.shape,dtype=np.int32)
+    
+    ia_single_max_arr = np.searchsorted(agrid_c,agrid_s)
+
+    
+    for ia in range(na):
+        for iexo in range(nexo):
+            for it in range(nt):
+                if vfy[ia,iexo,it] >= vfn[ia,iexo] and vmy[ia,iexo,it] >= vmn[ia,iexo]:
+                    ithetaout[ia,iexo,it] = it
+                    # do not fill iassets
+                    continue # check if continue is valid
+                
+                if vfy[ia,iexo,it] < vfn[ia,iexo] and vmy[ia,iexo,it] < vmn[ia,iexo]:
+                    # do not fill iassets
+                    vfout[ia,iexo,it] = vfy[ia,iexo,it]
+                    vmout[ia,iexo,it] = vmy[ia,iexo,it]
+                    th = thtgrid[it]
+                    vout[ia,iexo,it] = (1-th)*vmy[ia,iexo,it] + \
+                                            th*vfy[ia,iexo,it]
+                    continue # check if continue is valid
+                
+                if vfy[ia,iexo,it] < vfn[ia,iexo] or vmy[ia,iexo,it] < vmn[ia,iexo]:
+                    # here only one constraint is binding
+                    
+                
+'''                     
  
 @njit 
 def mar_loop(vfy,vmy,vfn,vmn,gamma): 

@@ -46,9 +46,15 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     
     
     
-    
-    ulost = params.pop('ulost') # ulost does not belong to setup parameters so this pop removes it
-    
+    try:
+        ulost = params.pop('ulost') # ulost does not belong to setup parameters so this pop removes it
+    except:
+        ulost = 0.0
+        
+    try:
+        alost = params.pop('alost')
+    except:
+        alost = 0.0
     
     # this is for the default model
     dc = DivorceCosts(unilateral_divorce=False,assets_kept = 0.8,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)

@@ -65,7 +65,7 @@ class ModelSetup(object):
         p['u_shift_coh'] = 0.0
         
        
-        p['f_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-0.3835511 +0.0244082*t -0.0005329*t**2) for t in range(T)]
+        p['f_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-0.3835511 +0.0244082*t - 0.0005329*t**2) for t in range(T)]
         p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-0.3424399 +0.0495159*t  -0.0009392*t**2) for t in range(T)]
 
         
@@ -75,7 +75,7 @@ class ModelSetup(object):
         p['util_lam'] = 0.19#0.4
         p['util_alp'] = 0.5
         p['util_xi'] = 3.11
-        p['util_kap'] = 0.5
+        p['util_kap'] = (1-0.21)/(0.21)
         
         
         for key, value in kwargs.items():

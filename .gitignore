@@ -147,3 +147,5 @@ histo.csv
 *.prof
 
 GP2000.mat
+
+*.pgf

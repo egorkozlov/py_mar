@@ -27,7 +27,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     
     from model import Model
     from setup import DivorceCosts
-    from simulations import Agents
+    from simulations import Agents, AgentsPooled
     from moments import moment
     
     
@@ -180,8 +180,12 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
         transition_matrices=transition_matrices+[np.array([[1-pr,pr],[0,1]])]
         
     
-    agents = Agents( mdl_list ,pswitchlist=transition_matrices,verbose=verbose)
-    moments = moment(mdl,agents,draw=draw)
+    agents_fem = Agents( mdl_list ,female=True,pswitchlist=transition_matrices,verbose=verbose)
+    agents_mal = Agents( mdl_list ,female=False,pswitchlist=transition_matrices,verbose=verbose)
+    agents_pooled = AgentsPooled([agents_fem,agents_mal])
+    
+    
+    moments = moment(mdl,agents_fem,draw=draw)
     
     ############################################################
     #Build data moments and compare them with simulated ones

@@ -46,7 +46,7 @@ if __name__ == '__main__':
     #For graphs later
     graphs=True
     #Build  data moments and pickle them
-    dat_moments(period=6)
+    #dat_moments(period=6)
     
          
     #Initialize the file with parameters
@@ -65,9 +65,9 @@ if __name__ == '__main__':
         path = None
     
     out, mdl, agents, res = mdl_resid(return_format=['distance','models','agents','scaled residuals'],
-                                      save_to=['mdl_save_bil.pkl'],#'mdl_save_uni.pkl'],
-                                      solve_transition=True,                                    
-                                      #save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
+                                      #save_to=['mdl_save_bil.pkl'],#'mdl_save_uni.pkl'],
+                                      solve_transition=False,                                    
+                                      save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       store_path=path,
                                       verbose=True,calibration_report=False,draw=graphs,graphs=graphs)
                          

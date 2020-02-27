@@ -235,15 +235,17 @@ class ModelSetup(object):
             
             #assert False
             
+            
+            
         #Grid Couple
         self.na = 40
         self.amin = 0
-        self.amax =100
-        self.amax1 = 400
-        self.agrid_c = np.linspace(self.amin,self.amax1,self.na,dtype=self.dtype)
+        self.amax = 100
+        self.amax1 = 1.25*self.amax
+        #self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
         #self.agrid_c[self.na-1]=250
         tune=2.5
-        #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
+        self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         self.agrid_c[-1]=self.amax1
         # this builds finer grid for potential savings
         s_between = 7 # default numer of points between poitns on agrid
@@ -256,13 +258,14 @@ class ModelSetup(object):
         
          
         #Grid Single
+        scale = 1.1
         self.amin_s = 0
-        self.amax_s = self.amax/1.1
-        self.agrid_s = np.linspace(self.amin_s,self.amax_s,self.na,dtype=self.dtype)
+        self.amax_s = self.amax/scale
+        #self.agrid_s = np.linspace(self.amin_s,self.amax_s,self.na,dtype=self.dtype)
         #self.agrid_s[self.na-1]=250
         tune_s=2.5
-        #self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
-        self.agrid_s[-1]=self.amax1/1.1
+        self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
+        self.agrid_s[-1]=self.amax1/scale
         self.sgrid_s = build_s_grid(self.agrid_s,s_between,s_da_min,s_da_max)
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)
         
@@ -385,6 +388,8 @@ class ModelSetup(object):
                 lagrid_t = np.zeros_like(agrid_c)
                 
                 i_neg = (agrid_c <= max(abar,a) - 1e-6)
+                
+                # if a is zero this works a bit weird but does the job
                 
                 lagrid_t[~i_neg] = np.log(2e-6 + (agrid_c[~i_neg] - a)/max(abar,a))
                 lmin = lagrid_t[~i_neg].min()

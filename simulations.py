@@ -542,4 +542,28 @@ class Agents:
                 else:
                     raise Exception('unsupported state?')
         
-        assert not np.any(np.isnan(self.state[:,t+1]))            
+        assert not np.any(np.isnan(self.state[:,t+1]))        
+        
+        
+class AgentsPooled:
+    def __init__(self,AgentsList):
+        
+        def combine(mlist):
+            return np.concatenate(mlist,axis=0)
+        
+        self.state = combine([a.state for a in AgentsList])
+        self.iexo = combine([a.iexo for a in AgentsList])
+        self.ils_i = combine([a.ils_i for a in AgentsList])
+        self.itheta = combine([a.itheta for a in AgentsList])
+        self.iassets = combine([a.iassets for a in AgentsList])
+        self.c = combine([a.c for a in AgentsList])
+        self.s = combine([a.s for a in AgentsList])
+        self.x = combine([a.x for a in AgentsList])
+        self.policy_ind = combine([a.policy_ind for a in AgentsList])
+        self.agents_ind = combine([i*np.ones_like(a.state) for i, a in enumerate(AgentsList)])
+        self.is_female = combine([a.female*np.ones_like(a.state) for a in AgentsList])
+        self.T = AgentsList[0].T
+        self.N = sum([a.N for a in AgentsList])
+        
+    def sample(self):
+        pass

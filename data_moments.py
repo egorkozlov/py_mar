@@ -56,7 +56,7 @@ def hazards(dataset,event,duration,end,listh,number,wgt):
 #####################################   
 #Routine that computes moments   
 #####################################   
-def compute(hi,d_hrs,period=3):   
+def compute(hi,d_hrs,period=3,transform=1):   
     #compute moments, period   
     #says how many years correspond to one   
     #period   
@@ -282,6 +282,43 @@ def compute(hi,d_hrs,period=3):
     #Hazard of Divorce   
     hazd=list()   
     hazd=hazards(mare,'div','dury','fine',hazd,int(12/period),'SAMWT')   
+    
+    #Eventually transform Hazards pooling more years together
+    if transform>1:
+        
+        #Divorce
+        hazdp=list()
+        pop=1
+        for i in range(int(12/(period*transform))):
+            haz1=hazd[transform*i]*pop
+            haz2=hazd[transform*i+1]*(pop-haz1)
+            hazdp=[(haz1+haz2)/pop]+hazdp 
+            pop=pop-(haz1+haz2)
+        hazdp.reverse()   
+        hazdp=np.array(hazdp).T 
+        hazd=hazdp
+            
+        #Separation and Marriage
+        hazsp=list()
+        hazmp=list()
+        pop=1
+        for i in range(int(6/(period*transform))):
+            hazs1=hazs[transform*i]*pop
+            hazm1=hazm[transform*i]*pop
+            
+            hazs2=hazs[transform*i+1]*(pop-hazs1-hazm1)
+            hazm2=hazm[transform*i+1]*(pop-hazs1-hazm1)
+            hazsp=[(hazs1+hazs2)/pop]+hazsp
+            hazmp=[(hazm1+hazm2)/pop]+hazmp
+            pop=pop-(hazs1+hazs2+hazm1+hazm2)
+            
+        hazsp.reverse()   
+        hazsp=np.array(hazsp).T 
+        hazs=hazsp
+        
+        hazmp.reverse()   
+        hazmp=np.array(hazmp).T 
+        hazm=hazmp
        
     ########################################   
     #Construct share of each relationship   
@@ -367,7 +404,8 @@ def compute(hi,d_hrs,period=3):
     hi3.dropna(subset=['imar','unid'])   
        
     #Regression   
-    FE_ols = smf.wls(formula='imar ~ unid+C(order)+C(iage)+C(state)+C(year)',weights=hi3['SAMWT'], data = hi3.dropna()).fit()   
+    FE_ols = smf.wls(formula='imar ~ unid+C(iage)+C(state)+C(year)',weights=hi3['SAMWT'], data = hi3.dropna()).fit()   
+    #FE_ols = smf.ols(formula='imar ~ unid+C(iage)+C(state)+C(year)', data = hi3.dropna()).fit()   
     beta_unid=FE_ols.params['unid']   
        
     #Get age at which unilateral divorced was introduced   
@@ -453,7 +491,7 @@ def compute(hi,d_hrs,period=3):
 #Actual moments computation + weighting matrix   
 ################################################   
    
-def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=False,period=3):   
+def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=False,period=3,transform=1):   
        
        
        
@@ -462,8 +500,13 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
     data=pd.read_csv('histo.csv')      
     data_h=pd.read_csv('hrs.csv') 
        
+    #Subset Data
+    data=data[data['eq']<=1].copy()
+    data=data[(data['birth']>=1940) & (data['birth']<1955)].copy()
+    
+    
     #Call the routine to compute the moments   
-    dic=compute(data.copy(),data_h.copy(),period=period)   
+    dic=compute(data.copy(),data_h.copy(),period=period,transform=transform)   
     hazs=dic['hazs']   
     hazm=dic['hazm']   
     hazd=dic['hazd']   
@@ -506,7 +549,7 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
        
         a1=aa[(i*n):((i+1)*n)].copy().reset_index()   
         a1h=a_h[(i*n_h):((i+1)*n_h)].copy().reset_index()  
-        dicti=compute(a1.copy(),a1h.copy(),period=period)   
+        dicti=compute(a1.copy(),a1h.copy(),period=period,transform=transform)   
         hazsB[:,i]=dicti['hazs']   
         hazmB[:,i]=dicti['hazm']   
         hazdB[:,i]=dicti['hazd']   

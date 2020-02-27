@@ -366,7 +366,7 @@ def moment(mdl,agents,draw=True,validation=False):
             
         cond=all_spells['Couple, C'][:,1]==t+1   
         temp=all_spells['Couple, C'][cond,2]   
-        cond1=temp==0   
+        cond1=(temp>=0) & (temp<=1)
         temp1=temp[cond1]   
         if lgh>0:   
             haz1=len(temp1)/lgh   
@@ -397,6 +397,42 @@ def moment(mdl,agents,draw=True,validation=False):
     hazm.reverse()   
     hazm=np.array(hazm).T   
         
+    #Transform hazards pooling moments
+    mdl.setup.pars['ty']=2
+    if mdl.setup.pars['ty']>1:
+        #Divorce
+        hazdp=list()
+        pop=1
+        for i in range(int(mdl.setup.pars['T']/(mdl.setup.pars['ty']))):
+            haz1=hazd[mdl.setup.pars['ty']*i]*pop
+            haz2=hazd[mdl.setup.pars['ty']*i+1]*(pop-haz1)
+            hazdp=[(haz1+haz2)/pop]+hazdp 
+            pop=pop-(haz1+haz2)
+        hazdp.reverse()   
+        hazdp=np.array(hazdp).T 
+        hazd=hazdp
+            
+        #Separation and Marriage
+        hazsp=list()
+        hazmp=list()
+        pop=1
+        for i in range(int(mdl.setup.pars['T']/(mdl.setup.pars['ty']))):
+            hazs1=hazs[mdl.setup.pars['ty']*i]*pop
+            hazm1=hazm[mdl.setup.pars['ty']*i]*pop
+            
+            hazs2=hazs[mdl.setup.pars['ty']*i+1]*(pop-hazs1-hazm1)
+            hazm2=hazm[mdl.setup.pars['ty']*i+1]*(pop-hazs1-hazm1)
+            hazsp=[(hazs1+hazs2)/pop]+hazsp
+            hazmp=[(hazm1+hazm2)/pop]+hazmp
+            pop=pop-(hazs1+hazs2+hazm1+hazm2)
+            
+        hazsp.reverse()   
+        hazsp=np.array(hazsp).T 
+        hazs=hazsp
+        
+        hazmp.reverse()   
+        hazmp=np.array(hazmp).T 
+        hazm=hazmp
         
     moments['hazard sep'] = hazs   
     moments['hazard div'] = hazd   

@@ -46,7 +46,7 @@ if __name__ == '__main__':
     #For graphs later
     graphs=True
     #Build  data moments and pickle them
-    #dat_moments(period=6)
+    dat_moments(period=1,sampling_number=4,transform=2)
     
          
     #Initialize the file with parameters
@@ -54,9 +54,11 @@ if __name__ == '__main__':
     
     
     x0 = np.array([0.701399,0.1810307,1.11501,0.643047,0.180264,0.0,0.71854,(1-0.21)/0.21])
-    x0 = np.array([0.701399,0.1810307,1.11501,0.643047,0.180264,0.07,0.71854,(1-0.21)/0.21])
+    x0 = np.array([0.0,0.1810307,1.11501,0.543047,0.050264,0.08,0.9999,(1-0.21)/0.21])
+    x0 = np.array([0.2,0.1110307,1.11501,0.543047,0.050264,0.005,-0.09])
     
 
+             
 
     #Name and location of files
     if system() == 'Windows':   
@@ -64,10 +66,10 @@ if __name__ == '__main__':
     else:
         path = None
     
-    out, mdl, agents, res = mdl_resid(return_format=['distance','models','agents','scaled residuals'],
-                                      #save_to=['mdl_save_bil.pkl'],#'mdl_save_uni.pkl'],
-                                      solve_transition=False,                                    
-                                      save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
+    out, mdl, agents, res = mdl_resid(x0,return_format=['distance','models','agents','scaled residuals'],
+                                      load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
+                                      #solve_transition=True,                                    
+                                      #save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       store_path=path,
                                       verbose=True,calibration_report=False,draw=graphs,graphs=graphs)
                          

@@ -20,12 +20,14 @@ class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()       
         period_year=1#this can be 1,2,3 or 6
+        transform=2#this tells how many periods to pull together for duration moments
         T = int(62/period_year)
         Tret = int(42/period_year) # first period when the agent is retired
         Tbef=int(2/period_year)
         Tren  = int(42/period_year) # period starting which people do not renegotiate/divroce
         Tmeet = int(42/period_year) # period starting which you do not meet anyone
         p['py']=period_year
+        p['ty']=transform
         p['T'] = T
         p['Tret'] = Tret
         p['Tbef'] = Tbef
@@ -52,7 +54,7 @@ class ModelSetup(object):
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
         
-        p['z_drift'] = -0.1
+        p['z_drift'] = -0.09#-0.1
         
         
         p['wage_gap'] = 0.6
@@ -238,7 +240,7 @@ class ModelSetup(object):
             
             
         #Grid Couple
-        self.na = 40
+        self.na = 40#40
         self.amin = 0
         self.amax = 100
         self.amax1 = 1.25*self.amax

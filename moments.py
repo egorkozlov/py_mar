@@ -12,6 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt   
 #from matplotlib.pyplot import plot, draw, show   
 import matplotlib.backends.backend_pdf   
+from statutils import strata_sample
  
 #For nice graphs with matplotlib do the following 
 matplotlib.use("pgf") 
@@ -42,7 +43,8 @@ def moment(mdl,agents,draw=True,validation=False):
     iexo=agents.iexo   
     state=agents.state   
     theta_t=mdl.setup.thetagrid_fine[agents.itheta]   
-    setup = mdl.setup   
+    setup = mdl.setup  
+    female=agents.is_female
     cons=agents.c
     consx=agents.x
     labor=agents.ils_i
@@ -99,6 +101,7 @@ def moment(mdl,agents,draw=True,validation=False):
     iexo=iexo[:,0:mdl.setup.pars['T']]   
     state=state[:,0:mdl.setup.pars['T']]   
     theta_t=theta_t[:,0:mdl.setup.pars['T']]   
+    female=female[:,0:mdl.setup.pars['T']]   
       
        
     ####################################################################   
@@ -123,14 +126,71 @@ def moment(mdl,agents,draw=True,validation=False):
     iexo=iexo[keep,]   
     state=state[keep,]   
     theta_t=theta_t[keep,]   
-    changep=changep[keep,]  
+    changep=changep[keep,] 
+    female=female[keep,] 
       
     index=np.array(np.linspace(1,len(state[:,0]),len(state[:,0]))-1,dtype=np.int16)  
       
     N=len(iexo[:,0])  
-       
+    
+    ###################################################################
+    # Draw from simulated agents to match NSFH distribution
+    # according to the following stratas:
+    # 1) Age at unilateral divorce
+    # 2) Gender
+    # 
+    ###################################################################
+    
+    #Import the distribution from the data
+    with open('freq_nsfh.pkl', 'rb') as file:   
+        freq_nsfh_data=pickle.load(file)  
+    
+    #Make data compatible with current age
+    freq_nsfh_data['age_unid']=freq_nsfh_data['age_unid']-18.0
+    freq_nsfh_data.loc[freq_nsfh_data['age_unid']<=0.0,'age_unid']=0.0
+    freq_nsfh_data.loc[freq_nsfh_data['age_unid']>=900.0,'age_unid']=1000
+    freq_nsfh=freq_nsfh_data.groupby(['M2DP01','age_unid'])['SAMWT'].count()
+    #Create a Dataframe with simulated data to perform the draw
+    age_unid=np.argmax(changep,axis=1)
+    never=(changep[:,0]==0) & (age_unid[:]==0)
+    age_unid[never]=1000
+    age_unid[changep[:,-1]==0]=1000
+    
+    fem=np.array(['FEMALE']*len(female))
+    fem[female[:,0]==0]='MALE'
+    
+    inde=np.linspace(1,len(fem),len(fem),dtype=np.int32)
+    
+    ddd=np.stack((inde,age_unid,fem),axis=0).T
+    df=pd.DataFrame(data=ddd,columns=["Index","age","sex"],index=ddd[:,0])
+    df['age']=df['age'].astype(np.float)
+    
+    sampletemp=strata_sample(["'sex'", "'age'"],freq_nsfh,frac=0.8,tsample=df,distr=True)
+    final2=df.merge(sampletemp,how='left',on='Index',indicator=True)
+    
+    keep2=[False]*len(df)
+    keep2=(np.array(final2['_merge'])=='both')
+    
+    #Keep again for all relevant variables
+    assets_t=assets_t[keep2,]   
+    iexo=iexo[keep2,]   
+    state=state[keep2,]   
+    theta_t=theta_t[keep2,]   
+    changep=changep[keep2,] 
+    female=female[keep2,] 
+    
+    #Initial distribution
+    prima=freq_nsfh/np.sum(freq_nsfh)
+    
+    #Final distribution
+    final3=df[keep2]
+    final4=final3.groupby(['sex','age'])['sex'].count()
+    dopo=final4/np.sum(final4)
+    
+    
+    print('The average deviation from actual to final ditribution is {:0.2f}%'.format(np.mean(abs(prima-dopo))*100))
     ###################################################################  
-    #Get age we stop observing spells  
+    #Get age we stop observing spells: this matters for hazards
     ###################################################################  
     with open('age_sint.pkl', 'rb') as file:   
         age_sint=pickle.load(file)   
@@ -165,7 +225,7 @@ def moment(mdl,agents,draw=True,validation=False):
     is_spell = np.zeros((N,nspells),dtype=np.bool)   
       
         
-    state_beg[:,0] = 0 # THIS ASSUMES EVERYONE STARTS AS SINGLE   
+    state_beg[:,0] = 0 # THIS ASSUMES EVERYONE STARTS AS SINGLE   #TODO consistent with men stuff?
     time_beg[:,0] = 0   
     sp_length[:,0] = 1   
     is_spell[:,0] = True   

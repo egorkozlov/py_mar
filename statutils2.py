@@ -8,7 +8,7 @@ Statistical Utilities for Structural Estimation
 
 """
 
-def strata_sample(namevar,dsample,frac=0.1,weights=False,distr=False,tsample=False):
+def strata_sample(namevar,dsample,frac=0.1,weights=False,distr=False,tsample=False,fraction=False):
     
     #Take dsample, compute its distribution according to strata namevar with weights
     #and then sample from tsample of dsample. You can also feed already the distribution
@@ -44,11 +44,6 @@ def strata_sample(namevar,dsample,frac=0.1,weights=False,distr=False,tsample=Fal
          
         pop_count = dsample
         
-    #Adjust fraction per group
-    fraction_new=pop_count/sum(pop_count)*frac
-    fraction_current_temp=tsample.groupby(namevar_1)[namevar_1[0]].count()
-    fraction_current=fraction_current_temp/sum(fraction_current_temp)
-        
     #Check whether work with initial data
     if not isinstance(tsample, pd.DataFrame):
 
@@ -65,17 +60,26 @@ def strata_sample(namevar,dsample,frac=0.1,weights=False,distr=False,tsample=Fal
         
     #Stratify Sample
     
-    def map_fun(x):
-        p = pop_count
-        if fraction_new.array[x]/fraction_current.array[x]<1.0:
-            return tsample[eval(subset[0:-1])].sample(frac=fraction_new.array[x]/fraction_current.array[x])
-        else:
-            return tsample[eval(subset[0:-1])].sample(frac=1.0)
-    
-    stratified_sample= list(map(map_fun, range(len(pop_count))))
 
+    if not fraction:  
+        
+        def map_fun(x):
+            p = pop_count
+            fraction=tsample[eval(subset[0:-1])].sample(frac=frac)
+            return fraction
     
-    return pd.concat(stratified_sample) 
+        stratified_sample= list(map(map_fun, range(len(pop_count))))
+        return pd.concat(stratified_sample)
+    else:
+        
+        def map_fun(x):
+            p = pop_count
+            t=tsample
+            fraction=eval(subset[0:-1])
+            return fraction
+    
+        stratified_sample= list(map(map_fun, range(len(pop_count))))
+        return stratified_sample
     
 
 
@@ -96,19 +100,19 @@ if __name__ == '__main__':
     population['age'] = np.random.randint(0,4,100000)
     
     
-    tsample = pd.DataFrame(index=range(0,240000))
-    tsample['income'] = 0
-    tsample['income'].iloc[19000:40000] = 1
-    tsample['income'].iloc[120000:] = 2
-    tsample['sex'] = np.random.randint(0,2,240000)
-    tsample['age'] = np.random.randint(0,4,240000)
+    tsample1 = pd.DataFrame(index=range(0,240000))
+    tsample1['income'] = 0
+    tsample1['income'].iloc[19000:40000] = 1
+    tsample1['income'].iloc[120000:] = 2
+    tsample1['sex'] = np.random.randint(0,2,240000)
+    tsample1['age'] = np.random.randint(0,4,240000)
     
     #pop_count = population.groupby(['income', 'sex', 'age'])['income'].count()
     
     
     pop_count = population.groupby(['income', 'sex', 'age'])['income'].count()
     
-    sample2=strata_sample(["'income'", "'sex'", "'age'"],population,frac=0.134,tsample=tsample)
+    sample2=strata_sample(["'income'", "'sex'", "'age'"],population,frac=0.134,tsample=tsample1)
+    sample3=strata_sample(["'income'", "'sex'", "'age'"],pop_count,frac=0.134,tsample=tsample1,distr=True,fraction=True)
     
-    sample3=strata_sample(["'income'", "'sex'", "'age'"],pop_count,frac=0.134,tsample=tsample,distr=True)
-    
+    sample4=list(map(lambda x: population[sample3[x]],range(len(sample3))))

@@ -11,12 +11,16 @@ Created on Sat Dec 14 10:58:43 2019
 import numpy as np
 import pickle, dill
 import os
+import cProfile
+from line_profiler import LineProfiler
+
 
 
 
 
 # return format is any combination of 'distance', 'all_residuals' and 'models'
 # we can add more things too for convenience
+
 def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
               solve_transition=False,
               store_path = None,
@@ -153,39 +157,46 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
         age_uni=pickle.load(file)
         
 
-    
-    #Transfrom distribution of age at Unilateral Divorce into conditional Probabilities
-    #The Probability of Transitioning from Unilateral to Bilateral is always zero
-    
-    #Transformation of age at uni from actual age to model periods
-    change=-np.ones(1000,np.int32)#the bigger is the size of this array, the more precise the final distribution
-   
-    summa=0.0
-    summa1=0.0
-    for i in age_uni:
-        print(i)
-        summa+=age_uni[i]
-        change[int(summa1*len(change[:])/sum(age_uni.values())):int(summa*len(change[:])/sum(age_uni.values()))]=(i-18)/mdl.setup.pars['py']
-        summa1+=age_uni[i]
-    change=np.sort(change, axis=0) 
-    
-    #Now we compute the actual conditional probabilities
-    transition_matrices=list()
-    
-    #First period treated differently
-    pr=np.sum(change<=0)/(np.sum(change<=np.inf))
-    transition_matrices=transition_matrices+[np.array([[1-pr,pr],[0,1]])]
-    for t in range(mdl.setup.pars['T']-1):
-        pr=np.sum(change==t+1)/(np.sum(change<=np.inf))
-        transition_matrices=transition_matrices+[np.array([[1-pr,pr],[0,1]])]
+    def get_transition(age_dist):
+        #Transformation of age at uni from actual age to model periods
+        change=-np.ones(1000,np.int32)#the bigger is the size of this array, the more precise the final distribution
+       
+        summa=0.0
+        summa1=0.0
+        for i in age_dist:
+           
+            summa+=age_dist[i]
+            change[int(summa1*len(change[:])/sum(age_dist.values())):int(summa*len(change[:])/sum(age_dist.values()))]=(i-18)/mdl.setup.pars['py']
+            summa1+=age_dist[i]
+        change=np.sort(change, axis=0) 
         
+        #Now we compute the actual conditional probabilities
+        transition_matricest=list()
+        
+        #First period treated differently
+        pr=np.sum(change<=0)/(np.sum(change<=np.inf))
+        transition_matricest=transition_matricest+[np.array([[1-pr,pr],[0,1]])]
+        for t in range(mdl.setup.pars['T']-1):
+            pr=np.sum(change==t+1)/(np.sum(change<=np.inf))
+            transition_matricest=transition_matricest+[np.array([[1-pr,pr],[0,1]])]
+            
+        return transition_matricest
     
-    agents_fem = Agents( mdl_list ,female=True,pswitchlist=transition_matrices,verbose=verbose)
-    agents_mal = Agents( mdl_list ,female=False,pswitchlist=transition_matrices,verbose=verbose)
+    #Get the transitions for men and women
+    transition_matricesf=get_transition(age_uni['female'])
+    transition_matricesm=get_transition(age_uni['male'])
+        
+   
+    #Get Number of simulated agent, malea and female
+    N=15000
+    Nf=int(N*age_uni['share_female'])
+    Nm=N-Nf
+    agents_fem = Agents( mdl_list ,age_uni['female'],female=True,pswitchlist=transition_matricesf,verbose=False,N=Nf)
+    agents_mal = Agents( mdl_list ,age_uni['male'],female=False,pswitchlist=transition_matricesm,verbose=False,N=Nm)
     agents_pooled = AgentsPooled([agents_fem,agents_mal])
     
     
-    moments = moment(mdl,agents_fem,draw=draw)
+    moments = moment(mdl,agents_pooled,draw=draw)
     
     ############################################################
     #Build data moments and compare them with simulated ones
@@ -268,7 +279,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     
     
     out_dict = {'distance':dist,'all residuals':resid_all,
-                'scaled residuals':resid_sc,'models':mdl_list,'agents':agents}
+                'scaled residuals':resid_sc,'models':mdl_list,'agents':agents_pooled}
     out = [out_dict[key] for key in return_format]
     
     

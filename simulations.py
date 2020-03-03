@@ -11,9 +11,10 @@ from mc_tools import mc_simulate, int_prob
 from gridvec import VecOnGrid
 import pickle
 
+
 class Agents:
-    
-    def __init__(self,Mlist,female=False,pswitchlist=None,N=15000,T=None,verbose=True,nosim=False):
+
+    def __init__(self,Mlist,age_uni,female=False,pswitchlist=None,N=15000,T=None,verbose=True,nosim=False):
             
             
         np.random.seed(18)
@@ -100,8 +101,7 @@ class Agents:
         self.x = np.zeros((N,T),np.float32)
         self.s = np.zeros((N,T),np.float32)
         
-        
-        
+
         
         
         
@@ -122,8 +122,8 @@ class Agents:
         
         
         #Import File for change in Policy
-        with open('age_uni.pkl', 'rb') as file:
-            age_uni=pickle.load(file)
+        #with open('age_uni.pkl', 'rb') as file:
+        #    age_uni=pickle.load(file)
             
             
         #Create a file with the age of the change foreach person
@@ -151,7 +151,7 @@ class Agents:
         
         
             
-        
+   
     def simulate(self):
         
         #Create Variables that stores varibles of interest
@@ -201,6 +201,7 @@ class Agents:
 #                    self.iassets[ind,t+1] = VecOnGrid(self.setup.agrid_s,anext).roll(shocks=self.shocks_single_a[ind,t])
 #                    self.s[ind,t] = anext
                     # apply for singles
+                    #Dictionaries below account for 90% of the time in this function
                     anext = pol['s'][self.iassets[ind,t],self.iexo[ind,t]]
                     self.iassets[ind,t+1] = VecOnGrid(self.setup.agrid_s,anext).roll(shocks=self.shocks_single_a[ind,t])
                     self.s[ind,t] = anext
@@ -263,6 +264,7 @@ class Agents:
                         
                         shks = self.shocks_couple_iexo[ind[this_ls],t]
                         
+                        #Following line takes 94% of the time for this funciton
                         iexo_next_this_ls = mc_simulate(iexo_now[this_ls],mat,shocks=shks)
                         self.iexo[ind[this_ls],t+1] = iexo_next_this_ls
                         
@@ -272,7 +274,7 @@ class Agents:
                     iexo_next = mc_simulate(iexo_now,mat,shocks=shks) # import + add shocks     
                     self.iexo[ind,t+1] = iexo_next
             
-        
+    
     def statenext(self,t):
         
         
@@ -295,7 +297,9 @@ class Agents:
                 
                 
                 
-                if sname == self.single_state:
+                #if sname == self.single_state:
+                
+                def single():
                     # !!! You can either simulate males or females but not both
                     
                     ss = self.single_state
@@ -318,7 +322,7 @@ class Agents:
                     
                     
                     v = self.shocks_single_iexo[ind,t] #np.random.random_sample(ind.size) # draw uniform dist
-                    
+                    #This guy below (unitl it_out) account for 50% of single time
                     i_pmat = (v[:,None] > pmat_cum).sum(axis=1)  # index of the position in pmat
                     
                     ic_out = matches['iexo'][ia,iznow,i_pmat]
@@ -339,7 +343,7 @@ class Agents:
                     i_nomeet =  np.array( vmeet > pmeet )
                     
                     
-                    
+                    #those two below account for 20% of the time
                     i_pot_agree = matches['Decision'][ia,iznow,i_pmat]
                     i_m_preferred = matches['M or C'][ia,iznow,i_pmat]
                     
@@ -402,7 +406,9 @@ class Agents:
                         self.ils_i[ind[i_disagree_or_nomeet],t+1] = self.ils_def
                         
                         
-                elif sname == "Couple, M" or sname == "Couple, C":
+                #elif sname == "Couple, M" or sname == "Couple, C":
+                
+                def couples():
                     
                     ss = self.single_state
                     
@@ -431,10 +437,10 @@ class Agents:
                     
                     
                     thts = thts_all[isc,iall,itht]
-                    thts_orig = thts_orig_all[isc,iall,itht]
+                    thts_orig = thts_orig_all[isc,iall,itht]#this line below takes 43% of the time in coupls
                     
                     dec = decision['Decision']
-                    
+                    #this guy below account for 24% of the time in couple
                     i_stay = dec[isc,iall] if dec.ndim==2 else dec[isc,iall,itht]#i_stay = dec[isc,iall,itht] 
                     
                     
@@ -539,6 +545,16 @@ class Agents:
                             self.ils_i[ind[i_sq],t+1] = i_coh1*ils_if_coh+(1-i_coh1)*ils_if_mar
                             self.state[ind[i_sq],t+1] = i_coh1*self.state_codes["Couple, C"]+(1-i_coh1)*self.state_codes["Couple, M"]
                 
+                
+                if sname == self.single_state:
+                    
+                    single()
+                    
+                    
+                elif sname == "Couple, M" or sname == "Couple, C":
+                    
+                    couples()
+                    
                 else:
                     raise Exception('unsupported state?')
         
@@ -559,6 +575,7 @@ class AgentsPooled:
         self.c = combine([a.c for a in AgentsList])
         self.s = combine([a.s for a in AgentsList])
         self.x = combine([a.x for a in AgentsList])
+        self.shocks_single_iexo=combine([a.shocks_single_iexo for a in AgentsList])
         self.policy_ind = combine([a.policy_ind for a in AgentsList])
         self.agents_ind = combine([i*np.ones_like(a.state) for i, a in enumerate(AgentsList)])
         self.is_female = combine([a.female*np.ones_like(a.state) for a in AgentsList])

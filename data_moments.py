@@ -437,14 +437,20 @@ def compute(hi,d_hrs,period=3,transform=1):
            
         return freq   
            
-    #Frequencies for age policy change   
-    freq_pc = CountFrequency(hi['age_unid'].tolist())   
+    #Frequencies for age policy change for man and womenM2DP01
+    freq_pc=dict()
+    freq_pc['male'] = CountFrequency(hi.loc[hi['M2DP01']=='MALE','age_unid'].tolist()) 
+    freq_pc['female'] = CountFrequency(hi.loc[hi['M2DP01']=='FEMALE','age_unid'].tolist()) 
+    freq_pc['share_female']=np.mean(hi['M2DP01']=='FEMALE')
        
     #Frequencies for age in the second wave   
     freq_i= CountFrequency(date_age['age'].tolist())   
       
     #Frequencies for age at intervire  
     freq_ai=CountFrequency(hi['ageint'].tolist())   
+    
+    #Frequencies of agents by age at unid and gender
+    freq_nsfh = hi[['M2DP01','age_unid','SAMWT']]#hi.groupby(['M2DP01','age_unid'])['SAMWT'].count()
        
     ############################## 
     #Compute hours using the psid 
@@ -474,12 +480,15 @@ def compute(hi,d_hrs,period=3,transform=1):
     #Get Ratio of Female to Male FLP 
     fls_ratio=np.average(d_hrs2.loc[d_hrs2['mar']==1.0,'wls'])/np.average(d_hrs2.loc[d_hrs2['mar']==0.0,'wls'])   
      
+    #Get distribution of types using the psid
+    freq_psid=0
         
        
     #Create a dictionary for saving simulated moments   
     listofTuples = [("hazs" , hazs), ("hazm" , hazm),("hazd" , hazd),("emar" , emar),  
                     ("ecoh" , ecoh), ("fls_ratio" , fls_ratio),("mean_fls" , mean_fls),("mar" , mar),("coh" , coh),  
-                    ("freq_pc" , freq_pc), ("freq_i" , freq_i),("beta_unid" , beta_unid),("freq_ai" , freq_ai)]   
+                    ("freq_pc" , freq_pc), ("freq_i" , freq_i),("beta_unid" , beta_unid),("freq_ai" , freq_ai),
+                    ("freq_nsfh" , freq_nsfh),("freq_psid" , freq_psid)]   
     dic_mom=dict(listofTuples)   
        
     del hi,hi2,hi3   
@@ -518,7 +527,9 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
     coh=dic['coh']   
     freq_pc=dic['freq_pc']   
     freq_i=dic['freq_i']   
-    freq_ai=dic['freq_ai']   
+    freq_ai=dic['freq_ai']  
+    freq_nsfh=dic['freq_nsfh']  
+    freq_psid=dic['freq_psid']  
     beta_unid=dic['beta_unid']   
        
        
@@ -620,6 +631,7 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
     #packed_stuff = (hazm,hazs,hazd,emar,ecoh,fls_ratio,W,hazmi,hazsi,hazdi,emari,ecohi,fls_ratioi,mar,coh,mari,cohi)   
        
        
+    
     #Export Moments   
     with open('moments.pkl', 'wb+') as file:   
         pickle.dump(packed_stuff,file)     
@@ -635,6 +647,14 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
     #Export Age at interview  
     with open('age_sint.pkl', 'wb+') as file:   
         pickle.dump(freq_ai,file)    
+        
+    #Frequency of NSFH types
+    with open('freq_nsfh.pkl', 'wb+') as file:   
+        pickle.dump(freq_nsfh,file)    
+    
+    #Frequency of PSID types
+    with open('freq_psid.pkl', 'wb+') as file:   
+        pickle.dump(freq_psid,file)    
            
     del packed_stuff,freq_i,freq_pc,aa,data,freq_ai   
            

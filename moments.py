@@ -31,7 +31,7 @@ import statsmodels.api as sm
 import statsmodels.formula.api as smf   
   
     
-def moment(mdl,agents,draw=True,validation=False):   
+def moment(mdl,agents,agents_male,draw=True,validation=False):   
 #This function compute moments coming from the simulation   
 #Optionally it can also plot graphs about them. It is feeded with   
 #matrixes coming from simulations   
@@ -49,6 +49,11 @@ def moment(mdl,agents,draw=True,validation=False):
     consx=agents.x
     labor=agents.ils_i
     shks = agents.shocks_single_iexo 
+    
+    #Import values for female labor supply (simulated men only)
+    state_psid=agents_male.state
+    labor_psid=agents_male.ils_i
+    change_psid=agents_male.policy_ind
     
     #Create
     wage_f=np.zeros(state.shape)
@@ -102,6 +107,9 @@ def moment(mdl,agents,draw=True,validation=False):
     state=state[:,0:mdl.setup.pars['T']]   
     theta_t=theta_t[:,0:mdl.setup.pars['T']]   
     female=female[:,0:mdl.setup.pars['T']]   
+    labor_psid=labor_psid[:,0:mdl.setup.pars['T']]
+    change_psid=change_psid[:,0:mdl.setup.pars['T']]
+    state_psid=state_psid[:,0:mdl.setup.pars['T']]
       
        
     ####################################################################   
@@ -129,9 +137,6 @@ def moment(mdl,agents,draw=True,validation=False):
     changep=changep[keep,] 
     female=female[keep,] 
       
-    index=np.array(np.linspace(1,len(state[:,0]),len(state[:,0]))-1,dtype=np.int16)  
-      
-    N=len(iexo[:,0])  
     
     ###################################################################
     # Draw from simulated agents to match NSFH distribution
@@ -165,7 +170,7 @@ def moment(mdl,agents,draw=True,validation=False):
     df=pd.DataFrame(data=ddd,columns=["Index","age","sex"],index=ddd[:,0])
     df['age']=df['age'].astype(np.float)
     
-    sampletemp=strata_sample(["'sex'", "'age'"],freq_nsfh,frac=0.8,tsample=df,distr=True)
+    sampletemp=strata_sample(["'sex'", "'age'"],freq_nsfh,frac=0.6,tsample=df,distr=True)
     final2=df.merge(sampletemp,how='left',on='Index',indicator=True)
     
     keep2=[False]*len(df)
@@ -209,8 +214,9 @@ def moment(mdl,agents,draw=True,validation=False):
     ###########################################   
     #Moments: Construction of Spells   
     ###########################################   
-    nspells = (state[:,1:]!=state[:,:-1]).astype(np.int).sum(axis=1).max() + 1   
-        
+    nspells = (state[:,1:]!=state[:,:-1]).astype(np.int).sum(axis=1).max() + 1  
+    index=np.array(np.linspace(1,len(state[:,0]),len(state[:,0]))-1,dtype=np.int16)  
+    N=len(iexo[:,0])  
     state_beg = -1*np.ones((N,nspells),dtype=np.int8)   
     time_beg = -1*np.ones((N,nspells),dtype=np.bool)   
     did_end = np.zeros((N,nspells),dtype=np.bool)   
@@ -518,7 +524,7 @@ def moment(mdl,agents,draw=True,validation=False):
     theta_t=theta_t[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']]   
         
     ###########################################   
-    #Moments: FLS over time by Relationship   
+    #Moments: FLS  
     ###########################################   
         
         
@@ -537,22 +543,149 @@ def moment(mdl,agents,draw=True,validation=False):
             
     moments['flsm'] = flsm   
     moments['flsc'] = flsc   
+    
+    ##################
+    #Sample Selection#
+    #################
+    
+    #Import the distribution from the data
+    with open('freq_psid_tot.pkl', 'rb') as file:   
+        freq_psid_tot_data=pickle.load(file)  
+        
+    #Import Get when in a couple and reshape accordingly
+    resha=len(change_psid[0,:])*len(change_psid[:,0])
+    state_totl=np.reshape(state_psid,resha)
+    incouple= (state_totl==2) | (state_totl==3)
+    incoupler=np.reshape(incouple,resha)
+    
+    #Define main variables
+    ctemp=change_psid
+    change_psid2=np.reshape(ctemp,resha)
+    agetemp=np.linspace(1,len(change_psid[0,:]),len(change_psid[0,:]))
+    agegridtemp=np.reshape(np.repeat(agetemp,len(change_psid[:,0])),(len(change_psid[:,0]),len(agetemp)),order='F')
+    agegrid=np.reshape(agegridtemp,resha)
+    
+    #Keep all those guys only if the are men and in a relatioinship
+    #TODO
+    
+    #Make data compatible with current age.
+    freq_psid_tot_data['age']=freq_psid_tot_data['age']-18.0
+    freq_psid_tot_data.loc[freq_psid_tot_data['age']<0.0,'age']=0.0
+    freq_psid_tot_data2=freq_psid_tot_data.groupby(['age','unid'])['age'].count()
+    
+    #Create a Dataframe with simulated data to perform the draw
+    inde=np.linspace(1,resha,resha,dtype=np.int32)
+    
+    ddd2=np.stack((inde[incoupler],agegrid[incoupler],change_psid2[incoupler]),axis=0).T
+    df_psidt=pd.DataFrame(data=ddd2,columns=["Index","age","unid"],index=ddd2[:,0])
+    df_psidt['age']=df_psidt['age'].astype(np.float)
+    
+    sampletemp=strata_sample(["'age'", "'unid'"],freq_psid_tot_data2,frac=0.02,tsample=df_psidt,distr=True)
+    final2t=df_psidt.merge(sampletemp,how='left',on='Index',indicator=True)
+    
+    keep3=[False]*len(df_psidt)
+    keep3=(np.array(final2t['_merge'])=='both')
+    
+    #TODO assign labor according to stuff above
+    #Keep again for all relevant variables
+
+    
+    #Initial distribution
+    prima_psid_tot=freq_psid_tot_data2/np.sum(freq_psid_tot_data2)
+    
+    #Final distribution
+    final3=df_psidt[keep3]
+    final4=final3.groupby(['age','unid'])['age'].count()
+    dopo_psid_tot=final4/np.sum(final4)
+    
+    
+    print('The average deviation from actual to final psid_tot ditribution is {:0.2f}%'.format(np.mean(abs(prima_psid_tot-dopo_psid_tot))*100))
      
-    #Average FLS 
+    ############
+    #Average FLS
+    ############
+    
+    state_totl=state_totl[incoupler][keep3]
+    labor_totl=np.reshape(labor_psid,resha)
+    labor_totl=labor_totl[incoupler][keep3]
     mean_fls=0.0 
-    pick=((agents.state[:,:]==2)  | (agents.state[:,:]==3)) 
-    if pick.any():mean_fls=np.array(setup.ls_levels)[agents.ils_i[pick]].mean() 
+    pick=((state_totl[:]==2)  | (state_totl[:]==3)) 
+    if pick.any():mean_fls=np.array(setup.ls_levels)[labor_totl[pick]].mean() 
      
     moments['mean_fls'] = mean_fls 
+    
+    ###########################################   
+    #Moments: FLS   Ratio
+    ###########################################   
+    
+    ###################
+    #Sample Selection
+    ###################
+    
+    #Import the distribution from the data
+    with open('freq_psid_par.pkl', 'rb') as file:   
+        freq_psid_par_data=pickle.load(file)  
+        
+    #Import Get when in a couple and reshape accordingly
+    resha=len(change_psid[0,:])*len(change_psid[:,0])
+    state_par=np.reshape(state_psid,resha)
+    incouplep= (state_par==2) | (state_par==3)
+    incouplerp=np.reshape(incouplep,resha)
+    
+    #Define main variables
+    ctemp=change_psid
+    change_psid3=np.reshape(ctemp,resha)
+    
+    #Keep all those guys only if the are men and in a relatioinship
+    #TODO
+    
+    #Make data compatible with current age.
+    freq_psid_par_data['age']=freq_psid_par_data['age']-18.0
+    freq_psid_par_data.loc[freq_psid_par_data['age']<0.0,'age']=0.0
+    freq_psid_par_data2=freq_psid_par_data.groupby(['age','unid'])['age'].count()
+
+    
+    ddd3=np.stack((inde[incouplerp],agegrid[incouplerp],change_psid3[incouplerp]),axis=0).T
+    df_psidp=pd.DataFrame(data=ddd3,columns=["Index","age","unid"],index=ddd3[:,0])
+    df_psidp['age']=df_psidp['age'].astype(np.float)
+    
+    sampletempp=strata_sample(["'age'", "'unid'"],freq_psid_par_data2,frac=0.02,tsample=df_psidt,distr=True)
+    final2p=df_psidt.merge(sampletempp,how='left',on='Index',indicator=True)
+    
+    keep4=[False]*len(df_psidp)
+    keep4=(np.array(final2p['_merge'])=='both')
+    
+    #TODO assign labor according to stuff above
+    #Keep again for all relevant variables
+
+    
+    #Initial distribution
+    prima_psid_par=freq_psid_par_data2/np.sum(freq_psid_par_data2)
+    
+    #Final distribution
+    final3p=df_psidt[keep4]
+    final4p=final3p.groupby(['age','unid'])['age'].count()
+    dopo_psid_par=final4p/np.sum(final4p)
+    
+    
+    print('The average deviation from actual to final psid_tot ditribution is {:0.2f}%'.format(np.mean(abs(prima_psid_par-dopo_psid_par))*100))
      
+    
+    ################
     #Ratio of fls 
+    ###############
+    
+    state_par=state_par[incoupler][keep4]
+    labor_par=np.reshape(labor_psid,resha)
+    labor_par=labor_par[incouplerp][keep4]
+    
     mean_fls_m=0.0 
-    pick=(agents.state[:,:]==2) 
-    if pick.any():mean_fls_m=np.array(setup.ls_levels)[agents.ils_i[pick]].mean() 
+    pick=(state_par[:]==2) 
+    if pick.any():mean_fls_m=np.array(setup.ls_levels)[labor_par[pick]].mean() 
        
     mean_fls_c=0.0 
-    pick=(agents.state[:,:]==3) 
-    if pick.any():mean_fls_c=np.array(setup.ls_levels)[agents.ils_i[pick]].mean() 
+    pick=(state_par[:]==3) 
+    if pick.any():mean_fls_c=np.array(setup.ls_levels)[labor_par[pick]].mean() 
      
     moments['fls_ratio']=mean_fls_m/max(mean_fls_c,0.0001) 
        

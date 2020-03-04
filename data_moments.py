@@ -464,7 +464,7 @@ def compute(hi,d_hrs,period=3,transform=1):
      
     #First keep the right birth cohorts 
     d_hrs['birth']=d_hrs['year']-d_hrs['age'] 
-    d_hrs=d_hrs[(d_hrs['birth']>=1945) & (d_hrs['birth']<1955)] 
+    d_hrs=d_hrs[(d_hrs['birth']>=1940) & (d_hrs['birth']<1955)] 
   
     #Generate variables of interest 
     d_hrs['mar']=-1.0 
@@ -472,23 +472,26 @@ def compute(hi,d_hrs,period=3,transform=1):
     d_hrs.loc[(d_hrs['mls']>1) & (d_hrs['mls']<100),'mar']=0.0 
      
     #Get mean labor supply 
-    mean_fls=np.average(d_hrs.loc[(d_hrs['age']>=25) & (d_hrs['age']<=45),'wls'])/2000 
+    mean_fls=np.average(d_hrs.loc[(d_hrs['age']>=20) & (d_hrs['age']<=60),'wls'])/2000 
        
     #New dataset  
     d_hrs2=d_hrs[(d_hrs['mar']>=0) & (d_hrs['year']>=1977)] 
     
     #Get Ratio of Female to Male FLP 
-    fls_ratio=np.average(d_hrs2.loc[d_hrs2['mar']==1.0,'wls'])/np.average(d_hrs2.loc[d_hrs2['mar']==0.0,'wls'])   
+    fls_ratio=np.average(d_hrs2.loc[(d_hrs2['mar']==1.0) & (d_hrs['age']>=20) &
+                                    (d_hrs['age']<=60),'wls'])/np.average(d_hrs2.loc[(d_hrs2['mar']==0.0) &
+                                    (d_hrs['age']>=20) & (d_hrs['age']<=60),'wls'])   
      
     #Get distribution of types using the psid
-    freq_psid=0
+    freq_psid_tot=d_hrs[['age','unid']]
+    freq_psid_par=d_hrs2[['age','unid']]
         
        
     #Create a dictionary for saving simulated moments   
     listofTuples = [("hazs" , hazs), ("hazm" , hazm),("hazd" , hazd),("emar" , emar),  
                     ("ecoh" , ecoh), ("fls_ratio" , fls_ratio),("mean_fls" , mean_fls),("mar" , mar),("coh" , coh),  
                     ("freq_pc" , freq_pc), ("freq_i" , freq_i),("beta_unid" , beta_unid),("freq_ai" , freq_ai),
-                    ("freq_nsfh" , freq_nsfh),("freq_psid" , freq_psid)]   
+                    ("freq_nsfh" , freq_nsfh),("freq_psid_tot" , freq_psid_tot),("freq_psid_par" , freq_psid_par)]   
     dic_mom=dict(listofTuples)   
        
     del hi,hi2,hi3   
@@ -529,7 +532,8 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
     freq_i=dic['freq_i']   
     freq_ai=dic['freq_ai']  
     freq_nsfh=dic['freq_nsfh']  
-    freq_psid=dic['freq_psid']  
+    freq_psid_tot=dic['freq_psid_tot']  
+    freq_psid_par=dic['freq_psid_par']  
     beta_unid=dic['beta_unid']   
        
        
@@ -652,9 +656,13 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
     with open('freq_nsfh.pkl', 'wb+') as file:   
         pickle.dump(freq_nsfh,file)    
     
-    #Frequency of PSID types
-    with open('freq_psid.pkl', 'wb+') as file:   
-        pickle.dump(freq_psid,file)    
+    #Frequency of PSID types total flp
+    with open('freq_psid_tot.pkl', 'wb+') as file:   
+        pickle.dump(freq_psid_tot,file)  
+        
+    #Frequency of PSID types ratio fls
+    with open('freq_psid_par.pkl', 'wb+') as file:   
+        pickle.dump(freq_psid_par,file)  
            
     del packed_stuff,freq_i,freq_pc,aa,data,freq_ai   
            

@@ -196,7 +196,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     agents_pooled = AgentsPooled([agents_fem,agents_mal])
     
     
-    moments = moment(mdl,agents_pooled,draw=draw)
+    moments = moment(mdl,agents_pooled,agents_mal,draw=draw)
     
     ############################################################
     #Build data moments and compare them with simulated ones

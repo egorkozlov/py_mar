@@ -163,6 +163,8 @@ class ModelSetup(object):
             exogrid['zf_t'],  exogrid['zf_t_mat'] = rouw_nonst(p['T'],p['sig_zf']*period_year**0.5,p['sig_zf_0'],p['n_zf_t'][0])
             exogrid['zm_t'],  exogrid['zm_t_mat'] = rouw_nonst(p['T'],p['sig_zm']*period_year**0.5,p['sig_zm_0'],p['n_zm_t'][0])
             
+            #First mimic US pension system
+            
             for t in range(Tret,T):
                 exogrid['zf_t'][t] = np.array([np.log(p['wret'])])
                 exogrid['zm_t'][t] = np.array([np.log(p['wret'])])

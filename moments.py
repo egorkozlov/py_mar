@@ -50,25 +50,13 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
     labor=agents.ils_i
     shks = agents.shocks_single_iexo 
     
+    
     #Import values for female labor supply (simulated men only)
     state_psid=agents_male.state
     labor_psid=agents_male.ils_i
     change_psid=agents_male.policy_ind
     
-    #Create
-    wage_f=np.zeros(state.shape)
-    wage_m=np.zeros(state.shape)
-    psis=np.zeros(state.shape)
-    
-    for i in range(mdl.setup.pars['T']-1):
-        #Check if single women
-        single=(state[:,i]==0)
-        nsingle=~single
-        if (np.any(single)): wage_f[single,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exo_grids['Female, single'][i][iexo[single,i]]) 
-        if (np.any(nsingle)): wage_f[nsingle,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo[nsingle,i]))[1])])
-        wage_m[:,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo[:,i]))[2])])
-        psis[:,i]=((setup.exogrid.psi_t[i][(setup.all_indices(i,iexo[:,i]))[3]])) 
-     
+
            
            
     moments = dict()   
@@ -110,6 +98,7 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
     labor_psid=labor_psid[:,0:mdl.setup.pars['T']]
     change_psid=change_psid[:,0:mdl.setup.pars['T']]
     state_psid=state_psid[:,0:mdl.setup.pars['T']]
+    
       
        
     ####################################################################   
@@ -130,12 +119,13 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
         keep[int(summa1*len(state[:,0])/sum(age_sw.values())):int(summa*len(state[:,0])/sum(age_sw.values()))]=(state[int(summa1*len(state[:,0])/sum(age_sw.values())):int(summa*len(state[:,0])/sum(age_sw.values())),int((i-20)/mdl.setup.pars['py'])]!=3)   
          
         summa1+=age_sw[i]   
-    assets_t=assets_t[keep,]   
-    iexo=iexo[keep,]   
-    state=state[keep,]   
-    theta_t=theta_t[keep,]   
+   
+    state=state[keep,]    
     changep=changep[keep,] 
     female=female[keep,] 
+    iexo=iexo[keep,]
+    assets_t=assets_t[keep,]
+    
       
     
     ###################################################################
@@ -154,6 +144,13 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
     freq_nsfh_data['age_unid']=freq_nsfh_data['age_unid']-18.0
     freq_nsfh_data.loc[freq_nsfh_data['age_unid']<=0.0,'age_unid']=0.0
     freq_nsfh_data.loc[freq_nsfh_data['age_unid']>=900.0,'age_unid']=1000
+    
+    #Drop if no change in law!
+    if np.all(changep==0):
+        freq_nsfh_data.loc[freq_nsfh_data['age_unid']<1910.0,'age_unid']=1000
+   
+ 
+        
     freq_nsfh=freq_nsfh_data.groupby(['M2DP01','age_unid'])['SAMWT'].count()
     #Create a Dataframe with simulated data to perform the draw
     age_unid=np.argmax(changep,axis=1)
@@ -176,13 +173,13 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
     keep2=[False]*len(df)
     keep2=(np.array(final2['_merge'])=='both')
     
-    #Keep again for all relevant variables
-    assets_t=assets_t[keep2,]   
-    iexo=iexo[keep2,]   
-    state=state[keep2,]   
-    theta_t=theta_t[keep2,]   
+    #Keep again for all relevant variables   
+    state=state[keep2,]     
     changep=changep[keep2,] 
-    female=female[keep2,] 
+    female=female[keep2,]
+    iexo=iexo[keep2,]
+    assets_t=assets_t[keep2,]
+  
     
     #Initial distribution
     prima=freq_nsfh/np.sum(freq_nsfh)
@@ -571,6 +568,13 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
     #Make data compatible with current age.
     freq_psid_tot_data['age']=freq_psid_tot_data['age']-18.0
     freq_psid_tot_data.loc[freq_psid_tot_data['age']<0.0,'age']=0.0
+    
+    #Drop if no change in law!
+    if np.all(changep==0):
+        #freq_psid_tot_data.loc[freq_psid_tot_data['age']<1910.0,'age']=1000
+        freq_psid_tot_data['unid']=0
+   
+        
     freq_psid_tot_data2=freq_psid_tot_data.groupby(['age','unid'])['age'].count()
     
     #Create a Dataframe with simulated data to perform the draw
@@ -580,27 +584,30 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
     df_psidt=pd.DataFrame(data=ddd2,columns=["Index","age","unid"],index=ddd2[:,0])
     df_psidt['age']=df_psidt['age'].astype(np.float)
     
-    sampletemp=strata_sample(["'age'", "'unid'"],freq_psid_tot_data2,frac=0.02,tsample=df_psidt,distr=True)
-    final2t=df_psidt.merge(sampletemp,how='left',on='Index',indicator=True)
+    if len(df_psidt>0):
+        sampletemp=strata_sample(["'age'", "'unid'"],freq_psid_tot_data2,frac=0.02,tsample=df_psidt,distr=True)
+        final2t=df_psidt.merge(sampletemp,how='left',on='Index',indicator=True)
+        
+        keep3=[False]*len(df_psidt)
+        keep3=(np.array(final2t['_merge'])=='both')
+        
+        #TODO assign labor according to stuff above
+        #Keep again for all relevant variables
     
-    keep3=[False]*len(df_psidt)
-    keep3=(np.array(final2t['_merge'])=='both')
-    
-    #TODO assign labor according to stuff above
-    #Keep again for all relevant variables
-
-    
-    #Initial distribution
-    prima_psid_tot=freq_psid_tot_data2/np.sum(freq_psid_tot_data2)
-    
-    #Final distribution
-    final3=df_psidt[keep3]
-    final4=final3.groupby(['age','unid'])['age'].count()
-    dopo_psid_tot=final4/np.sum(final4)
-    
-    
-    print('The average deviation from actual to final psid_tot ditribution is {:0.2f}%'.format(np.mean(abs(prima_psid_tot-dopo_psid_tot))*100))
-     
+        
+        #Initial distribution
+        prima_psid_tot=freq_psid_tot_data2/np.sum(freq_psid_tot_data2)
+        
+        #Final distribution
+        final3=df_psidt[keep3]
+        final4=final3.groupby(['age','unid'])['age'].count()
+        dopo_psid_tot=final4/np.sum(final4)
+        
+        
+        print('The average deviation from actual to final psid_tot ditribution is {:0.2f}%'.format(np.mean(abs(prima_psid_tot-dopo_psid_tot))*100))
+         
+    else:
+        keep3=[True]*len(df_psidt)
     ############
     #Average FLS
     ############
@@ -642,35 +649,47 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
     #Make data compatible with current age.
     freq_psid_par_data['age']=freq_psid_par_data['age']-18.0
     freq_psid_par_data.loc[freq_psid_par_data['age']<0.0,'age']=0.0
+    
+    #Drop if no change in law!
+    if np.all(changep==0):
+        #freq_psid_par_data.loc[freq_psid_par_data['age']<1910.0,'age']=1000
+        freq_psid_par_data['unid']=0
+        
+ 
+        
     freq_psid_par_data2=freq_psid_par_data.groupby(['age','unid'])['age'].count()
 
     
     ddd3=np.stack((inde[incouplerp],agegrid[incouplerp],change_psid3[incouplerp]),axis=0).T
+   
     df_psidp=pd.DataFrame(data=ddd3,columns=["Index","age","unid"],index=ddd3[:,0])
     df_psidp['age']=df_psidp['age'].astype(np.float)
     
-    sampletempp=strata_sample(["'age'", "'unid'"],freq_psid_par_data2,frac=0.02,tsample=df_psidt,distr=True)
-    final2p=df_psidt.merge(sampletempp,how='left',on='Index',indicator=True)
+    if len(df_psidp>0):  
+        sampletempp=strata_sample(["'age'", "'unid'"],freq_psid_par_data2,frac=0.02,tsample=df_psidt,distr=True)
+        final2p=df_psidt.merge(sampletempp,how='left',on='Index',indicator=True)
+        
+        keep4=[False]*len(df_psidp)
+        keep4=(np.array(final2p['_merge'])=='both')
+        
+        #TODO assign labor according to stuff above
+        #Keep again for all relevant variables
     
-    keep4=[False]*len(df_psidp)
-    keep4=(np.array(final2p['_merge'])=='both')
-    
-    #TODO assign labor according to stuff above
-    #Keep again for all relevant variables
-
-    
-    #Initial distribution
-    prima_psid_par=freq_psid_par_data2/np.sum(freq_psid_par_data2)
-    
-    #Final distribution
-    final3p=df_psidt[keep4]
-    final4p=final3p.groupby(['age','unid'])['age'].count()
-    dopo_psid_par=final4p/np.sum(final4p)
-    
-    
-    print('The average deviation from actual to final psid_tot ditribution is {:0.2f}%'.format(np.mean(abs(prima_psid_par-dopo_psid_par))*100))
-     
-    
+        
+        #Initial distribution
+        prima_psid_par=freq_psid_par_data2/np.sum(freq_psid_par_data2)
+        
+        #Final distribution
+        final3p=df_psidt[keep4]
+        final4p=final3p.groupby(['age','unid'])['age'].count()
+        dopo_psid_par=final4p/np.sum(final4p)
+        
+        
+        print('The average deviation from actual to final psid_tot ditribution is {:0.2f}%'.format(np.mean(abs(prima_psid_par-dopo_psid_par))*100))
+         
+    else:
+        keep4=[True]*len(df_psidp)
+        
     ################
     #Ratio of fls 
     ###############
@@ -695,6 +714,30 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
     ###########################################   
     #Moments: Variables over Age   
     ###########################################   
+    
+    #Create wages
+    wage_f=np.zeros(state.shape)
+    wage_m=np.zeros(state.shape)
+    wage_fp=np.zeros(state.shape)
+    wage_mp=np.zeros(state.shape)
+    psis=np.zeros(state.shape)
+    ifemale=(female[:,0]==1)
+    imale=(female[:,0]==0)
+    for i in range(len(state[0,:])):
+        #Check if single women
+        singlef=(state[:,i]==0)
+        singlem=(state[:,i]==1)
+        
+        nsinglef=(ifemale) & (state[:,i]>1)
+        nsinglem=(imale) & (state[:,i]>1)
+        wage_f[ifemale,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][iexo[ifemale,i]]) 
+        wage_m[imale,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][iexo[imale,i]]) 
+        #if (np.any(nsinglef)): wage_f[nsinglef,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo[:,i]))[1])])[nsinglef]
+        #if (np.any(nsinglem)): wage_m[nsinglem,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo[:,i]))[2])])[nsinglem] 
+        wage_mp[nsinglef,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo[:,i]))[2])])[nsinglef]
+        wage_fp[nsinglem,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo[:,i]))[1])])[nsinglem]
+        psis[:,i]=((setup.exogrid.psi_t[i][(setup.all_indices(i,iexo[:,i]))[3]])) 
+     
        
     #Update N to the new sample size   
     N=len(state)   
@@ -702,7 +745,7 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
     relt=np.zeros((len(state_codes),lenn))   
     relt1=np.zeros((len(state_codes),lenn))   
     ass_rel=np.zeros((len(state_codes),lenn))   
-    inc_rel=np.zeros((len(state_codes),lenn))   
+    inc_rel=np.zeros((len(state_codes),lenn,2))   
         
         
         
@@ -719,7 +762,9 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
             if t<1:   
                 is_state=is_state1   
             ind = np.where(is_state)[0]   
-            ind1 = np.where(is_state1)[0]   
+            ind1 = np.where(is_state1)[0] 
+            ind1f = np.where((is_state1) & (agents.is_female[:,0][keep][keep2]))
+            ind1m = np.where((is_state1) & ~(agents.is_female[:,0][keep][keep2]))
                 
             if not (np.any(is_state) or np.any(is_state1)): continue   
             
@@ -735,13 +780,22 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
                 
             #Income over time  
             if sname=="Female, single":  
-                inc_rel[ist,t]=np.mean(wage_f[ind1,t])#max(np.mean(np.log(wage_f[ind1,t])),-0.2)#np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zf]  + ftrend ))  # 
-                   
+                positive=(wage_f[ind1,t]>0)
+                inc_rel[ist,t,0]=np.mean(wage_f[ind1,t])#max(np.mean(np.log(wage_f[ind1,t])),-0.2)#np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zf]  + ftrend ))  # 
+                positive=False
             elif sname=="Male, single":  
-                 inc_rel[ist,t]=np.mean(wage_f[ind1,t])#np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zm] + mtrend))  #np.mean(wage_m[(state[:,t]==ist)])#
-                   
-            elif sname=="Couple, C" or sname=="Couple, M":  
-                 inc_rel[ist,t]=np.mean(wage_f[ind1,t])+np.mean(wage_m[ind1,t])#np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zf] + ftrend)+np.exp(mdl.setup.exogrid.zm_t[s][zm] + mtrend))  
+                 positive=(wage_m[ind1,t]>0)
+                 inc_rel[ist,t,0]=np.mean(wage_m[ind1,t])#np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zm] + mtrend))  #np.mean(wage_m[(state[:,t]==ist)])#
+                 positive=False
+            elif sname=="Couple, C" or sname=="Couple, M": 
+                 positive=(wage_f[ind1f,t]>0) & (wage_mp[ind1f,t]>0)
+                 #inc_rel[ist,t,0]=np.mean(wage_f[ind1f,t][positive])+np.mean(wage_mp[ind1f,t][positive])#np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zf] + ftrend)+np.exp(mdl.setup.exogrid.zm_t[s][zm] + mtrend))  
+                 inc_rel[ist,t,0]=np.mean(wage_f[ind1f,t])+np.mean(wage_mp[ind1f,t])
+                 positive=False 
+                 positive=(wage_m[ind1m,t]>0) & (wage_fp[ind1m,t]>0)
+                 #inc_rel[ist,t,1]=np.mean(wage_m[ind1m,t][positive])+np.mean(wage_fp[ind1m,t][positive])
+                 inc_rel[ist,t,1]=np.mean(wage_m[ind1m,t])+np.mean(wage_fp[ind1m,t])
+                 positive=False
             else:  
                
                print('Error: No relationship chosen')  
@@ -898,8 +952,10 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
             
         for ist,sname in enumerate(state_codes):   
               
-            plt.plot(np.array(range(lenn)), inc_rel[ist,],color=print(ist/len(state_codes)),markersize=6, label=sname) 
-        
+            plt.plot(np.array(range(lenn)), inc_rel[ist,:,0],color=print(ist/len(state_codes)),markersize=6, label=sname) 
+            
+        plt.plot(np.array(range(lenn)), inc_rel[2,:,1], linestyle='--',color=print(2/len(state_codes)),markersize=6, label='Marriage male')
+        plt.plot(np.array(range(lenn)), inc_rel[3,:,1], linestyle='--',color=print(3/len(state_codes)),markersize=6, label='Cohabitation other')
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),   
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')   
         plt.xlabel('Time')   
@@ -1041,6 +1097,7 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
            
         pdf.close()   
         matplotlib.pyplot.close("all")   
+        
           
     return moments  
             

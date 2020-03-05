@@ -115,7 +115,7 @@ class Agents:
         # initialize state
         self.state = np.zeros((N,T),dtype=np.int32)       
         self.state[:,0] = self.state_codes[self.single_state]  # everyone starts as female
-        
+      
         
         self.timer('Simulations, creation',verbose=self.verbose)
         self.ils_def = self.setup.nls - 1

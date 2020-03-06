@@ -68,9 +68,9 @@
 \pgfpathmoveto{\pgfqpoint{0.693655in}{1.943368in}}%
 \pgfpathlineto{\pgfqpoint{0.693655in}{1.778768in}}%
 \pgfpathlineto{\pgfqpoint{2.807292in}{1.444810in}}%
-\pgfpathlineto{\pgfqpoint{4.920928in}{0.969088in}}%
-\pgfpathlineto{\pgfqpoint{4.920928in}{1.129224in}}%
-\pgfpathlineto{\pgfqpoint{4.920928in}{1.129224in}}%
+\pgfpathlineto{\pgfqpoint{4.920928in}{0.969090in}}%
+\pgfpathlineto{\pgfqpoint{4.920928in}{1.129313in}}%
+\pgfpathlineto{\pgfqpoint{4.920928in}{1.129313in}}%
 \pgfpathlineto{\pgfqpoint{2.807292in}{1.738456in}}%
 \pgfpathlineto{\pgfqpoint{0.693655in}{1.943368in}}%
 \pgfpathclose%

@@ -745,7 +745,8 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
     relt=np.zeros((len(state_codes),lenn))   
     relt1=np.zeros((len(state_codes),lenn))   
     ass_rel=np.zeros((len(state_codes),lenn))   
-    inc_rel=np.zeros((len(state_codes),lenn,2))   
+    inc_rel=np.zeros((len(state_codes),lenn,2)) 
+    log_inc_rel=np.zeros((2,lenn)) 
         
         
         
@@ -781,11 +782,13 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
             #Income over time  
             if sname=="Female, single":  
                 positive=(wage_f[ind1,t]>0)
-                inc_rel[ist,t,0]=np.mean(wage_f[ind1,t])#max(np.mean(np.log(wage_f[ind1,t])),-0.2)#np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zf]  + ftrend ))  # 
+                inc_rel[ist,t,0]=np.mean(wage_f[ind1f,t])#max(np.mean(np.log(wage_f[ind1,t])),-0.2)#np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zf]  + ftrend ))  # 
+                log_inc_rel[0,t]=np.mean(np.log(wage_f[ind1f,t]))
                 positive=False
             elif sname=="Male, single":  
                  positive=(wage_m[ind1,t]>0)
-                 inc_rel[ist,t,0]=np.mean(wage_m[ind1,t])#np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zm] + mtrend))  #np.mean(wage_m[(state[:,t]==ist)])#
+                 inc_rel[ist,t,0]=np.mean(wage_m[ind1m,t])#np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zm] + mtrend))  #np.mean(wage_m[(state[:,t]==ist)])#
+                 log_inc_rel[1,t]=np.mean(np.log(wage_m[ind1m,t]))
                  positive=False
             elif sname=="Couple, C" or sname=="Couple, M": 
                  positive=(wage_f[ind1f,t]>0) & (wage_mp[ind1f,t]>0)
@@ -960,6 +963,29 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')   
         plt.xlabel('Time')   
         plt.ylabel('Income')   
+        
+        ##########################################   
+        # Log Income and Data
+        ########################################## 
+        
+        #Import Data
+        inc_men = pd.read_csv("income_men.csv")  
+        inc_women = pd.read_csv("income_women.csv")  
+        
+        
+        fig = plt.figure()   
+        f3=fig.add_subplot(2,1,1)   
+        
+        lend=len(inc_men['earn_age'])
+        agea=np.array(range(lend))+20
+        plt.plot(agea, inc_men['earn_age'], marker='o',color=print(3/len(state_codes)),markersize=6, label='Men Data')
+        plt.plot(agea, inc_women['earn_age'], marker='o',color=print(2/len(state_codes)),markersize=6, label='Women Data')
+        plt.plot(agea, log_inc_rel[0,mdl.setup.pars['Tbef']:lend+mdl.setup.pars['Tbef']],color=print(2/len(state_codes)),markersize=6, label='Women Simulation')
+        plt.plot(agea, log_inc_rel[1,mdl.setup.pars['Tbef']:lend+mdl.setup.pars['Tbef']],color=print(3/len(state_codes)),markersize=6, label='Men Simulation')
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),   
+                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')   
+        plt.xlabel('Age')   
+        plt.ylabel('Income') 
                     
                     
         ##########################################   

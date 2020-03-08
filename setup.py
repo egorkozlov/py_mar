@@ -46,11 +46,11 @@ class ModelSetup(object):
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.0 
         p['sig_partner_a'] = 0.1
-        p['sig_partner_z'] = 1.0#0.4
-        p['mean_partner_z_female'] = 0.8#0.4
-        p['mean_partner_z_male'] = -0.8#0.4
-        p['mean_partner_a_female'] = 0.1#0.4
-        p['mean_partner_a_male'] = -0.1#0.4
+        p['sig_partner_z'] = 0.4#1.0#0.4
+        p['mean_partner_z_female'] = 0.0#0.8#0.4
+        p['mean_partner_z_male'] = -0.0#-0.8#0.4
+        p['mean_partner_a_female'] = 0.0#0.1#0.4
+        p['mean_partner_a_male'] = 0.0#-0.1#0.4
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
         
@@ -76,7 +76,7 @@ class ModelSetup(object):
         
         p['util_lam'] = 0.19#0.4
         p['util_alp'] = 0.5
-        p['util_xi'] = 3.11
+        p['util_xi'] = 1.5#3.11
         p['util_kap'] = (1-0.21)/(0.21)
         
         

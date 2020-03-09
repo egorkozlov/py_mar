@@ -47,7 +47,7 @@ class ModelSetup(object):
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.0 
-        p['sig_partner_a'] = 0.1
+        p['sig_partner_a'] = 0.01
         p['sig_partner_z'] = 0.4#1.0#0.4
         p['mean_partner_z_female'] = 0.0#0.8#0.4
         p['mean_partner_z_male'] = -0.0#-0.8#0.4
@@ -287,14 +287,14 @@ class ModelSetup(object):
         
          
         #Grid Single
-        scale = 1.1
-        self.amin_s = 0
-        self.amax_s = self.amax/scale
-        self.agrid_s = np.linspace(self.amin_s,self.amax_s,self.na,dtype=self.dtype)
+        #scale = 1.1
+        #self.amin_s = 0
+        #self.amax_s = self.amax/scale
+        self.agrid_s = 0.5*self.agrid_c#np.linspace(self.amin_s,self.amax_s,self.na,dtype=self.dtype)
         #self.agrid_s[self.na-1]=250
-        tune_s=2.5
+        #tune_s=2.5
         #self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
-        self.agrid_s[-1]=self.amax1/scale
+        #elf.agrid_s[-1]=self.amax1/scale
         self.sgrid_s = build_s_grid(self.agrid_s,s_between,s_da_min,s_da_max)
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)
         

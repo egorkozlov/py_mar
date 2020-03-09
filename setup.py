@@ -535,7 +535,7 @@ class ModelSetup(object):
                 
                 nz = pmat_iexo.shape[0]
                 
-                inds = np.where( np.any(pmat_iexo>0,axis=0) )[0]
+                inds = np.where( np.any(pmat_iexo>-1,axis=0) )[0]
                 
                 npos_iexo = inds.size
                 npos_a = pmat_a.shape[1]

@@ -50,7 +50,7 @@ def ev_single_meet(setup,V,sown,female,t,skip_mar=False,trim_lvl=0.000001):
    
         
     V_next = np.ones((ns,nexo))*(-1e10)
-    inds = np.where( np.any(p_mat>0,axis=1 ) )[0]
+    inds = np.where( np.any(p_mat>-1,axis=1 ) )[0]
     
     
     

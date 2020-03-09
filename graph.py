@@ -10,10 +10,12 @@ import dill as pickle
 import matplotlib.pyplot as plt  
 from matplotlib.pyplot import plot, draw, show 
 import matplotlib.backends.backend_pdf 
-from ren_mar_pareto import v_mar_igrid 
- 
-from ren_mar_pareto import v_ren_new 
- 
+#from ren_mar_pareto import v_mar_igrid 
+#from ren_mar_pareto import v_ren_new 
+#from ren_mar_alt import v_mar_igrid 
+#from ren_mar_alt import v_ren_new 
+from ren_mar_old import v_mar_igrid 
+from ren_mar_old import v_ren_new  
  
  
 def v_reshape(setup,desc,field,V_by_t,Tmax): 

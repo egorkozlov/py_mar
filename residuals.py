@@ -13,7 +13,7 @@ import pickle, dill
 import os
 import cProfile
 from line_profiler import LineProfiler
-
+from welfarer import welfare
 
 
 
@@ -116,7 +116,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
             mdl_after = Model(iterator_name=iter_name,divorce_costs=dc_after,
                         separation_costs=sc,**params)  
             
-            mdl = mdl_after # !!! check if this makes a difference
+            mdl = mdl_before # !!! check if this makes a difference
             # I think that it is not used for anything other than getting 
             # setup for plotting
             
@@ -124,7 +124,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
             
     else:       
         mdl_list = [dill.load(open(l,'rb+')) for l in load_from]
-        mdl = mdl_list[0]
+        mdl = mdl_list[1]
         
         if solve_transition:
             if len(mdl_list) < 2:
@@ -188,7 +188,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
         
    
     #Get Number of simulated agent, malea and female
-    N=150000
+    N=15000
     Nf=int(N*age_uni['share_female'])
     Nm=N-Nf
     agents_fem = Agents( mdl_list ,age_uni['female'],female=True,pswitchlist=transition_matricesf,verbose=False,N=Nf)
@@ -197,6 +197,13 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     
     
     moments = moment(mdl,agents_pooled,agents_mal,draw=draw)
+    
+    
+    ###########################################################
+    #Welfare Effects of the Unilateral Divorce reform
+    ##########################################################
+    welfare(mdl_list,agents_pooled)
+    
     
     ############################################################
     #Build data moments and compare them with simulated ones

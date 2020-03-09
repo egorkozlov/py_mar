@@ -177,7 +177,7 @@ class Agents:
             for ist, sname in enumerate(self.state_codes):
                 
                 is_state_any_pol = (self.state[:,t]==ist)  
-                is_pol = (self.policy_ind[:,t]==ipol)
+                is_pol = (self.policy_ind[:,t+1]==ipol)
                 
                 is_state = (is_state_any_pol) & (is_pol)
                 
@@ -232,7 +232,7 @@ class Agents:
         for ipol in range(self.npol):
             for ist,sname in enumerate(self.state_names):
                 is_state_any_pol = (self.state[:,t]==ist)
-                is_pol = (self.policy_ind[:,t]==ipol)
+                is_pol = (self.policy_ind[:,t+1]==ipol)
                 is_state = (is_state_any_pol) & (is_pol)   
                 
                 nst = np.sum(is_state)
@@ -283,7 +283,7 @@ class Agents:
         for ipol in range(self.npol):
             for ist,sname in enumerate(self.state_names):
                 is_state_any_pol = (self.state[:,t]==ist)
-                is_pol = (self.policy_ind[:,t]==ipol)
+                is_pol = (self.policy_ind[:,t+1]==ipol)
                 is_state = (is_state_any_pol) & (is_pol) 
                 
                 if self.verbose: print('At t = {} count of {} is {}'.format(t,sname,np.sum(is_state)))
@@ -315,6 +315,7 @@ class Agents:
                     
                     # we use iexo from t and savings from t+1
                     # TODO: fix the seed
+                    #TODO having iexo in t inconsistent with couple ones, which lool t+1
                     iznow = self.iexo[ind,t]
                     
                     pmat = matches['p'][ia,iznow,:]

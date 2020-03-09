@@ -33,7 +33,7 @@ from integrator_couples import ev_couple_m_c
 
 
 class Model(object):
-    def __init__(self,iterator_name='default-timed',verbose=False,
+    def __init__(self,iterator_name='default',verbose=False,
                  solve_till=None,**kwargs):
         self.mstart = self.get_mem()
         self.mlast = self.get_mem()

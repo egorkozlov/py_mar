@@ -19,7 +19,7 @@ print(pars)
 
 pars.pop('alost')
 
-mdl = Model(**pars,verbose=True,solve_till=-3)
+mdl = Model(**pars,solve_till=-3)
 
 
 decisions = mdl.decisions[-2]['Female, single']['Decision']

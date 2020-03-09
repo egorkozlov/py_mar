@@ -19,13 +19,14 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()       
-        period_year=6#this can be 1,2,3 or 6
+        period_year=1#this can be 1,2,3 or 6
         transform=2#this tells how many periods to pull together for duration moments
         T = int(62/period_year)
         Tret = int(47/period_year) # first period when the agent is retired
         Tbef=int(2/period_year)
         Tren  = int(62/period_year)#int(42/period_year) # period starting which people do not renegotiate/divroce
         Tmeet = int(62/period_year)#int(42/period_year) # period starting which you do not meet anyone
+        #print('T is {}'.format(T))
         p['py']=period_year
         p['ty']=transform
         p['T'] = T
@@ -443,7 +444,7 @@ class ModelSetup(object):
 
         
     
-    def mar_mats_iexo(self,t,female=True,trim_lvl=0.001):
+    def mar_mats_iexo(self,t,female=True,trim_lvl=0.00):
         # TODO: check timing
         # this returns transition matrix for single agents into possible couples
         # rows are single's states

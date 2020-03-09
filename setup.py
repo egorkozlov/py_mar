@@ -6,7 +6,7 @@ This contains things relevant for setting up the model
 
 import numpy as np
 
-from rw_approximations import rouw_nonst, normcdf_tr
+from rw_approximations import rouw_nonst, normcdf_tr,tauchen_nonst
 from mc_tools import combine_matrices_two_lists, int_prob,cut_matrix
 from scipy.stats import norm
 from collections import namedtuple
@@ -19,17 +19,18 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()       
-        period_year=1#this can be 1,2,3 or 6
+        period_year=6#this can be 1,2,3 or 6
         transform=2#this tells how many periods to pull together for duration moments
         T = int(62/period_year)
         Tret = int(47/period_year) # first period when the agent is retired
         Tbef=int(2/period_year)
-        Tren  = int(42/period_year) # period starting which people do not renegotiate/divroce
-        Tmeet = int(42/period_year) # period starting which you do not meet anyone
+        Tren  = int(62/period_year)#int(42/period_year) # period starting which people do not renegotiate/divroce
+        Tmeet = int(62/period_year)#int(42/period_year) # period starting which you do not meet anyone
         p['py']=period_year
         p['ty']=transform
         p['T'] = T
         p['Tret'] = Tret
+        p['Tren'] = Tren
         p['Tbef'] = Tbef
         p['sig_zf_0']  = 0.5449176#0.4096**(0.5)
         p['sig_zf']    = .0288337**(0.5)#0.0399528**(0.5)
@@ -212,7 +213,7 @@ class ModelSetup(object):
 
 
             
-            exogrid['psi_t'], exogrid['psi_t_mat'] = rouw_nonst(p['T'],p['sigma_psi']*period_year**0.5,p['sigma_psi_init'],p['n_psi_t'][0])
+            exogrid['psi_t'], exogrid['psi_t_mat'] = tauchen_nonst(p['T'],p['sigma_psi']*period_year**0.5,p['sigma_psi_init'],p['n_psi_t'][0])
             exogrid['psi_t_mat'][Tret-1] = np.diag(np.ones(len(exogrid['psi_t_mat'][Tret-1])))
             exogrid['psi_t_mat'][Tret] = np.diag(np.ones(len(exogrid['psi_t_mat'][Tret-1])))
             exogrid['psi_t_mat'][Tret+1] = np.diag(np.ones(len(exogrid['psi_t_mat'][Tret-1])))
@@ -267,12 +268,12 @@ class ModelSetup(object):
         #Grid Couple
         self.na = 40#40
         self.amin = 0
-        self.amax = 100
-        self.amax1 = 1.25*self.amax
-        #self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
+        self.amax = 120
+        self.amax1 = 1.01*self.amax
+        self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
         #self.agrid_c[self.na-1]=250
         tune=2.5
-        self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
+        #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         self.agrid_c[-1]=self.amax1
         # this builds finer grid for potential savings
         s_between = 7 # default numer of points between poitns on agrid
@@ -288,16 +289,16 @@ class ModelSetup(object):
         scale = 1.1
         self.amin_s = 0
         self.amax_s = self.amax/scale
-        #self.agrid_s = np.linspace(self.amin_s,self.amax_s,self.na,dtype=self.dtype)
+        self.agrid_s = np.linspace(self.amin_s,self.amax_s,self.na,dtype=self.dtype)
         #self.agrid_s[self.na-1]=250
         tune_s=2.5
-        self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
+        #self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
         self.agrid_s[-1]=self.amax1/scale
         self.sgrid_s = build_s_grid(self.agrid_s,s_between,s_da_min,s_da_max)
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)
         
         # grid for theta
-        self.ntheta = 11
+        self.ntheta = 21
         self.thetamin = 0.01
         self.thetamax = 0.99
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta,dtype=self.dtype)

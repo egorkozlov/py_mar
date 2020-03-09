@@ -33,7 +33,8 @@ from integrator_couples import ev_couple_m_c
 
 
 class Model(object):
-    def __init__(self,iterator_name='default',verbose=False,**kwargs):
+    def __init__(self,iterator_name='default-timed',verbose=False,
+                 solve_till=None,**kwargs):
         self.mstart = self.get_mem()
         self.mlast = self.get_mem()
         self.verbose = verbose
@@ -43,7 +44,15 @@ class Model(object):
         self.start = default_timer()
         self.last = default_timer()        
         self.time_dict = dict()        
-        self.solve()
+        
+        
+        if solve_till is not None:
+            T = self.setup.pars['T']
+            if solve_till < 0: solve_till = T + solve_till
+            print('T is {}, but solving till T = {}'.format(T,solve_till))
+        
+        
+        self.solve(till=solve_till)
         
     def get_mem(self):
         return psutil.Process(os.getpid()).memory_info().rss/1e6
@@ -186,7 +195,7 @@ class Model(object):
             del v
         
     
-    def solve(self,save=False):
+    def solve(self,till=None,save=False):
         
         show_mem = self.verbose
         
@@ -194,6 +203,8 @@ class Model(object):
         self.V = list()
         self.decisions = list()
         
+        
+        if till is None: till = 0
         
         for t in reversed(range(T)):
             Vnow = dict()
@@ -213,11 +224,13 @@ class Model(object):
             self.V = [Vnow] + self.V
             self.decisions = [decnow] + self.decisions
             
-
             
             if show_mem:
                 print('The size of V is {} giga'.format(asizeof(self.V)/1000000000))
                 print('The size of decisions is {} giga'.format(asizeof(self.decisions)/1000000000))
+                
+            if t == till: break
+            
         if save:
             import pickle
             pickle.dump(self,open('model_save.pkl','wb+'))

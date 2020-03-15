@@ -49,8 +49,19 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
     consx=agents.x
     labor=agents.ils_i
     shks = agents.shocks_single_iexo 
+    psi_check=np.zeros(state.shape)
+    shift_check=np.array((state==2),dtype=np.float32)
+    single=np.array((state==0),dtype=bool)
+    betag=mdl.setup.pars['beta_t'][0]**(np.linspace(1,len(state[0,:]),len(state[0,:]))-1)
+    betam=np.reshape(np.repeat(betag,len(state[:,0])),(len(state[:,0]),len(betag)),order='F')
+    #agegrid=np.reshape(agegridtemp,resha)
+    
+    #Fill psi and ushift here
+    for i in range(len(state[0,:])):
+        psi_check[:,i]=((setup.exogrid.psi_t[i][(setup.all_indices(i,iexo[:,i]))[3]])) 
     
     
+    psi_check[single]=0.0
     #Import values for female labor supply (simulated men only)
     state_psid=agents_male.state
     labor_psid=agents_male.ils_i
@@ -63,8 +74,17 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
     assets_w=mdl.setup.agrid_c[agents.iassets]
     changep_w=agents.policy_ind 
 
-           
-           
+
+    #For welfare
+    cop_f=mdl.setup.u_part(cons,consx,labor,theta_t,psi_check,shift_check*mdl.setup.pars['u_shift_mar'])*betam
+    s_f=mdl.setup.u_single_pub(cons,consx,labor)*betam
+    combf=cop_f[0]
+    combf[(state==0)]=s_f[(state==0)]
+    sommaf=np.sum(combf[(female[:,0]==1),:],axis=1)
+    s_m=mdl.setup.u_single_pub(cons,consx,labor)*betam
+    combm=cop_f[1]
+    combm[(state==1)]=s_m[(state==1)]
+    sommam=np.sum(combm[(female[:,0]==0),:],axis=1)
     moments = dict()   
         
         
@@ -771,6 +791,8 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
         #For income process validation
         wage_f2[nsinglef2,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])])[nsinglef2]
         wage_m2[nsinglem2,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])])[nsinglem2]
+        wage_m2[nsinglef2,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])])[nsinglef2]
+        wage_f2[nsinglem2,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])])[nsinglem2]
         wage_f2[singlef2,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][iexo_w[singlef2,i]]) 
         wage_m2[singlem2,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][iexo_w[singlem2,i]]) 
        
@@ -788,7 +810,8 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
         
     #Log Income over time
     for t in range(lenn):
-        ipart=(labor_w[:,t]==1) & (ifemale2)
+        ipart=(labor_w[:,t]==1) & (ifemale2) #& (state_w[:,t]>1)
+        ipartm=(state_w[:,t]==1) & (imale2)
         log_inc_rel[0,t]=np.mean(np.log(wage_f2[ipart,t]))
         log_inc_rel[1,t]=np.mean(np.log(wage_m2[imale2,t]))
         
@@ -809,8 +832,8 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
                 is_state=is_state1   
             ind = np.where(is_state)[0]   
             ind1 = np.where(is_state1)[0] 
-            ind1f = np.where((is_state1) & (agents.is_female[:,0][keep][keep2]))
-            ind1m = np.where((is_state1) & ~(agents.is_female[:,0][keep][keep2]))
+            ind1f = np.where((is_state1) & (agents.is_female[:,0][keep][keep2]))[0]
+            ind1m = np.where((is_state1) & ~(agents.is_female[:,0][keep][keep2]))[0]
                 
             if not (np.any(is_state) or np.any(is_state1)): continue   
             
@@ -920,6 +943,9 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
     vtheta=theta_w[change]
     vpsi=psis[change]
     vmar=state_w[change]
+    vass=assets_w[change]
+    vwagef=wage_f2[change]
+    vwagem=wage_m2[change]
         
     #Grid of event Studies
     eventgrid=np.array(np.linspace(-10,10,21),dtype=np.int16)
@@ -927,6 +953,7 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
     event_thetac=np.ones(len(eventgrid))*-1000
     event_psim=np.ones(len(eventgrid))*-1000
     event_psic=np.ones(len(eventgrid))*-1000
+    event_assets=np.ones(len(eventgrid))*-1000
     match=np.zeros(state_w.shape,dtype=bool)*-1000
 
 
@@ -941,11 +968,12 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
         event_thetac[i]=np.mean(theta_w[matchc])
         event_psim[i]=np.mean(psis[matchm])
         event_psic[i]=np.mean(psis[matchc])
+        
         i+=1
         
      
-    data_ev=np.array(np.stack((vage,vgender,match[change],vtheta,vpsi,vmar),axis=0).T,dtype=np.float64)   
-    data_ev_panda=pd.DataFrame(data=data_ev,columns=['age','sex','event','theta','vpsi','vmar'])  
+    data_ev=np.array(np.stack((vage,vgender,match[change],vtheta,vpsi,vmar,vass,vwagef,vwagem),axis=0).T,dtype=np.float64)   
+    data_ev_panda=pd.DataFrame(data=data_ev,columns=['age','sex','event','theta','vpsi','vmar','vass','wagef','wagem'])  
     #Eliminate if missing   
     data_ev_panda.loc[data_ev_panda['event']>10,'event']=np.nan 
     data_ev_panda.loc[data_ev_panda['event']<-10,'event']=np.nan 
@@ -994,8 +1022,11 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
     pevent_psi_mar[9]=0
     pevent_psi_coh[9]=0
             
-            
-        
+    #Check correlations
+    ifemale1=(female==1)
+    nsinglef1=(ifemale1[:,0:60]) & (state>1)
+    corr=np.corrcoef(np.log(wage_f[nsinglef1]),np.log(wage_mp[nsinglef1]))
+    print('Correlation in potential wages is {}'.format(corr[0,1]) )  
         
     if draw:   
         #Get useful package for denisty plots

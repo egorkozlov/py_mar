@@ -95,7 +95,7 @@ def ev_single_meet(setup,V,sown,female,t,skip_mar=False,trim_lvl=0.000001):
         (vfoutc, vmoutc), nprc, decc, thtc =  res_c['Values'], res_c['NBS'], res_c['Decision'], res_c['theta']
         
         # choice is made based on Nash Surplus value
-        i_mar =(nprm>nprc) #((vfoutm>=vfoutc) & (vmoutm>=vfoutc))# 
+        i_mar =(nprm>=nprc) #((vfoutm>=vfoutc) & (vmoutm>=vfoutc))# 
         
         if female:
             vout = i_mar*vfoutm + (1-i_mar)*vfoutc

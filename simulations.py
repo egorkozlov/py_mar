@@ -157,17 +157,139 @@ class Agents:
         #Create Variables that stores varibles of interest
         
         
-        for t in range(self.T-1):
+        for t in range(self.T):
          
             self.anext(t) 
-            self.iexonext(t)            
-            self.statenext(t)
+            if t+1<self.T:
+                self.iexonext(t)            
+                self.statenext(t)
             self.timer('Simulations, iteration',verbose=self.verbose)
         
         
         #return self.gsavings, self.iexo, self.state,self.gtheta
     
     
+    
+#    def anext(self,t):
+#        # finds savings (potenitally off-grid)
+#        
+#        
+#        for ipol in range(self.npol):
+#            for ist, sname in enumerate(self.state_codes):
+#                
+#                is_state_any_pol = (self.state[:,t]==ist)  
+#                is_pol = (self.policy_ind[:,min(t+1,self.T-1)]==ipol)
+#                
+#                is_state = (is_state_any_pol) & (is_pol)
+#                
+#                use_theta = self.has_theta[ist]            
+#                nst = np.sum(is_state)
+#                
+#                if nst==0:
+#                    continue
+#                
+#                ind = np.where(is_state)[0]
+#                
+#                pol = self.Mlist[ipol].decisions[t][sname]
+#                
+#                if not use_theta:
+#                    
+#                    # apply for singles
+##                    anext =self.tempo.wthis[ind]*pol['s'][self.tempo.i[ind],self.iexo[ind,t]]+(1-self.tempo.wthis[ind])*pol['s'][self.tempo.i[ind]+1,self.iexo[ind,t]]
+##                    self.c[ind,t] = self.tempo.wthis[ind]*pol['c'][self.tempo.i[ind],self.iexo[ind,t]]+(1-self.tempo.wthis[ind])*pol['c'][self.tempo.i[ind]+1,self.iexo[ind,t]]
+##                    self.x[ind,t] = self.tempo.wthis[ind]*pol['x'][self.tempo.i[ind],self.iexo[ind,t]]+(1-self.tempo.wthis[ind])*pol['x'][self.tempo.i[ind]+1,self.iexo[ind,t]]
+##                    self.tempo=VecOnGrid(self.setup.agrid_s,anext)
+##                    self.iassets[ind,t+1] = VecOnGrid(self.setup.agrid_s,anext).roll(shocks=self.shocks_single_a[ind,t])
+##                    self.s[ind,t] = anext
+#                    # apply for singles
+#                    anext = pol['s'][self.iassets[ind,t],self.iexo[ind,t]]
+#                    self.s[ind,t] = anext
+#                    self.c[ind,t] = pol['c'][self.iassets[ind,t],self.iexo[ind,t]]
+#                    self.x[ind,t] = pol['x'][self.iassets[ind,t],self.iexo[ind,t]]
+#                    
+#                    #Dictionaries below account for 90% of the time in this function
+#                    gridv=self.Vlist[ipol][t][sname]['V'][:,self.iexo[ind,t]]
+#                    savings=anext-self.s[ind,t-1]
+#                    gria=VecOnGrid(self.setup.agrid_c,anext)
+#                    gridd=np.linspace(0,len(gria.i)-1,len(gria.i),dtype=np.int16)
+#                    gride=gria.wthis[gridd]*gridv[gria.i[gridd],gridd]+gria.wnext[gridd]*gridv[gria.i[gridd]+1,gridd]
+#                    position=(gridv>=np.broadcast_to(gride,gridv.shape))
+#                    inext=np.argmax(position,axis=0)
+#                    nex=gridv[inext[gridd],gridd]
+#                    bef=gridv[inext[gridd]-1,gridd]
+#                    wgh=(nex-gride)/(nex-bef)
+#                    
+#                    
+#                    zer=(gria.i==-1)
+#                    gria.i[zer]=0
+#                    savingsm=self.setup.agrid_s[gria.i]-self.s[ind,t-1]
+#                    savingsp=self.setup.agrid_s[gria.i+1]-self.s[ind,t-1]
+#                    zer=np.ones(self.iassets[ind,t].shape)*0.5
+#                   
+#                    un=self.Mlist[ipol].setup.u( self.c[ind,t])
+#                    um= self.Mlist[ipol].setup.u(self.c[ind,t]+abs(savings-savingsm))
+#                    up= self.Mlist[ipol].setup.u(self.c[ind,t]-abs(savingsp-savings))
+#                    dm=-un[0]+um[0]+self.Vlist[ipol][t][sname]['V'][gria.i,self.iexo[ind,t]]#-gride
+#                    dp=-un[0]+up[0]+self.Vlist[ipol][t][sname]['V'][gria.i+1,self.iexo[ind,t]]#-gride
+#                    
+#        
+#
+#                    
+#                    
+#                    if t+1<self.T:
+#                        self.iassets[ind,t+1] = VecOnGrid(self.setup.agrid_s,anext).roll(shocks=self.shocks_single_a[ind,t])
+#                        #self.iassets[ind,t+1] =wgh*bef+(1-wgh)*nex
+#
+#                    
+#                   
+#                else:
+#                    
+#                    # interpolate in both assets and theta
+#                    # function apply_2dim is experimental but I checked it at this setup
+#                    anext = pol['s'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]] 
+#                    self.s[ind,t] = anext
+#                    self.x[ind,t] = pol['x'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
+#                    self.c[ind,t] = pol['c'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
+#                    
+#                    # apply for couples
+#                    
+#                    savings=anext-self.s[ind,t-1]
+#                    gridv=self.Vlist[ipol][t][sname]['V'][:,self.iexo[ind,t],self.setup.igridcoarse[self.itheta[ind,t]]] 
+#                    
+#                    gria=VecOnGrid(self.setup.agrid_c,anext)
+#
+#                    gridd=np.linspace(0,len(gria.i)-1,len(gria.i),dtype=np.int16)
+#                    gride=gria.wthis[gridd]*gridv[gria.i[gridd],gridd]+gria.wnext[gridd]*gridv[gria.i[gridd]+1,gridd]
+#                    position=(gridv>=np.broadcast_to(gride,gridv.shape))
+#                    inext=np.argmax(position,axis=0)
+#                    nex=gridv[inext[gridd],gridd]
+#                    bef=gridv[inext[gridd]-1,gridd]
+#                    wgh=(nex-gride)/(nex-bef)
+#                    
+#                    zer=(gria.i==-1)
+#                    gria.i[zer]=0
+#                    savingsm=self.setup.agrid_c[gria.i]-self.s[ind,t-1]
+#                    savingsp=self.setup.agrid_c[gria.i+1]-self.s[ind,t-1]
+#                    zer=np.ones(self.iassets[ind,t].shape)*0.5
+#                    lab=pol['fls'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
+#                    un=self.Mlist[ipol].setup.u_part( self.c[ind,t], self.x[ind,t], lab,self.setup.thetagrid_fine[self.itheta[ind,t]],zer,zer)
+#                    um= self.Mlist[ipol].setup.u_part(self.c[ind,t]+abs(savings-savingsm), self.x[ind,t], lab,self.setup.thetagrid_fine[self.itheta[ind,t]],zer,zer)
+#                    up= self.Mlist[ipol].setup.u_part(self.c[ind,t]-abs(savingsp-savings), self.x[ind,t], lab,self.setup.thetagrid_fine[self.itheta[ind,t]],zer,zer)
+#                    dm=-un[0]+um[0]+self.Vlist[ipol][t][sname]['V'][gria.i,self.iexo[ind,t],self.setup.igridcoarse[self.itheta[ind,t]]]#-gride
+#                    dp=-un[0]+up[0]+self.Vlist[ipol][t][sname]['V'][gria.i+1,self.iexo[ind,t],self.setup.igridcoarse[self.itheta[ind,t]]]#-gride
+#                    
+#        
+#                   
+#                    out = gria.i#inext-1
+#                    #out[self.shocks_couple_a[ind,t]>wgh] += 1
+#                    out[dp>dm]+=1
+#                    
+#
+#                    if t+1<self.T:
+#                        self.iassets[ind,t+1] =VecOnGrid(self.setup.agrid_c,anext).roll(shocks=self.shocks_couple_a[ind,t])
+#                        #self.iassets[ind,t+1] =VecOnGrid(self.setup.agrid_c,anext).roll(shocks=self.shocks_couple_a[ind,t])
+#                    
+#                assert np.all(anext >= 0)
     
     def anext(self,t):
         # finds savings (potenitally off-grid)
@@ -176,8 +298,9 @@ class Agents:
         for ipol in range(self.npol):
             for ist, sname in enumerate(self.state_codes):
                 
+                
                 is_state_any_pol = (self.state[:,t]==ist)  
-                is_pol = (self.policy_ind[:,t+1]==ipol)
+                is_pol = (self.policy_ind[:,min(t+1,self.T-1)]==ipol)
                 
                 is_state = (is_state_any_pol) & (is_pol)
                 
@@ -202,8 +325,10 @@ class Agents:
 #                    self.s[ind,t] = anext
                     # apply for singles
                     #Dictionaries below account for 90% of the time in this function
+                
                     anext = pol['s'][self.iassets[ind,t],self.iexo[ind,t]]
-                    self.iassets[ind,t+1] = VecOnGrid(self.setup.agrid_s,anext).roll(shocks=self.shocks_single_a[ind,t])
+                    if t+1<self.T:
+                        self.iassets[ind,t+1] = VecOnGrid(self.setup.agrid_s,anext).roll(shocks=self.shocks_single_a[ind,t])
                     self.s[ind,t] = anext
                     self.c[ind,t] = pol['c'][self.iassets[ind,t],self.iexo[ind,t]]
                     self.x[ind,t] = pol['x'][self.iassets[ind,t],self.iexo[ind,t]]
@@ -219,8 +344,8 @@ class Agents:
                     self.s[ind,t] = anext
                     self.x[ind,t] = pol['x'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
                     self.c[ind,t] = pol['c'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
-                    
-                    self.iassets[ind,t+1] = VecOnGrid(self.setup.agrid_c,anext).roll(shocks=self.shocks_couple_a[ind,t])
+                    if t+1<self.T:
+                        self.iassets[ind,t+1] = VecOnGrid(self.setup.agrid_c,anext).roll(shocks=self.shocks_couple_a[ind,t])
                     
                 assert np.all(anext >= 0)
     

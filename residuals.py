@@ -124,7 +124,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
             
     else:       
         mdl_list = [dill.load(open(l,'rb+')) for l in load_from]
-        mdl = mdl_list[1]
+        mdl = mdl_list[0]
         
         if solve_transition:
             if len(mdl_list) < 2:
@@ -202,7 +202,8 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     ###########################################################
     #Welfare Effects of the Unilateral Divorce reform
     ##########################################################
-    welfare(mdl_list,agents_pooled)
+    if len(mdl_list) > 1:
+        welfare(mdl_list,agents_pooled)
     
     
     ############################################################

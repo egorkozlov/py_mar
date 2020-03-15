@@ -19,13 +19,13 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()       
-        period_year=6#this can be 1,2,3 or 6
+        period_year=1#this can be 1,2,3 or 6
         transform=2#this tells how many periods to pull together for duration moments
         T = int(62/period_year)
         Tret = int(47/period_year) # first period when the agent is retired
         Tbef=int(2/period_year)
-        Tren  = int(62/period_year)#int(42/period_year) # period starting which people do not renegotiate/divroce
-        Tmeet = int(62/period_year)#int(42/period_year) # period starting which you do not meet anyone
+        Tren  = int(47/period_year)#int(42/period_year) # period starting which people do not renegotiate/divroce
+        Tmeet = int(47/period_year)#int(42/period_year) # period starting which you do not meet anyone
         p['py']=period_year
         p['ty']=transform
         p['T'] = T
@@ -40,18 +40,18 @@ class ModelSetup(object):
         p['n_zm_t']      = [5]*Tret + [1]*(T-Tret)
         p['sigma_psi_mult'] = 0.28
         p['sigma_psi']   = 0.11
-        p['R_t'] = [1.02**period_year]*T
+        p['R_t'] = [1.0**period_year]*T
         p['n_psi_t']     = [12]*T
         p['beta_t'] = [0.98**period_year]*T
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.0 
         p['sig_partner_a'] = 0.1
-        p['sig_partner_z'] = 0.4#1.0#0.4
+        p['sig_partner_z'] = 0.6#1.0#0.4
         p['mean_partner_z_female'] = 0.0#0.8#0.4
         p['mean_partner_z_male'] = -0.0#-0.8#0.4
-        p['mean_partner_a_female'] = 0.0#0.1#0.4
-        p['mean_partner_a_male'] = 0.0#-0.1#0.4
+        p['mean_partner_a_female'] = 0.5#0.1#0.4
+        p['mean_partner_a_male'] = -0.5#-0.1#0.4
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
         
@@ -65,12 +65,13 @@ class ModelSetup(object):
         
         
         p['u_shift_mar'] = 0.0
-        p['u_shift_coh'] = 0.0
+        p['u_shift_coh'] = 0.00
         
          
-        p['f_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-.73291409 +0.05710639*t -.00211454*t**2+.00002334*t**3) for t in range(T)]
-        p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-0.5620125  +0.06767721*t -0.00192571*t**2+0.00001573*t**3) for t in range(T)]
-
+        #p['f_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-.69291401 +.01872689*t -.00052774*t**2+2.241e-06*t**3) for t in range(T)]
+        p['f_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-.73580354 +.04234285*t -.00164432*t**2+.00001773*t**3) for t in range(T)]
+        p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-0.5620125  +0.06767721*t -0.00192571*t**2+ 0.00001573*t**3) for t in range(T)]
+   
         
  
         
@@ -268,7 +269,7 @@ class ModelSetup(object):
         #Grid Couple
         self.na = 40#40
         self.amin = 0
-        self.amax = 120
+        self.amax = 200
         self.amax1 = 1.01*self.amax
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
         #self.agrid_c[self.na-1]=250
@@ -309,7 +310,7 @@ class ModelSetup(object):
         
         
         # construct finer grid for bargaining
-        ntheta_fine = 10*self.ntheta # actual number may be a bit bigger
+        ntheta_fine = 5*self.ntheta # actual number may be a bit bigger
         self.thetagrid_fine = np.unique(np.concatenate( (self.thetagrid,np.linspace(self.thetamin,self.thetamax,ntheta_fine,dtype=self.dtype)) ))
         self.ntheta_fine = self.thetagrid_fine.size
         
@@ -324,6 +325,14 @@ class ModelSetup(object):
         self.theta_orig_on_fine = np.array(i_orig).flatten()
         self.v_thetagrid_fine = VecOnGrid(self.thetagrid,self.thetagrid_fine)
         # precomputed object for interpolation
+        
+        #Get indexes from fine back to coarse thetagrid
+        cg=VecOnGrid(self.thetagrid,self.thetagrid_fine)
+        index_t=cg.i
+        index_t1=index_t+1
+        wherep=(cg.wthis<0.5)
+        self.igridcoarse=index_t
+        self.igridcoarse[wherep]=index_t1[wherep]
 
             
         
@@ -464,6 +473,8 @@ class ModelSetup(object):
             n_zown = z_own.shape[0]
             z_partner = setup.exogrid.zm_t[t+1]
             zmat_own = setup.exogrid.zf_t_mat[t]
+            trend=setup.pars['f_wage_trend'][t]
+            mean=setup.pars['m_wage_trend'][t]-setup.pars['f_wage_trend'][t]
         else:
             nz_single = setup.exogrid.zm_t[t].shape[0]
             p_mat = np.empty((nexo,nz_single))
@@ -471,6 +482,8 @@ class ModelSetup(object):
             n_zown = z_own.shape[0]
             z_partner = setup.exogrid.zf_t[t+1]
             zmat_own = setup.exogrid.zm_t_mat[t]    
+            trend=setup.pars['m_wage_trend'][t]
+            mean=setup.pars['m_wage_trend'][t]-setup.pars['f_wage_trend'][t]
             
         def ind_conv(a,b,c): return setup.all_indices(t,(a,b,c))[0]
         
@@ -478,10 +491,10 @@ class ModelSetup(object):
         for iz in range(n_zown):
             p_psi = int_prob(psi_couple,mu=0,sig=sigma_psi_init)
             if female:
-                p_zm  = int_prob(z_partner, mu=z_own[iz]+setup.pars['mean_partner_z_female'],sig=sig_z_partner)
+                p_zm  = int_prob(z_partner, mu=z_own[iz]+trend+mean+setup.pars['mean_partner_z_female'],sig=sig_z_partner)
                 p_zf  = zmat_own[iz,:]
             else:
-                p_zf  = int_prob(z_partner, mu=z_own[iz]+setup.pars['mean_partner_z_male'],sig=sig_z_partner)
+                p_zf  = int_prob(z_partner, mu=z_own[iz]+trend+mean+setup.pars['mean_partner_z_male'],sig=sig_z_partner)
                 p_zm  = zmat_own[iz,:]
             #sm = sf
         

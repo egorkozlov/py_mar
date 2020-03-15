@@ -36,20 +36,47 @@ def welfare(mdl,agents):
     changem=(Vm_bil-Vm_uni)/np.abs(Vm_bil) 
     
     
-    #Write a latex table that contains those Values
-    content = r'''\begin{tabular}{@{} l l l @{}}
-	Pull Up Method & \Chartguys{1.000} & \Chartguys{0.600}\\
-	Move Field     & \Chartguys{0.269} & \Chartguys{0.783}
-    \end{tabular}
-    '''
+    #Get utility from realizations
+    #mdl[0].setup.u_part(1,1,1,0.5,0.0,the)
     
-    content = r'''\begin{tabular}{lcccc}
-    \hline\hline
-    &\multicolumn{2}{c}{\textbf{Female}}& \multicolumn{2}{c}{\textbf{Male}}\\ \cmidrule(l){2-3}\cmidrule(l){4-5}
-    & \textit{Mutual Consent} & \textit{Unilateral Divorce} & \textit{Mutual Consent} & \textit{Unilateral Divorce}\\
-	& \Chartgirls{'''+str(np.mean(Vf_bil))+'''} & \Chartgirls{'''+str(np.mean(Vf_uni))+'''} & \Chartguys{'''+str(np.mean(Vm_bil))+'''} & \Chartguys{'''+str(np.mean(Vm_uni))+'''}\\
-    Utility & '''+str(np.mean(Vf_bil))+''' &'''+str(np.mean(Vf_uni))+''' &'''+str(np.mean(Vm_bil))+''' &'''+str(np.mean(Vm_uni))+''' \\ 
-    \% change & \multicolumn{2}{c}{'''+str(np.mean(changem))+'''} & \multicolumn{2}{c}{'''+str(np.mean(changef))+'''} \\
+    
+
+    
+    #Compute additional wealth to make them indifferent-Women
+    for i in range(len(mdl[0].setup.agrid_c)):
+        Vf_uni_comp=np.mean(mdl[1].V[0]['Female, single']['V'][i,shocks[isfemale]])
+        
+        if(Vf_uni_comp>np.mean(Vf_bil)):
+            wf=(-abs(np.mean(Vf_bil))+abs(np.mean(mdl[1].V[0]['Female, single']['V'][i-1,shocks[isfemale]])))/abs(np.mean(mdl[1].V[0]['Female, single']['V'][i-1,shocks[isfemale]]))
+            acomf=((1-wf)*mdl[0].setup.agrid_c[i-1]+(wf)*mdl[0].setup.agrid_c[i])*28331.93
+            break
+        
+    #Compute additional wealth to make them indifferent-Women
+    for i in range(len(mdl[0].setup.agrid_c)):
+        Vm_uni_comp=np.mean(mdl[1].V[0]['Male, single']['V'][i,shocks[ismale]])
+        
+        if(Vm_uni_comp>np.mean(Vm_bil)):
+            wf=(-abs(np.mean(Vm_bil))+abs(np.mean(mdl[1].V[0]['Male, single']['V'][i-1,shocks[ismale]])))/abs(np.mean(mdl[1].V[0]['Male, single']['V'][i-1,shocks[ismale]]))
+            acomm=((1-wf)*mdl[0].setup.agrid_c[i-1]+(wf)*mdl[0].setup.agrid_c[i])*28331.93
+            break
+        
+    #Get worse Value and set it to standard
+    standard=max(acomm,acomf)
+    acomma=acomm/standard
+    acomfa=acomf/standard
+    
+    content = r'''\begin{tabular}{cccc}
+    \hline\midrule
+    \multicolumn{2}{c}{\textbf{Female}}& \multicolumn{2}{c}{\textbf{Male}}\\
+    \cmidrule(l){1-2}\cmidrule(l){3-4}
+     Mutual Consent & Unilateral Divorce & Mutual Consent & Unilateral Divorce\\
+     \cmidrule(l){1-4}
+    \multicolumn{4}{c}{\textit{Life-Time utilities in $t=0$}}\\[3ex]
+     '''+str(round(np.mean(Vf_bil),2))+''' &'''+str(round(np.mean(Vf_uni),2))+''' &'''+str(round(np.mean(Vm_bil),2))+''' &'''+str(round(np.mean(Vm_uni),2))+''' \\\\
+    \cmidrule(l){1-4}
+    \multicolumn{4}{c}{\\textit{Welfare Losses with Unilateral Divorce}}\\\\[3ex]
+     \multicolumn{2}{c}{\Chartgirls{'''+str(acomfa)+'''}}& \multicolumn{2}{c}{\Chartguys{'''+str(acomma)+'''}}\\\\[-0.15ex]
+     \multicolumn{2}{c}{'''+str(round(acomf,2))+''' \$}& \multicolumn{2}{c}{'''+str(round(acomm,2))+''' \$}\\\\
     \hline\hline
     \end{tabular}
     '''
@@ -59,9 +86,3 @@ def welfare(mdl,agents):
     f.write(content)
     f.close()
     
-#    commandLine = subprocess.Popen(['pdflatex', 'welfare.tex'])
-#    commandLine.communicate()
-#
-#    os.unlink('welfare.tex')
-#    os.unlink('welfare.log')
-#    os.unlink('welfare.aux')

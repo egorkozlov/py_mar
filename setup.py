@@ -40,7 +40,7 @@ class ModelSetup(object):
         p['n_zm_t']      = [5]*Tret + [1]*(T-Tret)
         p['sigma_psi_mult'] = 0.28
         p['sigma_psi']   = 0.11
-        p['R_t'] = [1.0**period_year]*T
+        p['R_t'] = [1.02**period_year]*T
         p['n_psi_t']     = [12]*T
         p['beta_t'] = [0.98**period_year]*T
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
@@ -199,6 +199,11 @@ class ModelSetup(object):
             exogrid['zf_t_mat'][Tret-1] = np.ones((p['n_zf_t'][Tret-1],1))
             exogrid['zm_t_mat'][Tret-1] = np.ones((p['n_zm_t'][Tret-1],1))
             
+            #Tax system as in Wu and Kruger
+            for t in range(0,Tret):
+                exogrid['zf_t'][t] = exogrid['zf_t'][t]*(1-0.1327)+np.log(1-0.1575)
+                exogrid['zm_t'][t] =  exogrid['zm_t'][t]*(1-0.1327)+np.log(1-0.1575)  
+            
             #Comment out the following if you dont want retirment based on income
             for t in range(Tret,T):
                 #exogrid['zf_t'][t] = np.log(p['wret']*np.exp(p['f_wage_trend'][Tret-1]+exogrid['zf_t'][Tret-1]))#np.array([np.log(p['wret'])])
@@ -269,13 +274,13 @@ class ModelSetup(object):
         #Grid Couple
         self.na = 40#40
         self.amin = 0
-        self.amax = 200
-        self.amax1 = 1.01*self.amax
+        self.amax = 80
+        self.amax1 = 180
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
-        #self.agrid_c[self.na-1]=250
         tune=2.5
-        #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
+        self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         self.agrid_c[-1]=self.amax1
+        self.agrid_c[-2]=120
         # this builds finer grid for potential savings
         s_between = 7 # default numer of points between poitns on agrid
         s_da_min = 0.01 # minimal step (does not create more points)
@@ -291,17 +296,18 @@ class ModelSetup(object):
         self.amin_s = 0
         self.amax_s = self.amax/scale
         self.agrid_s = np.linspace(self.amin_s,self.amax_s,self.na,dtype=self.dtype)
-        #self.agrid_s[self.na-1]=250
+        #self.agrid_s[self.na-1]=180
         tune_s=2.5
-        #self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
+        self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
         self.agrid_s[-1]=self.amax1/scale
+        self.agrid_c[-2]=120/scale
         self.sgrid_s = build_s_grid(self.agrid_s,s_between,s_da_min,s_da_max)
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)
         
         # grid for theta
         self.ntheta = 21
-        self.thetamin = 0.01
-        self.thetamax = 0.99
+        self.thetamin = 0.02
+        self.thetamax = 0.98
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta,dtype=self.dtype)
         
         

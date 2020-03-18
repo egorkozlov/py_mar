@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 #from matplotlib.pyplot import plot, draw, show   
 import matplotlib.backends.backend_pdf   
 from statutils import strata_sample
+from welfare_comp import welf_dec
  
 #For nice graphs with matplotlib do the following 
 matplotlib.use("pgf") 
@@ -31,13 +32,17 @@ import statsmodels.api as sm
 import statsmodels.formula.api as smf   
   
     
-def moment(mdl,agents,agents_male,draw=True,validation=False):   
+def moment(mdl_list,agents,agents_male,draw=True,validation=False):   
 #This function compute moments coming from the simulation   
 #Optionally it can also plot graphs about them. It is feeded with   
 #matrixes coming from simulations   
     
 
-    
+    if len(mdl_list) > 1:
+        mdl=mdl_list[0]
+    else:
+        mdl=mdl_list.copy()
+        
     #Import simulated values   
     assets_t=mdl.setup.agrid_c[agents.iassets] # FIXME   
     iexo=agents.iexo   
@@ -74,19 +79,13 @@ def moment(mdl,agents,agents_male,draw=True,validation=False):
     assets_w=mdl.setup.agrid_c[agents.iassets]
     changep_w=agents.policy_ind 
 
-
-    #For welfare
-    cop_f=mdl.setup.u_part(cons,consx,labor,theta_t,psi_check,shift_check*mdl.setup.pars['u_shift_mar'])*betam
-    s_f=mdl.setup.u_single_pub(cons,consx,labor)*betam
-    combf=cop_f[0]
-    combf[(state==0)]=s_f[(state==0)]
-    sommaf=np.sum(combf[(female[:,0]==1),:],axis=1)
-    s_m=mdl.setup.u_single_pub(cons,consx,labor)*betam
-    combm=cop_f[1]
-    combm[(state==1)]=s_m[(state==1)]
-    sommam=np.sum(combm[(female[:,0]==0),:],axis=1)
-    moments = dict()   
+    moments=dict()
         
+    ##########################################
+    #WELFARE DECOMPOSITION HERE
+    #########################################
+    if len(mdl_list) > 1:
+        welf_dec(mdl_list,agents)
         
     ##########################################   
     #START COMPUTATION OF SIMULATED MOMENTS   

@@ -291,7 +291,7 @@ def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,Vmale,Vfemale,izf,izm,cost_f
                 
     
                 
-    return Vf_divorce, Vm_divorce
+    return Vf_divorce.astype(np.float32) , Vm_divorce.astype(np.float32) 
 
 
 def v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral,show_sc=False,rescale=False):

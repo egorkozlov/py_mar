@@ -25,7 +25,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
               solve_transition=False,
               store_path = None,
               verbose=False,calibration_report=False,draw=False,graphs=False,
-              rel_diff=True):
+              rel_diff=True,welf=False):
     
     
     
@@ -157,7 +157,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
         age_uni=pickle.load(file)
         
 
-    def get_transition(age_dist):
+    def get_transition(age_dist,welf=False):
         #Transformation of age at uni from actual age to model periods
         change=-np.ones(1000,np.int32)#the bigger is the size of this array, the more precise the final distribution
        
@@ -177,18 +177,28 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
         pr=np.sum(change<=0)/(np.sum(change<=np.inf))
         transition_matricest=transition_matricest+[np.array([[1-pr,pr],[0,1]])]
         for t in range(mdl.setup.pars['T']-1):
-            pr=np.sum(change==t+1)/(np.sum(change<=np.inf))
-            transition_matricest=transition_matricest+[np.array([[1-pr,pr],[0,1]])]
+            if not welf:
+                pr=np.sum(change==t+1)/(np.sum(change<=np.inf))
+                transition_matricest=transition_matricest+[np.array([[1-pr,pr],[0,1]])]
+            else:
+                transition_matricest=transition_matricest+[np.array([[1,0],[1,0]])]
+                
+            
             
         return transition_matricest
     
-    #Get the transitions for men and women
-    transition_matricesf=get_transition(age_uni['female'])
-    transition_matricesm=get_transition(age_uni['male'])
+   
+    
+    transition_matricesf=get_transition(age_uni['female'],welf)
+    transition_matricesm=get_transition(age_uni['male'],welf)
+
+    
+    
+        
         
    
     #Get Number of simulated agent, malea and female
-    N=15000
+    N=150000
     Nf=int(N*age_uni['share_female'])
     Nm=N-Nf
     agents_fem = Agents( mdl_list ,age_uni['female'],female=True,pswitchlist=transition_matricesf,verbose=False,N=Nf)
@@ -196,14 +206,8 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     agents_pooled = AgentsPooled([agents_fem,agents_mal])
     
     
-    moments = moment(mdl,agents_pooled,agents_mal,draw=draw)
-    
-    
-    ###########################################################
-    #Welfare Effects of the Unilateral Divorce reform
-    ##########################################################
-    if len(mdl_list) > 1:
-        welfare(mdl_list,agents_pooled)
+    #Compute moments
+    moments = moment(mdl_list,agents_pooled,agents_mal,draw=draw)
     
     
     ############################################################

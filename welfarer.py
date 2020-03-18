@@ -6,11 +6,9 @@ Created on Mon Mar  9 10:41:24 2020
 """
 
 import numpy as np   
-import matplotlib.pyplot as plt   
-#from matplotlib.pyplot import plot, draw, show   
 import matplotlib.backends.backend_pdf   
-from statutils import strata_sample
-import os,glob,subprocess
+
+
  
 #For nice graphs with matplotlib do the following 
 matplotlib.use("pgf") 

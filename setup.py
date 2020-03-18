@@ -19,7 +19,7 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()       
-        period_year=1#this can be 1,2,3 or 6
+        period_year=6#this can be 1,2,3 or 6
         transform=2#this tells how many periods to pull together for duration moments
         T = int(62/period_year)
         Tret = int(47/period_year) # first period when the agent is retired
@@ -32,9 +32,9 @@ class ModelSetup(object):
         p['Tret'] = Tret
         p['Tren'] = Tren
         p['Tbef'] = Tbef
-        p['sig_zf_0']  = 0.5449176#0.4096**(0.5)
-        p['sig_zf']    = .0288337**(0.5)#0.0399528**(0.5)
-        p['n_zf_t']      = [7]*Tret + [1]*(T-Tret)
+        p['sig_zf_0']  = 0.54896510#0.5449176#0.4096**(0.5)
+        p['sig_zf']    = .025014**(0.5)#.0288337**(0.5)#0.0399528**(0.5)
+        p['n_zf_t']      = [5]*Tret + [1]*(T-Tret)
         p['sig_zm_0']  = 0.54896510#.405769**(0.5)
         p['sig_zm']    = .025014**(0.5)#0.0417483**(0.5)
         p['n_zm_t']      = [5]*Tret + [1]*(T-Tret)
@@ -50,8 +50,8 @@ class ModelSetup(object):
         p['sig_partner_z'] = 0.6#1.0#0.4
         p['mean_partner_z_female'] = 0.0#0.8#0.4
         p['mean_partner_z_male'] = -0.0#-0.8#0.4
-        p['mean_partner_a_female'] = 0.5#0.1#0.4
-        p['mean_partner_a_male'] = -0.5#-0.1#0.4
+        p['mean_partner_a_female'] = 0.0#0.5#0.1#0.4
+        p['mean_partner_a_male'] = 0.0#-0.5#-0.1#0.4
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
         
@@ -71,6 +71,7 @@ class ModelSetup(object):
         #p['f_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-.69291401 +.01872689*t -.00052774*t**2+2.241e-06*t**3) for t in range(T)]
         p['f_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-.73580354 +.04234285*t -.00164432*t**2+.00001773*t**3) for t in range(T)]
         p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-0.5620125  +0.06767721*t -0.00192571*t**2+ 0.00001573*t**3) for t in range(T)]
+        p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-.73580354 +.04234285*t -.00164432*t**2+.00001773*t**3) for t in range(T)]
    
         
  
@@ -160,7 +161,7 @@ class ModelSetup(object):
             # FIXME: this uses number of points from 0th entry. 
             # in principle we can generalize this
             
-            p['n_zf_t']      = [7]*Tret + [7]*(T-Tret)
+            p['n_zf_t']      = [5]*Tret + [5]*(T-Tret)
             p['n_zm_t']      = [5]*Tret + [5]*(T-Tret)
             exogrid['zf_t'],  exogrid['zf_t_mat'] = rouw_nonst(p['T'],p['sig_zf']*period_year**0.5,p['sig_zf_0'],p['n_zf_t'][0])
             exogrid['zm_t'],  exogrid['zm_t_mat'] = rouw_nonst(p['T'],p['sig_zm']*period_year**0.5,p['sig_zm_0'],p['n_zm_t'][0])
@@ -202,7 +203,7 @@ class ModelSetup(object):
             #Tax system as in Wu and Kruger
             for t in range(0,Tret):
                 exogrid['zf_t'][t] = exogrid['zf_t'][t]*(1-0.1327)+np.log(1-0.1575)
-                exogrid['zm_t'][t] =  exogrid['zm_t'][t]*(1-0.1327)+np.log(1-0.1575)  
+                exogrid['zm_t'][t] = exogrid['zm_t'][t]*(1-0.1327)+np.log(1-0.1575)  
             
             #Comment out the following if you dont want retirment based on income
             for t in range(Tret,T):
@@ -296,7 +297,7 @@ class ModelSetup(object):
         self.amin_s = 0
         self.amax_s = self.amax/scale
         self.agrid_s = np.linspace(self.amin_s,self.amax_s,self.na,dtype=self.dtype)
-        #self.agrid_s[self.na-1]=180
+        self.agrid_s[self.na-1]=180
         tune_s=2.5
         self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
         self.agrid_s[-1]=self.amax1/scale
@@ -784,7 +785,7 @@ def tauchen_drift(z_now,z_next,rho,sigma,mu):
         
 
 def build_s_grid(agrid,n_between,da_min,da_max):
-    sgrid = np.array([0.0],np.float64)
+    sgrid = np.array([0.0],np.float32)
     for j in range(agrid.size-1):
         step = (agrid[j+1] - agrid[j])/n_between
         if step >= da_min and step <= da_max:

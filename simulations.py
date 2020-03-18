@@ -72,6 +72,7 @@ class Agents:
         # initialize assets
         
         self.iassets = np.zeros((N,T),np.int32)
+        self.iassetss = np.zeros((N,T),np.int32)
         self.tempo=VecOnGrid(self.setup.agrid_s,self.iassets[:,0])
         
         # initialize FLS
@@ -86,11 +87,13 @@ class Agents:
         
         # initialize iexo
         self.iexo = np.zeros((N,T),np.int32)
+        self.iexos = np.zeros((N,T),np.int32)
         # TODO: look if we can/need fix the shocks here...
         
         
         
         self.iexo[:,0] = iexoinit
+        self.iexos[:,0] = iexoinit
         
         
         
@@ -329,6 +332,7 @@ class Agents:
                     anext = pol['s'][self.iassets[ind,t],self.iexo[ind,t]]
                     if t+1<self.T:
                         self.iassets[ind,t+1] = VecOnGrid(self.setup.agrid_s,anext).roll(shocks=self.shocks_single_a[ind,t])
+                        self.iassetss[ind,t+1] = self.iassets[ind,t+1].copy()
                     self.s[ind,t] = anext
                     self.c[ind,t] = pol['c'][self.iassets[ind,t],self.iexo[ind,t]]
                     self.x[ind,t] = pol['x'][self.iassets[ind,t],self.iexo[ind,t]]
@@ -346,6 +350,7 @@ class Agents:
                     self.c[ind,t] = pol['c'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
                     if t+1<self.T:
                         self.iassets[ind,t+1] = VecOnGrid(self.setup.agrid_c,anext).roll(shocks=self.shocks_couple_a[ind,t])
+                        self.iassetss[ind,t+1] = self.iassets[ind,t+1].copy()
                     
                 assert np.all(anext >= 0)
     
@@ -392,12 +397,14 @@ class Agents:
                         #Following line takes 94% of the time for this funciton
                         iexo_next_this_ls = mc_simulate(iexo_now[this_ls],mat,shocks=shks)
                         self.iexo[ind[this_ls],t+1] = iexo_next_this_ls
+                        self.iexos[ind[this_ls],t+1] = iexo_next_this_ls
                         
                 else:
                     mat = self.Mlist[ipol].setup.exo_mats[sname][t]
                     shks = self.shocks_single_iexo[ind,t]                    
                     iexo_next = mc_simulate(iexo_now,mat,shocks=shks) # import + add shocks     
                     self.iexo[ind,t+1] = iexo_next
+                    self.iexos[ind,t+1] = iexo_next
             
     
     def statenext(self,t):
@@ -434,7 +441,7 @@ class Agents:
                     pmeet = self.Mlist[ipol].setup.pars['pmeet_t'][t] # TODO: check timing
                     
                     
-                    matches = self.Mlist[ipol].decisions[t][ss]
+                    matches = self.Mlist[ipol].decisions[t]['Female, single']
                     
                     ia = self.iassets[ind,t+1] # note that timing is slightly inconsistent  
                     
@@ -495,7 +502,8 @@ class Agents:
                     if np.any(i_agree_mar):
                         
                         self.itheta[ind[i_agree_mar],t+1] = it_out[i_agree_mar]
-                        self.iexo[ind[i_agree_mar],t+1] = iall[i_agree_mar]
+                        self.iexo[ind[i_agree_mar],t+1] = iall[i_agree_mar]#*0+199
+                        self.iexos[ind[i_agree_mar],t+1] = iall[i_agree_mar]#*0+199
                         self.state[ind[i_agree_mar],t+1] = self.state_codes['Couple, M']
                         self.iassets[ind[i_agree_mar],t+1] = ia_out[i_agree_mar]
                         
@@ -510,8 +518,9 @@ class Agents:
                         
                     if np.any(i_agree_coh):
                         
-                        self.itheta[ind[i_agree_coh],t+1] = it_out[i_agree_coh]
-                        self.iexo[ind[i_agree_coh],t+1] = iall[i_agree_coh]
+                        self.itheta[ind[i_agree_coh],t+1] = it_out[i_agree_coh]#*0+60
+                        self.iexo[ind[i_agree_coh],t+1] = iall[i_agree_coh]#*0+199
+                        self.iexos[ind[i_agree_coh],t+1] = iall[i_agree_coh]#*0+199
                         self.state[ind[i_agree_coh],t+1] = self.state_codes['Couple, C']
                         self.iassets[ind[i_agree_coh],t+1] = ia_out[i_agree_coh]
                         
@@ -573,6 +582,9 @@ class Agents:
                     
                     i_div = ~i_stay    
                     
+                    #ifem=decision['Divorce'][0][isc,iall][...,None]<self.Mlist[ipol].V[t]['Couple, M']['VF'][isc,iall,:]
+                    #imal=decision['Divorce'][1][isc,iall][...,None]<self.Mlist[ipol].V[t]['Couple, M']['VM'][isc,iall,:]
+                    #both=~np.max((ifem) & (imal),axis=1)
     
                     i_ren = (i_stay) & (thts_orig != thts)
                     i_renf = (i_stay) & (thts_orig > thts)
@@ -588,7 +600,7 @@ class Agents:
                     zm_grid = self.setup.exo_grids['Male, single'][t]
                     
                     
-                     
+                    
                     
                     if np.any(i_div):
                         
@@ -601,11 +613,17 @@ class Agents:
                         costs = self.Mlist[ipol].setup.div_costs if sname == 'Couple, M' else self.Mlist[ipol].setup.sep_costs
                                    
                         share_f, share_m = costs.shares_if_split(income_share_fem)
-                        share_f = costs.shares_if_split_theta(self.setup,self.setup.thetagrid[self.setup.v_thetagrid_fine.i[itht]+1])
                         
-                        sf = share_f[i_div]*sc[i_div]
-                        assert np.all(share_f[i_div]>=0) and np.all(share_f[i_div]<=1)
-                        sm = (1-share_f[i_div])*sc[i_div]
+                        #Uncomment bnelowe if ren_theta
+                        #share_f = costs.shares_if_split_theta(self.setup,self.setup.thetagrid[self.setup.v_thetagrid_fine.i[itht]+1])
+                      
+                        #sf = share_f[i_div]*sc[i_div]
+                        #assert np.all(share_f[i_div]>=0) and np.all(share_f[i_div]<=1)
+                        #sm = share_m[i_div]*sc[i_div]
+                        
+                        sf = share_f*sc[i_div]
+                        assert np.all(share_f>=0) and np.all(share_f<=1)
+                        sm = share_m*sc[i_div]
                         
                         s = sf if self.female else sm
                         
@@ -695,13 +713,17 @@ class AgentsPooled:
         
         self.state = combine([a.state for a in AgentsList])
         self.iexo = combine([a.iexo for a in AgentsList])
+        self.iexos = combine([a.iexos for a in AgentsList])
         self.ils_i = combine([a.ils_i for a in AgentsList])
         self.itheta = combine([a.itheta for a in AgentsList])
         self.iassets = combine([a.iassets for a in AgentsList])
+        self.iassetss = combine([a.iassetss for a in AgentsList])
         self.c = combine([a.c for a in AgentsList])
         self.s = combine([a.s for a in AgentsList])
         self.x = combine([a.x for a in AgentsList])
         self.shocks_single_iexo=combine([a.shocks_single_iexo for a in AgentsList])
+        self.shocks_couple_a=combine([a.shocks_couple_a for a in AgentsList])
+        self.shocks_single_a=combine([a.shocks_single_a for a in AgentsList])
         self.policy_ind = combine([a.policy_ind for a in AgentsList])
         self.agents_ind = combine([i*np.ones_like(a.state) for i, a in enumerate(AgentsList)])
         self.is_female = combine([a.female*np.ones_like(a.state) for a in AgentsList])

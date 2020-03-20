@@ -11,6 +11,121 @@ from numba import njit, vectorize
 from gridvec import VecOnGrid
 
 
+def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescale=True):
+    # this returns value functions for couple that entered the period with
+    # (s,Z,theta) from the grid and is allowed to renegotiate them or breakup
+    # 
+    # combine = True creates matrix (n_sc-by-n_inds)
+    # combine = False assumed that n_sc is the same shape as n_inds and creates
+    # a flat array.
+     
+    #Get Divorce or Separation Costs
+    if marriage:
+        dc = setup.div_costs
+        is_unil = dc.unilateral_divorce # whether to do unilateral divorce at all
+    else:
+        dc = setup.sep_costs
+        is_unil = dc.unilateral_divorce # whether to do unilateral divorce at all
+    
+    assert ~is_unil
+    
+    ind, izf, izm, ipsi = setup.all_indices(t+1)
+    
+    zfgrid = setup.exo_grids['Female, single'][t+1]
+    zmgrid = setup.exo_grids['Male, single'][t+1]
+    
+    share=(np.exp(zfgrid[izf]) / ( np.exp(zmgrid[izm]) + np.exp(zfgrid[izf]) ) )
+    relat=np.ones(share.shape)*0.5
+    income_share_f=(1.0*share+0.0*relat).squeeze()
+    #income_share_f = (np.exp(zfgrid[izf]) / ( np.exp(zmgrid[izm]) + np.exp(zfgrid[izf]) ) ).squeeze()
+    
+    share_f, share_m = dc.shares_if_split(income_share_f)
+   
+    
+    
+    
+    # this is the part for bilateral divorce
+    a_fem, a_mal = share_f[None,:]*setup.agrid_c[:,None], share_m[None,:]*setup.agrid_c[:,None]
+    aleft_c = a_fem + a_mal
+    iadiv_fem, iadiv_mal = [np.minimum(np.searchsorted(setup.agrid_s,x),setup.na-1)
+                                        for x in [a_fem, a_mal]]
+    na_s, nexo, ntheta = setup.na, ind.size, setup.ntheta_fine
+    iadiv_fem_full, iadiv_mal_full = [np.broadcast_to(x[...,None],(na_s,nexo,ntheta)) 
+                                        for x in [iadiv_fem, iadiv_mal]]
+    aleft_c_full = np.broadcast_to(aleft_c[...,None],(na_s,nexo,ntheta))
+    
+    vf_all_s = V['Female, single']['V'][:,izf]
+    vm_all_s = V['Male, single']['V'][:,izm]
+        
+    
+    
+    
+    sc = setup.agrid_c
+    
+    from renegotiation_unilateral import v_div_byshare
+    # values of divorce
+    vf_n, vm_n = v_div_byshare(
+        setup, dc, t, sc, share_f, share_m,
+        V['Male, single']['V'], V['Female, single']['V'],
+        izf, izm, cost_fem=dc.money_lost_f, cost_mal=dc.money_lost_m)
+    
+    
+    
+    
+    if return_vdiv_only:
+        return {'Value of Divorce, male': vm_n,
+                'Value of Divorce, female': vf_n}
+    
+    
+    assert vf_n.ndim == vm_n.ndim == 2
+    
+    
+    
+    
+    expnd = lambda x : setup.v_thetagrid_fine.apply(x,axis=2)
+    
+    if marriage:
+        # if couple is married already
+        v_y = expnd(V['Couple, M']['V'])
+        vf_y = expnd(V['Couple, M']['VF'])
+        vm_y = expnd(V['Couple, M']['VM'])
+    else:
+        # stay in cohabitation
+        v_y_coh = expnd(V['Couple, C']['V'])
+        vf_y_coh = expnd(V['Couple, C']['VF'])
+        vm_y_coh = expnd(V['Couple, C']['VM'])
+        # switch to marriage
+        v_y_mar = expnd(V['Couple, M']['V'])
+        vf_y_mar = expnd(V['Couple, M']['VF'])
+        vm_y_mar = expnd(V['Couple, M']['VM'])
+        # switching criterion
+        #switch = (vf_y_mar>vf_y_coh) & (vm_y_mar>vm_y_coh)
+        switch = (v_y_mar> v_y_coh)
+        
+        v_y = switch*v_y_mar + (~switch)*v_y_coh
+        vf_y = switch*vf_y_mar + (~switch)*vf_y_coh
+        vm_y = switch*vm_y_mar + (~switch)*vm_y_coh
+        
+    vf_n, vm_n = [x.astype(v_y.dtype) for x in (vf_n,vm_n)] # type conversion
+    
+    result = ren_bilateral_wrap(setup,v_y,vf_y,vm_y,vf_n,vm_n,vf_all_s,vm_all_s,aleft_c_full,                       
+                       iadiv_fem_full,iadiv_mal_full,rescale=True)
+    
+    
+    
+    if not marriage:
+        result['Cohabitation preferred to Marriage'] = ~switch
+        
+        
+    
+        
+    extra = {'Values':result['Values'],
+             'Value of Divorce, male': vm_n, 'Value of Divorce, female': vf_n}
+    
+    if not return_extra:
+        return result
+    else:
+        return result, extra
     
 def ren_bilateral_wrap(setup,vy,vfy,vmy,vfn,vmn,vf_all_s,vm_all_s,aleft_c,                       
                        ia_div_fem,ia_div_mal,rescale=True):
@@ -32,7 +147,8 @@ def ren_bilateral_wrap(setup,vy,vfy,vmy,vfn,vmn,vf_all_s,vm_all_s,aleft_c,
     
     
     return {'Decision': yes, 'thetas': ithetaout,
-            'Values': (r(vout), r(vfout), r(vmout)),'Divorce':(vfn,vmn)}
+            'Values': (r(vout), r(vfout), r(vmout)),'Divorce':(vfn,vmn),
+            'Bribing':(bribe,ia_div_fem,ia_div_mal)}
     
     
                     

@@ -47,6 +47,25 @@ def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
     #income_share_f = (np.exp(zfgrid[izf]) / ( np.exp(zmgrid[izm]) + np.exp(zfgrid[izf]) ) ).squeeze()
     
     share_f, share_m = dc.shares_if_split(income_share_f)
+   
+    
+    
+    
+    # this is the part for bilateral divorce
+    a_fem, a_mal = share_f[None,:]*setup.agrid_c[:,None], share_m[None,:]*setup.agrid_c[:,None]
+    aleft_c = a_fem + a_mal
+    iadiv_fem, iadiv_mal = [np.minimum(np.searchsorted(setup.agrid_s,x),setup.na-1)
+                                        for x in [a_fem, a_mal]]
+    na_s, nexo, ntheta = setup.na, ind.size, setup.ntheta_fine
+    iadiv_fem_full, iadiv_mal_full = [np.broadcast_to(x[...,None],(na_s,nexo,ntheta)) 
+                                        for x in [iadiv_fem, iadiv_mal]]
+    aleft_c_full = np.broadcast_to(aleft_c[...,None],(na_s,nexo,ntheta))
+    
+    vf_all_s = V['Female, single']['V'][:,izf]
+    vm_all_s = V['Male, single']['V'][:,izm]
+        
+    
+    
     
     sc = setup.agrid_c
     
@@ -96,6 +115,17 @@ def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
     vf_n, vm_n = [x.astype(v_y.dtype) for x in (vf_n,vm_n)] # type conversion
     
     result  = v_ren_core_interp(setup,v_y, vf_y, vm_y, vf_n, vm_n, is_unil, rescale=rescale)
+    
+    result2 = ren_loop_wrap(setup, v_y, vf_y, vm_y, vf_n, vm_n, is_unil, rescale=rescale)
+    
+    
+    result3 = ren_bilateral_wrap(setup,v_y,vf_y,vm_y,vf_n,vm_n,vf_all_s,vm_all_s,aleft_c_full,                       
+                       iadiv_fem_full,iadiv_mal_full,rescale=True)
+    
+    
+    
+    assert all([np.allclose(x,y) for x,y in zip(result['Values'],result2['Values'])])
+    
     
     if not marriage:
         result['Cohabitation preferred to Marriage'] = ~switch
@@ -436,16 +466,57 @@ def v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral,show_sc=False,rescal
         assert np.all(factor>=1)
         assert np.allclose(v_out_resc[no,:],v_out[no,:])
         v_out = v_out_resc
-        
+        # TODO: do we need to rescale vf_out, vm_out?
     
     return {'Decision': yes, 'thetas': i_theta_out,
             'Values': (r(v_out), r(vf_out), r(vm_out)),'Divorce':(vf_n,vm_n)}
     
     
+    
+def ren_loop_wrap(setup,vy,vfy,vmy,vfn,vmn,is_unil,rescale=False):
+    # v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral,show_sc=False,rescale=False)
+    tgrid = setup.thetagrid_fine
+    
+    assert is_unil
+    
+    vout, vfout, vmout, thetaout, yes, ithetaout = \
+        ren_loop(vy,vfy,vmy,vfn,vmn,tgrid,rescale=rescale)
+    
+    def r(x): return x.astype(np.float32)        
+    
+    
+    return {'Decision': yes, 'thetas': ithetaout,
+            'Values': (r(vout), r(vfout), r(vmout)),'Divorce':(vfn,vmn)}
+    
+def ren_bilateral_wrap(setup,vy,vfy,vmy,vfn,vmn,vf_all_s,vm_all_s,aleft_c,                       
+                       ia_div_fem,ia_div_mal,rescale=True):
+    # v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral,show_sc=False,rescale=False)
+    tgrid = setup.thetagrid_fine
+    
+    
+    vout, vfout, vmout, thetaout, yes, ithetaout, bribe, iaout_f, iaout_m = \
+        ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,
+                           vf_all_s,vm_all_s,aleft_c,
+                           ia_div_fem,ia_div_mal,
+                           setup.agrid_s,
+                           tgrid)
+    
+    
+    def r(x): return x.astype(np.float32)        
+    
+    
+    return {'Decision': yes, 'thetas': ithetaout,
+            'Values': (r(vout), r(vfout), r(vmout)),'Divorce':(vfn,vmn)}
+    
+    
 @njit
-def ren_loop(vy,vfy,vmy,vfn,vmn,thtgrid):
+def ren_loop(vy,vfy,vmy,vfn,vmn,thtgrid,rescale=False):
     print('hi!')
 
+
+    vfn = vfn.reshape(vfn.shape+(1,))
+    vmn = vmn.reshape(vmn.shape+(1,))
+    
     sf = vfy - vfn
     sm = vmy - vmn
     
@@ -455,7 +526,12 @@ def ren_loop(vy,vfy,vmy,vfn,vmn,thtgrid):
     vfout = vfy.copy()
     vmout = vmy.copy()
     
-    thetaout = -1*np.zeros(vout.shape,dtype=np.float32)
+    yes = np.zeros((na,nexo),dtype=np.bool_)
+    
+    
+    thetaout = -1*np.ones(vout.shape,dtype=np.float32)
+    ithetaout = -1*np.ones(vout.shape,dtype=np.int16)
+    
     
     for ia in range(na):
         for iexo in range(nexo):
@@ -475,27 +551,181 @@ def ren_loop(vy,vfy,vmy,vfn,vmn,thtgrid):
             
             else:
                 # renegotiate
-                
+                yes[ia,iexo] = True
                 numbers = np.nonzero(both)[0]
                 
                 for itheta in range(nt):
                     if both[itheta]:
                         # status quo
                         thetaout[ia,iexo,itheta] = thtgrid[itheta]
+                        ithetaout[ia,iexo,itheta] = itheta
                         continue
                     # if not both
                     in_closest = np.argmin(np.abs(numbers - itheta))
                     i_closest = numbers[in_closest]
+                    ithetaout[ia,iexo,itheta] = i_closest
                     thetaout[ia,iexo,itheta] = thtgrid[i_closest]
-                    vout[ia,iexo,itheta] = vy[ia,iexo,i_closest]
-                    vfout[ia,iexo,itheta] = vfy[ia,iexo,i_closest]
+                    
+                    
+                    if rescale:
+                        tht_new = thtgrid[i_closest]
+                        tht_old = thtgrid[itheta]
+                        factor = np.maximum( (1-tht_old)/(1-tht_new), tht_old/tht_new )
+                    else:
+                        factor = 1
+                    vout[ia,iexo,itheta] = factor*vy[ia,iexo,i_closest]
+                    vfout[ia,iexo,itheta] = vfy[ia,iexo,i_closest] # no rescaling?
                     vmout[ia,iexo,itheta] = vmy[ia,iexo,i_closest]
                     
+    if not np.all(vfout>=vfn - 1e-4):
+        raise Exception('regenotiation problems...')
+        
+    if not np.all(vmout>=vmn - 1e-4):
+        raise Exception('regenotiation problems...')                
     
-    return vout, vfout, vmout, thetaout
+    return vout, vfout, vmout, thetaout, yes, ithetaout
                     
+
+@njit
+def ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,vfn_as,vmn_as,aleft_c,ia_f_def_s,ia_m_def_s,agrid_s,thtgrid):
+    print('bilateral hi!')
+
+
+    #vfn = vfn
+    #vmn = vmn
+    
+    sf = vfy - vfn.reshape(vfn.shape+(1,))
+    sm = vmy - vmn.reshape(vmn.shape+(1,))
+    
+    na, nexo, nt = vy.shape
+    
+    vout = vy.copy()
+    vfout = vfy.copy()
+    vmout = vmy.copy()
+    
+    yes = np.zeros((na,nexo,nt),dtype=np.bool_)
+    bribe = np.zeros((na,nexo,nt),dtype=np.bool_)
+    
+    
+    thetaout = -1*np.ones(vout.shape,dtype=np.float32)
+    ithetaout = -1*np.ones(vout.shape,dtype=np.int16)
+    
+    iaout_f = -1*np.ones(vout.shape,dtype=np.int16)
+    iaout_m = -1*np.ones(vout.shape,dtype=np.int16)
+   
+    
+    na_s = agrid_s.size
+    
+    for ia in range(na):
+        for ie in range(nexo):
+            for it in range(nt):
+                
+                sf_i = sf[ia,ie,it]
+                sm_i = sm[ia,ie,it]
+                
+                tht = thtgrid[it]
+                
+                
+                if sf_i >= 0 and sm_i >= 0:
+                    yes[ia,ie,it] = True
+                    thetaout[ia,ie,it] = tht
+                    ithetaout[ia,ie,it] = it
+                    continue
+                else:
                     
+                    vout_div_def = tht*vfn[ia,ie] +  (1-tht)*vmn[ia,ie]
+                    vfout_div_def = vfn[ia,ie]
+                    vmout_div_def = vmn[ia,ie]
                     
+                    if sf_i < 0 and sm_i < 0:                        
+                        vout[ia,ie,it] = vout_div_def
+                        vfout[ia,ie,it] = vfout_div_def
+                        vmout[ia,ie,it] = vmout_div_def
+                        continue
+                    else:
+                        # if only one person wants do divorce -- possible
+                        # to find reallocation of assets such that both could
+                        # agree.
+                        ia_m_def = ia_m_def_s[ia,ie,it]
+                        ia_f_def = ia_f_def_s[ia,ie,it]
+                        
+                        ia_m_new = ia_m_def
+                        ia_f_new = ia_f_def
+                        
+                        a_left = aleft_c[ia,ie,it]
+                        
+                        
+                        do_divorce = False
+                        found = False
+                        
+
+                        if sf_i > 0 and sm_i < 0:
+                            # m bribes out
+                            #print('at point {} m bribes out'.format((ia,ie,it)))
+                            for ia_m_new in range(ia_m_def+1,na_s):
+                                if agrid_s[ia_m_new] > a_left:
+                                    break
+                                
+                                found = False
+                                for ia_f_new in range(ia_f_new,-1,-1):
+                                    if agrid_s[ia_f_new] + agrid_s[ia_m_new] <= a_left:
+                                        found=True
+                                        #print('found a division')
+                                        break
+                                    
+                                if found:
+                                    sf_i_new  = vfy[ia,ie,it] - vfn_as[ia_f_new,ie]
+                                    sm_i_new  = vmy[ia,ie,it] - vmn_as[ia_m_new,ie]
+                                    if sf_i_new < 0 and sm_i_new < 0:
+                                        do_divorce = True
+                                        print('divorce happens!')
+                                    break
+                        
+                        
+                        if sm_i > 0 and sf_i < 0:
+                            # f bribes out
+                            
+                            for ia_f_new in range(ia_f_def+1,na_s):
+                                if agrid_s[ia_f_new] > a_left:
+                                    break
+                                
+                                found = False
+                                for ia_m_new in range(ia_m_new,-1,-1):
+                                    if agrid_s[ia_m_new] + agrid_s[ia_f_new] <= a_left:
+                                        found=True
+                                        break
+                                    
+                                if found:
+                                    sf_i_new  = vfy[ia,ie,it] - vfn_as[ia_f_new,ie]
+                                    sm_i_new  = vmy[ia,ie,it] - vmn_as[ia_m_new,ie]
+                                    if sf_i_new < 0 and sm_i_new < 0:
+                                        do_divorce = True
+                                    break
+                        
+                                
+                        if not do_divorce:
+                            yes[ia,ie,it] = True
+                            thetaout[ia,ie,it] = thtgrid[it]
+                            ithetaout[ia,ie,it] = it
+                            continue
+                        
+                        # else we do_divorce   
+                        assert found
+                        bribe[ia,ie,it] = True
+                        vfout[ia,ie,it] = vfn_as[ia_f_new,ie]
+                        vmout[ia,ie,it] = vmn_as[ia_m_new,ie]
+                        vout[ia,ie,it] = tht*vfn_as[ia_f_new,ie] + \
+                                        (1-tht)*vmn_as[ia_m_new,ie]
+                        
+                        iaout_f[ia,ie,it] = ia_f_new
+                        iaout_m[ia,ie,it] = ia_m_new
+                        
+                        
+                        continue
+                        
+            
+    return vout, vfout, vmout, thetaout, yes, ithetaout, bribe, iaout_f, iaout_m
+    
                     
 
 @njit

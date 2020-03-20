@@ -578,6 +578,7 @@ class Agents:
                     #this guy below account for 24% of the time in couple
                     i_stay = dec[isc,iall] if dec.ndim==2 else dec[isc,iall,itht]#i_stay = dec[isc,iall,itht] 
                     
+                    bil_bribing = ('Bribing' in decision)
                     
                     
                     i_div = ~i_stay    
@@ -609,7 +610,7 @@ class Agents:
                         
                         income_share_fem = income_fem / (income_fem + income_mal)
                         
-                        # !!!
+                        # this part determines assets
                         costs = self.Mlist[ipol].setup.div_costs if sname == 'Couple, M' else self.Mlist[ipol].setup.sep_costs
                                    
                         share_f, share_m = costs.shares_if_split(income_share_fem)
@@ -626,11 +627,25 @@ class Agents:
                         sm = share_m*sc[i_div]
                         
                         s = sf if self.female else sm
-                        
-                        
-                        
                         shks = self.shocks_couple_a[ind[i_div],t]
                         self.iassets[ind[i_div],t+1] = VecOnGrid(agrid,s).roll(shocks=shks)
+                        
+                        # if bribing happens we overwrite this
+                        
+                        if bil_bribing:
+                            
+                            iassets = decision['Bribing'][1] if self.female else decision['Bribing'][2] 
+                            do_bribing = decision['Bribing'][0]
+                            
+                            iassets_ifdiv = iassets[isc[i_div],iall[i_div],itht[i_div]] # assets resulted from bribing
+                            do_b = do_bribing[isc[i_div],iall[i_div],itht[i_div]] # True / False if bribing happens
+                            assert np.all(iassets_ifdiv[do_b] >= 0)
+                            
+                            if np.any(do_b):
+                                print('bribing happens in {} cases'.format(np.sum(do_b)))
+                                self.iassets[ind[i_div][do_b],t+1] = iassets_ifdiv[do_b]
+                                
+                        
                         self.itheta[ind[i_div],t+1] = -1
                         self.iexo[ind[i_div],t+1] = iz[i_div]
                         self.state[ind[i_div],t+1] = self.state_codes[ss]

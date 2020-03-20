@@ -27,6 +27,7 @@ def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
         dc = setup.sep_costs
         is_unil = dc.unilateral_divorce # whether to do unilateral divorce at all
     
+    assert is_unil
     
     ind, izf, izm, ipsi = setup.all_indices(t+1)
     
@@ -109,15 +110,7 @@ def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
     result  = v_ren_core_interp(setup,v_y, vf_y, vm_y, vf_n, vm_n, is_unil, rescale=rescale)
     
     #result2 = ren_loop_wrap(setup, v_y, vf_y, vm_y, vf_n, vm_n, is_unil, rescale=rescale)
-    
-    
-    from renegotiation_bilateral import ren_bilateral_wrap
-    
-    result3 = ren_bilateral_wrap(setup,v_y,vf_y,vm_y,vf_n,vm_n,vf_all_s,vm_all_s,aleft_c_full,                       
-                       iadiv_fem_full,iadiv_mal_full,rescale=True)
-    
-    
-    
+
     #assert all([np.allclose(x,y) for x,y in zip(result['Values'],result2['Values'])])
     
     

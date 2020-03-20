@@ -9,7 +9,7 @@ import numpy as np
 
 #from ren_mar_pareto import v_mar_igrid, v_no_mar
 #from ren_mar_alt import v_mar_igrid, v_no_marù
-from ren_mar_old import v_mar_igrid, v_no_mar
+from marriage import v_mar_igrid, v_no_mar
     
 
 

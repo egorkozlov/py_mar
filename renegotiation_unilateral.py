@@ -108,7 +108,7 @@ def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
     
     result  = v_ren_core_interp(setup,v_y, vf_y, vm_y, vf_n, vm_n, is_unil, rescale=rescale)
     
-    result2 = ren_loop_wrap(setup, v_y, vf_y, vm_y, vf_n, vm_n, is_unil, rescale=rescale)
+    #result2 = ren_loop_wrap(setup, v_y, vf_y, vm_y, vf_n, vm_n, is_unil, rescale=rescale)
     
     
     from renegotiation_bilateral import ren_bilateral_wrap
@@ -118,7 +118,7 @@ def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
     
     
     
-    assert all([np.allclose(x,y) for x,y in zip(result['Values'],result2['Values'])])
+    #assert all([np.allclose(x,y) for x,y in zip(result['Values'],result2['Values'])])
     
     
     if not marriage:
@@ -177,17 +177,10 @@ def v_no_ren(setup,V,marriage,t):
     return result
 
 
-
-def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,Vmale,Vfemale,izf,izm,cost_fem=0.0,cost_mal=0.0):
-    # this produces value of divorce for gridpoints given possibly different
-    # shares of how assets are divided. 
-    # Returns Vf_divorce, Vm_divorce -- values of singles in case of divorce
-    # matched to the gridpionts for couples
-    
-    # optional cost_fem and cost_mal are monetary costs of divorce
-    
-    
-    shrs = [0.2,0.35,0.5,0.65,0.8]  # grid on possible assets divisions    
+shrs_def = [0.2,0.35,0.5,0.65,0.8]
+def v_div_allsplits(setup,dc,t,sc,Vmale,Vfemale,izm,izf,
+                        shrs=None,cost_fem=0.0,cost_mal=0.0):
+    if shrs is None: shrs = shrs_def # grid on possible assets divisions    
     shp  =  (sc.size,izm.size,len(shrs))  
     Vm_divorce_M = np.zeros(shp) 
     Vf_divorce_M = np.zeros(shp)
@@ -200,8 +193,29 @@ def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,Vmale,Vfemale,izf,izm,cost_f
         Vm_divorce_M[...,i] = sv_m.apply(Vmale,    axis=0,take=(1,izm),reshape_i=True) - dc.u_lost_m
         Vf_divorce_M[...,i] = sv_f.apply(Vfemale,  axis=0,take=(1,izf),reshape_i=True) - dc.u_lost_f
     
+    return Vm_divorce_M, Vf_divorce_M
+    
+
+
+def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,Vmale,Vfemale,izf,izm,
+                  shrs=None,cost_fem=0.0,cost_mal=0.0):
+    # this produces value of divorce for gridpoints given possibly different
+    # shares of how assets are divided. 
+    # Returns Vf_divorce, Vm_divorce -- values of singles in case of divorce
+    # matched to the gridpionts for couples
+    
+    # optional cost_fem and cost_mal are monetary costs of divorce
+    if shrs is None: shrs = shrs_def
+    
+    Vm_divorce_M, Vf_divorce_M = v_div_allsplits(setup,dc,t,sc,
+                                                 Vmale,Vfemale,izm,izf,
+                                shrs=shrs,cost_fem=cost_fem,cost_mal=cost_mal)
+    
     # share of assets that goes to the female
     # this has many repetative values but it turns out it does not matter much
+    
+    
+    
     
     fem_gets = VecOnGrid(np.array(shrs),share_fem)
     mal_gets = VecOnGrid(np.array(shrs),share_mal)

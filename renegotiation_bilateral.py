@@ -25,6 +25,8 @@ def ren_bilateral_wrap(setup,vy,vfy,vmy,vfn,vmn,vf_all_s,vm_all_s,aleft_c,
                            setup.agrid_s,
                            tgrid)
     
+    if np.any(bribe):
+        print('Bribing happens in {}% of divorces'.format(round(100*np.mean(~yes & bribe)/np.mean(~yes))))
     
     def r(x): return x.astype(np.float32)        
     
@@ -37,7 +39,7 @@ def ren_bilateral_wrap(setup,vy,vfy,vmy,vfn,vmn,vf_all_s,vm_all_s,aleft_c,
 
 @njit
 def ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,vfn_as,vmn_as,aleft_c,ia_f_def_s,ia_m_def_s,agrid_s,thtgrid):
-    print('bilateral hi!')
+    #print('bilateral hi!')
 
 
     #vfn = vfn
@@ -108,9 +110,10 @@ def ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,vfn_as,vmn_as,aleft_c,ia_f_def_s,ia_m_
                         found = False
                         
 
-                        if sf_i > 0 and sm_i < 0:
-                            # m bribes out
+                        if sf_i < 0 and sm_i > 0:
+                            # f bribes out
                             #print('at point {} m bribes out'.format((ia,ie,it)))
+                            # increase ia_m
                             for ia_m_new in range(ia_m_def+1,na_s):
                                 if agrid_s[ia_m_new] > a_left:
                                     break
@@ -119,7 +122,6 @@ def ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,vfn_as,vmn_as,aleft_c,ia_f_def_s,ia_m_
                                 for ia_f_new in range(ia_f_new,-1,-1):
                                     if agrid_s[ia_f_new] + agrid_s[ia_m_new] <= a_left:
                                         found=True
-                                        #print('found a division')
                                         break
                                     
                                 if found:
@@ -127,13 +129,15 @@ def ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,vfn_as,vmn_as,aleft_c,ia_f_def_s,ia_m_
                                     sm_i_new  = vmy[ia,ie,it] - vmn_as[ia_m_new,ie]
                                     if sf_i_new < 0 and sm_i_new < 0:
                                         do_divorce = True
-                                        print('divorce happens!')
-                                    break
+                                        #print('divorce happens: f bribes out!')
+                                        #print((ia_m_def,sm_i,ia_f_def,sf_i))
+                                        #print((ia_f_new,sf_i_new,ia_m_new,sm_i_new))                                       
+                                        break
                         
                         
-                        if sm_i > 0 and sf_i < 0:
-                            # f bribes out
-                            
+                        if sm_i < 0 and sf_i > 0:
+                            # m bribes out
+                            # increase ia_f
                             for ia_f_new in range(ia_f_def+1,na_s):
                                 if agrid_s[ia_f_new] > a_left:
                                     break
@@ -149,7 +153,10 @@ def ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,vfn_as,vmn_as,aleft_c,ia_f_def_s,ia_m_
                                     sm_i_new  = vmy[ia,ie,it] - vmn_as[ia_m_new,ie]
                                     if sf_i_new < 0 and sm_i_new < 0:
                                         do_divorce = True
-                                    break
+                                        #print('divorce happens: m bribes out!')
+                                        #print((ia_m_def,sm_i,ia_f_def,sf_i))
+                                        #print((ia_f_new,sf_i_new,ia_m_new,sm_i_new))
+                                        break
                         
                                 
                         if not do_divorce:

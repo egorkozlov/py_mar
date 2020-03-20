@@ -21,5 +21,6 @@ pars.pop('alost')
 
 mdl = Model(**pars,verbose=True,solve_till=-15)
 
+mdl.time_statistics()
 
 decisions = mdl.decisions[-2]['Female, single']['Decision']

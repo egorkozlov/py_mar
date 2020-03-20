@@ -46,7 +46,7 @@ if __name__ == '__main__':
     #For graphs later
     graphs=True
     #Build  data moments and pickle them
-    #dat_moments(period=6,sampling_number=4,transform=2)
+    dat_moments(period=6,sampling_number=4,transform=2)
     
          
     #Initialize the file with parameters
@@ -68,7 +68,7 @@ if __name__ == '__main__':
         path = None
     
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','models','agents','scaled residuals'],
-                                      #load_from=['mdl_save_uni.pkl','mdl_save_uni.pkl'],
+                                      #load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       solve_transition=True,                                    
                                       save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       store_path=path,
@@ -77,6 +77,8 @@ if __name__ == '__main__':
                          
     print('Done. Residual in point x0 is {}'.format(out))
      
+    #assert False
+    
     #Indexes for the graphs
     if graphs:
         ai=30

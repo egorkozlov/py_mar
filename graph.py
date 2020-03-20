@@ -15,8 +15,9 @@ import matplotlib.backends.backend_pdf
 #from ren_mar_alt import v_mar_igrid 
 #from ren_mar_alt import v_ren_new 
 from marriage import v_mar_igrid 
-from renegotiation_unilateral import v_ren_new  
- 
+from renegotiation_unilateral import v_ren_new as v_ren_uni
+from renegotiation_bilateral import v_ren_new as v_ren_bil
+
  
 def v_reshape(setup,desc,field,V_by_t,Tmax): 
     # this reshapes V into many-dimensional object 
@@ -121,19 +122,23 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
      
     # if ti = 0 it creates an object that was not used for the solutions,  
     # as V in v_ren_new is the next period value function. ti-1 should be here. 
-    V_ren_c = v_ren_new(setup,Packed[ti],False,ti-1,return_extra=True)[1]['Values'][0][np.arange(agrid.size),nex,inde] 
-    V_ren_m = v_ren_new(setup,Packed[ti],True,ti-1,return_extra=True)[1]['Values'][0][np.arange(agrid.size),nex,inde] 
- 
+    V_ren_c = v_ren_uni(setup,Packed[ti],False,ti-1,return_extra=True)[1]['Values'][0][np.arange(agrid.size),nex,inde] 
+    
+    v_ren_mar = v_ren_uni if setup.div_costs.unilateral_divorce else v_ren_bil
+    
+    V_ren_m = v_ren_mar(setup,Packed[ti],True,ti-1,return_extra=True)[1]['Values'][0][np.arange(agrid.size),nex,inde] 
+    
         
     #Divorced Women and Men 
      
     
-    # this thing assembles values of divorce / separation 
-     
+    # this thing assembles values of divorce / separation
+    
+    
     vals = [{'Couple, M': 
-            v_ren_new(setup,Packed[t],True,t-1,return_vdiv_only=True), 
+            v_ren_mar(setup,Packed[t],True,t-1,return_vdiv_only=True), 
             'Couple, C': 
-            v_ren_new(setup,Packed[t],False,t-1,return_vdiv_only=True), 
+            v_ren_uni(setup,Packed[t],False,t-1,return_vdiv_only=True), 
            } 
             for t in range(T)] 
         

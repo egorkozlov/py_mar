@@ -140,8 +140,8 @@ def ren_bilateral_wrap(setup,vy,vfy,vmy,vfn,vmn,vf_all_s,vm_all_s,aleft_c,
                            setup.agrid_s,
                            tgrid)
     
-    if np.any(bribe):
-        print('Bribing happens in {}% of divorces'.format(round(100*np.mean(~yes & bribe)/np.mean(~yes))))
+    #if np.any(bribe):
+    #    print('Bribing happens in {}% of divorces'.format(round(100*np.mean(~yes & bribe)/np.mean(~yes))))
     
     def r(x): return x.astype(np.float32)        
     

@@ -441,7 +441,7 @@ class Agents:
                     pmeet = self.Mlist[ipol].setup.pars['pmeet_t'][t] # TODO: check timing
                     
                     
-                    matches = self.Mlist[ipol].decisions[t]['Female, single']
+                    matches = self.Mlist[ipol].decisions[t][ss]
                     
                     ia = self.iassets[ind,t+1] # note that timing is slightly inconsistent  
                     
@@ -455,7 +455,8 @@ class Agents:
                     
                     
                     v = self.shocks_single_iexo[ind,t] #np.random.random_sample(ind.size) # draw uniform dist
-                    #This guy below (unitl it_out) account for 50% of single time
+                    #This guy below (unitl it_out) account for 50% of single timem
+                    pmat_cum[:,-1]=1.0
                     i_pmat = (v[:,None] > pmat_cum).sum(axis=1)  # index of the position in pmat
                     
                     ic_out = matches['iexo'][ia,iznow,i_pmat]

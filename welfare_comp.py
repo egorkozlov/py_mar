@@ -94,20 +94,29 @@ def welf_dec(mdl,agents):
     ##############################################
     changep=agents.policy_ind  
     
-
+    #Get value function for Women and men
+    expnd0 = lambda x : mdl[0].setup.v_thetagrid_fine.apply(x,axis=2)
+    expnd1 = lambda x : mdl[1].setup.v_thetagrid_fine.apply(x,axis=2)
     #Women
     Vfc_bil=np.ones(changep.shape)*-1000
     Vfc_uni=np.ones(changep.shape)*-1000
     for t in range(1,mdl[0].setup.pars['T']):
+        
+        #Prepare Value Functions
+        VFbilm=expnd0(mdl[0].V[t]['Couple, M']['VF'])       
+        VFunim=expnd0(mdl[1].V[t]['Couple, M']['VF'])       
+        VFbilc=expnd0(mdl[0].V[t]['Couple, C']['VF'])       
+        VFunic=expnd0(mdl[1].V[t]['Couple, C']['VF'])
+        
         change=(changep[:,t]==1) & (changep[:,t-1]==0) & (agents.is_female[:,t]==1)
         single=(change) & (agents.state[:,t]==0)
         marry=(change) & (agents.state[:,t]==2)
         coh=(change) & (agents.state[:,t]==3) 
-        Vfc_bil[marry,t]=mdl[0].V[t]['Couple, M']['VF'][agents.iassets[marry,t],agents.iexo[marry,t],mdl[0].setup.v_thetagrid_fine.i[agents.itheta[marry,t]]+1]
-        Vfc_bil[coh,t]=mdl[0].V[t]['Couple, C']['VF'][agents.iassets[coh,t],agents.iexo[coh,t],mdl[0].setup.v_thetagrid_fine.i[agents.itheta[coh,t]]+1]
+        Vfc_bil[marry,t]=VFbilm[agents.iassets[marry,t],agents.iexo[marry,t],agents.itheta[marry,t]]
+        Vfc_bil[coh,t]=VFbilc[agents.iassets[coh,t],agents.iexo[coh,t],agents.itheta[coh,t]]
         Vfc_bil[single,t]=mdl[0].V[t]['Female, single']['V'][agents.iassets[single,t],mdl[0].setup.all_indices(t,agents.iexo[single,t])[1]]
-        Vfc_uni[marry,t]=mdl[1].V[t]['Couple, M']['VF'][agents.iassets[marry,t],agents.iexo[marry,t],mdl[0].setup.v_thetagrid_fine.i[agents.itheta[marry,t]]+1]
-        Vfc_uni[coh,t]=mdl[1].V[t]['Couple, C']['VF'][agents.iassets[coh,t],agents.iexo[coh,t],mdl[0].setup.v_thetagrid_fine.i[agents.itheta[coh,t]]+1]
+        Vfc_uni[marry,t]=VFunim[agents.iassets[marry,t],agents.iexo[marry,t],agents.itheta[marry,t]]
+        Vfc_uni[coh,t]=VFunic[agents.iassets[coh,t],agents.iexo[coh,t],agents.itheta[coh,t]]
         Vfc_uni[single,t]=mdl[1].V[t]['Female, single']['V'][agents.iassets[single,t],mdl[0].setup.all_indices(t,agents.iexo[single,t])[1]]
     
     wh=np.where(Vfc_bil>-100)
@@ -119,15 +128,21 @@ def welf_dec(mdl,agents):
     Vmc_bil=np.ones(changep.shape)*-1000
     Vmc_uni=np.ones(changep.shape)*-1000
     for t in range(1,mdl[0].setup.pars['T']):
+        
+        VMbilm=expnd0(mdl[0].V[t]['Couple, M']['VM'])
+        VMunim=expnd0(mdl[1].V[t]['Couple, M']['VM'])
+        VMbilc=expnd0(mdl[0].V[t]['Couple, C']['VM'])
+        VMunic=expnd0(mdl[1].V[t]['Couple, C']['VM'])
+        
         change=(changep[:,t]==1) & (changep[:,t-1]==0) & (agents.is_female[:,t]==0)
         single=(change) & (agents.state[:,t]==1)
         marry=(change) & (agents.state[:,t]==2)
         coh=(change) & (agents.state[:,t]==3) 
-        Vmc_bil[marry,t]=mdl[0].V[t]['Couple, M']['VM'][agents.iassets[marry,t],agents.iexo[marry,t],mdl[0].setup.v_thetagrid_fine.i[agents.itheta[marry,t]]+1]
-        Vmc_bil[coh,t]=mdl[0].V[t]['Couple, C']['VM'][agents.iassets[coh,t],agents.iexo[coh,t],mdl[0].setup.v_thetagrid_fine.i[agents.itheta[coh,t]]+1]
+        Vmc_bil[marry,t]=VMbilm[agents.iassets[marry,t],agents.iexo[marry,t],agents.itheta[marry,t]]
+        Vmc_bil[coh,t]=VMbilc[agents.iassets[coh,t],agents.iexo[coh,t],agents.itheta[coh,t]]
         Vmc_bil[single,t]=mdl[0].V[t]['Male, single']['V'][agents.iassets[single,t],mdl[0].setup.all_indices(t,agents.iexo[single,t])[2]]
-        Vmc_uni[marry,t]=mdl[1].V[t]['Couple, M']['VM'][agents.iassets[marry,t],agents.iexo[marry,t],mdl[0].setup.v_thetagrid_fine.i[agents.itheta[marry,t]]+1]
-        Vmc_uni[coh,t]=mdl[1].V[t]['Couple, C']['VM'][agents.iassets[coh,t],agents.iexo[coh,t],mdl[0].setup.v_thetagrid_fine.i[agents.itheta[coh,t]]+1]
+        Vmc_uni[marry,t]=VMunim[agents.iassets[marry,t],agents.iexo[marry,t],agents.itheta[marry,t]]
+        Vmc_uni[coh,t]=VMunic[agents.iassets[coh,t],agents.iexo[coh,t],agents.itheta[coh,t]]
         Vmc_uni[single,t]=mdl[1].V[t]['Male, single']['V'][agents.iassets[single,t],mdl[0].setup.all_indices(t,agents.iexo[single,t])[2]]
     
     wh=np.where(Vmc_bil>-100)

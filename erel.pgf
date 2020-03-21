@@ -377,9 +377,9 @@
 \pgfpathmoveto{\pgfqpoint{0.482292in}{0.711239in}}%
 \pgfpathlineto{\pgfqpoint{1.412292in}{0.711239in}}%
 \pgfpathlineto{\pgfqpoint{2.342292in}{0.711239in}}%
-\pgfpathlineto{\pgfqpoint{3.272292in}{0.968773in}}%
-\pgfpathlineto{\pgfqpoint{4.202292in}{1.360687in}}%
-\pgfpathlineto{\pgfqpoint{5.132292in}{1.360687in}}%
+\pgfpathlineto{\pgfqpoint{3.272292in}{1.310330in}}%
+\pgfpathlineto{\pgfqpoint{4.202292in}{1.578189in}}%
+\pgfpathlineto{\pgfqpoint{5.132292in}{1.578189in}}%
 \pgfusepath{stroke}%
 \end{pgfscope}%
 \begin{pgfscope}%
@@ -411,9 +411,9 @@
 \pgfpathmoveto{\pgfqpoint{0.482292in}{0.711239in}}%
 \pgfpathlineto{\pgfqpoint{1.412292in}{0.711239in}}%
 \pgfpathlineto{\pgfqpoint{2.342292in}{0.711239in}}%
-\pgfpathlineto{\pgfqpoint{3.272292in}{1.156441in}}%
-\pgfpathlineto{\pgfqpoint{4.202292in}{1.425243in}}%
-\pgfpathlineto{\pgfqpoint{5.132292in}{1.425243in}}%
+\pgfpathlineto{\pgfqpoint{3.272292in}{0.874960in}}%
+\pgfpathlineto{\pgfqpoint{4.202292in}{0.963737in}}%
+\pgfpathlineto{\pgfqpoint{5.132292in}{0.963737in}}%
 \pgfusepath{stroke}%
 \end{pgfscope}%
 \begin{pgfscope}%

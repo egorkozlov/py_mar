@@ -38,15 +38,15 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
 #matrixes coming from simulations   
     
 
-    if len(mdl_list) > 1:
-        mdl=mdl_list[0]
-    else:
-        mdl=mdl_list.copy()
+
+    mdl=mdl_list[0]
+
         
-    #Import simulated values   
-    assets_t=mdl.setup.agrid_c[agents.iassets] # FIXME   
-    iexo=agents.iexo   
-    state=agents.state   
+    #Import simulated values  
+    state=agents.state 
+    assets_t=mdl.setup.agrid_c[agents.iassets]
+    assets_t[agents.state<=1]=mdl.setup.agrid_s[agents.iassets[agents.state<=1]]
+    iexo=agents.iexo     
     theta_t=mdl.setup.thetagrid_fine[agents.itheta]   
     setup = mdl.setup  
     female=agents.is_female
@@ -77,6 +77,9 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     state_w=agents.state 
     theta_w=mdl.setup.thetagrid_fine[agents.itheta] 
     assets_w=mdl.setup.agrid_c[agents.iassets]
+    assets_w[agents.state<=1]=mdl.setup.agrid_s[agents.iassets[agents.state<=1]]
+    assetss_w=mdl.setup.agrid_c[agents.iassetss]
+    assetss_w[agents.state<=1]=mdl.setup.agrid_s[agents.iassetss[agents.state<=1]]
     changep_w=agents.policy_ind 
 
     moments=dict()
@@ -128,6 +131,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     female_w=female_w[:,0:mdl.setup.pars['T']]
     state_w=state_w[:,0:mdl.setup.pars['T']]
     assets_w=assets_w[:,0:mdl.setup.pars['T']]
+    assetss_w=assetss_w[:,0:mdl.setup.pars['T']]
     theta_w=theta_w[:,0:mdl.setup.pars['T']]
     changep_w=changep_w[:,0:mdl.setup.pars['T']]
       
@@ -755,38 +759,146 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     ###########################################   
     
     #Create wages
-    wage_f=np.zeros(state.shape)
-    wage_m=np.zeros(state.shape)
+    wage_f=np.zeros(state_w.shape)
+    wage_m=np.zeros(state_w.shape)
+    
+    wage_fc=np.zeros(len(state_w[0,:]))
+    wage_mc=np.zeros(len(state_w[0,:]))
+    wage_fm=np.zeros(len(state_w[0,:]))
+    wage_mm=np.zeros(len(state_w[0,:]))
+    
     wage_f2=np.zeros(state_w.shape)
     wage_m2=np.zeros(state_w.shape)
-    wage_fp=np.zeros(state.shape)
-    wage_mp=np.zeros(state.shape)
+    wage_fp=np.zeros(state_w.shape)
+    wage_mp=np.zeros(state_w.shape)
+    
+    wage_fpc=np.zeros(len(state_w[0,:]))
+    wage_mpc=np.zeros(len(state_w[0,:]))
+    wage_fpm=np.zeros(len(state_w[0,:]))
+    wage_mpm=np.zeros(len(state_w[0,:]))
+    
+    wage_fs=np.zeros(len(state_w[0,:]))
+    wage_ms=np.zeros(len(state_w[0,:]))
+    
+    var_wage_fc=np.zeros(len(state_w[0,:]))
+    var_wage_mc=np.zeros(len(state_w[0,:]))
+    var_wage_fm=np.zeros(len(state_w[0,:]))
+    var_wage_mm=np.zeros(len(state_w[0,:]))
+    
+    var_wage_fpc=np.zeros(len(state_w[0,:]))
+    var_wage_mpc=np.zeros(len(state_w[0,:]))
+    var_wage_fpm=np.zeros(len(state_w[0,:]))
+    var_wage_mpm=np.zeros(len(state_w[0,:]))
+    
+    #For assets
+    assets_fc=np.zeros(len(state_w[0,:]))
+    assets_fm=np.zeros(len(state_w[0,:]))
+    assets_mc=np.zeros(len(state_w[0,:]))
+    assets_mm=np.zeros(len(state_w[0,:]))
+    
+    assets_fpc=np.zeros(len(state_w[0,:]))
+    assets_fpm=np.zeros(len(state_w[0,:]))
+    assets_mpc=np.zeros(len(state_w[0,:]))
+    assets_mpm=np.zeros(len(state_w[0,:]))
+    
+    var_assets_fc=np.zeros(len(state_w[0,:]))
+    var_assets_fm=np.zeros(len(state_w[0,:]))
+    var_assets_mc=np.zeros(len(state_w[0,:]))
+    var_assets_mm=np.zeros(len(state_w[0,:]))
+    
+    var_assets_fpc=np.zeros(len(state_w[0,:]))
+    var_assets_fpm=np.zeros(len(state_w[0,:]))
+    var_assets_mpc=np.zeros(len(state_w[0,:]))
+    var_assets_mpm=np.zeros(len(state_w[0,:]))
+    
     psis=np.zeros(state_w.shape)
-    ifemale=(female[:,0]==1)
-    imale=(female[:,0]==0)
+    ifemale=(female_w[:,0]==1)
+    imale=(female_w[:,0]==0)
     ifemale2=(female_w[:,0]==1)
     imale2=(female_w[:,0]==0)
-    for i in range(len(state[0,:])):
-        #Check if single women
-        singlef=(ifemale) & (state[:,i]==0)
-        singlem=(imale) & (state[:,i]==1)       
-        nsinglef=(ifemale) & (state[:,i]>1)
-        nsinglem=(imale) & (state[:,i]>1)
+    for i in range(len(state_w[0,:])):
+        
+        #For Income
+        singlef=(ifemale) & (state_w[:,i]==0)
+        singlem=(imale) & (state_w[:,i]==1)       
+        nsinglef=(ifemale) & (state_w[:,i]>1)
+        nsinglem=(imale) & (state_w[:,i]>1)
+        nsinglefc=(ifemale) & (state_w[:,i]==3)
+        nsinglemc=(imale) & (state_w[:,i]==3)
+        nsinglefm=(ifemale) & (state_w[:,i]==2)
+        nsinglemm=(imale) & (state_w[:,i]==2)
         
         singlef2=(ifemale2) & (state_w[:,i]==0)
         singlem2=(imale2) & (state_w[:,i]==1)       
         nsinglef2=(ifemale2) & (state_w[:,i]>1)
         nsinglem2=(imale2) & (state_w[:,i]>1)
+        
+        #For assets
+        cohf=(ifemale) & (state_w[:,i]==3) & (state_w[:,max(i-1,0)]<=1)
+        marf=(ifemale) & (state_w[:,i]==2) & (state_w[:,max(i-1,0)]<=1)
+        cohm=(imale) & (state_w[:,i]==3) & (state_w[:,max(i-1,0)]<=1)
+        marm=(imale) & (state_w[:,i]==2) & (state_w[:,max(i-1,0)]<=1)
+        
+
+        #Assets Marriage
+        assets_fm[i]=np.mean(assetss_w[marf,i])
+        assets_mm[i]=np.mean(assetss_w[marm,i])
+        assets_fpm[i]=np.mean(assets_w[marm,i]-assetss_w[marm,i])
+        assets_mpm[i]=np.mean(assets_w[marf,i]-assetss_w[marf,i])
+        
+        var_assets_fm[i]=np.var(assetss_w[marf,i])
+        var_assets_mm[i]=np.var(assetss_w[marm,i])
+        var_assets_fpm[i]=np.var(assets_w[marm,i]-assetss_w[marm,i])
+        var_assets_mpm[i]=np.var(assets_w[marf,i]-assetss_w[marf,i])
+        
+        #Assets Cohabitaiton
+        assets_fc[i]=np.mean(assetss_w[cohf,i])
+        assets_mc[i]=np.mean(assetss_w[cohm,i])
+        assets_fpc[i]=np.mean(assets_w[cohm,i]-assetss_w[cohm,i])
+        assets_mpc[i]=np.mean(assets_w[cohf,i]-assetss_w[cohf,i])
     
-        #For graphs
-        wage_f[nsinglef,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo[:,i]))[1])])[nsinglef]
-        wage_m[nsinglem,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo[:,i]))[2])])[nsinglem]
-        wage_f[singlef,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][iexo[singlef,i]]) 
-        wage_m[singlem,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][iexo[singlem,i]]) 
-        wage_mp[nsinglef,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo[:,i]))[2])])[nsinglef]
-        wage_fp[nsinglem,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo[:,i]))[1])])[nsinglem]
-        psis[:,i]=((setup.exogrid.psi_t[i][(setup.all_indices(i,iexo_w[:,i]))[3]])) 
-     
+        var_assets_fc[i]=np.var(assetss_w[cohf,i])
+        var_assets_mc[i]=np.var(assetss_w[cohm,i])
+        var_assets_fpc[i]=np.var(assets_w[cohm,i]-assetss_w[cohm,i])
+        var_assets_mpc[i]=np.var(assets_w[cohf,i]-assetss_w[cohf,i])
+    
+        #Aggregate Income
+        wage_f[nsinglef,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])])[nsinglef]
+        wage_m[nsinglem,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])])[nsinglem]
+        wage_f[singlef,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][iexo_w[singlef,i]]) 
+        wage_m[singlem,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][iexo_w[singlem,i]]) 
+        wage_mp[nsinglef,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])])[nsinglef]
+        wage_fp[nsinglem,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])])[nsinglem]
+        psis[:,i]=((setup.exogrid.psi_t[i][(setup.all_indices(i,iexo_w[:,i]))[3]]))
+        
+        #Single only Income
+        wage_fs[i]=np.mean(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][iexo_w[singlef,i]] )
+        wage_ms[i]=np.mean(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][iexo_w[singlem,i]] )
+        
+        #Cohabitation Income
+        wage_fc[i]=np.mean(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglefc])
+        wage_mc[i]=np.mean(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglemc])
+        wage_mpc[i]=np.mean(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglefc])
+        wage_fpc[i]=np.mean(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglemc])
+
+
+        var_wage_fc[i]=np.var(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglefc])
+        var_wage_mc[i]=np.var(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglemc])
+        var_wage_mpc[i]=np.var(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglefc])
+        var_wage_fpc[i]=np.var(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglemc])
+
+        #Marriage Income
+        wage_fm[i]=np.mean(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglefm])
+        wage_mm[i]=np.mean(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglemm])
+        wage_mpm[i]=np.mean(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglefm])
+        wage_fpm[i]=np.mean(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglemm])
+
+        var_wage_fm[i]=np.var(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglefm])
+        var_wage_mm[i]=np.var(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglemm])
+        var_wage_mpm[i]=np.var(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglefm])
+        var_wage_fpm[i]=np.var(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglemm])
+                  
+         
         #For income process validation
         wage_f2[nsinglef2,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])])[nsinglef2]
         wage_m2[nsinglem2,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])])[nsinglem2]
@@ -796,14 +908,14 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         wage_m2[singlem2,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][iexo_w[singlem2,i]]) 
        
     #Update N to the new sample size   
-    N=len(state)   
+    N=len(state_w)   
         
     relt=np.zeros((len(state_codes),lenn))   
     relt1=np.zeros((len(state_codes),lenn))   
     ass_rel=np.zeros((len(state_codes),lenn,2))   
     inc_rel=np.zeros((len(state_codes),lenn,2)) 
     log_inc_rel=np.zeros((2,len(state_w))) 
-    
+
         
         
         
@@ -1022,10 +1134,14 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     pevent_psi_coh[9]=0
             
     #Check correlations
-    ifemale1=(female==1)
-    nsinglef1=(ifemale1[:,0:60]) & (state>1)
-    corr=np.corrcoef(np.log(wage_f[nsinglef1]),np.log(wage_mp[nsinglef1]))
-    print('Correlation in potential wages is {}'.format(corr[0,1]) )  
+    ifemale1=(female_w==1)
+    nsinglef1=(ifemale1[:,0:60]) & (state_w[:,0:60]>1) & (labor_w[:,0:60]==1)
+    nsinglefm1=(ifemale1[:,0:60]) & (state_w[:,0:60]==2) & (labor_w[:,0:60]==1)
+    wage_ft=wage_f[:,0:60]
+    wage_mpt=wage_mp[:,0:60]
+    corr=np.corrcoef(np.log(wage_ft[nsinglef1]),np.log(wage_mpt[nsinglef1]))
+    corr1=np.corrcoef(np.log(wage_ft[nsinglefm1]),np.log(wage_mpt[nsinglefm1]))
+    print('Correlation in potential wages is {}, for marriage only is {}'.format(corr[0,1],corr1[0,1]) )  
         
     if draw:   
         #Get useful package for denisty plots
@@ -1187,7 +1303,103 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.xlabel('Age')   
         plt.ylabel('Income') 
                     
+        
+        ##########################################   
+        # More on Income
+        ########################################## 
+        
+
+        
+        fig = plt.figure()   
+        f3=fig.add_subplot(2,1,1)   
+        
+        lend=len(wage_fs)
+        agea=np.array(range(lend))+20
+       
+        plt.plot(agea, wage_fs, marker='o',color='g',markersize=3, label='Women single')
+        plt.plot(agea, wage_ms, marker='o',color='y',markersize=3, label='Men single')
+        plt.plot(agea, wage_fc,color='r',markersize=3, label='Women coh')
+        plt.plot(agea, wage_mc,color='b',markersize=3, label='Men coh')
+        plt.plot(agea, wage_fm,color='m',markersize=3, label='Women mar')
+        plt.plot(agea, wage_mm,color='k',markersize=3, label='Men mar')
+        plt.plot(agea, wage_fpc,linestyle='--',color='r',markersize=3, label='Women coh-o')
+        plt.plot(agea, wage_mpc,linestyle='--',color='b',markersize=3, label='Men coh-o')
+        plt.plot(agea, wage_fpm,linestyle='--',color='m',markersize=3, label='Women mar-o')
+        plt.plot(agea, wage_mpm,linestyle='--',color='k',markersize=3, label='Men mar-o')
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),   
+                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')   
+        plt.xlabel('Age')   
+        plt.ylabel('Log Income') 
+        
+        ##########################################   
+        # Variance Income
+        ##########################################        
+        fig = plt.figure()   
+        f3=fig.add_subplot(2,1,1)   
+        
+        lend=len(wage_fs)
+        agea=np.array(range(lend))+20
+       
+        plt.plot(agea, var_wage_fc,color='r',markersize=3, label='Women coh')
+        plt.plot(agea, var_wage_mc,color='b',markersize=3, label='Men coh')
+        plt.plot(agea, var_wage_fm,color='m',markersize=3, label='Women mar')
+        plt.plot(agea, var_wage_mm,color='k',markersize=3, label='Men mar')
+        plt.plot(agea, var_wage_fpc,linestyle='--',color='r',markersize=3, label='Women coh-o')
+        plt.plot(agea, var_wage_mpc,linestyle='--',color='b',markersize=3, label='Men coh-o')
+        plt.plot(agea, var_wage_fpm,linestyle='--',color='m',markersize=3, label='Women mar-o')
+        plt.plot(agea, var_wage_mpm,linestyle='--',color='k',markersize=3, label='Men mar-o')
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),   
+                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')   
+        plt.xlabel('Age')   
+        plt.ylabel('Log Income Variance') 
+        
+        ##########################################   
+        # Level Assets Assets
+        ##########################################        
+        fig = plt.figure()   
+        f3=fig.add_subplot(2,1,1)   
+        
+        lend=len(wage_fs)
+        agea=np.array(range(lend))+20
+       
+        plt.plot(agea, assets_fc,color='r',markersize=3, label='Women coh')
+        plt.plot(agea, assets_mc,color='b',markersize=3, label='Men coh')
+        plt.plot(agea, assets_fm,color='m',markersize=3, label='Women mar')
+        plt.plot(agea, assets_mm,color='k',markersize=3, label='Men mar')
+        plt.plot(agea, assets_fpc,linestyle='--',color='r',markersize=3, label='Women coh-o')
+        plt.plot(agea, assets_mpc,linestyle='--',color='b',markersize=3, label='Men coh-o')
+        plt.plot(agea, assets_fpm,linestyle='--',color='m',markersize=3, label='Women mar-o')
+        plt.plot(agea, assets_mpm,linestyle='--',color='k',markersize=3, label='Men mar-o')
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),   
+                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')   
+        plt.xlabel('Age')   
+        plt.ylabel('Asset level first meeting') 
+        
+        ##########################################   
+        # Variance Assets first meeting
+        ##########################################        
+        fig = plt.figure()   
+        f3=fig.add_subplot(2,1,1)   
+        
+        lend=len(wage_fs)
+        agea=np.array(range(lend))+20
+       
+        plt.plot(agea, var_assets_fc,color='r',markersize=3, label='Women coh')
+        plt.plot(agea, var_assets_mc,color='b',markersize=3, label='Men coh')
+        plt.plot(agea, var_assets_fm,color='m',markersize=3, label='Women mar')
+        plt.plot(agea, var_assets_mm,color='k',markersize=3, label='Men mar')
+        plt.plot(agea, var_assets_fpc,linestyle='--',color='r',markersize=3, label='Women coh-o')
+        plt.plot(agea, var_assets_mpc,linestyle='--',color='b',markersize=3, label='Men coh-o')
+        plt.plot(agea, var_assets_fpm,linestyle='--',color='m',markersize=3, label='Women mar-o')
+        plt.plot(agea, var_assets_mpm,linestyle='--',color='k',markersize=3, label='Men mar-o')
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),   
+                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')   
+        plt.xlabel('Age')   
+        plt.ylabel('Asset Variance first meeting') 
+        
+        
                     
+        
         ##########################################   
         # Relationship Over the Live Cycle   
         ##########################################         

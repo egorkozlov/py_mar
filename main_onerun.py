@@ -68,12 +68,12 @@ if __name__ == '__main__':
         path = None
     
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','models','agents','scaled residuals'],
-                                      #load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
-                                      solve_transition=True,                                    
-                                      save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
+                                      load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
+                                      #solve_transition=True,                                    
+                                      #save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       store_path=path,
                                       verbose=True,calibration_report=False,draw=graphs,graphs=graphs,
-                                      welf=False) #Switch to true for decomposition of welfare analysis
+                                      welf=True) #Switch to true for decomposition of welfare analysis
                          
     print('Done. Residual in point x0 is {}'.format(out))
      

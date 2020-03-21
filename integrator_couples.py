@@ -9,7 +9,10 @@ import numpy as np
 #from renegotiation import v_last_period_renegotiated, v_renegotiated_loop
 #from ren_mar_pareto import v_ren_new, v_no_ren
 #from ren_mar_alt import v_ren_new, v_no_ren
-from ren_mar_old import v_ren_new, v_no_ren   
+from renegotiation_unilateral import v_no_ren   
+from renegotiation_unilateral import v_ren_new as v_ren_uni
+from renegotiation_bilateral import v_ren_new as v_ren_bil
+
 
 def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True):
     # computes expected value of couple entering the next period with an option
@@ -17,7 +20,11 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True):
     
     can_divorce = setup.pars['can divorce'][t]
     if can_divorce:
-        out = v_ren_new(setup,Vpostren,marriage,t)
+        uni_div = setup.div_costs.unilateral_divorce if marriage else setup.sep_costs.unilateral_divorce
+        if uni_div:
+            out = v_ren_uni(setup,Vpostren,marriage,t)
+        else:
+            out = v_ren_bil(setup,Vpostren,marriage,t)
     else:
         out = v_no_ren(setup,Vpostren,marriage,t)
     _Vren2 = out.pop('Values') 

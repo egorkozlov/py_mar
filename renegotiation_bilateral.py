@@ -100,7 +100,7 @@ def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
         vm_y_mar = expnd(V['Couple, M']['VM'])
         # switching criterion
         #switch = (vf_y_mar>vf_y_coh) & (vm_y_mar>vm_y_coh)
-        switch = (v_y_mar> v_y_coh)
+        switch = (v_y_mar>= v_y_coh)
         
         v_y = switch*v_y_mar + (~switch)*v_y_coh
         vf_y = switch*vf_y_mar + (~switch)*vf_y_coh

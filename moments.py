@@ -10,8 +10,10 @@ plots some graphs
     
 import numpy as np   
 import matplotlib.pyplot as plt   
-#from matplotlib.pyplot import plot, draw, show   
-import matplotlib.backends.backend_pdf   
+import matplotlib.backends.backend_pdf  
+ 
+#Avoid error for having too many figures
+plt.rcParams.update({'figure.max_open_warning': 0})
 from statutils import strata_sample
 from welfare_comp import welf_dec
  
@@ -67,20 +69,22 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     
     
     psi_check[single]=0.0
-    #Import values for female labor supply (simulated men only)
-    state_psid=agents_male.state
-    labor_psid=agents_male.ils_i
-    change_psid=agents_male.policy_ind
-    iexo_w=agents.iexo 
-    labor_w=agents.ils_i
-    female_w=agents.is_female
-    state_w=agents.state 
-    theta_w=mdl.setup.thetagrid_fine[agents.itheta] 
-    assets_w=mdl.setup.agrid_c[agents.iassets]
-    assets_w[agents.state<=1]=mdl.setup.agrid_s[agents.iassets[agents.state<=1]]
-    assetss_w=mdl.setup.agrid_c[agents.iassetss]
-    assetss_w[agents.state<=1]=mdl.setup.agrid_s[agents.iassetss[agents.state<=1]]
-    changep_w=agents.policy_ind 
+    
+    if draw:
+        #Import values for female labor supply (simulated men only)
+        state_psid=agents_male.state
+        labor_psid=agents_male.ils_i
+        change_psid=agents_male.policy_ind
+        iexo_w=agents.iexo 
+        labor_w=agents.ils_i
+        female_w=agents.is_female
+        state_w=agents.state 
+        theta_w=mdl.setup.thetagrid_fine[agents.itheta] 
+        assets_w=mdl.setup.agrid_c[agents.iassets]
+        assets_w[agents.state<=1]=mdl.setup.agrid_s[agents.iassets[agents.state<=1]]
+        assetss_w=mdl.setup.agrid_c[agents.iassetss]
+        assetss_w[agents.state<=1]=mdl.setup.agrid_s[agents.iassetss[agents.state<=1]]
+        changep_w=agents.policy_ind 
 
     moments=dict()
         
@@ -124,16 +128,18 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     theta_t=theta_t[:,0:mdl.setup.pars['T']]   
     female=female[:,0:mdl.setup.pars['T']]   
     labor_psid=labor_psid[:,0:mdl.setup.pars['T']]
-    iexo_w=iexo_w[:,0:mdl.setup.pars['T']]
-    labor_w=labor_w[:,0:mdl.setup.pars['T']]
-    change_psid=change_psid[:,0:mdl.setup.pars['T']]
-    state_psid=state_psid[:,0:mdl.setup.pars['T']]
-    female_w=female_w[:,0:mdl.setup.pars['T']]
-    state_w=state_w[:,0:mdl.setup.pars['T']]
-    assets_w=assets_w[:,0:mdl.setup.pars['T']]
-    assetss_w=assetss_w[:,0:mdl.setup.pars['T']]
-    theta_w=theta_w[:,0:mdl.setup.pars['T']]
-    changep_w=changep_w[:,0:mdl.setup.pars['T']]
+    
+    if draw:
+        iexo_w=iexo_w[:,0:mdl.setup.pars['T']]
+        labor_w=labor_w[:,0:mdl.setup.pars['T']]
+        change_psid=change_psid[:,0:mdl.setup.pars['T']]
+        state_psid=state_psid[:,0:mdl.setup.pars['T']]
+        female_w=female_w[:,0:mdl.setup.pars['T']]
+        state_w=state_w[:,0:mdl.setup.pars['T']]
+        assets_w=assets_w[:,0:mdl.setup.pars['T']]
+        assetss_w=assetss_w[:,0:mdl.setup.pars['T']]
+        theta_w=theta_w[:,0:mdl.setup.pars['T']]
+        changep_w=changep_w[:,0:mdl.setup.pars['T']]
       
        
     ####################################################################   
@@ -337,10 +343,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     for ist,sname in enumerate(state_codes):   
    
         is_state= (spells[:,0]==ist)   
-            
-    
-        all_spells[sname]=spells[is_state,:]   
-   
+        all_spells[sname]=spells[is_state,:]     
         is_state= (all_spells[sname][:,1]!=0)   
         all_spells[sname]=all_spells[sname][is_state,:]   
            
@@ -387,12 +390,16 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
    
        
     #Regression   
-    try:   
-        FE_ols = smf.ols(formula='mar ~ uni+C(rnumber)+C(age)', data = data_rel_panda.dropna()).fit()   
-        beta_unid_s=FE_ols.params['uni']   
-    except:   
-        print('No data for unilateral divorce regression...')   
-        beta_unid_s=0.0   
+    if np.var(data_rel_panda['uni'])>0.0001:
+        try:   
+            FE_ols = smf.ols(formula='mar ~ uni+C(rnumber)+C(age)', data = data_rel_panda.dropna()).fit()   
+            beta_unid_s=FE_ols.params['uni']   
+        except:   
+            print('No data for unilateral divorce regression...')   
+            beta_unid_s=0.0 
+    else:
+        beta_unid_s=0.0 
+        
        
        
     moments['beta unid']=beta_unid_s    
@@ -402,41 +409,47 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     ###################################################  
     data_coh_panda=pd.DataFrame(data=spells_empirical,columns=['age','duration','end','rel','uni'])   
       
-    #Regression   
-    try:   
-    #FE_ols = smf.ols(formula='duration ~ uni+C(age)', data = data_coh_panda.dropna()).fit()   
-    #beta_dur_s=FE_ols.params['uni']   
-      
-        from lifelines import CoxPHFitter  
-        cph = CoxPHFitter()  
-        data_coh_panda['age2']=data_coh_panda['age']**2  
-        data_coh_panda['age3']=data_coh_panda['age']**3  
-        data_coh_panda['rel2']=data_coh_panda['rel']**2  
-        data_coh_panda['rel3']=data_coh_panda['rel']**3  
-        #data_coh_panda=pd.get_dummies(data_coh_panda, columns=['age'])  
+    if np.var(data_rel_panda['uni'])>0.0001:
+        #Regression   
+        try:   
+        #FE_ols = smf.ols(formula='duration ~ uni+C(age)', data = data_coh_panda.dropna()).fit()   
+        #beta_dur_s=FE_ols.params['uni']   
           
-        #Standard Cox  
-        data_coh_panda['endd']=1.0  
-        data_coh_panda.loc[data_coh_panda['end']==3.0,'endd']=0.0  
-        data_coh_panda1=data_coh_panda.drop(['end'], axis=1)  
-        cox_join=cph.fit(data_coh_panda1, duration_col='duration', event_col='endd')  
-        haz_join=cox_join.hazard_ratios_['uni']  
-          
-        #Cox where risk is marriage  
-        data_coh_panda['endd']=0.0  
-        data_coh_panda.loc[data_coh_panda['end']==2.0,'endd']=1.0  
-        data_coh_panda2=data_coh_panda.drop(['end'], axis=1)  
-        cox_mar=cph.fit(data_coh_panda2, duration_col='duration', event_col='endd')  
-        haz_mar=cox_mar.hazard_ratios_['uni']  
-          
-        #Cox where risk is separatio  
-        data_coh_panda['endd']=0.0  
-        data_coh_panda.loc[data_coh_panda['end']==0.0,'endd']=1.0  
-        data_coh_panda3=data_coh_panda.drop(['end'], axis=1)  
-        cox_sep=cph.fit(data_coh_panda3, duration_col='duration', event_col='endd')  
-        haz_sep=cox_sep.hazard_ratios_['uni']  
-          
-    except:   
+            from lifelines import CoxPHFitter  
+            cph = CoxPHFitter()  
+            data_coh_panda['age2']=data_coh_panda['age']**2  
+            data_coh_panda['age3']=data_coh_panda['age']**3  
+            data_coh_panda['rel2']=data_coh_panda['rel']**2  
+            data_coh_panda['rel3']=data_coh_panda['rel']**3  
+            #data_coh_panda=pd.get_dummies(data_coh_panda, columns=['age'])  
+              
+            #Standard Cox  
+            data_coh_panda['endd']=1.0  
+            data_coh_panda.loc[data_coh_panda['end']==3.0,'endd']=0.0  
+            data_coh_panda1=data_coh_panda.drop(['end'], axis=1)  
+            cox_join=cph.fit(data_coh_panda1, duration_col='duration', event_col='endd')  
+            haz_join=cox_join.hazard_ratios_['uni']  
+              
+            #Cox where risk is marriage  
+            data_coh_panda['endd']=0.0  
+            data_coh_panda.loc[data_coh_panda['end']==2.0,'endd']=1.0  
+            data_coh_panda2=data_coh_panda.drop(['end'], axis=1)  
+            cox_mar=cph.fit(data_coh_panda2, duration_col='duration', event_col='endd')  
+            haz_mar=cox_mar.hazard_ratios_['uni']  
+              
+            #Cox where risk is separatio  
+            data_coh_panda['endd']=0.0  
+            data_coh_panda.loc[data_coh_panda['end']==0.0,'endd']=1.0  
+            data_coh_panda3=data_coh_panda.drop(['end'], axis=1)  
+            cox_sep=cph.fit(data_coh_panda3, duration_col='duration', event_col='endd')  
+            haz_sep=cox_sep.hazard_ratios_['uni']  
+              
+        except:   
+            print('No data for unilateral divorce regression...')   
+            haz_sep=1.0 
+            haz_join=1.0 
+            haz_mar=1.0 
+    else:
         print('No data for unilateral divorce regression...')   
         haz_sep=1.0 
         haz_join=1.0 
@@ -530,7 +543,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
             hazm2=hazm[mdl.setup.pars['ty']*i+1]*(pop-hazs1-hazm1)
             hazsp=[(hazs1+hazs2)/pop]+hazsp
             hazmp=[(hazm1+hazm2)/pop]+hazmp
-            pop=pop-(hazs1+hazs2+hazm1+hazm2)
+            pop=max(pop-(hazs1+hazs2+hazm1+hazm2),0.000001)
             
         hazsp.reverse()   
         hazsp=np.array(hazsp).T 
@@ -753,248 +766,39 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
        
        
      
-        
-    ###########################################   
-    #Moments: Variables over Age   
-    ###########################################   
     
-    #Create wages
-    wage_f=np.zeros(state_w.shape)
-    wage_m=np.zeros(state_w.shape)
-    
-    wage_fc=np.zeros(len(state_w[0,:]))
-    wage_mc=np.zeros(len(state_w[0,:]))
-    wage_fm=np.zeros(len(state_w[0,:]))
-    wage_mm=np.zeros(len(state_w[0,:]))
-    
-    wage_f2=np.zeros(state_w.shape)
-    wage_m2=np.zeros(state_w.shape)
-    wage_fp=np.zeros(state_w.shape)
-    wage_mp=np.zeros(state_w.shape)
-    
-    wage_fpc=np.zeros(len(state_w[0,:]))
-    wage_mpc=np.zeros(len(state_w[0,:]))
-    wage_fpm=np.zeros(len(state_w[0,:]))
-    wage_mpm=np.zeros(len(state_w[0,:]))
-    
-    wage_fs=np.zeros(len(state_w[0,:]))
-    wage_ms=np.zeros(len(state_w[0,:]))
-    
-    var_wage_fc=np.zeros(len(state_w[0,:]))
-    var_wage_mc=np.zeros(len(state_w[0,:]))
-    var_wage_fm=np.zeros(len(state_w[0,:]))
-    var_wage_mm=np.zeros(len(state_w[0,:]))
-    
-    var_wage_fpc=np.zeros(len(state_w[0,:]))
-    var_wage_mpc=np.zeros(len(state_w[0,:]))
-    var_wage_fpm=np.zeros(len(state_w[0,:]))
-    var_wage_mpm=np.zeros(len(state_w[0,:]))
-    
-    #For assets
-    assets_fc=np.zeros(len(state_w[0,:]))
-    assets_fm=np.zeros(len(state_w[0,:]))
-    assets_mc=np.zeros(len(state_w[0,:]))
-    assets_mm=np.zeros(len(state_w[0,:]))
-    
-    assets_fpc=np.zeros(len(state_w[0,:]))
-    assets_fpm=np.zeros(len(state_w[0,:]))
-    assets_mpc=np.zeros(len(state_w[0,:]))
-    assets_mpm=np.zeros(len(state_w[0,:]))
-    
-    var_assets_fc=np.zeros(len(state_w[0,:]))
-    var_assets_fm=np.zeros(len(state_w[0,:]))
-    var_assets_mc=np.zeros(len(state_w[0,:]))
-    var_assets_mm=np.zeros(len(state_w[0,:]))
-    
-    var_assets_fpc=np.zeros(len(state_w[0,:]))
-    var_assets_fpm=np.zeros(len(state_w[0,:]))
-    var_assets_mpc=np.zeros(len(state_w[0,:]))
-    var_assets_mpm=np.zeros(len(state_w[0,:]))
-    
-    psis=np.zeros(state_w.shape)
-    ifemale=(female_w[:,0]==1)
-    imale=(female_w[:,0]==0)
-    ifemale2=(female_w[:,0]==1)
-    imale2=(female_w[:,0]==0)
-    for i in range(len(state_w[0,:])):
-        
-        #For Income
-        singlef=(ifemale) & (state_w[:,i]==0)
-        singlem=(imale) & (state_w[:,i]==1)       
-        nsinglef=(ifemale) & (state_w[:,i]>1)
-        nsinglem=(imale) & (state_w[:,i]>1)
-        nsinglefc=(ifemale) & (state_w[:,i]==3)
-        nsinglemc=(imale) & (state_w[:,i]==3)
-        nsinglefm=(ifemale) & (state_w[:,i]==2)
-        nsinglemm=(imale) & (state_w[:,i]==2)
-        
-        singlef2=(ifemale2) & (state_w[:,i]==0)
-        singlem2=(imale2) & (state_w[:,i]==1)       
-        nsinglef2=(ifemale2) & (state_w[:,i]>1)
-        nsinglem2=(imale2) & (state_w[:,i]>1)
-        
-        #For assets
-        cohf=(ifemale) & (state_w[:,i]==3) & (state_w[:,max(i-1,0)]<=1)
-        marf=(ifemale) & (state_w[:,i]==2) & (state_w[:,max(i-1,0)]<=1)
-        cohm=(imale) & (state_w[:,i]==3) & (state_w[:,max(i-1,0)]<=1)
-        marm=(imale) & (state_w[:,i]==2) & (state_w[:,max(i-1,0)]<=1)
-        
-
-        #Assets Marriage
-        assets_fm[i]=np.mean(assetss_w[marf,i])
-        assets_mm[i]=np.mean(assetss_w[marm,i])
-        assets_fpm[i]=np.mean(assets_w[marm,i]-assetss_w[marm,i])
-        assets_mpm[i]=np.mean(assets_w[marf,i]-assetss_w[marf,i])
-        
-        var_assets_fm[i]=np.var(assetss_w[marf,i])
-        var_assets_mm[i]=np.var(assetss_w[marm,i])
-        var_assets_fpm[i]=np.var(assets_w[marm,i]-assetss_w[marm,i])
-        var_assets_mpm[i]=np.var(assets_w[marf,i]-assetss_w[marf,i])
-        
-        #Assets Cohabitaiton
-        assets_fc[i]=np.mean(assetss_w[cohf,i])
-        assets_mc[i]=np.mean(assetss_w[cohm,i])
-        assets_fpc[i]=np.mean(assets_w[cohm,i]-assetss_w[cohm,i])
-        assets_mpc[i]=np.mean(assets_w[cohf,i]-assetss_w[cohf,i])
-    
-        var_assets_fc[i]=np.var(assetss_w[cohf,i])
-        var_assets_mc[i]=np.var(assetss_w[cohm,i])
-        var_assets_fpc[i]=np.var(assets_w[cohm,i]-assetss_w[cohm,i])
-        var_assets_mpc[i]=np.var(assets_w[cohf,i]-assetss_w[cohf,i])
-    
-        #Aggregate Income
-        wage_f[nsinglef,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])])[nsinglef]
-        wage_m[nsinglem,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])])[nsinglem]
-        wage_f[singlef,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][iexo_w[singlef,i]]) 
-        wage_m[singlem,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][iexo_w[singlem,i]]) 
-        wage_mp[nsinglef,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])])[nsinglef]
-        wage_fp[nsinglem,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])])[nsinglem]
-        psis[:,i]=((setup.exogrid.psi_t[i][(setup.all_indices(i,iexo_w[:,i]))[3]]))
-        
-        #Single only Income
-        wage_fs[i]=np.mean(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][iexo_w[singlef,i]] )
-        wage_ms[i]=np.mean(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][iexo_w[singlem,i]] )
-        
-        #Cohabitation Income
-        wage_fc[i]=np.mean(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglefc])
-        wage_mc[i]=np.mean(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglemc])
-        wage_mpc[i]=np.mean(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglefc])
-        wage_fpc[i]=np.mean(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglemc])
-
-
-        var_wage_fc[i]=np.var(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglefc])
-        var_wage_mc[i]=np.var(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglemc])
-        var_wage_mpc[i]=np.var(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglefc])
-        var_wage_fpc[i]=np.var(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglemc])
-
-        #Marriage Income
-        wage_fm[i]=np.mean(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglefm])
-        wage_mm[i]=np.mean(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglemm])
-        wage_mpm[i]=np.mean(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglefm])
-        wage_fpm[i]=np.mean(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglemm])
-
-        var_wage_fm[i]=np.var(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglefm])
-        var_wage_mm[i]=np.var(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglemm])
-        var_wage_mpm[i]=np.var(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglefm])
-        var_wage_fpm[i]=np.var(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglemm])
-                  
-         
-        #For income process validation
-        wage_f2[nsinglef2,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])])[nsinglef2]
-        wage_m2[nsinglem2,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])])[nsinglem2]
-        wage_m2[nsinglef2,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])])[nsinglef2]
-        wage_f2[nsinglem2,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])])[nsinglem2]
-        wage_f2[singlef2,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][iexo_w[singlef2,i]]) 
-        wage_m2[singlem2,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][iexo_w[singlem2,i]]) 
-       
     #Update N to the new sample size   
     N=len(state_w)   
         
     relt=np.zeros((len(state_codes),lenn))   
     relt1=np.zeros((len(state_codes),lenn))   
-    ass_rel=np.zeros((len(state_codes),lenn,2))   
-    inc_rel=np.zeros((len(state_codes),lenn,2)) 
-    log_inc_rel=np.zeros((2,len(state_w))) 
 
-        
-        
-        
-    #Log Income over time
-    for t in range(lenn):
-        ipart=(labor_w[:,t]==1) & (ifemale2) #& (state_w[:,t]>1)
-        ipartm=(state_w[:,t]==1) & (imale2)
-        log_inc_rel[0,t]=np.mean(np.log(wage_f2[ipart,t]))
-        log_inc_rel[1,t]=np.mean(np.log(wage_m2[imale2,t]))
+
+
         
     for ist,sname in enumerate(state_codes): 
-        
-
+    
         for t in range(lenn):   
-                
-            s=t#mdl.setup.pars['Tbef']+t    
-            ftrend = mdl.setup.pars['f_wage_trend'][s]   
-            mtrend = mdl.setup.pars['m_wage_trend'][s]   
+                  
                 
             #Arrays for preparation   
             is_state = (np.any(state[:,0:t]==ist,1))          
             is_state1 = (state[:,t]==ist)   
-            is_state2 = (state_w[:,t]==ist)   
-            if t<1:   
-                is_state=is_state1   
-            ind = np.where(is_state)[0]   
-            ind1 = np.where(is_state1)[0] 
-            ind1f = np.where((is_state1) & (agents.is_female[:,0][keep][keep2]))[0]
-            ind1m = np.where((is_state1) & ~(agents.is_female[:,0][keep][keep2]))[0]
-                
+           
             if not (np.any(is_state) or np.any(is_state1)): continue   
             
-            zf,zm,psi=mdl.setup.all_indices(t,iexo[ind1,t])[1:4]   
-                
+         
             #Relationship over time   
             relt[ist,t]=np.sum(is_state)   
             relt1[ist,t]=np.sum(is_state1)   
                 
-            #Assets over time     
-            if sname=="Female, single" or  sname=="Male, single": 
-                
-                ass_rel[ist,t,0]=np.mean(assets_w[is_state2,t])  
-            
-            else:
-            
-                
-                ass_rel[ist,t,0]=np.mean(assets_w[(is_state2) & (ifemale2),t]) 
-                ass_rel[ist,t,1]=np.mean(assets_w[(is_state2) & (imale2),t]) 
-                
-
-            
-            if sname=="Female, single":  
-                positive=(wage_f[ind1,t]>0)
-                inc_rel[ist,t,0]=np.mean(wage_f[ind1f,t])#max(np.mean(np.log(wage_f[ind1,t])),-0.2)#np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zf]  + ftrend ))  # 
-                
-                positive=False
-            elif sname=="Male, single":  
-                 positive=(wage_m[ind1,t]>0)
-                 inc_rel[ist,t,0]=np.mean(wage_m[ind1m,t])#np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zm] + mtrend))  #np.mean(wage_m[(state[:,t]==ist)])#
-                 
-                 positive=False
-            elif sname=="Couple, C" or sname=="Couple, M": 
-                 positive=(wage_f[ind1f,t]>0) & (wage_mp[ind1f,t]>0)
-                 #inc_rel[ist,t,0]=np.mean(wage_f[ind1f,t][positive])+np.mean(wage_mp[ind1f,t][positive])#np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zf] + ftrend)+np.exp(mdl.setup.exogrid.zm_t[s][zm] + mtrend))  
-                 inc_rel[ist,t,0]=np.mean(wage_f[ind1f,t])+np.mean(wage_mp[ind1f,t])
-                 positive=False 
-                 positive=(wage_m[ind1m,t]>0) & (wage_fp[ind1m,t]>0)
-                 #inc_rel[ist,t,1]=np.mean(wage_m[ind1m,t][positive])+np.mean(wage_fp[ind1m,t][positive])
-                 inc_rel[ist,t,1]=np.mean(wage_m[ind1m,t])+np.mean(wage_fp[ind1m,t])
-                 positive=False
-            else:  
-               
-               print('Error: No relationship chosen')  
+          
                  
     #Now, before saving the moments, take interval of 5 years   
     # if (mdl.setup.pars['Tret']>=mdl.setup.pars['Tret']):           
     reltt=relt[:,0:mdl.setup.pars['Tret']-mdl.setup.pars['Tbef']+1]   
     years=np.linspace(20,50,7)   
-    years_model=np.linspace(20,50,30/mdl.setup.pars['py'])   
+    years_model=np.linspace(20,50,int(30/mdl.setup.pars['py']))   
        
     #Find the right entries for creating moments   
     pos=list()   
@@ -1010,140 +814,363 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
        
        
     reltt=reltt[:,pos]   
-    #else:   
-     #   reltt=relt   
            
     moments['share single'] = reltt[0,:]/N   
     moments['share mar'] = reltt[2,:]/N   
     moments['share coh'] = reltt[3,:]/N   
     
     
-    ###################################
-    #"Event Study" with simulated data
-    #################################
+    ##################################################
+    #EVERYTHING BELOW IS NOT NECESSARY FOR MOMENTS
+    #################################################
     
-    #Build the event matrix
-    age_unid_e=np.argmax(changep_w,axis=1)
-    never_e=(changep_w[:,0]==0) & (age_unid_e[:]==0)
-    age_unid_e[never_e]=1000
-    age_unid_e[changep_w[:,-1]==0]=1000
-    age_unid_e1=np.repeat(np.expand_dims(age_unid_e,axis=1),len(changep_w[0,:]),axis=1)
+    if draw: 
     
-    agetemp_e=np.linspace(1,len(changep_w[0,:]),len(changep_w[0,:]))
-    agegridtemp_e=np.reshape(np.repeat(agetemp_e,len(changep_w[:,0])),(len(changep_w[:,0]),len(agetemp_e)),order='F')
-    age_unid_e1[agegridtemp_e<=2]=1000
-    age_unid_e1[agegridtemp_e>=mdl.setup.pars['Tret']]=1000
-    event=agegridtemp_e-age_unid_e1-1
+        ###########################################   
+        #Moments: Variables over Age   
+        ###########################################   
+        
+        ifemale2=(female_w[:,0]==1)
+        imale2=(female_w[:,0]==0)
+        ass_rel=np.zeros((len(state_codes),lenn,2))   
+        inc_rel=np.zeros((len(state_codes),lenn,2)) 
+        log_inc_rel=np.zeros((2,len(state_w))) 
+        
+        #Create wages
+        wage_f=np.zeros(state_w.shape)
+        wage_m=np.zeros(state_w.shape)
+        
+        wage_fc=np.zeros(len(state_w[0,:]))
+        wage_mc=np.zeros(len(state_w[0,:]))
+        wage_fm=np.zeros(len(state_w[0,:]))
+        wage_mm=np.zeros(len(state_w[0,:]))
+        
+        wage_f2=np.zeros(state_w.shape)
+        wage_m2=np.zeros(state_w.shape)
+        wage_fp=np.zeros(state_w.shape)
+        wage_mp=np.zeros(state_w.shape)
+        
+        wage_fpc=np.zeros(len(state_w[0,:]))
+        wage_mpc=np.zeros(len(state_w[0,:]))
+        wage_fpm=np.zeros(len(state_w[0,:]))
+        wage_mpm=np.zeros(len(state_w[0,:]))
+        
+        wage_fs=np.zeros(len(state_w[0,:]))
+        wage_ms=np.zeros(len(state_w[0,:]))
+        
+        var_wage_fc=np.zeros(len(state_w[0,:]))
+        var_wage_mc=np.zeros(len(state_w[0,:]))
+        var_wage_fm=np.zeros(len(state_w[0,:]))
+        var_wage_mm=np.zeros(len(state_w[0,:]))
+        
+        var_wage_fpc=np.zeros(len(state_w[0,:]))
+        var_wage_mpc=np.zeros(len(state_w[0,:]))
+        var_wage_fpm=np.zeros(len(state_w[0,:]))
+        var_wage_mpm=np.zeros(len(state_w[0,:]))
+        
+        #For assets
+        assets_fc=np.zeros(len(state_w[0,:]))
+        assets_fm=np.zeros(len(state_w[0,:]))
+        assets_mc=np.zeros(len(state_w[0,:]))
+        assets_mm=np.zeros(len(state_w[0,:]))
+        
+        assets_fpc=np.zeros(len(state_w[0,:]))
+        assets_fpm=np.zeros(len(state_w[0,:]))
+        assets_mpc=np.zeros(len(state_w[0,:]))
+        assets_mpm=np.zeros(len(state_w[0,:]))
+        
+        var_assets_fc=np.zeros(len(state_w[0,:]))
+        var_assets_fm=np.zeros(len(state_w[0,:]))
+        var_assets_mc=np.zeros(len(state_w[0,:]))
+        var_assets_mm=np.zeros(len(state_w[0,:]))
+        
+        var_assets_fpc=np.zeros(len(state_w[0,:]))
+        var_assets_fpm=np.zeros(len(state_w[0,:]))
+        var_assets_mpc=np.zeros(len(state_w[0,:]))
+        var_assets_mpm=np.zeros(len(state_w[0,:]))
+        
+        psis=np.zeros(state_w.shape)
+        ifemale=(female_w[:,0]==1)
+        imale=(female_w[:,0]==0)
+
+        for i in range(len(state_w[0,:])):
+            
+            #For Income
+            singlef=(ifemale) & (state_w[:,i]==0)
+            singlem=(imale) & (state_w[:,i]==1)       
+            nsinglef=(ifemale) & (state_w[:,i]>1)
+            nsinglem=(imale) & (state_w[:,i]>1)
+            nsinglefc=(ifemale) & (state_w[:,i]==3)
+            nsinglemc=(imale) & (state_w[:,i]==3)
+            nsinglefm=(ifemale) & (state_w[:,i]==2)
+            nsinglemm=(imale) & (state_w[:,i]==2)
+            
+            singlef2=(ifemale2) & (state_w[:,i]==0)
+            singlem2=(imale2) & (state_w[:,i]==1)       
+            nsinglef2=(ifemale2) & (state_w[:,i]>1)
+            nsinglem2=(imale2) & (state_w[:,i]>1)
+            
+            #For assets
+            cohf=(ifemale) & (state_w[:,i]==3) & (state_w[:,max(i-1,0)]<=1)
+            marf=(ifemale) & (state_w[:,i]==2) & (state_w[:,max(i-1,0)]<=1)
+            cohm=(imale) & (state_w[:,i]==3) & (state_w[:,max(i-1,0)]<=1)
+            marm=(imale) & (state_w[:,i]==2) & (state_w[:,max(i-1,0)]<=1)
+            
     
-    #Get beginning of the spell
-    changem=np.zeros(state_w.shape,dtype=bool)
-    changec=np.zeros(state_w.shape,dtype=bool)
-    change=np.zeros(state_w.shape,dtype=bool)
-    for t in range(1,mdl.setup.pars['Tret']-1):   
+            #Assets Marriage
+            if np.any(marf):assets_fm[i]=np.mean(assetss_w[marf,i])
+            if np.any(marm):assets_mm[i]=np.mean(assetss_w[marm,i])
+            if np.any(marm):assets_fpm[i]=np.mean(assets_w[marm,i]-assetss_w[marm,i])
+            if np.any(marf):assets_mpm[i]=np.mean(assets_w[marf,i]-assetss_w[marf,i])
+            
+            if np.any(marf):var_assets_fm[i]=np.var(assetss_w[marf,i])
+            if np.any(marm):var_assets_mm[i]=np.var(assetss_w[marm,i])
+            if np.any(marm):var_assets_fpm[i]=np.var(assets_w[marm,i]-assetss_w[marm,i])
+            if np.any(marf):var_assets_mpm[i]=np.var(assets_w[marf,i]-assetss_w[marf,i])
+            
+            #Assets Cohabitaiton
+            if np.any(cohf):assets_fc[i]=np.mean(assetss_w[cohf,i])
+            if np.any(cohm):assets_mc[i]=np.mean(assetss_w[cohm,i])
+            if np.any(cohm):assets_fpc[i]=np.mean(assets_w[cohm,i]-assetss_w[cohm,i])
+            if np.any(cohf):assets_mpc[i]=np.mean(assets_w[cohf,i]-assetss_w[cohf,i])
+        
+            if np.any(cohf):var_assets_fc[i]=np.var(assetss_w[cohf,i])
+            if np.any(cohm):var_assets_mc[i]=np.var(assetss_w[cohm,i])
+            if np.any(cohm):var_assets_fpc[i]=np.var(assets_w[cohm,i]-assetss_w[cohm,i])
+            if np.any(cohf):var_assets_mpc[i]=np.var(assets_w[cohf,i]-assetss_w[cohf,i])
+        
+            #Aggregate Income
+            if np.any(nsinglef):wage_f[nsinglef,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])])[nsinglef]
+            if np.any(nsinglem):wage_m[nsinglem,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])])[nsinglem]
+            if np.any(singlef):wage_f[singlef,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][iexo_w[singlef,i]]) 
+            if np.any(singlem):wage_m[singlem,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][iexo_w[singlem,i]]) 
+            if np.any(nsinglef):wage_mp[nsinglef,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])])[nsinglef]
+            if np.any(nsinglem):wage_fp[nsinglem,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])])[nsinglem]
+            if np.any(marf):psis[:,i]=((setup.exogrid.psi_t[i][(setup.all_indices(i,iexo_w[:,i]))[3]]))
+            
+            #Single only Income
+            wage_fs[i]=np.mean(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][iexo_w[singlef,i]] )
+            wage_ms[i]=np.mean(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][iexo_w[singlem,i]] )
+            
+            #Cohabitation Income
+            if np.any(nsinglefc):wage_fc[i]=np.mean(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglefc])
+            if np.any(nsinglemc):wage_mc[i]=np.mean(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglemc])
+            if np.any(nsinglefc):wage_mpc[i]=np.mean(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglefc])
+            if np.any(nsinglemc):wage_fpc[i]=np.mean(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglemc])
+    
+    
+            if np.any(nsinglefc):var_wage_fc[i]=np.var(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglefc])
+            if np.any(nsinglemc):var_wage_mc[i]=np.var(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglemc])
+            if np.any(nsinglefc):var_wage_mpc[i]=np.var(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglefc])
+            if np.any(nsinglemc):var_wage_fpc[i]=np.var(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglemc])
+    
+            #Marriage Income
+            if np.any(nsinglefm):wage_fm[i]=np.mean(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglefm])
+            if np.any(nsinglemm):wage_mm[i]=np.mean(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglemm])
+            if np.any(nsinglefm):wage_mpm[i]=np.mean(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglefm])
+            if np.any(nsinglemm):wage_fpm[i]=np.mean(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglemm])
+    
+            if np.any(nsinglefm):var_wage_fm[i]=np.var(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglefm])
+            if np.any(nsinglemm):var_wage_mm[i]=np.var(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglemm])
+            if np.any(nsinglefm):var_wage_mpm[i]=np.var(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])][nsinglefm])
+            if np.any(nsinglemm):var_wage_fpm[i]=np.var(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])][nsinglemm])
+                      
+             
+            #For income process validation
+            wage_f2[nsinglef2,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])])[nsinglef2]
+            wage_m2[nsinglem2,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])])[nsinglem2]
+            wage_m2[nsinglef2,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])])[nsinglef2]
+            wage_f2[nsinglem2,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])])[nsinglem2]
+            wage_f2[singlef2,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][iexo_w[singlef2,i]]) 
+            wage_m2[singlem2,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][iexo_w[singlem2,i]]) 
            
-        irchangem = ((state_w[:,t]==2) & ((state_w[:,t-1]==0) | (state_w[:,t-1]==1) | (state_w[:,t-1]==3))) 
-        irchangec = ((state_w[:,t]==3) & ((state_w[:,t-1]==0) | (state_w[:,t-1]==1))) 
-        irchange=((state_w[:,t]!=state_w[:,t-1]) & ((state_w[:,t-1]==0) | (state_w[:,t-1]==1))) 
-        changem[:,t]=irchangem
-        changec[:,t]=irchangec
-        change[:,t]=irchange
+            
+        #Log Income over time
+        for t in range(lenn):
+            ipart=(labor_w[:,t]==1) & (ifemale2) #& (state_w[:,t]>1)
+            ipartm=(state_w[:,t]==1) & (imale2)
+            log_inc_rel[0,t]=np.mean(np.log(wage_f2[ipart,t]))
+            log_inc_rel[1,t]=np.mean(np.log(wage_m2[imale2,t]))
+                
+            
+        for ist,sname in enumerate(state_codes): 
+                
         
-    #get variables for ols event study later
-    vage=agegridtemp_e[change]
-    vgender=female_w[change]
-    vtheta=theta_w[change]
-    vpsi=psis[change]
-    vmar=state_w[change]
-    vass=assets_w[change]
-    vwagef=wage_f2[change]
-    vwagem=wage_m2[change]
-        
-    #Grid of event Studies
-    eventgrid=np.array(np.linspace(-10,10,21),dtype=np.int16)
-    event_thetam=np.ones(len(eventgrid))*-1000
-    event_thetac=np.ones(len(eventgrid))*-1000
-    event_psim=np.ones(len(eventgrid))*-1000
-    event_psic=np.ones(len(eventgrid))*-1000
-    event_assets=np.ones(len(eventgrid))*-1000
-    match=np.zeros(state_w.shape,dtype=bool)*-1000
+            for t in range(lenn):   
+           
+                #Arrays for preparation   
+                is_state = (np.any(state[:,0:t]==ist,1))          
+                is_state1 = (state[:,t]==ist)   
+                is_state2 = (state_w[:,t]==ist)   
+                if t<1:   
+                    is_state=is_state1   
+               
+                ind1 = np.where(is_state1)[0] 
+                ind1f = np.where((is_state1) & (agents.is_female[:,0][keep][keep2]))[0]
+                ind1m = np.where((is_state1) & ~(agents.is_female[:,0][keep][keep2]))[0]
+                        
+                if not (np.any(is_state) or np.any(is_state1)): continue   
+                    
+                zf,zm,psi=mdl.setup.all_indices(t,iexo[ind1,t])[1:4]   
+                        
 
-
-    i=0
-    for e in eventgrid:
-        
-        matchm=(event==e) & (changem)
-        matchc=(event==e) & (changec)
-        imatch=(event==e) & (change)
-        match[imatch]=e
-        event_thetam[i]=np.mean(theta_w[matchm])
-        event_thetac[i]=np.mean(theta_w[matchc])
-        event_psim[i]=np.mean(psis[matchm])
-        event_psic[i]=np.mean(psis[matchc])
-        
-        i+=1
-        
-     
-    data_ev=np.array(np.stack((vage,vgender,match[change],vtheta,vpsi,vmar,vass,vwagef,vwagem),axis=0).T,dtype=np.float64)   
-    data_ev_panda=pd.DataFrame(data=data_ev,columns=['age','sex','event','theta','vpsi','vmar','vass','wagef','wagem'])  
-    #Eliminate if missing   
-    data_ev_panda.loc[data_ev_panda['event']>10,'event']=np.nan 
-    data_ev_panda.loc[data_ev_panda['event']<-10,'event']=np.nan 
-    data_ev_panda.loc[data_ev_panda['vmar']==3,'vmar']=0
-    data_ev_panda.loc[data_ev_panda['vmar']==2,'vmar']=1
-    data_ev_panda.dropna(subset=['event']) 
+                    
+                #Assets over time     
+                if sname=="Female, single" or  sname=="Male, single": 
+                    
+                    if np.any(is_state2):ass_rel[ist,t,0]=np.mean(assets_w[is_state2,t])  
+                
+                else:
+                
+                    
+                    if np.any((is_state2) & (ifemale2)):ass_rel[ist,t,0]=np.mean(assets_w[(is_state2) & (ifemale2),t]) 
+                    if np.any((is_state2) & (imale2)):ass_rel[ist,t,1]=np.mean(assets_w[(is_state2) & (imale2),t]) 
+                    
     
-    #Regressions 
-    try:   
-        ols_mar = smf.ols(formula='vmar ~ C(age)+C(sex)+C(event, Treatment(reference=-1))', data = data_ev_panda ).fit()
-        ols_mar_theta = smf.ols(formula='theta ~ C(age)+C(sex)+C(event, Treatment(reference=-1))', data = data_ev_panda[data_ev_panda['vmar']==1] ).fit()
-        ols_coh_theta = smf.ols(formula='theta ~ C(age)+C(sex)+C(event, Treatment(reference=-1))', data = data_ev_panda[data_ev_panda['vmar']==0] ).fit()
-        ols_mar_psi = smf.ols(formula='vpsi ~ C(age)+C(sex)+C(event, Treatment(reference=-1))', data = data_ev_panda[data_ev_panda['vmar']==1] ).fit()
-        ols_coh_psi = smf.ols(formula='vpsi ~ C(age)+C(sex)+C(event, Treatment(reference=-1))', data = data_ev_panda[data_ev_panda['vmar']==0] ).fit()
-      
-    except:   
-        print('No data for unilateral divorce regression...')   
-        beta_unid_s=0.0  
+                
+                if sname=="Female, single":  
+                    
+                    inc_rel[ist,t,0]=np.mean(wage_f[ind1f,t])#max(np.mean(np.log(wage_f[ind1,t])),-0.2)#np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zf]  + ftrend ))  # 
+                    
+                   
+                elif sname=="Male, single":  
+                    
+                     inc_rel[ist,t,0]=np.mean(wage_m[ind1m,t])#np.mean(np.exp(mdl.setup.exogrid.zf_t[s][zm] + mtrend))  #np.mean(wage_m[(state[:,t]==ist)])#
+                     
+                     
+                elif sname=="Couple, C" or sname=="Couple, M": 
+                    
+                     if np.any(ind1f):inc_rel[ist,t,0]=np.mean(wage_f[ind1f,t])+np.mean(wage_mp[ind1f,t])
+                     if np.any(ind1m):inc_rel[ist,t,1]=np.mean(wage_m[ind1m,t])+np.mean(wage_fp[ind1m,t])
+                     
+                else:  
+                   
+                   print('Error: No relationship chosen')  
+        ###################################
+        #"Event Study" with simulated data
+        #################################
+       
+        #Build the event matrix
+        age_unid_e=np.argmax(changep_w,axis=1)
+        never_e=(changep_w[:,0]==0) & (age_unid_e[:]==0)
+        age_unid_e[never_e]=1000
+        age_unid_e[changep_w[:,-1]==0]=1000
+        age_unid_e1=np.repeat(np.expand_dims(age_unid_e,axis=1),len(changep_w[0,:]),axis=1)
         
-    #Create an Array for the results
-    pevent_theta_mar=np.ones(len(eventgrid))*np.nan
-    pevent_theta_coh=np.ones(len(eventgrid))*np.nan
-    pevent_psi_mar=np.ones(len(eventgrid))*np.nan
-    pevent_psi_coh=np.ones(len(eventgrid))*np.nan
-    pevent_mar=np.ones(len(eventgrid))*np.nan
+        agetemp_e=np.linspace(1,len(changep_w[0,:]),len(changep_w[0,:]))
+        agegridtemp_e=np.reshape(np.repeat(agetemp_e,len(changep_w[:,0])),(len(changep_w[:,0]),len(agetemp_e)),order='F')
+        age_unid_e1[agegridtemp_e<=2]=1000
+        age_unid_e1[agegridtemp_e>=mdl.setup.pars['Tret']]=1000
+        event=agegridtemp_e-age_unid_e1-1
+        
+        #Get beginning of the spell
+        changem=np.zeros(state_w.shape,dtype=bool)
+        changec=np.zeros(state_w.shape,dtype=bool)
+        change=np.zeros(state_w.shape,dtype=bool)
+        for t in range(1,mdl.setup.pars['Tret']-1):   
+               
+            irchangem = ((state_w[:,t]==2) & ((state_w[:,t-1]==0) | (state_w[:,t-1]==1) | (state_w[:,t-1]==3))) 
+            irchangec = ((state_w[:,t]==3) & ((state_w[:,t-1]==0) | (state_w[:,t-1]==1))) 
+            irchange=((state_w[:,t]!=state_w[:,t-1]) & ((state_w[:,t-1]==0) | (state_w[:,t-1]==1))) 
+            changem[:,t]=irchangem
+            changec[:,t]=irchangec
+            change[:,t]=irchange
+            
+        #get variables for ols event study later
+        vage=agegridtemp_e[change]
+        vgender=female_w[change]
+        vtheta=theta_w[change]
+        vpsi=psis[change]
+        vmar=state_w[change]
+        vass=assets_w[change]
+        vwagef=wage_f2[change]
+        vwagem=wage_m2[change]
+            
+        #Grid of event Studies
+        eventgrid=np.array(np.linspace(-10,10,21),dtype=np.int16)
+        event_thetam=np.ones(len(eventgrid))*-1000
+        event_thetac=np.ones(len(eventgrid))*-1000
+        event_psim=np.ones(len(eventgrid))*-1000
+        event_psic=np.ones(len(eventgrid))*-1000
+        match=np.zeros(state_w.shape,dtype=bool)*-1000
+       
     
-    i=0
-    for e in eventgrid:
+        i=0
+        for e in eventgrid:
+            
+            matchm=(event==e) & (changem)
+            matchc=(event==e) & (changec)
+            imatch=(event==e) & (change)
+            match[imatch]=e
+            if np.any(matchm):event_thetam[i]=np.mean(theta_w[matchm])
+            if np.any(matchc):event_thetac[i]=np.mean(theta_w[matchc])
+            if np.any(matchm):event_psim[i]=np.mean(psis[matchm])
+            if np.any(matchc):event_psic[i]=np.mean(psis[matchc])
+            
+            i+=1
+            
+         
+        data_ev=np.array(np.stack((vage,vgender,match[change],vtheta,vpsi,vmar,vass,vwagef,vwagem),axis=0).T,dtype=np.float64)   
+        data_ev_panda=pd.DataFrame(data=data_ev,columns=['age','sex','event','theta','vpsi','vmar','vass','wagef','wagem'])  
+        #Eliminate if missing   
+        data_ev_panda.loc[data_ev_panda['event']>10,'event']=np.nan 
+        data_ev_panda.loc[data_ev_panda['event']<-10,'event']=np.nan 
+        data_ev_panda.loc[data_ev_panda['vmar']==3,'vmar']=0
+        data_ev_panda.loc[data_ev_panda['vmar']==2,'vmar']=1
+        data_ev_panda.dropna(subset=['event']) 
         
-        try:
-            pevent_mar[i]=ols_mar.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]']
-            pevent_theta_mar[i]=ols_mar_theta.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]']
-            pevent_theta_coh[i]=ols_coh_theta.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]']
-            pevent_psi_mar[i]=ols_mar_psi.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]']
-            pevent_psi_coh[i]=ols_coh_psi.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]']
-            
-        except:
-            print('Skip event {}'.format(e)) 
-        i+=1  
-            
-            
-    #Adjust for the reference point       
-    pevent_mar[9]=0
-    pevent_theta_mar[9]=0
-    pevent_theta_coh[9]=0
-    pevent_psi_mar[9]=0
-    pevent_psi_coh[9]=0
-            
-    #Check correlations
-    ifemale1=(female_w==1)
-    nsinglef1=(ifemale1[:,0:60]) & (state_w[:,0:60]>1) & (labor_w[:,0:60]==1)
-    nsinglefm1=(ifemale1[:,0:60]) & (state_w[:,0:60]==2) & (labor_w[:,0:60]==1)
-    wage_ft=wage_f[:,0:60]
-    wage_mpt=wage_mp[:,0:60]
-    corr=np.corrcoef(np.log(wage_ft[nsinglef1]),np.log(wage_mpt[nsinglef1]))
-    corr1=np.corrcoef(np.log(wage_ft[nsinglefm1]),np.log(wage_mpt[nsinglefm1]))
-    print('Correlation in potential wages is {}, for marriage only is {}'.format(corr[0,1],corr1[0,1]) )  
+        #Regressions 
+        try:   
+            ols_mar = smf.ols(formula='vmar ~ C(age)+C(sex)+C(event, Treatment(reference=-1))', data = data_ev_panda ).fit()
+            ols_mar_theta = smf.ols(formula='theta ~ C(age)+C(sex)+C(event, Treatment(reference=-1))', data = data_ev_panda[data_ev_panda['vmar']==1] ).fit()
+            ols_coh_theta = smf.ols(formula='theta ~ C(age)+C(sex)+C(event, Treatment(reference=-1))', data = data_ev_panda[data_ev_panda['vmar']==0] ).fit()
+            ols_mar_psi = smf.ols(formula='vpsi ~ C(age)+C(sex)+C(event, Treatment(reference=-1))', data = data_ev_panda[data_ev_panda['vmar']==1] ).fit()
+            ols_coh_psi = smf.ols(formula='vpsi ~ C(age)+C(sex)+C(event, Treatment(reference=-1))', data = data_ev_panda[data_ev_panda['vmar']==0] ).fit()
+          
+        except:   
+            print('No data for unilateral divorce regression...')   
+            beta_unid_s=0.0  
+       
+        #Create an Array for the results
+        pevent_theta_mar=np.ones(len(eventgrid))*np.nan
+        pevent_theta_coh=np.ones(len(eventgrid))*np.nan
+        pevent_psi_mar=np.ones(len(eventgrid))*np.nan
+        pevent_psi_coh=np.ones(len(eventgrid))*np.nan
+        pevent_mar=np.ones(len(eventgrid))*np.nan
         
-    if draw:   
+        i=0
+        for e in eventgrid:
+            
+            try:
+                pevent_mar[i]=ols_mar.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]']
+                pevent_theta_mar[i]=ols_mar_theta.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]']
+                pevent_theta_coh[i]=ols_coh_theta.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]']
+                pevent_psi_mar[i]=ols_mar_psi.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]']
+                pevent_psi_coh[i]=ols_coh_psi.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]']
+                
+            except:
+                print('Skip event {}'.format(e)) 
+            i+=1  
+                
+                
+        #Adjust for the reference point       
+        pevent_mar[9]=0
+        pevent_theta_mar[9]=0
+        pevent_theta_coh[9]=0
+        pevent_psi_mar[9]=0
+        pevent_psi_coh[9]=0
+                
+        #Check correlations
+        ifemale1=(female_w==1)
+        nsinglef1=(ifemale1[:,0:60]) & (state_w[:,0:60]>1) & (labor_w[:,0:60]==1)
+        nsinglefm1=(ifemale1[:,0:60]) & (state_w[:,0:60]==2) & (labor_w[:,0:60]==1)
+        wage_ft=wage_f[:,0:60]
+        wage_mpt=wage_mp[:,0:60]
+        corr=np.corrcoef(np.log(wage_ft[nsinglef1]),np.log(wage_mpt[nsinglef1]))
+        corr1=np.corrcoef(np.log(wage_ft[nsinglefm1]),np.log(wage_mpt[nsinglefm1]))
+        print('Correlation in potential wages is {}, for marriage only is {}'.format(corr[0,1],corr1[0,1]) )  
+            
+       
         #Get useful package for denisty plots
         import seaborn as sns
         

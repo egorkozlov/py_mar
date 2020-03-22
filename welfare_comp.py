@@ -76,8 +76,8 @@ def welf_dec(mdl,agents):
      '''+str(round(np.mean(Vf_bil),2))+''' &'''+str(round(np.mean(Vf_uni),2))+''' &'''+str(round(np.mean(Vm_bil),2))+''' &'''+str(round(np.mean(Vm_uni),2))+''' \\\\
     \cmidrule(l){1-4}
     \multicolumn{4}{c}{\\textit{Welfare Losses with Unilateral Divorce}}\\\\[3ex]
-     \multicolumn{2}{c}{\Chartgirls{'''+str(acomfa)+'''}}& \multicolumn{2}{c}{\Chartguys{'''+str(acomma)+'''}}\\\\[-0.15ex]
-     \multicolumn{2}{c}{'''+str(round(acomf,2))+''' \$}& \multicolumn{2}{c}{'''+str(round(acomm,2))+''' \$}\\\\
+    \multicolumn{2}{c}{\Chartgirls{'''+str(acomfa)+'''}}& \multicolumn{2}{c}{\Chartguys{'''+str(acomma)+'''}}\\\\[-0.15ex]
+    \multicolumn{2}{c}{'''+str(round(acomf,2))+''' \$}& \multicolumn{2}{c}{'''+str(round(acomm,2))+''' \$}\\\\
     \hline\hline
     \end{tabular}
     '''
@@ -150,7 +150,8 @@ def welf_dec(mdl,agents):
     Vmcu=Vmc_uni[wh[0],wh[1]]
     unipm=(Vmcu>=Vmcb)
     
-    print("The % of men voting for unilateral is {:0.2f}, the % of women if {:0.2f}".format(np.mean(unipm*100),np.mean(unipf)*100))
+    if len(unipm)>0:
+        print("The % of men voting for unilateral is {:0.2f}, the % of women if {:0.2f}".format(np.mean(unipm*100),np.mean(unipf)*100))
     ###############################################
     #WELFARE DECOMPOSITION HERE
     ##############################################

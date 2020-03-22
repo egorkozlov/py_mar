@@ -11,9 +11,9 @@ Created on Sat Dec 14 10:58:43 2019
 import numpy as np
 import pickle, dill
 import os
-import cProfile
-#from line_profiler import LineProfiler
-from welfarer import welfare
+#import cProfile
+
+
 
 
 
@@ -61,7 +61,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
         alost = 0.0
     
     # this is for the default model
-    dc = DivorceCosts(unilateral_divorce=False,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)
+    dc = DivorceCosts(unilateral_divorce=False,assets_kept = 0.8,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)
     sc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.00,u_lost_f=0.00)
     
     
@@ -105,8 +105,8 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
             
         else:
             # specify the changes here manually
-            dc_before = DivorceCosts(unilateral_divorce=False,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)
-            dc_after  = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)
+            dc_before = DivorceCosts(unilateral_divorce=False,assets_kept = 0.8,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)
+            dc_after  = DivorceCosts(unilateral_divorce=True,assets_kept = 0.8,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)
             
             
             

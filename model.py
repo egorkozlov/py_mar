@@ -16,7 +16,7 @@ from timeit import default_timer
 #from numba import njit, vectorize
 #from memory_profiler import profile
 #from IPython import get_ipython
-from asizeof import asizeof
+#from asizeof import asizeof
 import os
 import psutil
 
@@ -24,8 +24,6 @@ import psutil
 #if system() != 'Darwin':
 from setup import ModelSetup
 from graph import graphs
-from moments import moment
-from simulations import Agents
 from solver_couples import v_iter_couple
 from solver_singles import v_iter_single
 from integrator_singles import ev_single
@@ -225,9 +223,9 @@ class Model(object):
             self.decisions = [decnow] + self.decisions
             
             
-            if show_mem:
-                print('The size of V is {} giga'.format(asizeof(self.V)/1000000000))
-                print('The size of decisions is {} giga'.format(asizeof(self.decisions)/1000000000))
+            #if show_mem:
+             #   print('The size of V is {} giga'.format(asizeof(self.V)/1000000000))
+              #  print('The size of decisions is {} giga'.format(asizeof(self.decisions)/1000000000))
                 
             if t == till: break
             

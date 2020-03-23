@@ -339,7 +339,7 @@ def v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral,show_sc=False,rescal
     i_theta_out[no,:] = -1
     
     # agreement values
-    for yes_i, solver_i in zip([yes_sc,yes_nsc],[ind_sc,ind_no_sc]):
+    for yes_i, solver_i in zip([yes_sc,yes_nsc],[ind_sc,ind_no_sc_efficient]):
         if not np.any(yes_i): continue
             
         agree_this = agree[yes_i,:] # this is large matrix (??? x ntheta)
@@ -350,6 +350,8 @@ def v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral,show_sc=False,rescal
         inds = solver_i(agree_this)  # finds indices of nearest positive element
                                     # on a fine grid for theta
                                     # this is the most substantial part
+        
+       
         
         i_theta_out[yes_i,:] = inds # indexing is a bit mad :(
         
@@ -505,68 +507,64 @@ def ind_sc(i_pos):
         
         return inds
     
-    
 @njit
-def ind_no_sc(i_pos):
-    # this uses pretty obscure loop
+def ind_no_sc_efficient(i_pos):
     nrows, ncol = i_pos.shape
-    aran = np.arange(ncol)
-    inds = np.empty((nrows,ncol),dtype=np.int32)
     
-    for i in range(nrows):
-        inds[i,:] = aran
+    inds = np.empty((nrows,ncol),dtype=np.int16)
+    
+    for ir in range(nrows):
         
-        i_agree = i_pos[i,:]
+        # from the right
+        inds_right = -1*np.ones((ncol,),dtype=np.int16)
+        if i_pos[ir,-1]: inds_right[-1] = ncol-1
+        for ic in range(ncol-2,-1,-1):
+            inds_right[ic] = ic if i_pos[ir,ic] else inds_right[ic+1]
+            #assert inds_right[ic] >= ic
+            
         
-        where_inds = np.nonzero(i_agree)[0]
+        # from the left & fill
         
-        i_first_true = where_inds.min()
-        i_last_true = where_inds.max()
-        
-        i_right = i_last_true
-        
-        j = 0
-        while j < ncol:
-            if i_agree[j]: 
-                i_right = i_last_true
-                j += 1
+        inds_left = -1*np.ones((ncol,),dtype=np.int16)
+        inds_best = -1*np.ones((ncol,),dtype=np.int16)
+        if i_pos[ir,0]:
+            inds_left[0] = 0
+            inds_best[0] = 0
+        else:
+            assert inds_right[0] >= 0
+            inds_best[0] = inds_right[0]
+    
+            
+        for ic in range(1,ncol):
+            ispos = i_pos[ir,ic]
+            
+            inds_left[ic] = ic if ispos else inds_left[ic-1]
+            
+            if i_pos[ir,ic]:
+                inds_best[ic] = ic
                 continue
-            if j < i_first_true:
-                inds[i,j] = i_first_true
-                j += 1
-                continue
-            if j > i_last_true:
-                inds[i,j] = i_last_true
-                j += 1
-                continue
             
-            # we are past region with positive values
-            # and there is some region to the right with positive values
+            assert inds_left[ic] <= ic
             
-            
-            # go right
-            for jp in range(j+1,i_right+1,1):
-                if i_agree[jp]:
-                    i_right = jp
-                    break
-            
-            # we found index of right
-            
-            i_left = j-1
-            
-            assert i_right > i_left
-            
-            for j in range(j,i_right):
-                if j - i_left <= i_right - j:
-                    inds[i,j] = i_left
+            if inds_left[ic] >= 0 and inds_right[ic] >= 0:
+                if ic - inds_left[ic] <= inds_right[ic] - ic:
+                    inds_best[ic] = inds_left[ic]
                 else:
-                    inds[i,j] = i_right
-            
-            j+=1
-            
-            # we are here if above i_first_true and below i_last_true and 
-            # i_agree[j] is false
-                
-            
-            
-    return inds
+                    inds_best[ic] = inds_right[ic]
+            elif inds_left[ic] < 0 and inds_right[ic] >= 0:
+                inds_best[ic] = inds_right[ic]
+            elif inds_left[ic] >= 0 and inds_right[ic] < 0:
+                inds_best[ic] = inds_left[ic]
+            else:
+                assert False, 'this should not happen'
+        
+        inds[ir,:] = inds_best
+          
+        
+        
+    return inds    
+    
+    
+
+def ind_no_sc(i_pos):
+   raise Exception('this is no longer used')

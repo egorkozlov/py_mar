@@ -56,7 +56,8 @@ class Model(object):
         return psutil.Process(os.getpid()).memory_info().rss/1e6
         
         
-    def time(self,whatisdone,verbose=True):
+    def time(self,whatisdone,verbose=True,mintime=0.5):
+        # mintime removes actions that take too little
         
         total_time = default_timer() - self.start
         last_time = default_timer() - self.last
@@ -66,7 +67,8 @@ class Model(object):
         
         def r(x): return round(x,2)
         
-        if verbose: print('{} is done in {} sec, total {} sec, memory used is {} Mb'.format(whatisdone,r(last_time),r(total_time),r(total_mem)))
+        if verbose and last_time>mintime:
+            print('{} is done in {} sec, total {} sec, memory used is {} Mb'.format(whatisdone,r(last_time),r(total_time),r(total_mem)))
         self.last = default_timer()
         self.mlast = self.get_mem()
         

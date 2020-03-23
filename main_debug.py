@@ -19,7 +19,7 @@ print(pars)
 
 pars.pop('alost')
 
-mdl = Model(**pars,verbose=True,solve_till=-15)
+mdl = Model(**pars,verbose=True,solve_till=0)
 
 mdl.time_statistics()
 

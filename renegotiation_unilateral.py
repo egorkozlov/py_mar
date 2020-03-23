@@ -547,10 +547,23 @@ def ind_no_sc_efficient(i_pos):
             assert inds_left[ic] <= ic
             
             if inds_left[ic] >= 0 and inds_right[ic] >= 0:
-                if ic - inds_left[ic] <= inds_right[ic] - ic:
+                if ic - inds_left[ic] < inds_right[ic] - ic:
                     inds_best[ic] = inds_left[ic]
-                else:
+                elif ic - inds_left[ic] > inds_right[ic] - ic:
                     inds_best[ic] = inds_right[ic]
+                else:
+                    # tie breaker rule
+                    # if there is tie, pick whatever is closer to the middle
+                    # if equally close, pick the higher (female-preferred) one
+                    
+                    imid = (ncol-1)/2
+                    
+                    if np.abs(inds_left[ic] - imid) < np.abs(inds_right[ic] - imid):
+                        inds_best[ic] = inds_left[ic]
+                    else:
+                        # including equal dist
+                        inds_best[ic] = inds_right[ic]
+                    
             elif inds_left[ic] < 0 and inds_right[ic] >= 0:
                 inds_best[ic] = inds_right[ic]
             elif inds_left[ic] >= 0 and inds_right[ic] < 0:

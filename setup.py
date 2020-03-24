@@ -24,7 +24,7 @@ class ModelSetup(object):
         T = int(62/period_year)
         Tret = int(47/period_year) # first period when the agent is retired
         Tbef=int(2/period_year)
-        Tren  = int(47/period_year)#int(42/period_year) # period starting which people do not renegotiate/divroce
+        Tren  = int(62/period_year)#int(42/period_year) # period starting which people do not renegotiate/divroce
         Tmeet = int(47/period_year)#int(42/period_year) # period starting which you do not meet anyone
         p['py']=period_year
         p['ty']=transform

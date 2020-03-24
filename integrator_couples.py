@@ -12,6 +12,7 @@ import numpy as np
 from renegotiation_unilateral import v_no_ren   
 from renegotiation_unilateral import v_ren_new as v_ren_uni
 from renegotiation_bilateral import v_ren_new as v_ren_bil
+from renegotiation_vartheta import v_ren_vt
 
 
 def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True):
@@ -22,7 +23,9 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True):
     if can_divorce:
         uni_div = setup.div_costs.unilateral_divorce if marriage else setup.sep_costs.unilateral_divorce
         if uni_div:
-            out = v_ren_uni(setup,Vpostren,marriage,t)
+            # choose your fighter
+            #out = v_ren_uni(setup,Vpostren,marriage,t)
+            out = v_ren_vt(setup,Vpostren,marriage,t)
         else:
             out = v_ren_bil(setup,Vpostren,marriage,t)
     else:

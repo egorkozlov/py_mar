@@ -89,10 +89,16 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
                    rescale=rescale)
         
         
-    v_out, vf_out, vm_out, itheta_out = \
-        v_ren_gpu(v_y, vf_y, vm_y, vf_n, vm_n, setup.thetagrid_fine, 
-                   rescale=rescale)
-        
+    #v_out, vf_out, vm_out, itheta_out = \
+    #    v_ren_gpu(v_y, vf_y, vm_y, vf_n, vm_n, setup.thetagrid_fine, 
+    #               rescale=rescale)
+    
+    #assert np.allclose(itheta_out2,itheta_out)
+    #assert np.allclose(v_out,v_out2)
+    #assert np.allclose(vf_out,vf_out2)
+    #assert np.allclose(vm_out,vm_out2)
+    
+
     def r(x): return x.astype(np.float32)
         
     result =  {'Decision': (itheta_out>=0), 'thetas': itheta_out,
@@ -313,7 +319,7 @@ def v_ren_gpu(v_y, vf_y, vm_y, vf_n, vm_n, thtgrid, rescale = True):
         
         v_outi, vf_outi, vm_outi, itheta_outi = [cuda.to_device(
                                  np.ascontiguousarray(x[ia,:,:].copy())
-                                ) for x in (v_out, vm_out, vf_out, itheta_out)]
+                                ) for x in (v_out, vf_out, vm_out, itheta_out)]
                          
         
         cuda_ker[blockspergrid, threadsperblock](v_yi, vf_yi, vm_yi, vf_ni, vm_ni, 
@@ -370,66 +376,66 @@ def cuda_ker(v_y, vf_y, vm_y, vf_n, vm_n, thtgrid, v_out, vm_out, vf_out, itheta
             return
         
         
-#        
-#        it_ren = -1
-#        
-#        found_increase = False
-#        found_decrease = False
-#        
-#        
-#        for it_inc in range(it+1,nt):
-#            if (vf_in_store[it_inc] >= vf_no and vm_in_store[it_inc] >= vm_no):
-#                found_increase = True
-#                break
-#        
-#        for it_dec in range(it-1,-1,-1):
-#            if (vf_in_store[it_dec] >= vf_no and vm_in_store[it_dec] >= vm_no):
-#                found_decrease = True
-#                break
-#            
-#        
-#        if found_increase and found_decrease:
-#            dist_increase = it_inc - it
-#            dist_decrease = it - it_dec
-#            
-#            if dist_increase != dist_decrease:
-#                it_ren = it_inc if dist_increase < dist_decrease else it_dec
-#            else:
-#                # tie breaker
-#                # numba-cuda does not do abs so we do these dumb things
-#                dist_mid_inc = it_inc - (nt/2)                
-#                if dist_mid_inc < 0: dist_mid_inc = -dist_mid_inc
-#                dist_mid_dec = it_dec - (nt/2)
-#                if dist_mid_dec < 0: dist_mid_dec = -dist_mid_dec
-#            
-#        elif found_increase and not found_decrease:
-#            it_ren = it_inc
-#        elif found_decrease and not found_increase:
-#            it_ren = it_dec
-#        else:
-#            it_ren = -1 # check this!
-#            
-#        # finally fill the values    
-#            
-#        if it_ren == -1:
-#            tht = thtgrid[it]
-#            v_out[ia,ie,it] = tht*vf_no + (1-tht)*vm_no
-#            vf_out[ia,ie,it] = vf_no
-#            vm_out[ia,ie,it] = vm_no
-#            itheta_out[ia,ie,it] = -1
-#        else:
-#            
-#            # rescaling
-#            tht_old = thtgrid[it]
-#            tht_new = thtgrid[it_ren]
-#            factor = (1-tht_old)/(1-tht_new) if tht_old < tht_new else tht_old/tht_new
-#            
-#            v_out[ia,ie,it] = factor*v_in_store[it_ren]
-#            vf_out[ia,ie,it] = vf_in_store[it_ren]
-#            vm_out[ia,ie,it] = vm_in_store[it_ren]
-#            itheta_out[ia,ie,it] = it_ren
-            
+       
+        it_ren = -1
         
+        found_increase = False
+        found_decrease = False
+         
+         
+        for it_inc in range(it+1,nt):
+            if (vf_in_store[it_inc] >= vf_no and vm_in_store[it_inc] >= vm_no):
+                found_increase = True
+                break
+         
+        for it_dec in range(it-1,-1,-1):
+            if (vf_in_store[it_dec] >= vf_no and vm_in_store[it_dec] >= vm_no):
+                found_decrease = True
+                break
+#            
+#        
+        if found_increase and found_decrease:
+            dist_increase = it_inc - it
+            dist_decrease = it - it_dec
+#            
+            if dist_increase != dist_decrease:
+                it_ren = it_inc if dist_increase < dist_decrease else it_dec
+            else:
+                # tie breaker
+                # numba-cuda does not do abs so we do these dumb things
+                dist_mid_inc = it_inc - (nt/2)                
+                if dist_mid_inc < 0: dist_mid_inc = -dist_mid_inc
+                dist_mid_dec = it_dec - (nt/2)
+                if dist_mid_dec < 0: dist_mid_dec = -dist_mid_dec
+                it_ren = it_inc if dist_mid_inc < dist_mid_dec else it_dec
+            
+        elif found_increase and not found_decrease:
+            it_ren = it_inc
+        elif found_decrease and not found_increase:
+            it_ren = it_dec
+        else:
+            it_ren = -1 # check this!
+             
+         # finally fill the values    
+             
+        if it_ren == -1:
+            tht = thtgrid[it]
+            v_out[ie,it] = tht*vf_no + (1-tht)*vm_no
+            vf_out[ie,it] = vf_no
+            vm_out[ie,it] = vm_no
+            itheta_out[ie,it] = -1
+        else:
+             
+            # rescaling
+            tht_old = thtgrid[it]
+            tht_new = thtgrid[it_ren]
+            factor = (1-tht_old)/(1-tht_new) if tht_old < tht_new else tht_old/tht_new
+             
+            v_out[ie,it] = factor*v_in_store[it_ren]
+            vf_out[ie,it] = vf_in_store[it_ren]
+            vm_out[ie,it] = vm_in_store[it_ren]
+            itheta_out[ie,it] = it_ren
+                    
         
         
         

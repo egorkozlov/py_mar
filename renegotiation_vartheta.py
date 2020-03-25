@@ -290,39 +290,40 @@ def v_ren_gpu(v_y, vf_y, vm_y, vf_n, vm_n, thtgrid, rescale = True):
     vf_out = vf_y.copy()    
     itheta_out = np.full(v_y.shape,-1,dtype=np.int16)
     
+                   
+    thtgrid = cuda.to_device(thtgrid)
+    
     for ia in range(na):
-        for ie in range(ne):
-            threadsperblock = (1, 1, nt)
-                
-            b_a = 1
-            b_exo = 1
-            b_theta = 1
+    
+        threadsperblock = (1, nt)
             
-            blockspergrid = (b_a, b_exo, b_theta)
-            
-            v_yi, vf_yi, vm_yi = [cuda.to_device(
-                                    np.ascontiguousarray(x[ia:(ia+1),ie:(ie+1),:].copy())
-                                                ) for x in (v_y, vf_y, vm_y)]
-            
-            vf_ni, vm_ni = [cuda.to_device(
-                                            np.ascontiguousarray(x[ia:(ia+1),ie:(ie+1),:].copy())
-                                          ) for x in (vf_n,vm_n)]
-            
-            
-            v_outi, vf_outi, vm_outi, itheta_outi = [cuda.to_device(
-                                     np.ascontiguousarray(x[ia:(ia+1),ie:(ie+1),:].copy())
-                                    ) for x in (v_out, vm_out, vf_out, itheta_out)]
-                                            
-            thtgrid = cuda.to_device(thtgrid)
-            
-            cuda_ker[blockspergrid, threadsperblock](v_yi, vf_yi, vm_yi, vf_ni, vm_ni, 
-                                            thtgrid, v_outi, vm_outi, vf_outi, itheta_outi)
+        b_exo = ne
+        b_theta = 1
+        
+        blockspergrid = (b_exo, b_theta)
+        
+        v_yi, vf_yi, vm_yi = [cuda.to_device(
+                                np.ascontiguousarray(x[ia,:,:].copy())
+                                            ) for x in (v_y, vf_y, vm_y)]
+        
+        vf_ni, vm_ni = [cuda.to_device(
+                                        np.ascontiguousarray(x[ia,:,:].copy())
+                                      ) for x in (vf_n,vm_n)]
         
         
-            v_out[ia:(ia+1),ie:(ie+1),:] = v_outi
-            vm_out[ia:(ia+1),ie:(ie+1),:] = vm_outi
-            vf_out[ia:(ia+1),ie:(ie+1),:] = vf_outi
-            itheta_out[ia:(ia+1),ie:(ie+1),:] = itheta_outi
+        v_outi, vf_outi, vm_outi, itheta_outi = [cuda.to_device(
+                                 np.ascontiguousarray(x[ia,:,:].copy())
+                                ) for x in (v_out, vm_out, vf_out, itheta_out)]
+                         
+        
+        cuda_ker[blockspergrid, threadsperblock](v_yi, vf_yi, vm_yi, vf_ni, vm_ni, 
+                                        thtgrid, v_outi, vm_outi, vf_outi, itheta_outi)
+    
+    
+        v_out[ia,:,:] = v_outi
+        vm_out[ia,:,:] = vm_outi
+        vf_out[ia,:,:] = vf_outi
+        itheta_out[ia,:,:] = itheta_outi
             
     
     return v_out, vf_out, vm_out, itheta_out
@@ -331,42 +332,41 @@ def v_ren_gpu(v_y, vf_y, vm_y, vf_n, vm_n, thtgrid, rescale = True):
 @cuda.jit   
 def cuda_ker(v_y, vf_y, vm_y, vf_n, vm_n, thtgrid, v_out, vm_out, vf_out, itheta_out):
     # this assumes block is for the same a and theta
-    ia, ie, it = cuda.grid(3)
+    ie, it = cuda.grid(2)
     
     #v_in_store  = cuda.shared.array((500,),f4)
     #vf_in_store = cuda.shared.array((500,),f4)
     #vm_in_store = cuda.shared.array((500,),f4)
     
     
-    na = v_y.shape[0]
-    ne = v_y.shape[1]
-    nt = v_y.shape[2]
+    ne = v_y.shape[0]
+    nt = v_y.shape[1]
     
     
-    if ia < na and ie < ne and it < nt:
-        #v_in_store[it] = v_y[ia,ie,it]
-        #vf_in_store[it] = vf_y[ia,ie,it]
-        #vm_in_store[it] = vm_y[ia,ie,it]
+    if ie < ne and it < nt:
+        #v_in_store[it] = v_y[ie,it]
+        #vf_in_store[it] = vf_y[ie,it]
+        #vm_in_store[it] = vm_y[ie,it]
         
         #cuda.syncthreads()
         
-        vf_no = vf_n[ia,ie,it]
-        vm_no = vm_n[ia,ie,it]
+        vf_no = vf_n[ie,it]
+        vm_no = vm_n[ie,it]
         
         
         
         #if vf_in_store[it] >= vf_no and vm_in_store[it] >= vm_no:
-        if vf_y[ia,ie,it] >= vf_no and vm_y[ia,ie,it] >= vm_no:
-            itheta_out[ia,ie,it] = it
+        if vf_y[ie,it] >= vf_no and vm_y[ie,it] >= vm_no:
+            itheta_out[ie,it] = it
             return
         
         #if vf_in_store[it] < vf_no and vm_in_store[it] < vm_no:
-        if vf_y[ia,ie,it] < vf_no and vm_y[ia,ie,it] < vm_no:
-            itheta_out[ia,ie,it] = -1
+        if vf_y[ie,it] < vf_no and vm_y[ie,it] < vm_no:
+            itheta_out[ie,it] = -1
             tht = thtgrid[it]
-            v_out[ia,ie,it] = tht*vf_no + (1-tht)*vm_no
-            vf_out[ia,ie,it] = vf_no
-            vm_out[ia,ie,it] = vm_no
+            v_out[ie,it] = tht*vf_no + (1-tht)*vm_no
+            vf_out[ie,it] = vf_no
+            vm_out[ie,it] = vm_no
             return
         
         

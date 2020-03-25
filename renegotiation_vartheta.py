@@ -334,9 +334,9 @@ def cuda_ker(v_y, vf_y, vm_y, vf_n, vm_n, thtgrid, v_out, vm_out, vf_out, itheta
     # this assumes block is for the same a and theta
     ie, it = cuda.grid(2)
     
-    #v_in_store  = cuda.shared.array((500,),f4)
-    #vf_in_store = cuda.shared.array((500,),f4)
-    #vm_in_store = cuda.shared.array((500,),f4)
+    v_in_store  = cuda.shared.array((500,),f4)
+    vf_in_store = cuda.shared.array((500,),f4)
+    vm_in_store = cuda.shared.array((500,),f4)
     
     
     ne = v_y.shape[0]
@@ -344,24 +344,24 @@ def cuda_ker(v_y, vf_y, vm_y, vf_n, vm_n, thtgrid, v_out, vm_out, vf_out, itheta
     
     
     if ie < ne and it < nt:
-        #v_in_store[it] = v_y[ie,it]
-        #vf_in_store[it] = vf_y[ie,it]
-        #vm_in_store[it] = vm_y[ie,it]
+        v_in_store[it] = v_y[ie,it]
+        vf_in_store[it] = vf_y[ie,it]
+        vm_in_store[it] = vm_y[ie,it]
         
-        #cuda.syncthreads()
+        cuda.syncthreads()
         
         vf_no = vf_n[ie,it]
         vm_no = vm_n[ie,it]
         
         
         
-        #if vf_in_store[it] >= vf_no and vm_in_store[it] >= vm_no:
-        if vf_y[ie,it] >= vf_no and vm_y[ie,it] >= vm_no:
+        if vf_in_store[it] >= vf_no and vm_in_store[it] >= vm_no:
+        #if vf_y[ie,it] >= vf_no and vm_y[ie,it] >= vm_no:
             itheta_out[ie,it] = it
             return
         
-        #if vf_in_store[it] < vf_no and vm_in_store[it] < vm_no:
-        if vf_y[ie,it] < vf_no and vm_y[ie,it] < vm_no:
+        if vf_in_store[it] < vf_no and vm_in_store[it] < vm_no:
+        #if vf_y[ie,it] < vf_no and vm_y[ie,it] < vm_no:
             itheta_out[ie,it] = -1
             tht = thtgrid[it]
             v_out[ie,it] = tht*vf_no + (1-tht)*vm_no

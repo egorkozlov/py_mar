@@ -50,52 +50,21 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
         izf, izm, cost_fem=dc.money_lost_f, cost_mal=dc.money_lost_m, fun=thetafun)
     
     
-    
-    
     if return_vdiv_only:
         return {'Value of Divorce, male': vm_n,
                 'Value of Divorce, female': vf_n}
     
     
-    
-    expnd = lambda x : setup.v_thetagrid_fine.apply(x,axis=2)
-    
-    if marriage:
-        # if couple is married already
-        v_y  = expnd(V['Couple, M']['V'])
-        vf_y = expnd(V['Couple, M']['VF'])
-        vm_y = expnd(V['Couple, M']['VM'])
-    else:
-        # stay in cohabitation
-        v_y_coh  = expnd(V['Couple, C']['V'])
-        vf_y_coh = expnd(V['Couple, C']['VF'])
-        vm_y_coh = expnd(V['Couple, C']['VM'])
-        # switch to marriage
-        v_y_mar  = expnd( V['Couple, M']['V'] )
-        vf_y_mar = expnd( V['Couple, M']['VF'])
-        vm_y_mar = expnd( V['Couple, M']['VM'])
-        # switching criterion
-        #switch = (vf_y_mar>vf_y_coh) & (vm_y_mar>vm_y_coh)
-        switch = (v_y_mar >= v_y_coh)
         
-        v_y = switch*v_y_mar + (~switch)*v_y_coh
-        vf_y = switch*vf_y_mar + (~switch)*vf_y_coh
-        vm_y = switch*vm_y_mar + (~switch)*vm_y_coh
-        
-    vf_n, vm_n = [x.astype(v_y.dtype) for x in (vf_n,vm_n)] # type conversion
+    vf_n, vm_n = [x.astype(setup.dtype) for x in (vf_n,vm_n)] # type conversion
     
-    v_out, vf_out, vm_out, itheta_out = \
-        v_ren_core(v_y, vf_y, vm_y, vf_n, vm_n, setup.thetagrid_fine, 
-                   rescale=rescale)
-        
     
     itht = setup.v_thetagrid_fine.i
     wntht = setup.v_thetagrid_fine.wnext
     thtgrid = setup.thetagrid_fine
         
-    if marriage:
-        
-        v_out2, vf_out2, vm_out2, itheta_out2 = \
+    if marriage:        
+        v_out, vf_out, vm_out, itheta_out = \
             v_ren_core_with_int(V['Couple, M']['V'],
                                 V['Couple, M']['VF'], 
                                 V['Couple, M']['VM'],
@@ -103,22 +72,21 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
                                 itht, wntht, thtgrid, rescale = rescale)
             
     else:
-        v_out2, vf_out2, vm_out2, itheta_out2, ic_out2 = \
+        v_out, vf_out, vm_out, itheta_out, switch = \
             v_ren_core_two_opts_with_int(
                                 (V['Couple, C']['V'], V['Couple, M']['V'] ),
                                 (V['Couple, C']['VF'],V['Couple, M']['VF']), 
                                 (V['Couple, C']['VM'],V['Couple, M']['VM']), 
                                 vf_n, vm_n,
                                 itht, wntht, thtgrid, rescale = rescale)
-        assert np.allclose(ic_out2,switch)
         
     #try:
     
-    assert np.all(itheta_out2==itheta_out)
-    assert np.allclose(v_out2,v_out)
-    assert np.allclose(vf_out2,vf_out)
-    assert np.allclose(vm_out2,vm_out)
-    print('worked!')
+    #assert np.all(itheta_out2==itheta_out)
+    #assert np.allclose(v_out2,v_out)
+    #assert np.allclose(vf_out2,vf_out)
+    #assert np.allclose(vm_out2,vm_out)
+    #print('worked!')
     
         
         #except:

@@ -290,22 +290,38 @@ def v_ren_gpu(v_y, vf_y, vm_y, vf_n, vm_n, thtgrid, rescale = True):
     vf_out = vf_y.copy()    
     itheta_out = np.full(v_y.shape,-1,dtype=np.int16)
     
-    
-    threadsperblock = (1, 1, nt)
+    for ia in range(na):
+        for ie in range(ne):
+            threadsperblock = (1, 1, nt)
+                
+            b_a = 1
+            b_exo = 1
+            b_theta = 1
+            
+            blockspergrid = (b_a, b_exo, b_theta)
+            
+            v_yi, vf_yi, vm_yi = [cuda.to_device(
+                                    np.ascontiguousarray(x[ia:(ia+1),ie:(ie+1),:].copy())
+                                                ) for x in (v_y, vf_y, vm_y)]
+            
+            vf_ni, vm_ni = [cuda.to_device(
+                                            np.ascontiguousarray(x[ia:(ia+1),ie:(ie+1),:].copy())
+                                          ) for x in (vf_n,vm_n)]
+            
+            
+            v_outi, vf_outi, vm_outi, itheta_outi = [cuda.to_device(
+                                     np.ascontiguousarray(x[ia:(ia+1),ie:(ie+1),:].copy())
+                                    ) for x in (v_out, vm_out, vf_out, itheta_out)]
+                                            
+             
+            cuda_ker[blockspergrid, threadsperblock](v_yi, vf_yi, vm_yi, vf_ni, vm_ni, 
+                                            thtgrid, v_outi, vm_outi, vf_outi, itheta_outi)
         
-    b_a = na
-    b_exo = ne
-    b_theta = 1
-    
-    blockspergrid = (b_a, b_exo, b_theta)
-    
-    v_y, vf_y, vm_y = [np.ascontiguousarray(x) for x in (v_y, vf_y, vm_y)]
-    
-    vf_n, vm_n = [np.ascontiguousarray(x) for x in (vf_n,vm_n)]
-                                    
-     
-    cuda_ker[blockspergrid, threadsperblock](v_y, vf_y, vm_y, vf_n, vm_n, 
-                                    thtgrid, v_out, vm_out, vf_out, itheta_out)
+        
+            v_out[ia:(ia+1),ie:(ie+1),:] = v_outi
+            vm_out[ia:(ia+1),ie:(ie+1),:] = vm_outi
+            vf_out[ia:(ia+1),ie:(ie+1),:] = vf_outi
+            itheta_out[ia:(ia+1),ie:(ie+1),:] = itheta_outi
     
     return v_out, vf_out, vm_out, itheta_out
     
@@ -376,9 +392,11 @@ def cuda_ker(v_y, vf_y, vm_y, vf_n, vm_n, thtgrid, v_out, vm_out, vf_out, itheta
                 it_ren = it_inc if dist_increase < dist_decrease else it_dec
             else:
                 # tie breaker
-                dist_mid_inc = np.abs(it_inc - (nt/2))
-                dist_mid_dec = np.abs(it_dec - (nt/2))
-                it_ren = it_inc if dist_mid_inc < dist_mid_dec else it_dec
+                # numba-cuda does not do abs so we do these dumb things
+                dist_mid_inc = it_inc - (nt/2)                
+                if dist_mid_inc < 0: dist_mid_inc = -dist_mid_inc
+                dist_mid_dec = it_dec - (nt/2)
+                if dist_mid_dec < 0: dist_mid_dec = -dist_mid_dec
             
         elif found_increase and not found_decrease:
             it_ren = it_inc
@@ -400,7 +418,7 @@ def cuda_ker(v_y, vf_y, vm_y, vf_n, vm_n, thtgrid, v_out, vm_out, vf_out, itheta
             # rescaling
             tht_old = thtgrid[it]
             tht_new = thtgrid[it_ren]
-            factor = np.maximum( (1-tht_old)/(1-tht_new), tht_old/tht_new )
+            factor = (1-tht_old)/(1-tht_new) if tht_old < tht_new else tht_old/tht_new
             
             v_out[ia,ie,it] = factor*v_in_store[it_ren]
             vf_out[ia,ie,it] = vf_in_store[it_ren]

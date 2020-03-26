@@ -26,10 +26,19 @@ class VecOnGrid(object):
             self.i, self.wnext = interp(self.grid,self.val,return_wnext=True,trim=trim)
         else:
             self.i, self.wnext = iwn
-            
+           
+        if np.any(self.i<0):
+            # manual correction to avoid -1
+            ichange = (self.i<0)
+            assert np.allclose(self.wnext[ichange],1.0)
+            self.i[ichange] = 0
+            self.wnext[ichange] = 0.0
+        
         self.n = self.i.size
         self.wthis = 1-self.wnext
         self.trim = trim
+        
+        
         
         
         assert np.allclose(self.val_trimmed,self.apply_crude(grid))

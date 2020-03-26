@@ -8,7 +8,7 @@ Created on Mon Mar 23 19:33:42 2020
 
 import numpy as np
 from aux_routines import first_true, last_true
-from numba import njit, vectorize
+from numba import njit, cuda, f4
 from gridvec import VecOnGrid
 
 
@@ -71,6 +71,11 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
                                       vf_n, vm_n,
                                       itht, wntht, thtgrid, 
                                       rescale = rescale)
+        v_out2, vf_out2, vm_out2, itheta_out2 = \
+            v_ren_gpu(V['Couple, M']['V'], V['Couple, M']['VF'], V['Couple, M']['VM'],
+                          vf_n, vm_n, itht, wntht, thtgrid)
+            
+        assert np.all(itheta_out2 == itheta_out)
          
     else:
         v_out, vf_out, vm_out, itheta_out, switch = \
@@ -349,3 +354,182 @@ def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, ith
     
     return v_out, vf_out, vm_out, itheta_out, ichoice_out
 
+def v_ren_gpu(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, itht, wntht, thtgrid, 
+                          rescale = True):
+    
+                    
+    na, ne, nt_coarse = v_y_ni.shape
+    nt = thtgrid.size
+    assert rescale, 'no rescale is not implemented'
+    
+    assert nt < 500 
+    
+    v_out = np.empty((na,ne,nt),dtype=np.float32)
+    vm_out = np.empty((na,ne,nt),dtype=np.float32)
+    vf_out = np.empty((na,ne,nt),dtype=np.float32)
+    itheta_out = np.empty((na,ne,nt),dtype=np.int16)
+    
+    thtgrid = cuda.to_device(thtgrid)
+    
+    for ia in range(na):
+    
+        threadsperblock = (1, nt)
+            
+        b_exo = ne
+        b_theta = 1
+        
+        blockspergrid = (b_exo, b_theta)
+        
+        v_yi, vf_yi, vm_yi = [cuda.to_device(
+                                np.ascontiguousarray(x[ia,:,:].copy())
+                                            ) for x in (v_y_ni, vf_y_ni, vm_y_ni)]
+        
+        vf_ni, vm_ni = [cuda.to_device(
+                                        np.ascontiguousarray(x[ia,:,:].copy())
+                                      ) for x in (vf_n_ni,vm_n_ni)]
+        
+        
+        v_outi = cuda.device_array((ne,nt),dtype=np.float32)
+        vm_outi = cuda.device_array((ne,nt),dtype=np.float32)
+        vf_outi = cuda.device_array((ne,nt),dtype=np.float32)
+        itheta_outi = cuda.device_array((ne,nt),dtype=np.int16)
+        
+                         
+        
+        cuda_ker_one_opt[blockspergrid, threadsperblock](v_yi, vf_yi, vm_yi, vf_ni, vm_ni, 
+                                        itht, wntht, thtgrid,  
+                                        v_outi, vm_outi, vf_outi, itheta_outi)
+    
+    
+        v_out[ia,:,:] = v_outi
+        vm_out[ia,:,:] = vm_outi
+        vf_out[ia,:,:] = vf_outi
+        itheta_out[ia,:,:] = itheta_outi
+    
+    return v_out, vf_out, vm_out, itheta_out
+    
+
+
+
+@cuda.jit   
+def cuda_ker_one_opt(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, itht, wntht, thtgrid, v_out, vm_out, vf_out, itheta_out):
+    # this assumes block is for the same a and theta
+    ie, it = cuda.grid(2)
+    
+    v_in_store  = cuda.shared.array((500,),f4)
+    vf_in_store = cuda.shared.array((500,),f4)
+    vm_in_store = cuda.shared.array((500,),f4)
+    
+    vf_no_store = cuda.shared.array((500,),f4)
+    vm_no_store = cuda.shared.array((500,),f4)
+    
+    
+    
+    ne = v_y_ni.shape[0]
+    nt_crude = v_y_ni.shape[1]
+    nt = thtgrid.size
+    
+    
+    f1 = f4(1.0)
+    
+    if ie < ne and it < nt:
+        
+        it_int = itht[it]
+        for ittc in range(nt_crude):
+            if ittc==it_int: break
+        
+        
+        ittp = ittc + 1
+        wttp = wntht[it]
+        wttc = f1 - wttp
+        
+        
+        v_in_store[it]  = wttc*v_y_ni[ie,ittc]  + wttp*v_y_ni[ie,ittp]
+        vf_in_store[it] = wttc*vf_y_ni[ie,ittc] + wttp*vf_y_ni[ie,ittp]
+        vm_in_store[it] = wttc*vm_y_ni[ie,ittc] + wttp*vm_y_ni[ie,ittp]
+        
+        vf_no_store[it] = wttc*vf_n_ni[ie,ittc] + wttp*vf_n_ni[ie,ittp]
+        vm_no_store[it] = wttc*vm_n_ni[ie,ittc] + wttp*vm_n_ni[ie,ittp]
+        
+        
+        cuda.syncthreads()
+        
+        vf_no = vf_no_store[it]
+        vm_no = vm_no_store[it]
+        
+        
+        
+        if vf_in_store[it] >= vf_no and vm_in_store[it] >= vm_no:
+        #if vf_y[ie,it] >= vf_no and vm_y[ie,it] >= vm_no:
+            itheta_out[ie,it] = it
+            return
+        
+        if vf_in_store[it] < vf_no and vm_in_store[it] < vm_no:
+        #if vf_y[ie,it] < vf_no and vm_y[ie,it] < vm_no:
+            itheta_out[ie,it] = -1
+            tht = thtgrid[it]
+            v_out[ie,it] = tht*vf_no + (1-tht)*vm_no
+            vf_out[ie,it] = vf_no
+            vm_out[ie,it] = vm_no
+            return
+        
+        
+       
+        it_ren = -1
+        
+        found_increase = False
+        found_decrease = False
+         
+         
+        for it_inc in range(it+1,nt):
+            if (vf_in_store[it_inc] >= vf_no and vm_in_store[it_inc] >= vm_no):
+                found_increase = True
+                break
+         
+        for it_dec in range(it-1,-1,-1):
+            if (vf_in_store[it_dec] >= vf_no and vm_in_store[it_dec] >= vm_no):
+                found_decrease = True
+                break
+#            
+#        
+        if found_increase and found_decrease:
+            dist_increase = it_inc - it
+            dist_decrease = it - it_dec
+#            
+            if dist_increase != dist_decrease:
+                it_ren = it_inc if dist_increase < dist_decrease else it_dec
+            else:
+                # tie breaker
+                # numba-cuda does not do abs so we do these dumb things
+                dist_mid_inc = it_inc - (nt/2)                
+                if dist_mid_inc < 0: dist_mid_inc = -dist_mid_inc
+                dist_mid_dec = it_dec - (nt/2)
+                if dist_mid_dec < 0: dist_mid_dec = -dist_mid_dec
+                it_ren = it_inc if dist_mid_inc < dist_mid_dec else it_dec
+            
+        elif found_increase and not found_decrease:
+            it_ren = it_inc
+        elif found_decrease and not found_increase:
+            it_ren = it_dec
+        else:
+            it_ren = -1 # check this!
+             
+         # finally fill the values    
+             
+        if it_ren == -1:
+            tht = thtgrid[it]
+            v_out[ie,it] = tht*vf_no + (1-tht)*vm_no
+            vf_out[ie,it] = vf_no
+            vm_out[ie,it] = vm_no
+            itheta_out[ie,it] = -1
+        else:
+             
+            # rescaling
+            tht_old = thtgrid[it]
+            tht_new = thtgrid[it_ren]
+            factor = (1-tht_old)/(1-tht_new) if tht_old < tht_new else tht_old/tht_new
+             
+            v_out[ie,it] = factor*v_in_store[it_ren]
+            vf_out[ie,it] = vf_in_store[it_ren]
+            vm_out[ie,it] = vm_in_store[it_ren]
+            itheta_out[ie,it] = it_ren

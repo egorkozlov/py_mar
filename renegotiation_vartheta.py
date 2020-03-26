@@ -65,18 +65,24 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
         
     if marriage:        
         v_out, vf_out, vm_out, itheta_out = \
-            v_ren_core_with_int(V['Couple, M']['V'],
-                                V['Couple, M']['VF'], 
-                                V['Couple, M']['VM'],
-                                vf_n, vm_n,
-                                itht, wntht, thtgrid, rescale = rescale)
+         v_ren_core_with_int(V['Couple, M']['V'],
+                             V['Couple, M']['VF'], 
+                             V['Couple, M']['VM'], 
+                             vf_n, vm_n,
+                             itht, wntht, thtgrid, 
+                             rescale = rescale)
+         
+        #assert np.all(itheta_out==itheta_out2)
+        #assert np.allclose(v_out,v_out2)
+        #assert np.allclose(vm_out,vm_out2)
+        #assert np.allclose(vf_out,vf_out2)
             
     else:
         v_out, vf_out, vm_out, itheta_out, switch = \
             v_ren_core_two_opts_with_int(
-                                (V['Couple, C']['V'], V['Couple, M']['V'] ),
-                                (V['Couple, C']['VF'],V['Couple, M']['VF']), 
-                                (V['Couple, C']['VM'],V['Couple, M']['VM']), 
+                       np.stack([V['Couple, C']['V'], V['Couple, M']['V']]),
+                       np.stack([V['Couple, C']['VF'],V['Couple, M']['VF']]), 
+                       np.stack([V['Couple, C']['VM'],V['Couple, M']['VM']]), 
                                 vf_n, vm_n,
                                 itht, wntht, thtgrid, rescale = rescale)
         
@@ -434,14 +440,26 @@ def v_ren_core_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n, vm_n, itht, wntht, thtgr
 
 
 @njit
-def v_ren_core_two_opts_with_int(v_y_ni_t, vf_y_ni_t, vm_y_ni_t, vf_n, vm_n, itht, wntht, thtgrid, rescale=False):
+def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n, vm_n, itht, wntht, thtgrid, 
+                                 rescale=False):
     # this takes values with no interpolation and interpolates inside
     # this also makes a choice of mar / coh
     # choice is based on comparing v_y_ni_0 vs v_y_ni_1 in the interpolated pt
 
-    v_y_ni_0, v_y_ni_1 = v_y_ni_t[0], v_y_ni_t[1]
-    vf_y_ni_0, vf_y_ni_1 = vf_y_ni_t[0], vf_y_ni_t[1]
-    vm_y_ni_0, vm_y_ni_1 = vm_y_ni_t[0], vm_y_ni_t[1]
+    
+    
+    if v_y_ni.shape[0] == 2:
+        nochoice = False
+        v_y_ni_0, v_y_ni_1 = v_y_ni[0], v_y_ni[1]
+        vf_y_ni_0, vf_y_ni_1 = vf_y_ni[0], vf_y_ni[1]
+        vm_y_ni_0, vm_y_ni_1 = vm_y_ni[0], vm_y_ni[1]
+    else:
+        nochoice = True
+        v_y_ni_0 = v_y_ni[0]
+        vf_y_ni_0 = vf_y_ni[0]
+        vm_y_ni_0 = vm_y_ni[0]
+        
+        
     
         
     na, ne, nt_coarse = v_y_ni_0.shape
@@ -481,21 +499,27 @@ def v_ren_core_two_opts_with_int(v_y_ni_t, vf_y_ni_t, vm_y_ni_t, vf_n, vm_n, ith
                     return x[ia,ie,it_c]*wt_c + x[ia,ie,it_cp]*wn_c
                 
                 v_y_0 = wsum(v_y_ni_0)
-                v_y_1 = wsum(v_y_ni_1)                
-                pick_1 = (v_y_1 > v_y_0)
                 
-                if pick_1:
-                    vf_opt[it] = wsum(vf_y_ni_1)
-                    vm_opt[it] = wsum(vm_y_ni_1)
-                    v_opt[it] = v_y_1
-                else:
+                
+                if not nochoice:
+                    v_y_1 = wsum(v_y_ni_1)                
+                    pick_1 = (v_y_1 > v_y_0)
+                    
+                    if pick_1:
+                        vf_opt[it] = wsum(vf_y_ni_1)
+                        vm_opt[it] = wsum(vm_y_ni_1)
+                        v_opt[it] = v_y_1
+                    else:
+                        vf_opt[it] = wsum(vf_y_ni_0)
+                        vm_opt[it] = wsum(vm_y_ni_0)
+                        v_opt[it] = v_y_0
+                        ichoice_out[ia,ie,it] = pick_1           
+                else:                    
                     vf_opt[it] = wsum(vf_y_ni_0)
                     vm_opt[it] = wsum(vm_y_ni_0)
                     v_opt[it] = v_y_0
                 
-                ichoice_out[ia,ie,it] = pick_1                
-                
-                
+                     
             
             for it in range(nt):
                 

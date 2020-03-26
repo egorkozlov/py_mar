@@ -72,11 +72,6 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
                                       itht, wntht, thtgrid, 
                                       rescale = rescale)
          
-        #assert np.all(itheta_out==itheta_out2)
-        #assert np.allclose(v_out,v_out2)
-        #assert np.allclose(vm_out,vm_out2)
-        #assert np.allclose(vf_out,vf_out2)
-            
     else:
         v_out, vf_out, vm_out, itheta_out, switch = \
             v_ren_core_two_opts_with_int(
@@ -84,23 +79,7 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
                        np.stack([V['Couple, C']['VF'],V['Couple, M']['VF']]), 
                        np.stack([V['Couple, C']['VM'],V['Couple, M']['VM']]), 
                                 vf_n, vm_n,
-                                itht, wntht, thtgrid, rescale = rescale)
-        
-    #try:
-    
-    #assert np.all(itheta_out2==itheta_out)
-    #assert np.allclose(v_out2,v_out)
-    #assert np.allclose(vf_out2,vf_out)
-    #assert np.allclose(vm_out2,vm_out)
-    #print('worked!')
-    
-        
-        #except:
-        #    whr = np.where((itheta_out2!=itheta_out))
-        #    print(np.where(whr))
-        #    print(itheta_out[whr])
-        #    print(itheta_out2[whr])
-        #    print('failed')
+                                itht, wntht, thtgrid, rescale = rescale)        
         
     def r(x): return x.astype(np.float32)
         
@@ -137,7 +116,7 @@ def v_div_vartheta(setup,dc,t,sc,Vmale,Vfemale,izf,izm,
     
     from renegotiation_unilateral import v_div_allsplits
     
-    shrs = setup.thetagrid_fine
+    shrs = setup.thetagrid
     
     # these are interpolation points
     
@@ -151,7 +130,7 @@ def v_div_vartheta(setup,dc,t,sc,Vmale,Vfemale,izf,izm,
     
     
     
-    share_fem, share_mal = fun(setup.thetagrid_fine)
+    share_fem, share_mal = fun(setup.thetagrid)
     fem_gets = VecOnGrid(np.array(shrs),share_fem)
     mal_gets = VecOnGrid(np.array(shrs),share_mal)
     
@@ -176,14 +155,17 @@ def v_div_vartheta(setup,dc,t,sc,Vmale,Vfemale,izf,izm,
 
 
 @njit
-def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n, vm_n, itht, wntht, thtgrid, 
+def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, itht, wntht, thtgrid, 
                                  rescale=False):
     # this takes values with no interpolation and interpolates inside
     # this also makes a choice of mar / coh
     # choice is based on comparing v_y_ni_0 vs v_y_ni_1 in the interpolated pt
 
 
-    
+    # this code is not really elegant but @njit requires some dumb things
+    # note that v_y_ni has either 1 or 2 elements at 0th dimension
+    # (so if two functions are passed, v_y_ni is np.stack(v_y_c,v_y_m)),
+    # otherwise it is just v_y_m[None,...]. x[0] is equivalent to x[0,...].
     
     if v_y_ni.shape[0] == 2:
         nochoice = False
@@ -225,6 +207,9 @@ def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n, vm_n, itht, wnt
             vf_opt = np.empty((nt,),dtype=np.float32)
             vm_opt = np.empty((nt,),dtype=np.float32)
             
+            vf_no_t = np.empty((nt,),dtype=np.float32)
+            vm_no_t = np.empty((nt,),dtype=np.float32)
+            
             # this part does all interpolations and maximization
             for it in range(nt):
                 it_c = itht[it]
@@ -236,6 +221,9 @@ def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n, vm_n, itht, wnt
                     return x[ia,ie,it_c]*wt_c + x[ia,ie,it_cp]*wn_c
                 
                 v_y_0 = wsum(v_y_ni_0)
+                
+                vf_no_t[it] = wsum(vf_n_ni)
+                vm_no_t[it] = wsum(vm_n_ni)
                 
                 
                 if not nochoice:
@@ -256,7 +244,7 @@ def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n, vm_n, itht, wnt
                     vm_opt[it] = wsum(vm_y_ni_0)
                     v_opt[it] = v_y_0
                 
-                     
+                
             
             for it in range(nt):
                 
@@ -265,8 +253,8 @@ def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n, vm_n, itht, wnt
                 vm_y = vm_opt[it]
                 v_y = v_opt[it]
                 
-                vf_no = vf_n[ia,ie,it]
-                vm_no = vm_n[ia,ie,it]
+                vf_no = vf_no_t[it]
+                vm_no = vm_no_t[it]
                 
                 if vf_y >= vf_no and vm_y >= vm_no:
                     # no search just fill the value

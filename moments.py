@@ -854,10 +854,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     #Keep all those guys only if the are men and in a relatioinship
     #TODO
     
-    #Make data compatible with current age.
-    freq_psid_div_data['age']=freq_psid_div_data['age']-18.0
-    freq_psid_div_data.loc[freq_psid_div_data['age']<0.0,'age']=0.0
-    
+   
     #Drop if no change in law!
     if np.all(changep==0):
         #freq_psid_tot_data.loc[freq_psid_tot_data['age']<1910.0,'age']=1000
@@ -906,9 +903,9 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     
     #Wage
     iexo_div=np.reshape(iexo_psid,resha)
-    iexo_div=iexo_div[keep5]
-    stated=np.reshape(state_psid,resha)[keep5]
-    age_w=np.array(agegrid[keep5],dtype=np.int16)-1
+    iexo_div=iexo_div
+    stated=np.reshape(state_psid,resha)
+    age_w=np.array(agegrid,dtype=np.int16)-1
     wagem1=np.array(setup.pars['m_wage_trend'])[age_w][...,None]+np.array(setup.exogrid.zm_t)[age_w]
     indexm=np.reshape(np.repeat(setup.all_indices(0,iexo_div)[2],setup.pars['n_zm_t'][0]),(len(iexo_div),setup.pars['n_zm_t'][0]),order='C')
     indexs=np.reshape(np.repeat(setup.all_indices(0,iexo_div)[0],setup.pars['n_zm_t'][0]),(len(iexo_div),setup.pars['n_zm_t'][0]),order='C')
@@ -917,6 +914,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     indexs[indexs>setup.pars['n_zm_t'][0]-1]=0
     wagem=wagem1[maskp==indexs]
     wagem[stated>1]=wagem1[maskp==indexm][stated>1]
+   
     
     #Marital Status
     married=(state_psid==2)
@@ -929,14 +927,17 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     married=np.reshape(married,resha)[keep5]
     
     #Poor rich indicator
-    mincome1=np.quantile(np.reshape(wagem,(int(len(wagem)/len(iexo_psid[0,:])),len(iexo_psid[0,:]))),0.5,axis=0)
+    keep5m=np.reshape(keep5,(int(len(keep5)/len(iexo_psid[0,:])),len(iexo_psid[0,:])))
+    wageinter=np.reshape(wagem,(int(len(wagem)/len(iexo_psid[0,:])),len(iexo_psid[0,:])))
+    wageinter[(~keep5m)]=None
+    mincome1=np.nanmedian(wageinter,axis=0)
     mincome2=np.repeat(mincome1,len(iexo_psid[:,0]),axis=0)
     mincome3=np.reshape(mincome2,(int(len(wagem)/len(iexo_psid[0,:])),len(iexo_psid[0,:])),order='F')
-    mincome=np.reshape(mincome3,wagem.shape)
-    sq=(wagem==mincome)
+    mincome=np.reshape(mincome3,wagem.shape)[keep5]
+    sq=(wagem[keep5]==mincome)
     even=(np.random.random_sample(mincome.shape)>0.5)#np.repeat((np.linspace(1,len(mincome3[:,0]),len(mincome3[:,0]),dtype=np.int32)%2==0),len(mincome3[0,:]))
-    lq=(wagem<mincome) | ((even) & (sq))
-    uq=(wagem>mincome) | ((~even) & (sq))
+    lq=(wagem[keep5]<mincome) | ((even) & (sq))
+    uq=(wagem[keep5]>mincome) | ((~even) & (sq))
     
     moments['div_ratio']=(np.sum(divo[uq])/np.sum(married[uq]))/(np.sum(divo[lq])/np.sum(married[lq]))
     

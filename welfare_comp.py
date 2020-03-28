@@ -98,8 +98,8 @@ def welf_dec(mdl,agents):
     expnd0 = lambda x : mdl[0].setup.v_thetagrid_fine.apply(x,axis=2)
     expnd1 = lambda x : mdl[1].setup.v_thetagrid_fine.apply(x,axis=2)
     #Women
-    Vfc_bil=np.ones(changep.shape)*-1000
-    Vfc_uni=np.ones(changep.shape)*-1000
+    Vfc_bil=np.ones(changep.shape)*-10000000
+    Vfc_uni=np.ones(changep.shape)*-10000000
     for t in range(1,mdl[0].setup.pars['T']):
         
         #Prepare Value Functions
@@ -119,14 +119,14 @@ def welf_dec(mdl,agents):
         Vfc_uni[coh,t]=VFunic[agents.iassets[coh,t],agents.iexo[coh,t],agents.itheta[coh,t]]
         Vfc_uni[single,t]=mdl[1].V[t]['Female, single']['V'][agents.iassets[single,t],mdl[0].setup.all_indices(t,agents.iexo[single,t])[1]]
     
-    wh=np.where(Vfc_bil>-100)
+    wh=np.where(Vfc_bil>-1000000)
     Vfcb=Vfc_bil[wh[0],wh[1]]
     Vfcu=Vfc_uni[wh[0],wh[1]]
     unipf=(Vfcu>=Vfcb)
     
     #Men
-    Vmc_bil=np.ones(changep.shape)*-1000
-    Vmc_uni=np.ones(changep.shape)*-1000
+    Vmc_bil=np.ones(changep.shape)*-10000000
+    Vmc_uni=np.ones(changep.shape)*-10000000
     for t in range(1,mdl[0].setup.pars['T']):
         
         VMbilm=expnd0(mdl[0].V[t]['Couple, M']['VM'])
@@ -145,7 +145,7 @@ def welf_dec(mdl,agents):
         Vmc_uni[coh,t]=VMunic[agents.iassets[coh,t],agents.iexo[coh,t],agents.itheta[coh,t]]
         Vmc_uni[single,t]=mdl[1].V[t]['Male, single']['V'][agents.iassets[single,t],mdl[0].setup.all_indices(t,agents.iexo[single,t])[2]]
     
-    wh=np.where(Vmc_bil>-100)
+    wh=np.where(Vmc_bil>-1000000)
     Vmcb=Vmc_bil[wh[0],wh[1]]
     Vmcu=Vmc_uni[wh[0],wh[1]]
     unipm=(Vmcu>=Vmcb)

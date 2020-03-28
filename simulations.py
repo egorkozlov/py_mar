@@ -158,12 +158,12 @@ class Agents:
         #Create Variables that stores varibles of interest
         
         
-        for t in range(self.T-1):
+        for t in range(self.T):
          
             self.anext(t) 
-            self.iexonext(t)            
-            self.statenext(t)
-            
+            if t+1<self.T:
+                self.iexonext(t)            
+                self.statenext(t)
             self.timer('Simulations, iteration',verbose=self.verbose)
         
         
@@ -181,7 +181,7 @@ class Agents:
                 
                 
                 is_state_any_pol = (self.state[:,t]==ist)  
-                is_pol = (self.policy_ind[:,t+1]==ipol)
+                is_pol = (self.policy_ind[:,min(t+1,self.T-1)]==ipol)
                 
                 is_state = (is_state_any_pol) & (is_pol)
                 

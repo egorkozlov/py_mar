@@ -288,4 +288,4 @@ def welf_dec(mdl,agents):
     print("The Welfare of Men with Bil is {:0.2f}, when only at divorce we apply Unid is {:0.2f}".format(EM,EM1))
     print("Share divorces (fem. measured) where both agreed is {:0.2f}, men only agreed {:0.2f}, women only agreed {:0.2f}".format(botha,mena,woma))
     print("Share divorces (men measured) where both agreed is {:0.2f}, men only agreed {:0.2f}, women only agreed {:0.2f}".format(botha1,mena1,woma1))
-    print("aca")
+    

@@ -83,7 +83,7 @@ def int_sol(m_in,newton=True,step=1e-6,nint=2000,*,A,alp,sig,xi,lam,kap,lbr):
         uc = A*c**(1-sig)/(1-sig)
         assert np.all(uc < 0)
         ux = alp*(x**lam + kap*(1-lbr)**lam)**((1-xi)/lam)/(1-xi)
-        assert np.all(ux < 0)
+        #assert np.all(ux < 0)
         return uc + ux
     
     cout = m_in - xout

@@ -19,7 +19,7 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()       
-        period_year=1#this can be 1,2,3 or 6
+        period_year=6#this can be 1,2,3 or 6
         transform=2#this tells how many periods to pull together for duration moments
         T = int(62/period_year)
         Tret = int(47/period_year) # first period when the agent is retired
@@ -46,13 +46,14 @@ class ModelSetup(object):
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.0 
-        p['sig_partner_a'] = 0.2
-        p['sig_partner_z'] = 0.7#1.0#0.4 #This is crazy powerful for the diff in diff estimate
+        p['sig_partner_a'] = 0.1
+        p['sig_partner_z'] = 0.9#1.0#0.4 #This is crazy powerful for the diff in diff estimate
+        p['sig_partner_mult'] = 1.0
         p['dump_factor_z'] = 0.75
         p['mean_partner_z_female'] = 0.0#0.8#0.4
         p['mean_partner_z_male'] =  0.0#-0.8#0.4
-        p['mean_partner_a_female'] = 0.2#0.1#0.4
-        p['mean_partner_a_male'] = -0.2#-0.1#0.4
+        p['mean_partner_a_female'] = 0.3#0.1#0.4
+        p['mean_partner_a_male'] = -0.1#-0.1#0.4
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
         
@@ -70,7 +71,7 @@ class ModelSetup(object):
         
          
         #p['f_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-.69291401 +.01872689*t -.00052774*t**2+2.241e-06*t**3) for t in range(T)]
-        p['f_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*( -.74491918 +.04258303*t -.0016542*t**2+.00001775*t**3) for t in range(T)]
+        p['f_wage_trend'] = p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*( -.74491918 +.04258303*t -.0016542*t**2+.00001775*t**3) for t in range(T)]
         p['f_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.6805060 +.04629912*t -.00160467*t**2+.00001626*t**3) for t in range(T)]
         p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-0.5620125  +0.06767721*t -0.00192571*t**2+ 0.00001573*t**3) for t in range(T)]
         p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.5960803  +.05829568*t -.00169143*t**2+ .00001446*t**3) for t in range(T)]
@@ -81,7 +82,7 @@ class ModelSetup(object):
         
         p['util_lam'] = 0.19#0.4
         p['util_alp'] = 0.5
-        p['util_xi'] = 1.5#3.11
+        p['util_xi'] = 1.01#3.11
         p['util_kap'] = (1-0.21)/(0.21)
         
         
@@ -226,6 +227,14 @@ class ModelSetup(object):
             exogrid['psi_t_mat'][Tret-1] = np.diag(np.ones(len(exogrid['psi_t_mat'][Tret-1])))
             exogrid['psi_t_mat'][Tret] = np.diag(np.ones(len(exogrid['psi_t_mat'][Tret-1])))
             exogrid['psi_t_mat'][Tret+1] = np.diag(np.ones(len(exogrid['psi_t_mat'][Tret-1])))
+            
+            #Here I impose no change in psi from retirement till the end of time 
+           # for t in range(Tret,T-1):
+               
+             #   exogrid['psi_t'][t] = exogrid['psi_t'][Tret-1]#np.array([np.log(p['wret'])])             
+             #   exogrid['psi_t_mat'][t] = np.diag(np.ones(len(exogrid['psi_t'][t])))#p.atleast_2d(1.0)
+
+                
             
             zfzm, zfzmmat = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], exogrid['zf_t_mat'], exogrid['zm_t_mat'])
             all_t, all_t_mat = combine_matrices_two_lists(zfzm,exogrid['psi_t'],zfzmmat,exogrid['psi_t_mat'])
@@ -480,19 +489,19 @@ class ModelSetup(object):
             p_mat = np.empty((nexo,nz_single))
             z_own = setup.exogrid.zf_t[t]
             n_zown = z_own.shape[0]
-            z_partner = setup.exogrid.zm_t[t+1]
-            zmat_own = setup.exogrid.zf_t_mat[t+1]
-            trend=setup.pars['m_wage_trend_single'][t+1]
-            mean=-setup.pars['m_wage_trend'][t]+setup.pars['m_wage_trend_single'][t+1]
+            z_partner = setup.exogrid.zm_t[t]
+            zmat_own = setup.exogrid.zf_t_mat[t]
+            trend=setup.pars['m_wage_trend_single'][t]
+            mean=-setup.pars['m_wage_trend'][t]+setup.pars['m_wage_trend_single'][t]
             sig_z_partner=(setup.pars['sig_zm_0']**2+(t+1)*setup.pars['sig_zm']**2)**0.5
         else:
             nz_single = setup.exogrid.zm_t[t].shape[0]
             p_mat = np.empty((nexo,nz_single))
             z_own = setup.exogrid.zm_t[t]
             n_zown = z_own.shape[0]
-            z_partner = setup.exogrid.zf_t[t+1]
-            zmat_own = setup.exogrid.zm_t_mat[t+1]    
-            trend=setup.pars['f_wage_trend_single'][t+1]
+            z_partner = setup.exogrid.zf_t[t]
+            zmat_own = setup.exogrid.zm_t_mat[t]    
+            trend=setup.pars['f_wage_trend_single'][t]
             mean=-setup.pars['f_wage_trend'][t]+setup.pars['f_wage_trend_single'][t]
             sig_z_partner=(setup.pars['sig_zf_0']**2+(t+1)*setup.pars['sig_zf']**2)**0.5
             
@@ -503,11 +512,13 @@ class ModelSetup(object):
             p_psi = int_prob(psi_couple,mu=0,sig=sigma_psi_init)
             if female:
                 p_zm  = int_prob(z_partner, mu=setup.pars['dump_factor_z']*z_partner[iz]+
-                                  mean+setup.pars['mean_partner_z_female'],sig=(1-setup.pars['dump_factor_z'])**0.5*sig_z_partner)
+                                  mean+setup.pars['mean_partner_z_female'],sig=(1-setup.pars['dump_factor_z'])**
+                                  0.5*sig_z_partner*setup.pars['sig_partner_mult'])
                 p_zf  = zmat_own[iz,:]
             else:
                 p_zf  = int_prob(z_partner, mu=setup.pars['dump_factor_z']*z_partner[iz]+ 
-                                 mean+setup.pars['mean_partner_z_male'],sig=(1-setup.pars['dump_factor_z'])**0.5*sig_z_partner)
+                                 mean+setup.pars['mean_partner_z_male'],sig=(1-setup.pars['dump_factor_z'])**
+                                 0.5*sig_z_partner*setup.pars['sig_partner_mult'])
                 p_zm  = zmat_own[iz,:]
             #sm = sf
         

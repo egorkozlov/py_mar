@@ -74,10 +74,12 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         #Import values for female labor supply (simulated men only)
         state_psid=agents_male.state
         labor_psid=agents_male.ils_i
+        iexo_psid=agents_male.iexo
         change_psid=agents_male.policy_ind
         iexo_w=agents.iexo 
         labor_w=agents.ils_i
         female_w=agents.is_female
+        divorces_w=agents.divorces
         state_w=agents.state 
         theta_w=mdl.setup.thetagrid_fine[agents.itheta] 
         assets_w=mdl.setup.agrid_c[agents.iassets]
@@ -122,24 +124,26 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
        
        
     #First cut the first two periods give new 'length'   
-    assets_t=assets_t[:,0:mdl.setup.pars['T']]   
-    iexo=iexo[:,0:mdl.setup.pars['T']]   
-    state=state[:,0:mdl.setup.pars['T']]   
-    theta_t=theta_t[:,0:mdl.setup.pars['T']]   
-    female=female[:,0:mdl.setup.pars['T']]   
-    labor_psid=labor_psid[:,0:mdl.setup.pars['T']]
+    assets_t=assets_t[:,:mdl.setup.pars['T']]   
+    iexo=iexo[:,:mdl.setup.pars['T']]   
+    state=state[:,:mdl.setup.pars['T']]   
+    theta_t=theta_t[:,:mdl.setup.pars['T']]   
+    female=female[:,:mdl.setup.pars['T']]   
+    labor_psid=labor_psid[:,:mdl.setup.pars['T']]
+    iexo_psid=iexo_psid[:,:mdl.setup.pars['T']]
     
     if draw:
-        iexo_w=iexo_w[:,0:mdl.setup.pars['T']]
-        labor_w=labor_w[:,0:mdl.setup.pars['T']]
-        change_psid=change_psid[:,0:mdl.setup.pars['T']]
-        state_psid=state_psid[:,0:mdl.setup.pars['T']]
-        female_w=female_w[:,0:mdl.setup.pars['T']]
-        state_w=state_w[:,0:mdl.setup.pars['T']]
-        assets_w=assets_w[:,0:mdl.setup.pars['T']]
-        assetss_w=assetss_w[:,0:mdl.setup.pars['T']]
-        theta_w=theta_w[:,0:mdl.setup.pars['T']]
-        changep_w=changep_w[:,0:mdl.setup.pars['T']]
+        iexo_w=iexo_w[:,:mdl.setup.pars['T']]
+        labor_w=labor_w[:,:mdl.setup.pars['T']]
+        change_psid=change_psid[:,:mdl.setup.pars['T']]
+        state_psid=state_psid[:,:mdl.setup.pars['T']]
+        female_w=female_w[:,:mdl.setup.pars['T']]
+        state_w=state_w[:,:mdl.setup.pars['T']]
+        assets_w=assets_w[:,:mdl.setup.pars['T']]
+        assetss_w=assetss_w[:,:mdl.setup.pars['T']]
+        theta_w=theta_w[:,:mdl.setup.pars['T']]
+        changep_w=changep_w[:,:mdl.setup.pars['T']]
+        divorces_w=divorces_w[:,:mdl.setup.pars['T']]
       
        
     ####################################################################   
@@ -183,7 +187,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     with open('freq_nsfh.pkl', 'rb') as file:   
         freq_nsfh_data=pickle.load(file)  
     
-    value=mdl.V[0]['Female, single']['V'][0,iexo_w[:,0]]
+    #value=mdl.V[0]['Female, single']['V'][0,iexo_w[:,0]]
     #Make data compatible with current age
     freq_nsfh_data['age_unid']=freq_nsfh_data['age_unid']-18.0
     freq_nsfh_data.loc[freq_nsfh_data['age_unid']<=0.0,'age_unid']=0.0
@@ -210,8 +214,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     ddd=np.stack((inde,age_unid,fem),axis=0).T
     df=pd.DataFrame(data=ddd,columns=["Index","age","sex"],index=ddd[:,0])
     df['age']=df['age'].astype(np.float)
-    if (len(df)>0 &  setup.pars['py']==1):  
-        sampletemp=strata_sample(["'sex'", "'age'"],freq_nsfh,frac=0.6,tsample=df,distr=True)
+    if (len(df)>0) &  (setup.pars['py']==1):  
+        sampletemp=strata_sample(["'sex'", "'age'"],freq_nsfh,frac=0.2,tsample=df,distr=True)
         final2=df.merge(sampletemp,how='left',on='Index',indicator=True)
         
         keep2=[False]*len(df)
@@ -360,7 +364,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     rel_number= -1*np.ones((N,99),dtype=np.int16)   
     isrel = np.zeros((N,),dtype=np.int8)   
        
-    for t in range(2,mdl.setup.pars['Tret']-1):   
+    for t in range(2,mdl.setup.pars['Tret']-int(6/mdl.setup.pars['py'])):   
            
         irchange = ((state[:,t-1] != state[:,t]) & ((state[:,t-1]==0) | (state[:,t-1]==1)))   
            
@@ -612,7 +616,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     incoupler=np.reshape(incouple,resha)
     
     #Define main variables
-    ctemp=change_psid
+    ctemp=change_psid.copy()
     change_psid2=np.reshape(ctemp,resha)
     agetemp=np.linspace(1,len(change_psid[0,:]),len(change_psid[0,:]))
     agegridtemp=np.reshape(np.repeat(agetemp,len(change_psid[:,0])),(len(change_psid[:,0]),len(agetemp)),order='F')
@@ -640,8 +644,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     df_psidt=pd.DataFrame(data=ddd2,columns=["Index","age","unid"],index=ddd2[:,0])
     df_psidt['age']=df_psidt['age'].astype(np.float)
     
-    if len(df_psidt)>0 & setup.pars['py']==1:
-        sampletemp=strata_sample(["'age'", "'unid'"],freq_psid_tot_data2,frac=0.02,tsample=df_psidt,distr=True)
+    if (len(df_psidt)>0) & (setup.pars['py']==1):
+        sampletemp=strata_sample(["'age'", "'unid'"],freq_psid_tot_data2,frac=0.1,tsample=df_psidt,distr=True)
         final2t=df_psidt.merge(sampletemp,how='left',on='Index',indicator=True)
         
         keep3=[False]*len(df_psidt)
@@ -678,8 +682,19 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     moments['mean_fls'] = mean_fls 
     
     ###########################################   
-    #Moments: FLS   Ratio
+    #Moments: wage   Ratio
     ###########################################   
+    iexo_totl=np.reshape(iexo_psid,resha)
+    iexo_totl=iexo_totl[incoupler][keep3]
+    age_w=np.array(agegrid[incoupler][keep3],dtype=np.int16)-1
+    wagem1=np.array(setup.pars['m_wage_trend'])[age_w][...,None]+np.array(setup.exogrid.zm_t)[age_w]
+    index=np.reshape(np.repeat(setup.all_indices(0,iexo_totl)[2],setup.pars['n_zm_t'][0]),(len(iexo_totl),setup.pars['n_zm_t'][0]),order='C')
+    maskp=np.reshape(np.repeat(np.linspace(0,setup.pars['n_zm_t'][0]-1,setup.pars['n_zm_t'][0]),len(index)),
+                      (index.shape),order='F')
+    wagem=wagem1[maskp==index]
+    
+    moments['wage_ratio']=np.mean(wagem[state_totl==2])-np.mean(wagem[state_totl==3])
+    
     
     ###################
     #Sample Selection
@@ -693,10 +708,15 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     resha=len(change_psid[0,:])*len(change_psid[:,0])
     state_par=np.reshape(state_psid,resha)
     incouplep= (state_par==2) | (state_par==3)
+    incouplepm= np.zeros(incouplep.shape)
+    incouplepm[np.where(state_par[incouplep]==2)[0]]=1
     incouplerp=np.reshape(incouplep,resha)
+    incouplepm2=np.reshape(incouplepm,resha)
+    
+
     
     #Define main variables
-    ctemp=change_psid
+    ctemp=change_psid.copy()
     change_psid3=np.reshape(ctemp,resha)
     
     #Keep all those guys only if the are men and in a relatioinship
@@ -713,17 +733,17 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         
  
         
-    freq_psid_par_data2=freq_psid_par_data.groupby(['age','unid'])['age'].count()
+    freq_psid_par_data2=freq_psid_par_data.groupby(['age','unid','mar'])['age'].count()
 
     
-    ddd3=np.stack((inde[incouplerp],agegrid[incouplerp],change_psid3[incouplerp]),axis=0).T
+    ddd3=np.stack((inde[incouplerp],agegrid[incouplerp],change_psid3[incouplerp],incouplepm2[incouplerp]),axis=0).T
    
-    df_psidp=pd.DataFrame(data=ddd3,columns=["Index","age","unid"],index=ddd3[:,0])
+    df_psidp=pd.DataFrame(data=ddd3,columns=["Index","age","unid","mar"],index=ddd3[:,0])
     df_psidp['age']=df_psidp['age'].astype(np.float)
     
-    if (len(df_psidp)>0 &  setup.pars['py']==1):  
-        sampletempp=strata_sample(["'age'", "'unid'"],freq_psid_par_data2,frac=0.02,tsample=df_psidt,distr=True)
-        final2p=df_psidt.merge(sampletempp,how='left',on='Index',indicator=True)
+    if (len(df_psidp)>0) &  (setup.pars['py']==1):  
+        sampletempp=strata_sample(["'age'", "'unid'", "'mar'"],freq_psid_par_data2,frac=0.02,tsample=df_psidp,distr=True)
+        final2p=df_psidp.merge(sampletempp,how='left',on='Index',indicator=True)
         
         keep4=[False]*len(df_psidp)
         keep4=(np.array(final2p['_merge'])=='both')
@@ -736,8 +756,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         prima_psid_par=freq_psid_par_data2/np.sum(freq_psid_par_data2)
         
         #Final distribution
-        final3p=df_psidt[keep4]
-        final4p=final3p.groupby(['age','unid'])['age'].count()
+        final3p=df_psidp[keep4]
+        final4p=final3p.groupby(['age','unid','mar'])['age'].count()
         dopo_psid_par=final4p/np.sum(final4p)
         
         
@@ -763,26 +783,23 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     if pick.any():mean_fls_c=np.array(setup.ls_levels)[labor_par[pick]].mean() 
      
     moments['fls_ratio']=mean_fls_m/max(mean_fls_c,0.0001) 
-       
-       
-     
     
-    #Update N to the new sample size   
-    N=len(state_w)   
+    
+    ###########################################################
+    #Ever MArried and Cohabited
+    #########################################################
         
     relt=np.zeros((len(state_codes),lenn))   
     relt1=np.zeros((len(state_codes),lenn))   
-
-
-
-        
+       
     for ist,sname in enumerate(state_codes): 
     
         for t in range(lenn):   
                   
                 
+            
             #Arrays for preparation   
-            is_state = (np.any(state[:,0:t]==ist,1))          
+            is_state = (np.any(state[:,:t+1]==ist,1))          
             is_state1 = (state[:,t]==ist)   
            
             if not (np.any(is_state) or np.any(is_state1)): continue   
@@ -791,12 +808,11 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
             #Relationship over time   
             relt[ist,t]=np.sum(is_state)   
             relt1[ist,t]=np.sum(is_state1)   
-                
-          
+            
                  
     #Now, before saving the moments, take interval of 5 years   
     # if (mdl.setup.pars['Tret']>=mdl.setup.pars['Tret']):           
-    reltt=relt[:,0:mdl.setup.pars['Tret']-mdl.setup.pars['Tbef']+1]   
+    reltt=relt[:,:mdl.setup.pars['Tret']-mdl.setup.pars['Tbef']+1]   
     years=np.linspace(20,50,7)   
     years_model=np.linspace(20,50,int(30/mdl.setup.pars['py']))   
        
@@ -820,11 +836,119 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     moments['share coh'] = reltt[3,:]/N   
     
     
+    ##############################################
+    #Sample selection for divorce by income
+    ############################################
+    
+     #Import the distribution from the data
+    with open('freq_psid_div.pkl', 'rb') as file:   
+        freq_psid_div_data=pickle.load(file)  
+        
+        
+    
+    #Define main variables
+    ctemp=change_psid.copy()
+    change_psid4=np.reshape(ctemp,resha)
+    
+  
+    #Keep all those guys only if the are men and in a relatioinship
+    #TODO
+    
+    #Make data compatible with current age.
+    freq_psid_div_data['age']=freq_psid_div_data['age']-18.0
+    freq_psid_div_data.loc[freq_psid_div_data['age']<0.0,'age']=0.0
+    
+    #Drop if no change in law!
+    if np.all(changep==0):
+        #freq_psid_tot_data.loc[freq_psid_tot_data['age']<1910.0,'age']=1000
+        freq_psid_div_data['unid']=0
+   
+        
+    freq_psid_div_data2=freq_psid_div_data.groupby(['age','unid'])['age'].count()
+    
+    #Create a Dataframe with simulated data to perform the draw
+    inde=np.linspace(1,resha,resha,dtype=np.int32)
+    
+    ddd4=np.stack((inde,agegrid,change_psid4),axis=0).T
+    df_psidd=pd.DataFrame(data=ddd4,columns=["Index","age","unid"],index=ddd4[:,0])
+    df_psidd['age']=df_psidd['age'].astype(np.float)
+    
+    if (len(df_psidd)>0) & (setup.pars['py']==1):
+        sampletemp=strata_sample(["'age'", "'unid'"],freq_psid_div_data2,frac=0.1,tsample=df_psidd,distr=True)
+        final2d=df_psidd.merge(sampletemp,how='left',on='Index',indicator=True)
+        
+        keep5=[False]*len(df_psidd)
+        keep5=(np.array(final2d['_merge'])=='both')
+        
+        #TODO assign labor according to stuff above
+        #Keep again for all relevant variables
+    
+        
+        #Initial distribution
+        prima_psid_div=freq_psid_div_data2/np.sum(freq_psid_div_data2)
+        
+        #Final distribution
+        final3=df_psidd[keep5]
+        final4=final3.groupby(['age','unid'])['age'].count()
+        dopo_psid_div=final4/np.sum(final4)
+        
+        
+        print('The average deviation from actual to final psid_div ditribution is {:0.2f}%'.format(np.mean(abs(prima_psid_div-dopo_psid_div))*100))
+         
+    else:
+        keep5=[True]*len(df_psidd)
+        
+
+
+    ##################################################
+    #DIVORCE BY INCOME
+    ################################################# 
+    
+    #Wage
+    iexo_div=np.reshape(iexo_psid,resha)
+    iexo_div=iexo_div[keep5]
+    stated=np.reshape(state_psid,resha)[keep5]
+    age_w=np.array(agegrid[keep5],dtype=np.int16)-1
+    wagem1=np.array(setup.pars['m_wage_trend'])[age_w][...,None]+np.array(setup.exogrid.zm_t)[age_w]
+    indexm=np.reshape(np.repeat(setup.all_indices(0,iexo_div)[2],setup.pars['n_zm_t'][0]),(len(iexo_div),setup.pars['n_zm_t'][0]),order='C')
+    indexs=np.reshape(np.repeat(setup.all_indices(0,iexo_div)[0],setup.pars['n_zm_t'][0]),(len(iexo_div),setup.pars['n_zm_t'][0]),order='C')
+    maskp=np.reshape(np.repeat(np.linspace(0,setup.pars['n_zm_t'][0]-1,setup.pars['n_zm_t'][0]),len(indexs)), (indexs.shape),order='F')
+                     
+    indexs[indexs>setup.pars['n_zm_t'][0]-1]=0
+    wagem=wagem1[maskp==indexs]
+    wagem[stated>1]=wagem1[maskp==indexm][stated>1]
+    
+    #Marital Status
+    married=(state_psid==2)
+    agegridtemp=agegridtemp.copy()-1
+    agem=np.argmax(married,axis=1)
+    neverm=(agem==0)
+    agem[neverm]=9999
+    divo1=(state_psid==1) & (agegridtemp>agem[...,None])
+    divo=np.reshape(divo1,resha)[keep5]
+    married=np.reshape(married,resha)[keep5]
+    
+    #Poor rich indicator
+    mincome1=np.quantile(np.reshape(wagem,(int(len(wagem)/len(iexo_psid[0,:])),len(iexo_psid[0,:]))),0.5,axis=0)
+    mincome2=np.repeat(mincome1,len(iexo_psid[:,0]),axis=0)
+    mincome3=np.reshape(mincome2,(int(len(wagem)/len(iexo_psid[0,:])),len(iexo_psid[0,:])),order='F')
+    mincome=np.reshape(mincome3,wagem.shape)
+    sq=(wagem==mincome)
+    even=(np.random.random_sample(mincome.shape)>0.5)#np.repeat((np.linspace(1,len(mincome3[:,0]),len(mincome3[:,0]),dtype=np.int32)%2==0),len(mincome3[0,:]))
+    lq=(wagem<mincome) | ((even) & (sq))
+    uq=(wagem>mincome) | ((~even) & (sq))
+    
+    moments['div_ratio']=(np.sum(divo[uq])/np.sum(married[uq]))/(np.sum(divo[lq])/np.sum(married[lq]))
+    
+    
     ##################################################
     #EVERYTHING BELOW IS NOT NECESSARY FOR MOMENTS
     #################################################
     
     if draw: 
+        
+        #Update N to the new sample size   
+        #N=len(state_w)   
     
         ###########################################   
         #Moments: Variables over Age   
@@ -889,6 +1013,16 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         var_assets_mpc=np.zeros(len(state_w[0,:]))
         var_assets_mpm=np.zeros(len(state_w[0,:]))
         
+        corr_ass_sepm=np.zeros(len(state_w[0,:]))
+        corr_ass_sepf=np.zeros(len(state_w[0,:]))
+        share_ass_sepm=np.zeros(len(state_w[0,:]))
+        share_ass_sepf=np.zeros(len(state_w[0,:]))
+        mcorr_ass_sepm=np.zeros(len(state_w[0,:]))
+        mcorr_ass_sepf=np.zeros(len(state_w[0,:]))
+        mshare_ass_sepm=np.zeros(len(state_w[0,:]))
+        mshare_ass_sepf=np.zeros(len(state_w[0,:]))
+        
+        
         psis=np.zeros(state_w.shape)
         ifemale=(female_w[:,0]==1)
         imale=(female_w[:,0]==0)
@@ -916,7 +1050,31 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
             cohm=(imale) & (state_w[:,i]==3) & (state_w[:,max(i-1,0)]<=1)
             marm=(imale) & (state_w[:,i]==2) & (state_w[:,max(i-1,0)]<=1)
             
-    
+            acm=(imale) & (state_w[:,i]==1) & (state_w[:,max(i-1,0)]==3)
+            acf=(ifemale) & (state_w[:,i]==0) & (state_w[:,max(i-1,0)]==3)
+            macm=(imale) & (state_w[:,i]==1) & (state_w[:,max(i-1,0)]==2) #& (state_w[:,max(i-2,0)]==2)
+            macf=(ifemale) & (state_w[:,i]==0) & (state_w[:,max(i-1,0)]==2)# & (state_w[:,max(i-2,0)]==2)
+            acmp=(acm) & (assetss_w[:,i]>0) 
+            acfp=(acf) & (assetss_w[:,i]>0)
+            macmp=(macm) & (assetss_w[:,i]>0)
+            macfp=(macf) & (assetss_w[:,i]>0)
+            
+            #Corr assets at separation+share
+            if np.any(acf):corr_ass_sepf[i]=np.corrcoef(assets_w[acf,i],(assetss_w[acf,i]-assets_w[acf,i]))[0,1]
+            if np.any(acm):corr_ass_sepm[i]=np.corrcoef(assets_w[acm,i],(assetss_w[acm,i]-assets_w[acm,i]))[0,1]
+            if np.any(acf):share_ass_sepf[i]=0.5
+            if np.any(acm):share_ass_sepm[i]=0.5
+            if np.any(acfp):share_ass_sepf[i]=np.mean(assets_w[acfp,i]/assetss_w[acfp,i])
+            if np.any(acmp):share_ass_sepm[i]=np.mean(1-assets_w[acmp,i]/assetss_w[acmp,i])
+           
+            
+            if np.any(macf):mcorr_ass_sepf[i]=np.corrcoef(assets_w[macf,i],(mdl.setup.div_costs.assets_kept*assetss_w[macf,i]-assets_w[macf,i]))[0,1]
+            if np.any(macm):mcorr_ass_sepm[i]=np.corrcoef(assets_w[macm,i],(mdl.setup.div_costs.assets_kept*assetss_w[macm,i]-assets_w[macm,i]))[0,1]
+            if np.any(macf):mshare_ass_sepf[i]=0.5
+            if np.any(macm):mshare_ass_sepm[i]=0.5
+            if np.any(macfp):mshare_ass_sepf[i]=np.mean(assets_w[macfp,i]/(mdl.setup.div_costs.assets_kept*assetss_w[macfp,i]))
+            if np.any(macmp):mshare_ass_sepm[i]=np.mean(1-assets_w[macmp,i]/(mdl.setup.div_costs.assets_kept*assetss_w[macmp,i]))
+            #print(np.mean(assets_w[marm,i]))
             #Assets Marriage
             if np.any(marf):assets_fm[i]=np.mean(assetss_w[marf,i])
             if np.any(marm):assets_mm[i]=np.mean(assetss_w[marm,i])
@@ -1040,12 +1198,17 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
                      
                 elif sname=="Couple, C" or sname=="Couple, M": 
                     
-                     if np.any(ind1f):inc_rel[ist,t,0]=np.mean(wage_f[ind1f,t])+np.mean(wage_mp[ind1f,t])
-                     if np.any(ind1m):inc_rel[ist,t,1]=np.mean(wage_m[ind1m,t])+np.mean(wage_fp[ind1m,t])
+                     if np.any(ind1f):inc_rel[ist,t,0]=np.mean(wage_f[:,t][keep][keep2][ind1f])+np.mean(wage_mp[:,t][keep][keep2][ind1f])
+                     if np.any(ind1m):inc_rel[ist,t,1]=np.mean(wage_m[:,t][keep][keep2][ind1m])+np.mean(wage_fp[:,t][keep][keep2][ind1m])
                      
                 else:  
                    
                    print('Error: No relationship chosen')  
+                   
+                   
+
+            
+        
         ###################################
         #"Event Study" with simulated data
         #################################
@@ -1059,8 +1222,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         
         agetemp_e=np.linspace(1,len(changep_w[0,:]),len(changep_w[0,:]))
         agegridtemp_e=np.reshape(np.repeat(agetemp_e,len(changep_w[:,0])),(len(changep_w[:,0]),len(agetemp_e)),order='F')
-        age_unid_e1[agegridtemp_e<=2]=1000
-        age_unid_e1[agegridtemp_e>=mdl.setup.pars['Tret']]=1000
+        #age_unid_e1[agegridtemp_e<=2]=1000
+        age_unid_e1[agegridtemp_e>=mdl.setup.pars['Tret']-int(mdl.setup.pars['Tret']/6)]=1000
         event=agegridtemp_e-age_unid_e1-1
         
         #Get beginning of the spell
@@ -1069,7 +1232,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         change=np.zeros(state_w.shape,dtype=bool)
         for t in range(1,mdl.setup.pars['Tret']-1):   
                
-            irchangem = ((state_w[:,t]==2) & ((state_w[:,t-1]==0) | (state_w[:,t-1]==1) | (state_w[:,t-1]==3))) 
+            irchangem = ((state_w[:,t]==2) & ((state_w[:,t-1]==0) | (state_w[:,t-1]==1))) 
             irchangec = ((state_w[:,t]==3) & ((state_w[:,t-1]==0) | (state_w[:,t-1]==1))) 
             irchange=((state_w[:,t]!=state_w[:,t-1]) & ((state_w[:,t-1]==0) | (state_w[:,t-1]==1))) 
             changem[:,t]=irchangem
@@ -1092,7 +1255,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         event_thetac=np.ones(len(eventgrid))*-1000
         event_psim=np.ones(len(eventgrid))*-1000
         event_psic=np.ones(len(eventgrid))*-1000
-        match=np.zeros(state_w.shape,dtype=bool)*-1000
+        match=np.ones(state_w.shape,dtype=bool)*-1000
        
     
         i=0
@@ -1162,13 +1325,21 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
                 
         #Check correlations
         ifemale1=(female_w==1)
-        nsinglef1=(ifemale1[:,0:60]) & (state_w[:,0:60]>1) & (labor_w[:,0:60]==1)
+        imale1=(female_w==0)
+        nsinglefc1=(ifemale1[:,0:60]) & (state_w[:,0:60]==3) & (labor_w[:,0:60]==1)
         nsinglefm1=(ifemale1[:,0:60]) & (state_w[:,0:60]==2) & (labor_w[:,0:60]==1)
+        nsinglefc2=(imale1[:,0:60]) & (state_w[:,0:60]==3) & (labor_w[:,0:60]==1)
+        nsinglefm2=(imale1[:,0:60]) & (state_w[:,0:60]==2) & (labor_w[:,0:60]==1)
         wage_ft=wage_f[:,0:60]
         wage_mpt=wage_mp[:,0:60]
-        corr=np.corrcoef(np.log(wage_ft[nsinglef1]),np.log(wage_mpt[nsinglef1]))
+        wage_mt=wage_m[:,0:60]
+        wage_fpt=wage_fp[:,0:60]
+        corr=np.corrcoef(np.log(wage_ft[nsinglefc1]),np.log(wage_mpt[nsinglefc1]))
         corr1=np.corrcoef(np.log(wage_ft[nsinglefm1]),np.log(wage_mpt[nsinglefm1]))
-        print('Correlation in potential wages is {}, for marriage only is {}'.format(corr[0,1],corr1[0,1]) )  
+        corrm=np.corrcoef(np.log(wage_mt[nsinglefc2]),np.log(wage_fpt[nsinglefc2]))
+        corrm1=np.corrcoef(np.log(wage_mt[nsinglefm2]),np.log(wage_fpt[nsinglefm2]))
+        print('Correlation in potential wages for cohabitaiton is {}, for marriage only is {}'.format(corr[0,1],corr1[0,1]) )  
+        print('Correlation in potential wages for cohabitaiton is {}, for marriage only is {}'.format(corrm[0,1],corrm1[0,1]) )  
             
        
         #Get useful package for denisty plots
@@ -1202,6 +1373,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
             mar_d=packed_data['emar']   
             coh_d=packed_data['ecoh']   
             fls_d=np.ones(1)*packed_data['fls_ratio']  
+            wage_d=np.ones(1)*packed_data['wage_ratio']
+            div_d=np.ones(1)*packed_data['div_ratio']
             mean_fls_d=np.ones(1)*packed_data['mean_fls']  
             beta_unid_d=np.ones(1)*packed_data['beta_unid']   
             hazm_i=packed_data['hazmi']   
@@ -1209,7 +1382,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
             hazd_i=packed_data['hazdi']   
             mar_i=packed_data['emari']   
             coh_i=packed_data['ecohi']   
-            fls_i=np.ones(1)*packed_data['fls_ratioi']   
+            fls_i=np.ones(1)*packed_data['fls_ratioi']  
+            wage_i=np.ones(1)*packed_data['wage_ratioi']
             mean_fls_i=np.ones(1)*packed_data['mean_flsi'] 
             beta_unid_i=np.ones(1)*packed_data['beta_unidi']   
     
@@ -1424,8 +1598,47 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.xlabel('Age')   
         plt.ylabel('Asset Variance first meeting') 
         
+        ##########################################   
+        # Correlation Assets at Breack up
+        ##########################################        
+        fig = plt.figure()   
+        f3=fig.add_subplot(2,1,1)   
+        
+        lend=len(wage_fs)
+        agea=np.array(range(lend))+20
+       
+        plt.plot(agea, corr_ass_sepf,color='r',markersize=3, label='Separation-fm')
+        plt.plot(agea, corr_ass_sepm,color='b',markersize=3, label='Separation-mm')
+        plt.plot(agea, mcorr_ass_sepf,color='m',markersize=3, label='Divorce-fm')
+        plt.plot(agea, mcorr_ass_sepm,color='k',markersize=3, label='Divorce-mm')
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),   
+                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')   
+        plt.xlabel('Age')   
+        plt.ylabel('Correlation assets at breack up') 
+        
+        
+        
+        ##########################################   
+        # Share Assets at Breack up
+        ##########################################        
+        fig = plt.figure()   
+        f3=fig.add_subplot(2,1,1)   
+        
+        lend=len(wage_fs)
+        agea=np.array(range(lend))+20
+       
+        plt.plot(agea, share_ass_sepf,color='r',markersize=3, label='Separation-fm')
+        plt.plot(agea, share_ass_sepm,color='b',markersize=3, label='Separation-mm')
+        plt.plot(agea, mshare_ass_sepf,color='m',markersize=3, label='Divorce-fm')
+        plt.plot(agea, mshare_ass_sepm,color='k',markersize=3, label='Divorce-mm')
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),   
+                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')   
+        plt.xlabel('Age')   
+        plt.ylabel('Female Share assets at breack up') 
+        
         
                     
+       
         
         ##########################################   
         # Relationship Over the Live Cycle   
@@ -1491,6 +1704,56 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')   
         plt.xlabel('Love Shock')   
         plt.ylabel('Denisty') 
+        
+        ##########################################   
+        # Distribution of Love - Cumulative
+        ##########################################  
+        fig = plt.figure()   
+        f1=fig.add_subplot(2,1,1)
+        
+        # evaluate the histogram
+        valuesc, basec = np.histogram(psis[changec], bins=1000)
+        valuesm, basem = np.histogram(psis[changem], bins=1000)
+        valuesct, basect = np.histogram(psis[state_w==3], bins=1000)
+        valuesmt, basemt = np.histogram(psis[state_w==2], bins=1000)
+        #evaluate the cumulative
+        cumulativec = np.cumsum(valuesc)
+        cumulativem = np.cumsum(valuesm)
+        cumulativect = np.cumsum(valuesct)
+        cumulativemt = np.cumsum(valuesmt)
+        # plot the cumulative function
+        plt.plot(basec[:-1], cumulativec/max(cumulativec), c='red',label = 'Cohabitaition')
+        plt.plot(basem[:-1], cumulativem/max(cumulativem), c='blue',label = 'Marriage')
+        #plt.plot(basect[:-1], cumulativect/max(cumulativect),linestyle='--', c='red',label = 'Cohabitaition-All')
+        #plt.plot(basemt[:-1], cumulativemt/max(cumulativemt),linestyle='--', c='blue',label = 'Marriage-All')
+        plt.legend(loc='best', ncol=1, fontsize='x-small')   
+        plt.xlabel('Love Shock $\psi$')   
+        plt.ylabel('Probability') 
+        plt.savefig('psidist.pgf', bbox_inches = 'tight',pad_inches = 0) 
+        
+        ############################################################
+        # Distribution of Love - Cumulative - Before and After policy
+        ###################################################################
+        
+        fig = plt.figure()   
+        f1=fig.add_subplot(2,1,1)
+        
+        # evaluate the histogram
+        valuesc, basec = np.histogram(psis[(changec) & (event<0)], bins=1000)
+        valuesm, basem = np.histogram(psis[(changec) & (event>=0)], bins=1000)
+
+        #evaluate the cumulative
+        cumulativec = np.cumsum(valuesc)
+        cumulativem = np.cumsum(valuesm)
+        cumulativect = np.cumsum(valuesct)
+        cumulativemt = np.cumsum(valuesmt)
+        # plot the cumulative function
+        plt.plot(basec[:-1], cumulativec/max(cumulativec), c='red',label = 'Bilateral')
+        plt.plot(basem[:-1], cumulativem/max(cumulativem), c='blue',label = 'Unilateral')
+        plt.legend(loc='best', ncol=1, fontsize='x-small')   
+        plt.xlabel('Love Shock $\psi$')   
+        plt.ylabel('Probability') 
+        plt.savefig('psipol.pgf', bbox_inches = 'tight',pad_inches = 0) 
         
         ##########################################   
         # Distribution of Pareto Weight 
@@ -1605,6 +1868,43 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.xticks(x, ["Data","Simulation"] )  
         #plt.ylim(ymax=0.1)   
         plt.xlim(xmax=1.0,xmin=0.0)   
+        
+        ##########################################   
+        # Wage: Marriage vs. cohabitation 
+        ##########################################    
+        fig = plt.figure()   
+        f6=fig.add_subplot(2,1,1)   
+            
+           
+        # create plot   
+        x=np.array([0.25,0.75])  
+        y=np.array([wage_d,moments['wage_ratio']])   
+        yerr=np.array([(wage_i[1]-wage_i[0])/2.0,0.0])   
+        plt.axhline(y=1.0,linewidth=0.1, color='r')   
+        plt.errorbar(x, y, yerr=yerr, fmt='o', elinewidth=0.03)   
+        plt.ylabel('Difference of Male Log wages: Mar-Coh')   
+        plt.xticks(x, ["Data","Simulation"] )  
+        #plt.ylim(ymax=0.1)   
+        plt.xlim(xmax=1.0,xmin=0.0)   
+        
+        
+        ##########################################   
+        # Wage: Marriage vs. cohabitation 
+        ##########################################    
+        fig = plt.figure()   
+        f6=fig.add_subplot(2,1,1)   
+            
+           
+        # create plot   
+        x=np.array([0.25,0.75])  
+        y=np.array([div_d,moments['div_ratio']])   
+        yerr=np.array([(wage_i[1]-wage_i[0])/2.0,0.0])   
+        plt.axhline(y=1.0,linewidth=0.1, color='r')   
+        plt.errorbar(x, y, yerr=yerr, fmt='o', elinewidth=0.03)   
+        plt.ylabel('Ratio of Male Divorce rates: Rich over poor')   
+        plt.xticks(x, ["Data","Simulation"] )  
+        #plt.ylim(ymax=0.1)   
+        plt.xlim(xmax=1.0,xmin=0.0) 
          
          
         ##########################################   

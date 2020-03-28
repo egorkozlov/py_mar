@@ -105,8 +105,8 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
             
         else:
             # specify the changes here manually
-            dc_before = DivorceCosts(unilateral_divorce=False,assets_kept = 0.8,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)
-            dc_after  = DivorceCosts(unilateral_divorce=True,assets_kept = 0.8,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)
+            dc_before = DivorceCosts(unilateral_divorce=False,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)
+            dc_after  = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)
             
             
             
@@ -198,7 +198,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
         
    
     #Get Number of simulated agent, malea and female
-    N=150000
+    N=15000
     Nf=int(N*age_uni['share_female'])
     Nm=N-Nf
     agents_fem = Agents( mdl_list ,age_uni['female'],female=True,pswitchlist=transition_matricesf,verbose=False,N=Nf)
@@ -226,10 +226,12 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     mar_d=packed_data['emar']
     coh_d=packed_data['ecoh']
     fls_d=np.ones(1)*packed_data['fls_ratio']
+    wage_d=np.ones(1)*packed_data['wage_ratio']
+    div_d=np.ones(1)*packed_data['div_ratio']
     beta_unid_d=np.ones(1)*packed_data['beta_unid']
     mean_fls_d=np.ones(1)*packed_data['mean_fls']
     W=packed_data['W']
-    dat=np.concatenate((hazm_d,hazs_d,hazd_d,mar_d,coh_d,fls_d,beta_unid_d,mean_fls_d),axis=0)
+    dat=np.concatenate((hazm_d,hazs_d,hazd_d,mar_d,coh_d,fls_d,wage_d,div_d,beta_unid_d,mean_fls_d),axis=0)
     
 
     #Get Simulated Data
@@ -242,7 +244,9 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     beta_unid_s=np.ones(1)*moments['beta unid']
     mean_fls_s=np.ones(1)*moments['mean_fls']
     fls_s = np.ones(1)*moments['fls_ratio']
-    sim=np.concatenate((hazm_s,hazs_s,hazd_s,mar_s,coh_s,fls_s,beta_unid_s,mean_fls_s),axis=0)
+    wage_s = np.ones(1)*moments['wage_ratio']
+    div_s = np.ones(1)*moments['div_ratio']
+    sim=np.concatenate((hazm_s,hazs_s,hazd_s,mar_s,coh_s,fls_s,wage_s,div_s,beta_unid_s,mean_fls_s),axis=0)
 
 
 

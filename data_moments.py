@@ -56,7 +56,7 @@ def hazards(dataset,event,duration,end,listh,number,wgt):
 #####################################   
 #Routine that computes moments   
 #####################################   
-def compute(hi,d_hrs,period=3,transform=1):   
+def compute(hi,d_hrs,d_divo,period=3,transform=1):   
     #compute moments, period   
     #says how many years correspond to one   
     #period   
@@ -335,11 +335,7 @@ def compute(hi,d_hrs,period=3,transform=1):
         ecoh[j]=np.average(hi['everc_'+str(20+(j)*5)], weights=np.array(hi['SAMWT']))   
            
            
-    #########################################   
-    # Femle Labor Supply   
-    #########################################   
-    #fls_ratio=np.average(empl.loc[empl['stat']=='mar','work'], weights=np.array(empl.loc[empl['stat']=='mar','SAMWT']))/np.average(empl.loc[empl['stat']=='coh','work'], weights=np.array(empl.loc[empl['stat']=='coh','SAMWT']))   
-     
+
     #########################################   
     #Create the age at unilateral divorce+   
     #regression on the effect of unilateral divorce   
@@ -421,37 +417,7 @@ def compute(hi,d_hrs,period=3,transform=1):
     hi.loc[hi['age_unid']<0,'age_unid']=-1   
        
        
-    #Function to get frequencies   
-    def CountFrequency(my_list):    
-     
-        # Creating an empty dictionary     
-        freq = {}    
-        for item in my_list:    
-            if (item in freq):    
-                freq[item] += 1   
-            else:    
-                freq[item] = 1   
-         
-        #for key, value in freq.items():    
-         #   print ("% d : % d"%(key, value))    
-           
-        return freq   
-           
-    #Frequencies for age policy change for man and womenM2DP01
-    freq_pc=dict()
-    freq_pc['male'] = CountFrequency(hi.loc[hi['M2DP01']=='MALE','age_unid'].tolist()) 
-    freq_pc['female'] = CountFrequency(hi.loc[hi['M2DP01']=='FEMALE','age_unid'].tolist()) 
-    freq_pc['share_female']=np.mean(hi['M2DP01']=='FEMALE')
-       
-    #Frequencies for age in the second wave   
-    freq_i= CountFrequency(date_age['age'].tolist())   
-      
-    #Frequencies for age at intervire  
-    freq_ai=CountFrequency(hi['ageint'].tolist())   
-    
-    #Frequencies of agents by age at unid and gender
-    freq_nsfh = hi[['M2DP01','age_unid','SAMWT']]#hi.groupby(['M2DP01','age_unid'])['SAMWT'].count()
-       
+
     ############################## 
     #Compute hours using the psid 
     ################################ 
@@ -481,17 +447,70 @@ def compute(hi,d_hrs,period=3,transform=1):
     fls_ratio=np.average(d_hrs2.loc[(d_hrs2['mar']==1.0) & (d_hrs['age']>=20) &
                                     (d_hrs['age']<=60),'wls'])/np.average(d_hrs2.loc[(d_hrs2['mar']==0.0) &
                                     (d_hrs['age']>=20) & (d_hrs['age']<=60),'wls'])   
+                    
+                    
+    #Get difference in male wages in marriage and cohabitation
+    weightm=d_hrs2.loc[(d_hrs2['mar']==1.0) & (np.isnan(d_hrs2['ln_ly'])==False),'wls']
+    weightc=d_hrs2.loc[(d_hrs2['mar']==0.0) & (np.isnan(d_hrs2['ln_ly'])==False),'wls']
+    wage_ratio=np.average(d_hrs2.loc[(d_hrs2['mar']==1.0) & (np.isnan(d_hrs2['ln_ly'])==False),'ln_ly'],weights=weightm)-np.average(d_hrs2.loc[(d_hrs2['mar']==0.0) & (np.isnan(d_hrs2['ln_ly'])==False),'ln_ly'],weights=weightc)
+               
+    #######################################
+    #Get divorce by income using PSID
+    ########################################
+    divR=np.average(d_divo.loc[(d_divo['ln_ly']>d_divo['wtmedian']),'div'])
+    divP=np.average(d_divo.loc[(d_divo['ln_ly']<d_divo['wtmedian']),'div'])
+    marR=np.average(d_divo.loc[(d_divo['ln_ly']>d_divo['wtmedian']),'mar'])
+    marP=np.average(d_divo.loc[(d_divo['ln_ly']<d_divo['wtmedian']),'mar'])
+    div_ratio=(divR/marR)/(divP/marP)
      
+    
+    ########################################
+    #FREQENCIES
+    #######################################
+        
+    def CountFrequency(my_list):    
+     
+        # Creating an empty dictionary     
+        freq = {}    
+        for item in my_list:    
+            if (item in freq):    
+                freq[item] += 1   
+            else:    
+                freq[item] = 1   
+         
+        #for key, value in freq.items():    
+         #   print ("% d : % d"%(key, value))    
+           
+        return freq   
+           
+    
+    #Modify age unid
+    freq_pc=dict()
+    freq_pc['male'] = CountFrequency(hi.loc[hi['M2DP01']=='MALE','age_unid'].tolist()) 
+    freq_pc['female'] = CountFrequency(hi.loc[hi['M2DP01']=='FEMALE','age_unid'].tolist()) 
+    freq_pc['share_female']=np.mean(hi['M2DP01']=='FEMALE')
+       
+    #Frequencies for age in the second wave   
+    freq_i= CountFrequency(date_age['age'].tolist())   
+      
+    #Frequencies for age at intervire  
+    freq_ai=CountFrequency(hi['ageint'].tolist())   
+    
+    #Frequencies of agents by age at unid and gender
+    freq_nsfh = hi[['M2DP01','age_unid','SAMWT']]#hi.groupby(['M2DP01','age_unid'])['SAMWT'].count()
+       
     #Get distribution of types using the psid
     freq_psid_tot=d_hrs[['age','unid']]
-    freq_psid_par=d_hrs2[['age','unid']]
+    freq_psid_par=d_hrs2[['age','unid','mar']]
+    freq_psid_div=d_divo[['age','unid']]
         
        
     #Create a dictionary for saving simulated moments   
     listofTuples = [("hazs" , hazs), ("hazm" , hazm),("hazd" , hazd),("emar" , emar),  
-                    ("ecoh" , ecoh), ("fls_ratio" , fls_ratio),("mean_fls" , mean_fls),("mar" , mar),("coh" , coh),  
+                    ("ecoh" , ecoh), ("fls_ratio" , fls_ratio),("wage_ratio" , wage_ratio),("div_ratio" , div_ratio),
+                    ("mean_fls" , mean_fls),("mar" , mar),("coh" , coh),  
                     ("freq_pc" , freq_pc), ("freq_i" , freq_i),("beta_unid" , beta_unid),("freq_ai" , freq_ai),
-                    ("freq_nsfh" , freq_nsfh),("freq_psid_tot" , freq_psid_tot),("freq_psid_par" , freq_psid_par)]   
+                    ("freq_nsfh" , freq_nsfh),("freq_psid_tot" , freq_psid_tot),("freq_psid_par" , freq_psid_par),("freq_psid_div" , freq_psid_div)]   
     dic_mom=dict(listofTuples)   
        
     del hi,hi2,hi3   
@@ -511,6 +530,7 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
     #Import Data   
     data=pd.read_csv('histo.csv')      
     data_h=pd.read_csv('hrs.csv') 
+    data_d=pd.read_csv('divo.csv')
        
     #Subset Data
     data=data[data['eq']<=1].copy()
@@ -518,13 +538,15 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
     
     
     #Call the routine to compute the moments   
-    dic=compute(data.copy(),data_h.copy(),period=period,transform=transform)   
+    dic=compute(data.copy(),data_h.copy(),data_d.copy(),period=period,transform=transform)   
     hazs=dic['hazs']   
     hazm=dic['hazm']   
     hazd=dic['hazd']   
     emar=dic['emar']   
     ecoh=dic['ecoh']   
-    fls_ratio=dic['fls_ratio']   
+    fls_ratio=dic['fls_ratio'] 
+    wage_ratio=dic['wage_ratio'] 
+    div_ratio=dic['div_ratio'] 
     mean_fls=dic['mean_fls'] 
     mar=dic['mar']   
     coh=dic['coh']   
@@ -534,6 +556,7 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
     freq_nsfh=dic['freq_nsfh']  
     freq_psid_tot=dic['freq_psid_tot']  
     freq_psid_par=dic['freq_psid_par']  
+    freq_psid_div=dic['freq_psid_div']  
     beta_unid=dic['beta_unid']   
        
        
@@ -551,26 +574,32 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
     cohB=np.zeros((len(coh),boot))   
     emarB=np.zeros((len(emar),boot))   
     ecohB=np.zeros((len(ecoh),boot))   
-    fls_ratioB=np.zeros((1,boot))  
+    fls_ratioB=np.zeros((1,boot)) 
+    wage_ratioB=np.zeros((1,boot)) 
+    div_ratioB=np.zeros((1,boot)) 
     mean_flsB=np.zeros((1,boot))  
     beta_unidB=np.zeros((1,boot))   
        
     aa=data.sample(n=nn,replace=True,weights='SAMWT',random_state=4) 
     a_h=data_h.sample(n=nn_h,replace=True,random_state=5) 
+    a_d=data_d.sample(n=nn_h,replace=True,random_state=6) 
        
     #Make weights useless, we already used them for sampling   
     aa['SAMWT']=1   
     for i in range(boot):   
        
         a1=aa[(i*n):((i+1)*n)].copy().reset_index()   
-        a1h=a_h[(i*n_h):((i+1)*n_h)].copy().reset_index()  
-        dicti=compute(a1.copy(),a1h.copy(),period=period,transform=transform)   
+        a1h=a_h[(i*n_h):((i+1)*n_h)].copy().reset_index() 
+        a1d=a_d[(i*n_h):((i+1)*n_h)].copy().reset_index() 
+        dicti=compute(a1.copy(),a1h.copy(),a1d.copy(),period=period,transform=transform)   
         hazsB[:,i]=dicti['hazs']   
         hazmB[:,i]=dicti['hazm']   
         hazdB[:,i]=dicti['hazd']   
         emarB[:,i]=dicti['emar']   
         ecohB[:,i]=dicti['ecoh']   
-        fls_ratioB[:,i]=dicti['fls_ratio']  
+        fls_ratioB[:,i]=dicti['fls_ratio'] 
+        wage_ratioB[:,i]=dicti['wage_ratio'] 
+        div_ratioB[:,i]=dicti['div_ratio'] 
         mean_flsB[:,i]=dicti['mean_fls']  
         marB[:,i]=dicti['mar']   
         beta_unidB[:,i]=dicti['beta_unid']   
@@ -587,7 +616,9 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
     cohi=np.array((np.percentile(cohB,2.5,axis=1),np.percentile(cohB,97.5,axis=1)))   
     emari=np.array((np.percentile(emarB,2.5,axis=1),np.percentile(emarB,97.5,axis=1)))   
     ecohi=np.array((np.percentile(ecohB,2.5,axis=1),np.percentile(ecohB,97.5,axis=1)))   
-    fls_ratioi=np.array((np.percentile(fls_ratioB,2.5,axis=1),np.percentile(fls_ratioB,97.5,axis=1)))   
+    fls_ratioi=np.array((np.percentile(fls_ratioB,2.5,axis=1),np.percentile(fls_ratioB,97.5,axis=1))) 
+    wage_ratioi=np.array((np.percentile(wage_ratioB,2.5,axis=1),np.percentile(wage_ratioB,97.5,axis=1)))
+    div_ratioi=np.array((np.percentile(div_ratioB,2.5,axis=1),np.percentile(div_ratioB,97.5,axis=1)))
     mean_flsi=np.array((np.percentile(mean_flsB,2.5,axis=1),np.percentile(mean_flsB,97.5,axis=1)))   
     beta_unidi=np.array((np.percentile(beta_unidB,2.5,axis=1),np.percentile(beta_unidB,97.5,axis=1)))   
        
@@ -595,7 +626,7 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
     if weighting:   
            
         #Compute optimal Weighting Matrix   
-        col=np.concatenate((hazmB,hazsB,hazdB,emarB,ecohB,fls_ratioB,beta_unidB,mean_flsB),axis=0)       
+        col=np.concatenate((hazmB,hazsB,hazdB,emarB,ecohB,fls_ratioB,wage_ratioB,div_ratioB,beta_unidB,mean_flsB),axis=0)       
         dim=len(col)   
         W_in=np.zeros((dim,dim))   
         for i in range(dim):   
@@ -614,7 +645,7 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
     elif relative:  
           
         #Compute optimal Weighting Matrix   
-        col=np.concatenate((hazm,hazs,hazd,emar,ecoh,fls_ratio*np.ones(1),beta_unid*np.ones(1),mean_fls*np.ones(1)),axis=0)       
+        col=np.concatenate((hazm,hazs,hazd,emar,ecoh,fls_ratio*np.ones(1),wage_ratio*np.ones(1),div_ratio*np.ones(1),beta_unid*np.ones(1),mean_fls*np.ones(1)),axis=0)       
         dim=len(col)   
         W=np.zeros((dim,dim))   
         for i in range(dim):   
@@ -623,13 +654,15 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
     else:   
            
         #If no weighting, just use sum of squred deviations as the objective function           
-        W=np.diag(np.ones(len(hazm)+len(hazs)+len(hazd)+len(emar)+len(ecoh)+3))#two is for fls+beta_unid   
+        W=np.diag(np.ones(len(hazm)+len(hazs)+len(hazd)+len(emar)+len(ecoh)+5))#two is for fls+beta_unid   
            
     listofTuples = [("hazs" , hazs), ("hazm" , hazm),("hazd" , hazd),("emar" , emar),   
-                ("ecoh" , ecoh), ("fls_ratio" , fls_ratio),("mar" , mar),("coh" , coh),   
+                ("ecoh" , ecoh), ("fls_ratio" , fls_ratio),("wage_ratio" , wage_ratio),
+                ("div_ratio" , div_ratio),("mar" , mar),("coh" , coh),   
                 ("beta_unid" , beta_unid),("mean_fls" , mean_fls),  
                 ("hazsi" , hazsi), ("hazmi" , hazmi),("hazdi" , hazdi),("emari" , emari),  
-                ("ecohi" , ecohi), ("fls_ratioi" , fls_ratioi),("mari" , mari),("cohi" , cohi),  
+                ("ecohi" , ecohi), ("fls_ratioi" , fls_ratioi),("wage_ratioi" , wage_ratioi),
+                ("div_ratioi" , div_ratioi),("mari" , mari),("cohi" , cohi),  
                 ("beta_unidi" , beta_unidi),("mean_flsi" , mean_flsi),("W",W)]   
     packed_stuff=dict(listofTuples)   
     #packed_stuff = (hazm,hazs,hazd,emar,ecoh,fls_ratio,W,hazmi,hazsi,hazdi,emari,ecohi,fls_ratioi,mar,coh,mari,cohi)   
@@ -662,7 +695,11 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
         
     #Frequency of PSID types ratio fls
     with open('freq_psid_par.pkl', 'wb+') as file:   
-        pickle.dump(freq_psid_par,file)  
+        pickle.dump(freq_psid_par,file) 
+        
+    #Frequency of PSID types ratio divorce
+    with open('freq_psid_div.pkl', 'wb+') as file:   
+        pickle.dump(freq_psid_div,file) 
            
     del packed_stuff,freq_i,freq_pc,aa,data,freq_ai   
            
@@ -782,7 +819,8 @@ if __name__ == '__main__':
     hazd_d=packed_data['hazd']   
     mar_d=packed_data['emar']   
     coh_d=packed_data['ecoh']   
-    fls_d=np.ones(1)*packed_data['fls_ratio']   
+    fls_d=np.ones(1)*packed_data['fls_ratio']
+    wage_d=np.ones(1)*packed_data['wage_ratio']
     beta_unid_d=np.ones(1)*packed_data['beta_unid']   
     hazm_i=packed_data['hazmi']   
     hazs_i=packed_data['hazsi']   

@@ -34,10 +34,10 @@ def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
     zfgrid = setup.exo_grids['Female, single'][t+1]
     zmgrid = setup.exo_grids['Male, single'][t+1]
     
-    share=(np.exp(zfgrid[izf]) / ( np.exp(zmgrid[izm]) + np.exp(zfgrid[izf]) ) )
+    share=(np.exp(zfgrid[izf]+setup.pars['f_wage_trend'][t+1]) / ( np.exp(zmgrid[izm]+setup.pars['m_wage_trend'][t+1]) + np.exp(zfgrid[izf]+setup.pars['f_wage_trend'][t+1]) ) )
     relat=np.ones(share.shape)*0.5
     income_share_f=(1.0*share+0.0*relat).squeeze()
-    #income_share_f = (np.exp(zfgrid[izf]) / ( np.exp(zmgrid[izm]) + np.exp(zfgrid[izf]) ) ).squeeze()
+    income_share_f =(np.exp(zfgrid[izf]+setup.pars['f_wage_trend'][t+1]) / ( np.exp(zmgrid[izm]+setup.pars['m_wage_trend'][t+1]) + np.exp(zfgrid[izf]+setup.pars['f_wage_trend'][t+1]) ) ).squeeze()
     
     share_f, share_m = dc.shares_if_split(income_share_f)
    

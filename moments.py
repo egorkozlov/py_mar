@@ -769,20 +769,39 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     ################
     #Ratio of fls 
     ###############
-    
-    state_par=state_par[incoupler][keep4]
+    ages=agegrid[incouplerp][keep4]
+    state_par=state_par[incouplerp][keep4]
     labor_par=np.reshape(labor_psid,resha)
     labor_par=labor_par[incouplerp][keep4]
     
     mean_fls_m=0.0 
-    pick=(state_par[:]==2) 
-    if pick.any():mean_fls_m=np.array(setup.ls_levels)[labor_par[pick]].mean() 
+    picky=(state_par[:]==2) & (ages<=15)
+    picko=(state_par[:]==2) & (ages>15)
+    mean_fls_m=np.zeros((2))
+    if picky.any():mean_fls_m[0]=np.array(setup.ls_levels)[labor_par[picky]].mean() 
+    if picky.any():mean_fls_m[1]=np.array(setup.ls_levels)[labor_par[picko]].mean() 
        
     mean_fls_c=0.0 
-    pick=(state_par[:]==3) 
-    if pick.any():mean_fls_c=np.array(setup.ls_levels)[labor_par[pick]].mean() 
+    picky=(state_par[:]==3) & (ages<=15)
+    picko=(state_par[:]==3) & (ages>15)
+    mean_fls_c=np.zeros((2))
+    if picky.any():mean_fls_c[0]=np.array(setup.ls_levels)[labor_par[picky]].mean() 
+    if picky.any():mean_fls_c[1]=np.array(setup.ls_levels)[labor_par[picko]].mean() 
      
-    moments['fls_ratio']=mean_fls_m/max(mean_fls_c,0.0001) 
+    small=mean_fls_c<0.0001*np.ones((2))
+    mean_fls_c[small]=0.0001*np.ones((2))[small]
+    moments['fls_ratio']=mean_fls_m/mean_fls_c
+    
+    grid=np.linspace(5,35,31,dtype=np.int16)
+    storem=np.zeros(grid.shape)
+    storec=np.zeros(grid.shape)
+    for i in range(len(grid)):
+        storem[i]=np.mean(labor_par[(state_par==2) & (ages==grid[i])])
+        storec[i]=np.mean(labor_par[(state_par==3) & (ages==grid[i])])
+        
+        
+    
+    
     
     
     ###########################################################
@@ -1373,7 +1392,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
             hazd_d=packed_data['hazd']   
             mar_d=packed_data['emar']   
             coh_d=packed_data['ecoh']   
-            fls_d=np.ones(1)*packed_data['fls_ratio']  
+            fls_d=packed_data['fls_ratio']  
             wage_d=np.ones(1)*packed_data['wage_ratio']
             div_d=np.ones(1)*packed_data['div_ratio']
             mean_fls_d=np.ones(1)*packed_data['mean_fls']  
@@ -1383,7 +1402,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
             hazd_i=packed_data['hazdi']   
             mar_i=packed_data['emari']   
             coh_i=packed_data['ecohi']   
-            fls_i=np.ones(1)*packed_data['fls_ratioi']  
+            fls_i=packed_data['fls_ratioi']  
             wage_i=np.ones(1)*packed_data['wage_ratioi']
             mean_fls_i=np.ones(1)*packed_data['mean_flsi'] 
             beta_unid_i=np.ones(1)*packed_data['beta_unidi']   
@@ -1858,17 +1877,19 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         fig = plt.figure()   
         f6=fig.add_subplot(2,1,1)   
             
-           
+
+        
+        lg=2
         # create plot   
-        x=np.array([0.25,0.75])  
-        y=np.array([fls_d,mean_fls_m/max(mean_fls_c,0.0001)])   
-        yerr=np.array([(fls_i[1]-fls_i[0])/2.0,0.0])   
-        plt.axhline(y=1.0,linewidth=0.1, color='r')   
-        plt.errorbar(x, y, yerr=yerr, fmt='o', elinewidth=0.03)   
-        plt.ylabel('Ratio of Female Hrs: Mar/Coh')   
-        plt.xticks(x, ["Data","Simulation"] )  
+        plt.plot(np.array(range(lg))+1, moments['fls_ratio'], linestyle='--',linewidth=1.5, label='Simulated')   
+        plt.plot(np.array(range(lg))+1, fls_d,linewidth=1.5, label='Data')   
+        plt.fill_between(np.array(range(lg))+1, fls_i[0,0:lg], fls_i[1,0:lg],alpha=0.2,facecolor='b')   
+        plt.ylabel('Ratio of Female Hrs: Mar/Coh')
+        plt.legend(loc='best', bbox_to_anchor=(0.5, -0.3),   
+                  fancybox=True, shadow=True, ncol=2, fontsize='x-small')  
+       
         #plt.ylim(ymax=0.1)   
-        plt.xlim(xmax=1.0,xmin=0.0)   
+        #plt.xlim(xmax=1.0,xmin=0.0)   
         
         ##########################################   
         # Wage: Marriage vs. cohabitation 
@@ -1886,7 +1907,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.ylabel('Difference of Male Log wages: Mar-Coh')   
         plt.xticks(x, ["Data","Simulation"] )  
         #plt.ylim(ymax=0.1)   
-        plt.xlim(xmax=1.0,xmin=0.0)   
+        #plt.xlim(xmax=1.0,xmin=0.0)   
         
         
         ##########################################   

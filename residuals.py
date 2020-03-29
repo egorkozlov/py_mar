@@ -225,7 +225,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     hazd_d=packed_data['hazd']
     mar_d=packed_data['emar']
     coh_d=packed_data['ecoh']
-    fls_d=np.ones(1)*packed_data['fls_ratio']
+    fls_d=packed_data['fls_ratio']
     wage_d=np.ones(1)*packed_data['wage_ratio']
     div_d=np.ones(1)*packed_data['div_ratio']
     beta_unid_d=np.ones(1)*packed_data['beta_unid']
@@ -243,7 +243,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     coh_s = moments['share coh'][0:len(coh_d)]
     beta_unid_s=np.ones(1)*moments['beta unid']
     mean_fls_s=np.ones(1)*moments['mean_fls']
-    fls_s = np.ones(1)*moments['fls_ratio']
+    fls_s = moments['fls_ratio']
     wage_s = np.ones(1)*moments['wage_ratio']
     div_s = np.ones(1)*moments['div_ratio']
     sim=np.concatenate((hazm_s,hazs_s,hazd_s,mar_s,coh_s,fls_s,wage_s,div_s,beta_unid_s,mean_fls_s),axis=0)

@@ -33,15 +33,9 @@ def welf_dec(mdl,agents):
     Vm_bil=mdl[0].V[0]['Male, single']['V'][0,shocks[ismale]]
     Vf_uni=mdl[1].V[0]['Female, single']['V'][0,shocks[isfemale]]
     Vm_uni=mdl[1].V[0]['Male, single']['V'][0,shocks[ismale]]
-    changef=(Vf_bil-Vf_uni)/np.abs(Vf_bil)
-    changem=(Vm_bil-Vm_uni)/np.abs(Vm_bil) 
+ 
     
     
-    #Get utility from realizations
-    #mdl[0].setup.u_part(1,1,1,0.5,0.0,the)
-    
-    
-
     
     #Compute additional wealth to make them indifferent-Women
     for i in range(len(mdl[0].setup.agrid_c)):

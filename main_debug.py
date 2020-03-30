@@ -10,6 +10,12 @@ from model import Model
 import numpy as np
 
 
+import os
+os.environ['MKL_CBWR']='AUTO'
+
+ 
+
+
 x0 = np.array([0.2,0.0710307,1.11501,0.543047,0.050264,0.005,-0.09])
 
 from calibration_params import calibration_params

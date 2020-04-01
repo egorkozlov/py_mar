@@ -122,8 +122,7 @@ class Model(object):
                 V, c, x, s = v_iter_single(setup,t,EV,female,ushift)    
 
                 
-                imid = int(V.shape[1]/2)                
-                print('at t = {} for {} V[0,mid] is {}'.format(t,desc,V[0,imid]))
+                print('at t = {} for {} mean V[0,:] is {}'.format(t,desc,V[0,:].mean()))
                                         
                 return {desc: {'V':V,'c':c,'x':x,'s':s}}   
                 
@@ -132,9 +131,8 @@ class Model(object):
                 
                 V, VF, VM, c, x, s, fls, V_all_l = v_iter_couple(setup,t,EV,ushift)    
 
-                imid = int(V.shape[1]/2) 
-                itmid = int(V.shape[2]/2)                
-                print('at t = {} for {} V[0,mid,mid] is {}'.format(t,desc,V[0,imid,itmid]))
+                      
+                print('at t = {} for {} mean V[0,:,:] is {}'.format(t,desc,V[0,:,:].mean()))
                         
                 return {desc: {'V':V,'VF':VF,'VM':VM,'c':c,'x':x,'s':s,'fls':fls,'V_all_l':V_all_l}}
           
@@ -154,12 +152,9 @@ class Model(object):
                 
             if type(EV) is tuple:
                 EV0 = EV[0]
-                imid = int(EV0.shape[1]/2) 
-                itmid = int(EV0.shape[2]/2)                
-                print('at t = {} for {} EV[0,mid,mid,0] is {}'.format(t,desc,EV0[0,imid,itmid,0]))
+                print('at t = {} for {} mean EV[0,:,:,0] is {}'.format(t,desc,EV0[0,:,:,0].mean()))
             else:
-                imid = int(EV.shape[1]/2) 
-                print('at t = {} for {} EV[0,mid] is {}'.format(t,desc,EV[0,imid]))
+                print('at t = {} for {} EV[0,:] is {}'.format(t,desc,EV[0,:].mean()))
                 
                 
             return EV, dec

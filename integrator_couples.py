@@ -41,8 +41,11 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True):
     
     # accounts for exogenous transitions
     
+    if t == 57 and not marriage: print('Before ren: {}'.format(_Vren2[0][0,0,0]))
+    
     EV, EVf, EVm = ev_couple_exo(setup,Vren['M'],t,use_sparse,down=False)
     
+    if t == 57 and not marriage: print('After ren: {}'.format(EV[0,0,0,0]))
     
     return (EV, EVf, EVm), dec
 

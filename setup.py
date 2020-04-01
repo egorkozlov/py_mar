@@ -129,7 +129,7 @@ class ModelSetup(object):
         #Cost of Divorce
         if divorce_costs == 'Default':
             # by default the costs are set in the bottom
-            self.div_costs = DivorceCosts()
+            self.div_costs = DivorceCosts(eq_split=1.0,assets_kept=0.9)
         else:
             if isinstance(divorce_costs,dict):
                 # you can feed in arguments to DivorceCosts
@@ -142,11 +142,11 @@ class ModelSetup(object):
         #Cost of Separation
         if separation_costs == 'Default':
             # by default the costs are set in the bottom
-            self.sep_costs = DivorceCosts()
+            self.sep_costs = DivorceCosts(eq_split=0.0,assets_kept=1.0)
         else:
             if isinstance(separation_costs,dict):
                 # you can feed in arguments to DivorceCosts
-                self.sep_costs = DivorceCosts(**divorce_costs)
+                self.sep_costs = DivorceCosts(**separation_costs)
             else:
                 # or just the output of DivorceCosts
                 assert isinstance(separation_costs,DivorceCosts)

@@ -35,9 +35,6 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
     
     sc = setup.agrid_c
     
-    #income_share_f = (np.exp(zfgrid[izf]) / ( np.exp(zmgrid[izm]) + np.exp(zfgrid[izf]) ) ).squeeze()
-    
-    
     if thetafun is None:
         def thetafun(tht): return tht, 1-tht
         #def thetafun(tht): return 0.5*np.ones_like(tht), 0.5*np.ones_like(tht)
@@ -49,15 +46,14 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
         V['Male, single']['V'], V['Female, single']['V'],
         izf, izm, cost_fem=dc.money_lost_f, cost_mal=dc.money_lost_m, fun=thetafun)
     
+    assert vf_n.dtype == setup.dtype
+    
     
     if return_vdiv_only:
         return {'Value of Divorce, male': vm_n,
                 'Value of Divorce, female': vf_n}
     
-    
-        
-    vf_n, vm_n = [x.astype(setup.dtype) for x in (vf_n,vm_n)] # type conversion
-    
+
     
     itht = setup.v_thetagrid_fine.i
     wntht = setup.v_thetagrid_fine.wnext
@@ -71,8 +67,10 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
                                       vf_n, vm_n,
                                       itht, wntht, thtgrid, 
                                       rescale = rescale)
-         
-         
+        
+        assert v_out.dtype == setup.dtype
+        
+        '''
         from renegotiation_gpu import v_ren_gpu_oneopt
         
         v_out2, vf_out2, vm_out2, itheta_out2, switch2 = \
@@ -85,7 +83,7 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
         assert np.allclose(v_out,v_out2)
         assert np.allclose(vf_out,vf_out2)
         assert np.allclose(vm_out,vm_out2)
-            
+        '''
          
     else:
         v_out, vf_out, vm_out, itheta_out, switch = \
@@ -96,6 +94,9 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
                                 vf_n, vm_n,
                                 itht, wntht, thtgrid, rescale = rescale)        
         
+        assert v_out.dtype == setup.dtype
+        
+        '''
         from renegotiation_gpu import v_ren_gpu_twoopt
         
         v_out2, vf_out2, vm_out2, itheta_out2, switch2 = \
@@ -108,8 +109,8 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
         assert np.allclose(v_out,v_out2)
         assert np.allclose(vf_out,vf_out2)
         assert np.allclose(vm_out,vm_out2)
-        
-    def r(x): return x.astype(np.float32)
+        '''
+    def r(x): return x
         
     result =  {'Decision': (itheta_out>=0), 'thetas': itheta_out,
                 'Values': (r(v_out), r(vf_out), r(vm_out)),'Divorce':(vf_n,vm_n)}
@@ -132,6 +133,8 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
 
 
 
+from renegotiation_unilateral import v_div_allsplits
+
 
 def v_div_vartheta(setup,dc,t,sc,Vmale,Vfemale,izf,izm,
                    cost_fem=0.0,cost_mal=0.0, fun=lambda x : (x,1-x) ):
@@ -142,7 +145,6 @@ def v_div_vartheta(setup,dc,t,sc,Vmale,Vfemale,izf,izm,
     
     # optional cost_fem and cost_mal are monetary costs of divorce
     
-    from renegotiation_unilateral import v_div_allsplits
     
     shrs = setup.thetagrid
     
@@ -156,28 +158,28 @@ def v_div_vartheta(setup,dc,t,sc,Vmale,Vfemale,izf,izm,
     # this has many repetative values but it turns out it does not matter much
     
     
-    
-    
     share_fem, share_mal = fun(setup.thetagrid)
     fem_gets = VecOnGrid(np.array(shrs),share_fem)
     mal_gets = VecOnGrid(np.array(shrs),share_mal)
     
     i_fem = fem_gets.i
     wn_fem = fem_gets.wnext
+    wt_fem = setup.dtype(1) - wn_fem
     
     i_mal = mal_gets.i
     wn_mal = mal_gets.wnext
+    wt_mal = setup.dtype(1) - wn_fem
     
     
-    
-    Vf_divorce = (1-wn_fem[None,None,:])*Vf_divorce_M[:,:,i_fem] + \
+    Vf_divorce = wt_fem[None,None,:]*Vf_divorce_M[:,:,i_fem] + \
                      wn_fem[None,None,:]*Vf_divorce_M[:,:,i_fem+1]
     
-    Vm_divorce = (1-wn_mal[None,None,:])*Vm_divorce_M[:,:,i_mal] + \
+    Vm_divorce = wt_mal[None,None,:]*Vm_divorce_M[:,:,i_mal] + \
                      wn_mal[None,None,:]*Vm_divorce_M[:,:,i_mal+1]
                 
     
-                
+    assert Vf_divorce.dtype == setup.dtype
+    
     return Vf_divorce, Vm_divorce
 
 
@@ -206,7 +208,8 @@ def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, ith
         vf_y_ni_0 = vf_y_ni[0]
         vm_y_ni_0 = vm_y_ni[0]
         
-        
+    
+    dtype = v_y_ni.dtype
     
         
     na, ne, nt_coarse = v_y_ni_0.shape
@@ -214,9 +217,9 @@ def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, ith
     
     shp = (na,ne,nt)
     
-    v_out = np.empty(shp,dtype=np.float32)
-    vm_out = np.empty(shp,dtype=np.float32)
-    vf_out = np.empty(shp,dtype=np.float32)
+    v_out = np.empty(shp,dtype=dtype)
+    vm_out = np.empty(shp,dtype=dtype)
+    vf_out = np.empty(shp,dtype=dtype)
     
     itheta_out = np.full(v_out.shape,-1,dtype=np.int16)
     ichoice_out = np.zeros(v_out.shape,dtype=np.bool_)
@@ -231,12 +234,12 @@ def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, ith
             # then we do renegotiation
             # this saves lots of operations
             
-            v_opt = np.empty((nt,),dtype=np.float32)
-            vf_opt = np.empty((nt,),dtype=np.float32)
-            vm_opt = np.empty((nt,),dtype=np.float32)
+            v_opt = np.empty((nt,),dtype=dtype)
+            vf_opt = np.empty((nt,),dtype=dtype)
+            vm_opt = np.empty((nt,),dtype=dtype)
             
-            vf_no_t = np.empty((nt,),dtype=np.float32)
-            vm_no_t = np.empty((nt,),dtype=np.float32)
+            vf_no_t = np.empty((nt,),dtype=dtype)
+            vm_no_t = np.empty((nt,),dtype=dtype)
             
             # this part does all interpolations and maximization
             for it in range(nt):
@@ -297,7 +300,7 @@ def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, ith
                 if vf_y < vf_no and vm_y < vm_no:
                     # no search
                     tht = thtgrid[it]
-                    v_out[ia,ie,it] = tht*vf_no + (1-tht)*vm_no
+                    v_out[ia,ie,it] = tht*vf_no + (f1-tht)*vm_no
                     vf_out[ia,ie,it] = vf_no
                     vm_out[ia,ie,it] = vm_no
                     itheta_out[ia,ie,it] = -1

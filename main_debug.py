@@ -31,7 +31,5 @@ mdl.time_statistics()
 
 decisions = mdl.decisions[-2]['Female, single']['Decision']
 
-
-assert np.allclose(mdl.V[0]['Female, single']['V'][0,0], -177.86356)
-assert np.allclose(mdl.V[0]['Couple, C']['V'][0,0,0],-159.99124)
-assert np.allclose(mdl.V[0]['Couple, M']['V'][0,0,0],-159.98624)
+assert np.allclose(mdl.V[0]['Couple, M']['V'].mean(),-146.78784695910988)
+assert np.allclose(mdl.V[0]['Female, single']['V'].mean(),-201.98549187272707)

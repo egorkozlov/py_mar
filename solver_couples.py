@@ -17,7 +17,7 @@ else:
     nbatch_def = 17
 
 def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False,
-                              force_f32 = True):
+                              force_f32 = False):
     
     if verbose: start = default_timer()
     

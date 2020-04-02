@@ -109,7 +109,7 @@ class ModelSetup(object):
         
         self.pars = p
         
-        self.dtype = np.float32 # type for all floats
+        self.dtype = np.float64 # type for all floats
         
        
         

@@ -28,7 +28,7 @@ from integrator_couples import ev_couple_m_c
 
 class Model(object):
     def __init__(self,iterator_name='default-timed',verbose=False,
-                 solve_till=None,**kwargs):
+                 solve_till=None,display_v=False,**kwargs):
         self.mstart = self.get_mem()
         self.mlast = self.get_mem()
         self.verbose = verbose
@@ -38,7 +38,7 @@ class Model(object):
         self.start = default_timer()
         self.last = default_timer()        
         self.time_dict = dict()        
-        
+        self.display_v = display_v
         
         if solve_till is not None:
             T = self.setup.pars['T']
@@ -118,7 +118,7 @@ class Model(object):
                 V, c, x, s = v_iter_single(setup,t,EV,female,ushift)    
 
                 
-                print('at t = {} for {} mean V[0,:] is {}'.format(t,desc,V[0,:].mean()))
+                if self.display_v: print('at t = {} for {} mean V[0,:] is {}'.format(t,desc,V[0,:].mean()))
                                         
                 return {desc: {'V':V,'c':c,'x':x,'s':s}}   
                 
@@ -128,7 +128,7 @@ class Model(object):
                 V, VF, VM, c, x, s, fls, V_all_l = v_iter_couple(setup,t,EV,ushift)    
 
                       
-                print('at t = {} for {} mean V[0,:,:] is {}'.format(t,desc,V[0,:,:].mean()))
+                if self.display_v: print('at t = {} for {} mean V[0,:,:] is {}'.format(t,desc,V[0,:,:].mean()))
                         
                 return {desc: {'V':V,'VF':VF,'VM':VM,'c':c,'x':x,'s':s,'fls':fls,'V_all_l':V_all_l}}
           
@@ -148,9 +148,9 @@ class Model(object):
                 
             if type(EV) is tuple:
                 EV0 = EV[0]
-                print('at t = {} for {} mean EV[0,:,:,0] is {}'.format(t,desc,EV0[0,:,:,0].mean()))
+                if self.display_v: print('at t = {} for {} mean EV[0,:,:,0] is {}'.format(t,desc,EV0[0,:,:,0].mean()))
             else:
-                print('at t = {} for {} EV[0,:] is {}'.format(t,desc,EV[0,:].mean()))
+                if self.display_v: print('at t = {} for {} EV[0,:] is {}'.format(t,desc,EV[0,:].mean()))
                 
                 
             return EV, dec

@@ -8,7 +8,7 @@ import numpy as np
 #from scipy.optimize import fminbound
 
 #from opt_test import build_s_grid, sgrid_on_agrid, get_EVM
-from optimizers import v_optimize_single, v_optimize_couple, get_EVM
+from optimizers import v_optimize_couple
 
 
 
@@ -19,8 +19,6 @@ def v_iter_single(setup,t,EV,female,ushift):
     
     
     dtype = setup.dtype
-    
-    ind, p = setup.vsgrid_s.i, setup.vsgrid_s.wthis
     
     
     zvals = setup.exogrid.zf_t[t] if female else setup.exogrid.zm_t[t]
@@ -44,7 +42,7 @@ def v_iter_single(setup,t,EV,female,ushift):
     
     
     V_0, c_opt, x_opt, s_opt, i_opt, _, _ = \
-        v_optimize_couple(money_t,sgrid_s,(ind,p,EV[:,:,None,None]),setup.mgrid,
+        v_optimize_couple(money_t,sgrid_s,(setup.vsgrid_s,EV[:,:,None,None]),setup.mgrid,
                              setup.usingle_precomputed_u[:,None,None],
                              setup.usingle_precomputed_x[:,None,None],
                                  ls,beta,ushift,dtype=dtype)
@@ -55,7 +53,7 @@ def v_iter_single(setup,t,EV,female,ushift):
         (x.squeeze(axis=2) for x in [V_0, c_opt, x_opt, s_opt, i_opt])
     
     
-    EVexp = get_EVM(ind,p,EV)
+    EVexp = setup.vsgrid_s.apply_preserve_shape(EV)
     V_ret = setup.u_single_pub(c_opt,x_opt,ls) + ushift + beta*np.take_along_axis(EVexp,i_opt,0)
     
     def r(x): return x.astype(dtype)

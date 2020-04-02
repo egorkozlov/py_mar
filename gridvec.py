@@ -22,13 +22,20 @@ class VecOnGrid(object):
         self.val = values
         self.val_trimmed = np.clip(values,grid[0],grid[-1])
         self.grid = grid
+        self.dtype = grid.dtype
+        
         if iwn is None:
             self.i, self.wnext = interp(self.grid,self.val,return_wnext=True,trim=trim)
         else:
             self.i, self.wnext = iwn
             
+        self.wnext = self.wnext.astype(self.dtype)
+        
         self.n = self.i.size
-        self.wthis = 1-self.wnext
+        
+        self.one = np.array(1).astype(self.dtype) # sorry
+        
+        self.wthis = self.one-self.wnext
         self.trim = trim
         
         
@@ -39,6 +46,22 @@ class VecOnGrid(object):
         # crude version of apply
         # has no options, assumes xin is 1-dimensional
         return xin[self.i]*self.wthis + xin[self.i+1]*self.wnext
+    
+    def apply_preserve_shape(self,xin,axis=0):
+        nd = xin.ndim
+        shp0 = xin.shape
+        shp1 = shp0[:axis] + (self.n,) + shp0[axis+1:]
+        shpw = (1,)*axis + (self.n,) + (1,)*(nd-axis-1)
+        
+        ithis = (slice(None),)*axis + (self.i,) + (slice(None),)*(nd-axis-1)
+        inext = (slice(None),)*axis + (self.i+1,) + (slice(None),)*(nd-axis-1)
+        wthis = self.wthis.astype(xin.dtype,copy=False).reshape(shpw)       
+        wnext = self.wnext.astype(xin.dtype,copy=False).reshape(shpw)
+        xout = wthis*xin[ithis] + wnext*xin[inext]
+        assert xout.shape == shp1
+        return xout
+        
+        
         
         
     def apply(self,xin,axis=0,take=None,pick=None,reshape_i=True):
@@ -47,7 +70,7 @@ class VecOnGrid(object):
         # take's elements are assumed to be 2-element tuple where take[0] 
         # is axis and take[1] is indices. 
         
-        typein = np.float32#xin.dtype
+        typein = self.dtype
         
         nd = xin.ndim
         assert axis < nd
@@ -166,7 +189,8 @@ class VecOnGrid(object):
         self.val[where] = values
         self.i[where], self.wnext[where] = \
             interp(self.grid,self.val[where],return_wnext=True,trim=self.trim)
-        self.wthis[where] = 1 - self.wnext[where]
+        self.wnext[where] =self.wnext[where].astype(self.dtype)
+        self.wthis[where] = self.one - self.wnext[where]
         
         
     def roll(self,shocks=None):

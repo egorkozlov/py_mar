@@ -26,7 +26,9 @@ else:
 
 
 
-def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,beta,ushift,use_gpu=ugpu,dtype=np.float32):
+def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,beta,ushift,
+                              use_gpu=ugpu,dtype=np.float32):
+    
     # This optimizer avoids creating big arrays and uses parallel-CPU on 
     # machines without NUMBA-CUDA codes otherwise
     
@@ -52,8 +54,10 @@ def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,beta,ushift,use_gp
     if isinstance(EV,tuple):
         assert len(EV) == 2
         vsgrid,EVin = EV
+        EVin = EVin.astype(dtype,copy=False)
         EV_by_l = vsgrid.apply_preserve_shape(EVin)
         assert EVin.shape[1:] == EV_by_l.shape[1:]
+        assert EVin.dtype == EV_by_l.dtype
 
         
     
@@ -67,13 +71,15 @@ def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,beta,ushift,use_gp
     s_opt_arr = np.empty((na,nexo,ntheta,nls),dtype=dtype)
     V_opt_arr = np.empty((na,nexo,ntheta,nls),dtype=dtype)
     
+    
+    
     for i, lval in enumerate(ls):
         
         EV_here = EV_by_l[...,i]
         util = utilint[...,i]
         xvals = xint[...,i]
         
-        money_left = money - (1-lval)*wf.reshape((1,nexo))
+        money_left = (money - (1-lval)*wf.reshape((1,nexo))).astype(dtype,copy=False)
         
         if not use_gpu:
             
@@ -103,9 +109,13 @@ def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,beta,ushift,use_gp
     c = tal(c_opt_arr,i_ls,axis=3).squeeze(axis=3)
     s = tal(s_opt_arr,i_ls,axis=3).squeeze(axis=3)
     i_opt = tal(i_opt_arr,i_ls,axis=3).squeeze(axis=3)
-        
     i_ls = i_ls.squeeze(axis=3)
         
+    
+    assert V.dtype == dtype
+    assert c.dtype == dtype
+    assert s.dtype == dtype
+    
     
     ret = lambda q : q
         

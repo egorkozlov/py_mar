@@ -33,7 +33,7 @@ def v_mar_igrid(setup,t,V,icouple,ind_or_inds,*,female,marriage,interpolate=True
         coup = 'Couple, C'
     
     
-    
+    dtype = setup.dtype
     # import objects
     agrid_c = setup.agrid_c
     agrid_s = setup.agrid_s
@@ -77,9 +77,10 @@ def v_mar_igrid(setup,t,V,icouple,ind_or_inds,*,female,marriage,interpolate=True
     Vmm, Vfm = (expnd(x[:,ind,:]) for x in 
                      (VMval_postren,VFval_postren))
     
+    assert Vmm.dtype==dtype
    
-    ins = [Vfm,Vmm,Vfs,Vms,gamma]
-    ins = [np.float32(x) for x in ins] # optional type conversion
+    ins = [Vfm,Vmm,Vfs,Vms,np.array(gamma)]
+    ins = [x.astype(dtype,copy=False) for x in ins] # optional type conversion
     vfout, vmout, nbsout, agree, ithetaout = mar_mat(*ins)
     
 

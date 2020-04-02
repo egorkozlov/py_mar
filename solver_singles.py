@@ -12,7 +12,7 @@ from optimizers import v_optimize_couple
 
 
 
-def v_iter_single(setup,t,EV,female,ushift):
+def v_iter_single(setup,t,EV,female,ushift,force_f32=True):
     
     agrid_s = setup.agrid_s
     sgrid_s = setup.sgrid_s
@@ -28,18 +28,20 @@ def v_iter_single(setup,t,EV,female,ushift):
     R = setup.pars['R_t'][t]
     
     
-    #money_t = (R*agrid_s,np.exp(zvals + ztrend))#,np.zeros_like(zvals))    
-    #EV_t = (ind,p,EV)
-    #V_ret, c_opt, s_opt = v_optimize_single(money_t,sgrid_s,EV_t,sigma,beta,ushift,dtype=dtype)
+    dtype_here = np.float32 if force_f32 else dtype
+
     
     
     money_t = (R*agrid_s,np.exp(zvals + ztrend),np.zeros_like(zvals))
-    ls = np.array([1.0])
+    ls = np.array([1.0],dtype=dtype)
     
     
     if EV is None:
-        EV = np.zeros((agrid_s.size,zvals.size))
+        EV = np.zeros((agrid_s.size,zvals.size),dtype=dtype_here)
+    else:
+        EV = EV.astype(dtype_here,copy=False)
     
+    assert EV.dtype == dtype_here
     
     V_0, c_opt, x_opt, s_opt, i_opt, _, _ = \
         v_optimize_couple(money_t,sgrid_s,(setup.vsgrid_s,EV[:,:,None,None]),setup.mgrid,
@@ -56,6 +58,8 @@ def v_iter_single(setup,t,EV,female,ushift):
     EVexp = setup.vsgrid_s.apply_preserve_shape(EV)
     V_ret = setup.u_single_pub(c_opt,x_opt,ls) + ushift + beta*np.take_along_axis(EVexp,i_opt,0)
     
-    def r(x): return x.astype(dtype)
+    assert V_ret.dtype==dtype
+    
+    def r(x): return x
     
     return r(V_ret), r(c_opt), r(x_opt), r(s_opt)

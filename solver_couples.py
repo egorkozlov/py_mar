@@ -16,7 +16,8 @@ if system() != 'Darwin' and system() != 'Windows':
 else:    
     nbatch_def = 17
 
-def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
+def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False,
+                              force_f32 = True):
     
     if verbose: start = default_timer()
     
@@ -51,9 +52,10 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
     wm = np.exp(zm + zmtrend)
     
     
-
+    dtype_here = np.float32 if force_f32 else dtype
+    
     if EV_tuple is None:
-        EV_by_l, EV_fem_by_l, EV_mal_by_l = np.zeros(((3,) + shp + (nls,)),dtype=np.float32 )
+        EV_by_l, EV_fem_by_l, EV_mal_by_l = np.zeros(((3,) + shp + (nls,)), dtype=dtype )
     else:
         EV_by_l, EV_fem_by_l, EV_mal_by_l = EV_tuple
     
@@ -78,6 +80,8 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
     
     # this natually splits everything onto slices
     
+    
+    
     for ibatch in range(int(np.ceil(nexo/nbatch))):
         #money_i = money[:,istart:ifinish]
         assert ifinish > istart
@@ -89,13 +93,11 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
         V_pure_i, c_opt_i, x_opt_i, s_opt_i, i_opt_i, il_opt_i, V_all_l_i = \
            v_optimize_couple(money_t,sgrid,EV_t,setup.mgrid,
                              setup.ucouple_precomputed_u,setup.ucouple_precomputed_x,
-                                 ls,beta,ushift,dtype=dtype)
+                                 ls,beta,ushift,dtype=dtype_here)
            
         V_ret_i = V_pure_i + psi[None,istart:ifinish,None]
         
-        
-        
-        
+        # if dtype_here != dtype type conversion happens here
         
         V_couple[:,istart:ifinish,:] = V_ret_i # this estimate of V can be improved
         c_opt[:,istart:ifinish,:] = c_opt_i 
@@ -128,7 +130,16 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False):
     V_fem = uf + beta*np.take_along_axis(np.take_along_axis(EVf_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
     V_mal = um + beta*np.take_along_axis(np.take_along_axis(EVm_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
     V_all = uc + beta*np.take_along_axis(np.take_along_axis(EV_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
-    def r(x): return x.astype(dtype)
+    #def r(x): return x.astype(dtype)
+    
+    def r(x): return x
+    
+    assert V_all.dtype == dtype
+    assert V_fem.dtype == dtype
+    assert V_mal.dtype == dtype
+    assert c_opt.dtype == dtype
+    assert x_opt.dtype == dtype
+    assert s_opt.dtype == dtype
     
     try:
         assert np.allclose(V_all,V_couple,atol=1e-4,rtol=1e-3)

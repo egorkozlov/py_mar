@@ -13,10 +13,6 @@ Created on Tue Oct 29 17:01:07 2019
 
 import numpy as np
 from timeit import default_timer
-#from numba import njit, vectorize
-#from memory_profiler import profile
-#from IPython import get_ipython
-#from asizeof import asizeof
 import os
 import psutil
 

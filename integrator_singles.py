@@ -16,7 +16,7 @@ from marriage import v_mar_igrid, v_no_mar
 
 def ev_single(setup,V,sown,female,t,trim_lvl=0.001):
     # expected value of single person meeting a partner with a chance pmeet
-    pmeet = setup.pars['pmeet_t'][t]
+    pmeet = setup.dtype( setup.pars['pmeet_t'][t] )
     
     skip_mar = (pmeet < 1e-5)
     
@@ -27,10 +27,14 @@ def ev_single(setup,V,sown,female,t,trim_lvl=0.001):
     
     if female:
         M = setup.exogrid.zf_t_mat[t].T
-        EV_nomeet =  np.dot(V['Female, single']['V'],M)
+        EV_nomeet =  np.dot(V['Female, single']['V'],M).astype(setup.dtype)
     else:
         M = setup.exogrid.zm_t_mat[t].T
-        EV_nomeet =  np.dot(V['Male, single']['V'],M)
+        EV_nomeet =  np.dot(V['Male, single']['V'],M).astype(setup.dtype)
+    
+    assert EV_nomeet.dtype == setup.dtype
+    assert EV_meet.dtype   == setup.dtype
+    
     
     return (1-pmeet)*EV_nomeet + pmeet*EV_meet, dec
     
@@ -47,14 +51,14 @@ def ev_single_meet(setup,V,sown,female,t,skip_mar=False,trim_lvl=0.000001):
     
     
     p_mat = setup.part_mats['Female, single'][t].T if female else setup.part_mats['Male, single'][t].T
-   
+    p_mat = p_mat.astype(setup.dtype,copy=False)
         
-    V_next = np.ones((ns,nexo))*(-1e10)
+    V_next = np.ones((ns,nexo),dtype=setup.dtype)*(-1e10)
     inds = np.where( np.any(p_mat>0,axis=1 ) )[0]
     
     
     
-    EV = 0.0
+    EV = setup.dtype(0.0)
     
     i_assets_c, p_assets_c = setup.i_a_mat[female], setup.prob_a_mat[female]
     
@@ -94,22 +98,29 @@ def ev_single_meet(setup,V,sown,female,t,skip_mar=False,trim_lvl=0.000001):
         # try cohabitation
         (vfoutc, vmoutc), nprc, decc, thtc =  res_c['Values'], res_c['NBS'], res_c['Decision'], res_c['theta']
         
+        
         # choice is made based on Nash Surplus value
         i_mar =(nprm>=nprc) #((vfoutm>=vfoutc) & (vmoutm>=vfoutc))# 
         
         if female:
-            vout = i_mar*vfoutm + (1-i_mar)*vfoutc
+            vout = i_mar*vfoutm + (~i_mar)*vfoutc
         else:
-            vout = i_mar*vmoutm + (1-i_mar)*vmoutc
+            vout = i_mar*vmoutm + (~i_mar)*vmoutc
             
-        dec[:,:,iconv[:,i]] = (i_mar*decm + (1-i_mar)*decc)[:,None,:]
-        tht[:,:,iconv[:,i]] = (i_mar*thtm + (1-i_mar)*thtc)[:,None,:]
+            
+        
+        assert vout.dtype == setup.dtype
+            
+        dec[:,:,iconv[:,i]] = (i_mar*decm + (~i_mar)*decc)[:,None,:]
+        tht[:,:,iconv[:,i]] = (i_mar*thtm + (~i_mar)*thtc)[:,None,:]
         morc[:,:,iconv[:,i]] = i_mar[:,None,:]
             
         V_next[:,inds] = vout
         
         EV += (p_assets_c[:,i][:,None])*np.dot(V_next,p_mat)
-
+    
+    assert EV.dtype == setup.dtype
+    
     mout = matches.copy()
     mout['Decision'] = dec
     mout['M or C'] = morc

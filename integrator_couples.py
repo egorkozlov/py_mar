@@ -45,7 +45,8 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True):
     
     EV, EVf, EVm = ev_couple_exo(setup,Vren['M'],t,use_sparse,down=False)
     
-    if t == 57 and not marriage: print('After ren: {}'.format(EV[0,0,0,0]))
+    
+    assert EV.dtype == setup.dtype
     
     return (EV, EVf, EVm), dec
 
@@ -57,12 +58,12 @@ def ev_couple_exo(setup,Vren,t,use_sparse=True,down=False):
     # this takes V that already accounts for renegotiation (so that is e
     # expected pre-negotiation V) and takes expectations wrt exogenous shocks
     
-    
+    # floating point math is quirky and can change dtypes occasionally
     def mmult(a,b):
         if use_sparse:
-            return a*b
+            return (a*b).astype(a.dtype,copy=False)
         else:
-            return np.dot(a,b.T)
+            return np.dot(a,b.T).astype(a.dtype,copy=False)
         
     
     nl = len(setup.exogrid.all_t_mat_by_l_spt)
@@ -71,7 +72,7 @@ def ev_couple_exo(setup,Vren,t,use_sparse=True,down=False):
     
     
     V, Vf, Vm = Vren['V'], Vren['VF'], Vren['VM']
-    EV, EVf, EVm = np.zeros((na,nexo,ntheta,nl)), np.zeros((na,nexo,ntheta,nl)), np.zeros((na,nexo,ntheta,nl))
+    EV, EVf, EVm = np.zeros((3,na,nexo,ntheta,nl),dtype=setup.dtype)
     
     
     for il in range(nl):
@@ -82,8 +83,8 @@ def ev_couple_exo(setup,Vren,t,use_sparse=True,down=False):
         
         for itheta in range(ntheta):
             EV[...,itheta,il]  = mmult( V[...,itheta],M)
-            EVf[...,itheta,il] = mmult(Vf[...,itheta],M)             
-            EVm[...,itheta,il] = mmult(Vm[...,itheta],M)             
+            EVf[...,itheta,il] = mmult(Vf[...,itheta],M)         
+            EVm[...,itheta,il] = mmult(Vm[...,itheta],M)            
             
 
     #assert not np.allclose( EV[...,0], EV[...,1])

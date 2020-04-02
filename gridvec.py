@@ -22,18 +22,17 @@ class VecOnGrid(object):
         self.val = values
         self.val_trimmed = np.clip(values,grid[0],grid[-1])
         self.grid = grid
-        self.dtype = grid.dtype
         
         if iwn is None:
             self.i, self.wnext = interp(self.grid,self.val,return_wnext=True,trim=trim)
         else:
             self.i, self.wnext = iwn
             
-        self.wnext = self.wnext.astype(self.dtype)
+        self.wnext = self.wnext.astype(grid.dtype)
         
         self.n = self.i.size
         
-        self.one = np.array(1).astype(self.dtype) # sorry
+        self.one = np.array(1).astype(grid.dtype) # sorry
         
         self.wthis = self.one-self.wnext
         self.trim = trim
@@ -58,6 +57,7 @@ class VecOnGrid(object):
         wthis = self.wthis.astype(xin.dtype,copy=False).reshape(shpw)       
         wnext = self.wnext.astype(xin.dtype,copy=False).reshape(shpw)
         xout = wthis*xin[ithis] + wnext*xin[inext]
+        assert xout.dtype == xin.dtype
         assert xout.shape == shp1
         return xout
         
@@ -70,7 +70,7 @@ class VecOnGrid(object):
         # take's elements are assumed to be 2-element tuple where take[0] 
         # is axis and take[1] is indices. 
         
-        typein = self.dtype
+        typein = xin.dtype
         
         nd = xin.ndim
         assert axis < nd

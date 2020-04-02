@@ -88,6 +88,11 @@ def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,beta,ushift,
             i_opt = -np.ones((na,nexo,ntheta),dtype=np.int16)                 
             v_couple_local_intu(money_left,sgrid,EV_here,mgrid,util,xvals,beta,ushift,V,i_opt,c,x,s)
             
+            V2, i_opt2, c2, x2, s2 = v_couple_gpu(money_left,sgrid,EV_here,mgrid,util,xvals,beta,ushift)
+
+            assert np.allclose(V2,V)
+            assert np.all(i_opt==i_opt2)
+            
         else:
             #print((EV_here.shape,(na,nexo,ntheta,nls)))
             V, i_opt, c, x, s = v_couple_gpu(money_left,sgrid,EV_here,mgrid,util,xvals,beta,ushift)

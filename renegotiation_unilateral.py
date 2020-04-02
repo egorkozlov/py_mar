@@ -104,8 +104,6 @@ def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
         v_y = switch*v_y_mar + (~switch)*v_y_coh
         vf_y = switch*vf_y_mar + (~switch)*vf_y_coh
         vm_y = switch*vm_y_mar + (~switch)*vm_y_coh
-        
-    vf_n, vm_n = [x.astype(v_y.dtype) for x in (vf_n,vm_n)] # type conversion
     
     result  = v_ren_core_interp(setup,v_y, vf_y, vm_y, vf_n, vm_n, is_unil, rescale=rescale)
     
@@ -150,14 +148,14 @@ def v_no_ren(setup,V,marriage,t):
         switch = np.full(vf_y.shape,False,dtype=np.bool)
      
         
-    def r(x): return x.astype(np.float32)
+    def r(x): return x
     
     shape_notheta = v_y.shape[:-1]
     yes = np.full(shape_notheta,True)
     ntheta = setup.ntheta_fine
     i_theta_out = np.broadcast_to(np.arange(ntheta,dtype=np.int16)[None,None,:],v_y.shape).copy()
         
-    vf_n, vm_n = np.full((2,) + shape_notheta,-np.inf,dtype=np.float32)
+    vf_n, vm_n = np.full((2,) + shape_notheta,-np.inf,dtype=setup.dtype)
     
     result =  {'Decision': yes, 'thetas': i_theta_out,
             'Values': (r(v_y), r(vf_y), r(vm_y)),'Divorce':(vf_n,vm_n)}
@@ -283,7 +281,7 @@ def v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral,show_sc=False,rescal
         
         i_theta_out[no] = -1
         
-        def r(x): return x.astype(np.float32)
+        def r(x): return x
         
         return {'Decision': yes, 'thetas': i_theta_out,
                 'Values': (r(v_out), r(vf_out), r(vm_out)),'Divorce':(vf_n,vm_n)}
@@ -368,7 +366,7 @@ def v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral,show_sc=False,rescal
         print('Warning: m is broken is {} cases'.format(np.sum(vm_out<=vm_div_full - 1e-4)))
         raise Exception('regenotiation problems...')
     
-    def r(x): return x.astype(np.float32)
+    def r(x): return x
     
    
     
@@ -398,7 +396,7 @@ def ren_loop_wrap(setup,vy,vfy,vmy,vfn,vmn,is_unil,rescale=False):
     vout, vfout, vmout, thetaout, yes, ithetaout = \
         ren_loop(vy,vfy,vmy,vfn,vmn,tgrid,rescale=rescale)
     
-    def r(x): return x.astype(np.float32)        
+    def r(x): return x       
     
     
     return {'Decision': yes, 'thetas': ithetaout,

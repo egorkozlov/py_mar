@@ -410,7 +410,7 @@ class ModelSetup(object):
         gsparse = np.linspace(mint,mmax,nm-ndense)
         gdense = np.linspace(mmin,mint,ndense+1) # +1 as there is a common pt
         
-        self.mgrid = np.zeros(nm,dtype=np.float32)
+        self.mgrid = np.zeros(nm,dtype=self.dtype)
         self.mgrid[ndense:] = gsparse
         self.mgrid[:(ndense+1)] = gdense
         assert np.all(np.diff(self.mgrid)>0)
@@ -700,8 +700,8 @@ class ModelSetup(object):
         ntheta = self.ntheta
         nl = self.nls
         
-        uout = np.empty((nm,ntheta,nl),dtype=np.float32)
-        xout = np.empty((nm,ntheta,nl),dtype=np.float32)
+        uout = np.empty((nm,ntheta,nl),dtype=self.dtype)
+        xout = np.empty((nm,ntheta,nl),dtype=self.dtype)
         
         for il in range(nl):
             for itheta in range(ntheta):
@@ -782,14 +782,14 @@ def tauchen_drift(z_now,z_next,rho,sigma,mu):
     z_now = np.atleast_1d(z_now)
     z_next = np.atleast_1d(z_next)
     if z_next.size == 1:
-        return np.ones((z_now.size,1),dtype=np.float32)
+        return np.ones((z_now.size,1),dtype=z_now.dtype)
     
     d = np.diff(z_next)
     assert np.ptp(d) < 1e-5, 'Step size should be fixed'
     
     h_half = d[0]/2
     
-    Pi = np.zeros((z_now.size,z_next.size),dtype=np.float32)
+    Pi = np.zeros((z_now.size,z_next.size),dtype=z_now.dtype)
     
     ez = rho*z_now + mu
     
@@ -802,7 +802,7 @@ def tauchen_drift(z_now,z_next,rho,sigma,mu):
         
 
 def build_s_grid(agrid,n_between,da_min,da_max):
-    sgrid = np.array([0.0],np.float32)
+    sgrid = np.array([0.0],agrid.dtype)
     for j in range(agrid.size-1):
         step = (agrid[j+1] - agrid[j])/n_between
         if step >= da_min and step <= da_max:

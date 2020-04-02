@@ -113,7 +113,7 @@ def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,beta,ushift,use_gp
     
     
     
-    return ret(V), ret(c), ret(x), ret(s), ret(i_opt), ret(i_ls), ret(V_all).astype(dtype)
+    return ret(V), ret(c), ret(x), ret(s), ret(i_opt), ret(i_ls), ret(V_all)
 
 
 

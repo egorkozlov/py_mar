@@ -73,23 +73,23 @@ class Agents:
         
         # initialize assets
         
-        self.iassets = np.zeros((N,T),np.int32)
-        self.iassetss = np.zeros((N,T),np.int32)
+        self.iassets = np.zeros((N,T),np.int16)
+        self.iassetss = np.zeros((N,T),np.int16)
         self.tempo=VecOnGrid(self.setup.agrid_s,self.iassets[:,0])
         
         # initialize FLS
         #self.ils=np.ones((N,T),np.float64)
-        self.ils_i=np.ones((N,T),np.int32)*(len(self.setup.ls_levels)-1)
+        self.ils_i=np.ones((N,T),np.int8)*(len(self.setup.ls_levels)-1)
         
         
         self.ils_i[:,-1] = 5
 
         # initialize theta
-        self.itheta = -np.ones((N,T),np.int32)
+        self.itheta = -np.ones((N,T),np.int16)
         
         # initialize iexo
-        self.iexo = np.zeros((N,T),np.int32)
-        self.iexos = np.zeros((N,T),np.int32)
+        self.iexo = np.zeros((N,T),np.int16)
+        self.iexos = np.zeros((N,T),np.int16)
         # TODO: look if we can/need fix the shocks here...
         
         
@@ -118,7 +118,7 @@ class Agents:
         
         
         # initialize state
-        self.state = np.zeros((N,T),dtype=np.int32)       
+        self.state = np.zeros((N,T),dtype=np.int8)       
         self.state[:,0] = self.state_codes[self.single_state]  # everyone starts as female
       
         

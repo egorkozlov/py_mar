@@ -132,12 +132,12 @@ def cuda_ker_one_opt(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, itht, wntht, th
         
         
         if vf_in_store[it] >= vf_no and vm_in_store[it] >= vm_no:
-        #if vf_y[ie,it] >= vf_no and vm_y[ie,it] >= vm_no:
+        #if vf_y[ia,ie,it] >= vf_no and vm_y[ia,ie,it] >= vm_no:
             itheta_out[ia,ie,it] = it
             return
         
         if vf_in_store[it] < vf_no and vm_in_store[it] < vm_no:
-        #if vf_y[ie,it] < vf_no and vm_y[ie,it] < vm_no:
+        #if vf_y[ia,ie,it] < vf_no and vm_y[ia,ie,it] < vm_no:
             itheta_out[ia,ie,it] = -1
             tht = thtgrid[it]
             v_out[ia,ie,it] = tht*vf_no + (1-tht)*vm_no
@@ -223,54 +223,50 @@ def v_ren_gpu_twoopt(v_y_ni0, v_y_ni1, vf_y_ni0, vf_y_ni1, vm_y_ni0, vm_y_ni1, v
     
     
     
-    v_out = np.empty((na,ne,nt),dtype=cpu_type)
-    vm_out = np.empty((na,ne,nt),dtype=cpu_type)
-    vf_out = np.empty((na,ne,nt),dtype=cpu_type)
-    itheta_out = np.empty((na,ne,nt),dtype=np.int16)
-    switch_out = np.empty((na,ne,nt),dtype=np.bool_)
+    v_out = cuda.device_array((na,ne,nt),dtype=cpu_type)
+    vm_out = cuda.device_array((na,ne,nt),dtype=cpu_type)
+    vf_out = cuda.device_array((na,ne,nt),dtype=cpu_type)
+    itheta_out = cuda.device_array((na,ne,nt),dtype=np.int16)
+    switch_out = cuda.device_array((na,ne,nt),dtype=np.bool_)
+    
     
     thtgrid = cuda.to_device(thtgrid)
     
-    for ia in range(na):
+
+
+    threadsperblock = (nt, 1, 1)
+        
+    b_exo = ne
+    b_a = na
+    b_theta = 1
     
-        threadsperblock = (1, nt)
-            
-        b_exo = ne
-        b_theta = 1
-        
-        blockspergrid = (b_exo, b_theta)
-        
-        v_yi0, vf_yi0, vm_yi0 = [cuda.to_device(
-                                np.ascontiguousarray(x[ia,:,:].copy())
-                                            ) for x in (v_y_ni0, vf_y_ni0, vm_y_ni0)]
+    blockspergrid = (b_theta, b_a, b_exo)
     
-        v_yi1, vf_yi1, vm_yi1 = [cuda.to_device(
-                                np.ascontiguousarray(x[ia,:,:].copy())
-                                            ) for x in (v_y_ni1, vf_y_ni1, vm_y_ni1)]
-        
-        vf_ni, vm_ni = [cuda.to_device(
-                                        np.ascontiguousarray(x[ia,:,:].copy())
-                                      ) for x in (vf_n_ni,vm_n_ni)]
-        
-        
-        v_outi = cuda.device_array((ne,nt),dtype=cpu_type)
-        vm_outi = cuda.device_array((ne,nt),dtype=cpu_type)
-        vf_outi = cuda.device_array((ne,nt),dtype=cpu_type)
-        itheta_outi = cuda.device_array((ne,nt),dtype=np.int16)
-        switch_outi = cuda.device_array((ne,nt),dtype=np.bool_)
-        
-                         
-        
-        cuda_ker_two_opt[blockspergrid, threadsperblock](v_yi0, v_yi1, vf_yi0, vf_yi1, vm_yi0, vm_yi1, vf_ni, vm_ni, 
-                                        itht, wntht, thtgrid,  
-                                        v_outi, vm_outi, vf_outi, itheta_outi, switch_outi)
+    v_y0, vf_y0, vm_y0 = [cuda.to_device(
+                            np.ascontiguousarray(x)
+                                        ) for x in (v_y_ni0, vf_y_ni0, vm_y_ni0)]
+
+    v_y1, vf_y1, vm_y1 = [cuda.to_device(
+                            np.ascontiguousarray(x)
+                                        ) for x in (v_y_ni1, vf_y_ni1, vm_y_ni1)]
+    
+    vf_n, vm_n = [cuda.to_device(
+                                    np.ascontiguousarray(x)
+                                  ) for x in (vf_n_ni,vm_n_ni)]
     
     
-        v_out[ia,:,:] = v_outi
-        vm_out[ia,:,:] = vm_outi
-        vf_out[ia,:,:] = vf_outi
-        itheta_out[ia,:,:] = itheta_outi
-        switch_out[ia,:,:] = switch_outi
+    
+                     
+    
+    cuda_ker_two_opt[blockspergrid, threadsperblock](v_y0, v_y1, vf_y0, vf_y1, vm_y0, vm_y1, vf_n, vm_n, 
+                                    itht, wntht, thtgrid,  
+                                    v_out, vm_out, vf_out, itheta_out, switch_out)
+    
+    
+   
+    
+    v_out, vm_out, vf_out, itheta_out, switch_out = (x.copy_to_host() 
+                    for x in (v_out, vm_out, vf_out, itheta_out, switch_out))
     
     return v_out, vf_out, vm_out, itheta_out, switch_out
     
@@ -282,7 +278,7 @@ def v_ren_gpu_twoopt(v_y_ni0, v_y_ni1, vf_y_ni0, vf_y_ni1, vm_y_ni0, vm_y_ni1, v
 @cuda.jit   
 def cuda_ker_two_opt(v_y_ni0, v_y_ni1, vf_y_ni0, vf_y_ni1, vm_y_ni0, vm_y_ni1, vf_n_ni, vm_n_ni, itht, wntht, thtgrid, v_out, vm_out, vf_out, itheta_out, switch_out):
     # this assumes block is for the same a and theta
-    ie, it = cuda.grid(2)
+    it, ia, ie = cuda.grid(3)
     
     v_in_store  = cuda.shared.array((500,),gpu_type)
     vf_in_store = cuda.shared.array((500,),gpu_type)
@@ -292,15 +288,15 @@ def cuda_ker_two_opt(v_y_ni0, v_y_ni1, vf_y_ni0, vf_y_ni1, vm_y_ni0, vm_y_ni1, v
     vm_no_store = cuda.shared.array((500,),gpu_type)
     
     
-    
-    ne = v_y_ni0.shape[0]
-    nt_crude = v_y_ni0.shape[1]
+    na = v_y_ni0.shape[0]
+    ne = v_y_ni0.shape[1]
+    nt_crude = v_y_ni0.shape[2]
     nt = thtgrid.size
     
     
     f1 = f8(1.0)
     
-    if ie < ne and it < nt:
+    if ia < na and ie < ne and it < nt:
         
         it_int = itht[it]
         for ittc in range(nt_crude):
@@ -311,35 +307,33 @@ def cuda_ker_two_opt(v_y_ni0, v_y_ni1, vf_y_ni0, vf_y_ni1, vm_y_ni0, vm_y_ni1, v
         wttp = wntht[it]
         wttc = f1 - wttp
         
-        def wsum(x):
-            return wttc*x[ie,ittc] + wttp*x[ie,ittp]
         
-        vy_0 = wsum(v_y_ni0)
-        vy_1 = wsum(v_y_ni1)
+        vy_0 = wttc*v_y_ni0[ia,ie,ittc] + wttp*v_y_ni0[ia,ie,ittp]
+        vy_1 = wttc*v_y_ni1[ia,ie,ittc] + wttp*v_y_ni1[ia,ie,ittp]
         
         pick1 = (vy_1 > vy_0)
         #print(vy_1-vy_0)
         
-        switch_out[ie,it] = pick1
+        switch_out[ia,ie,it] = pick1
         
         if pick1:
             v_in_store[it]  = vy_1
-            vf_in_store[it] = wsum(vf_y_ni1)
-            vm_in_store[it] = wsum(vm_y_ni1)
+            vf_in_store[it] = wttc*vf_y_ni1[ia,ie,ittc] + wttp*vf_y_ni1[ia,ie,ittp]
+            vm_in_store[it] = wttc*vm_y_ni1[ia,ie,ittc] + wttp*vm_y_ni1[ia,ie,ittp]
         else:
             v_in_store[it]  = vy_0
-            vf_in_store[it] = wsum(vf_y_ni0)
-            vm_in_store[it] = wsum(vm_y_ni0)
+            vf_in_store[it] = wttc*vf_y_ni0[ia,ie,ittc] + wttp*vf_y_ni0[ia,ie,ittp]
+            vm_in_store[it] = wttc*vm_y_ni0[ia,ie,ittc] + wttp*vm_y_ni0[ia,ie,ittp]
         
         
-        vf_no_store[it] = wttc*vf_n_ni[ie,ittc] + wttp*vf_n_ni[ie,ittp]
-        vm_no_store[it] = wttc*vm_n_ni[ie,ittc] + wttp*vm_n_ni[ie,ittp]
+        vf_no_store[it] = wttc*vf_n_ni[ia,ie,ittc] + wttp*vf_n_ni[ia,ie,ittp]
+        vm_no_store[it] = wttc*vm_n_ni[ia,ie,ittc] + wttp*vm_n_ni[ia,ie,ittp]
         
         
         
-        v_out[ie,it] = v_in_store[it]
-        vf_out[ie,it] = vf_in_store[it] 
-        vm_out[ie,it] = vm_in_store[it] 
+        v_out[ia,ie,it] = v_in_store[it]
+        vf_out[ia,ie,it] = vf_in_store[it] 
+        vm_out[ia,ie,it] = vm_in_store[it] 
         
         cuda.syncthreads()
         
@@ -349,17 +343,17 @@ def cuda_ker_two_opt(v_y_ni0, v_y_ni1, vf_y_ni0, vf_y_ni1, vm_y_ni0, vm_y_ni1, v
         
         
         if vf_in_store[it] >= vf_no and vm_in_store[it] >= vm_no:
-        #if vf_y[ie,it] >= vf_no and vm_y[ie,it] >= vm_no:
-            itheta_out[ie,it] = it
+        #if vf_y[ia,ie,it] >= vf_no and vm_y[ia,ie,it] >= vm_no:
+            itheta_out[ia,ie,it] = it
             return
         
         if vf_in_store[it] < vf_no and vm_in_store[it] < vm_no:
-        #if vf_y[ie,it] < vf_no and vm_y[ie,it] < vm_no:
-            itheta_out[ie,it] = -1
+        #if vf_y[ia,ie,it] < vf_no and vm_y[ia,ie,it] < vm_no:
+            itheta_out[ia,ie,it] = -1
             tht = thtgrid[it]
-            v_out[ie,it] = tht*vf_no + (1-tht)*vm_no
-            vf_out[ie,it] = vf_no
-            vm_out[ie,it] = vm_no
+            v_out[ia,ie,it] = tht*vf_no + (1-tht)*vm_no
+            vf_out[ia,ie,it] = vf_no
+            vm_out[ia,ie,it] = vm_no
             return
         
         
@@ -407,10 +401,10 @@ def cuda_ker_two_opt(v_y_ni0, v_y_ni1, vf_y_ni0, vf_y_ni1, vm_y_ni0, vm_y_ni1, v
              
         if it_ren == -1:
             tht = thtgrid[it]
-            v_out[ie,it] = tht*vf_no + (1-tht)*vm_no
-            vf_out[ie,it] = vf_no
-            vm_out[ie,it] = vm_no
-            itheta_out[ie,it] = -1
+            v_out[ia,ie,it] = tht*vf_no + (1-tht)*vm_no
+            vf_out[ia,ie,it] = vf_no
+            vm_out[ia,ie,it] = vm_no
+            itheta_out[ia,ie,it] = -1
         else:
              
             # rescaling
@@ -418,7 +412,7 @@ def cuda_ker_two_opt(v_y_ni0, v_y_ni1, vf_y_ni0, vf_y_ni1, vm_y_ni0, vm_y_ni1, v
             tht_new = thtgrid[it_ren]
             factor = (1-tht_old)/(1-tht_new) if tht_old < tht_new else tht_old/tht_new
              
-            v_out[ie,it] = factor*v_in_store[it_ren]
-            vf_out[ie,it] = vf_in_store[it_ren]
-            vm_out[ie,it] = vm_in_store[it_ren]
-            itheta_out[ie,it] = it_ren
+            v_out[ia,ie,it] = factor*v_in_store[it_ren]
+            vf_out[ia,ie,it] = vf_in_store[it_ren]
+            vm_out[ia,ie,it] = vm_in_store[it_ren]
+            itheta_out[ia,ie,it] = it_ren

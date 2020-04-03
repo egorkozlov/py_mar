@@ -7,8 +7,7 @@ Created on Mon Mar 23 19:33:42 2020
 """
 
 import numpy as np
-from aux_routines import first_true, last_true
-from numba import njit, cuda, f4
+from numba import njit
 from gridvec import VecOnGrid
 
 
@@ -70,10 +69,10 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
         
         assert v_out.dtype == setup.dtype
         
-        '''
+        
         from renegotiation_gpu import v_ren_gpu_oneopt
         
-        v_out2, vf_out2, vm_out2, itheta_out2, switch2 = \
+        v_out2, vf_out2, vm_out2, itheta_out2  = \
             v_ren_gpu_oneopt(V['Couple, M']['V'],
                              V['Couple, M']['VF'],
                              V['Couple, M']['VM'],
@@ -83,7 +82,7 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
         assert np.allclose(v_out,v_out2)
         assert np.allclose(vf_out,vf_out2)
         assert np.allclose(vm_out,vm_out2)
-        '''
+        
          
     else:
         v_out, vf_out, vm_out, itheta_out, switch = \
@@ -96,7 +95,7 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
         
         assert v_out.dtype == setup.dtype
         
-        '''
+        
         from renegotiation_gpu import v_ren_gpu_twoopt
         
         v_out2, vf_out2, vm_out2, itheta_out2, switch2 = \
@@ -109,7 +108,7 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
         assert np.allclose(v_out,v_out2)
         assert np.allclose(vf_out,vf_out2)
         assert np.allclose(vm_out,vm_out2)
-        '''
+        
     def r(x): return x
         
     result =  {'Decision': (itheta_out>=0), 'thetas': itheta_out,

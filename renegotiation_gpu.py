@@ -6,8 +6,17 @@ Created on Thu Mar 26 19:56:40 2020
 @author: egorkozlov
 """
 
-from numba import cuda, f4
+from numba import cuda, f4, f8
 import numpy as np
+
+use_f32 = False
+
+if use_f32:
+    gpu_type = f4
+    cpu_type = np.float32
+else:
+    gpu_type = f8
+    cpu_type = np.float64
 
 
 def v_ren_gpu_oneopt(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, itht, wntht, thtgrid, 
@@ -20,9 +29,11 @@ def v_ren_gpu_oneopt(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, itht, wntht, th
     
     assert nt < 500 
     
-    v_out = np.empty((na,ne,nt),dtype=np.float32)
-    vm_out = np.empty((na,ne,nt),dtype=np.float32)
-    vf_out = np.empty((na,ne,nt),dtype=np.float32)
+    
+    
+    v_out = np.empty((na,ne,nt),dtype=cpu_type)
+    vm_out = np.empty((na,ne,nt),dtype=cpu_type)
+    vf_out = np.empty((na,ne,nt),dtype=cpu_type)
     itheta_out = np.empty((na,ne,nt),dtype=np.int16)
     
     thtgrid = cuda.to_device(thtgrid)
@@ -45,9 +56,9 @@ def v_ren_gpu_oneopt(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, itht, wntht, th
                                       ) for x in (vf_n_ni,vm_n_ni)]
         
         
-        v_outi = cuda.device_array((ne,nt),dtype=np.float32)
-        vm_outi = cuda.device_array((ne,nt),dtype=np.float32)
-        vf_outi = cuda.device_array((ne,nt),dtype=np.float32)
+        v_outi = cuda.device_array((ne,nt),dtype=cpu_type)
+        vm_outi = cuda.device_array((ne,nt),dtype=cpu_type)
+        vf_outi = cuda.device_array((ne,nt),dtype=cpu_type)
         itheta_outi = cuda.device_array((ne,nt),dtype=np.int16)
         
                          
@@ -72,12 +83,12 @@ def cuda_ker_one_opt(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, itht, wntht, th
     # this assumes block is for the same a and theta
     ie, it = cuda.grid(2)
     
-    v_in_store  = cuda.shared.array((500,),f4)
-    vf_in_store = cuda.shared.array((500,),f4)
-    vm_in_store = cuda.shared.array((500,),f4)
+    v_in_store  = cuda.shared.array((500,),gpu_type)
+    vf_in_store = cuda.shared.array((500,),gpu_type)
+    vm_in_store = cuda.shared.array((500,),gpu_type)
     
-    vf_no_store = cuda.shared.array((500,),f4)
-    vm_no_store = cuda.shared.array((500,),f4)
+    vf_no_store = cuda.shared.array((500,),gpu_type)
+    vm_no_store = cuda.shared.array((500,),gpu_type)
     
     
     
@@ -86,7 +97,7 @@ def cuda_ker_one_opt(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, itht, wntht, th
     nt = thtgrid.size
     
     
-    f1 = f4(1.0)
+    f1 = gpu_type(1.0)
     
     if ie < ne and it < nt:
         
@@ -214,9 +225,12 @@ def v_ren_gpu_twoopt(v_y_ni0, v_y_ni1, vf_y_ni0, vf_y_ni1, vm_y_ni0, vm_y_ni1, v
     
     assert nt < 500 
     
-    v_out = np.empty((na,ne,nt),dtype=np.float32)
-    vm_out = np.empty((na,ne,nt),dtype=np.float32)
-    vf_out = np.empty((na,ne,nt),dtype=np.float32)
+    
+    
+    
+    v_out = np.empty((na,ne,nt),dtype=cpu_type)
+    vm_out = np.empty((na,ne,nt),dtype=cpu_type)
+    vf_out = np.empty((na,ne,nt),dtype=cpu_type)
     itheta_out = np.empty((na,ne,nt),dtype=np.int16)
     switch_out = np.empty((na,ne,nt),dtype=np.bool_)
     
@@ -244,9 +258,9 @@ def v_ren_gpu_twoopt(v_y_ni0, v_y_ni1, vf_y_ni0, vf_y_ni1, vm_y_ni0, vm_y_ni1, v
                                       ) for x in (vf_n_ni,vm_n_ni)]
         
         
-        v_outi = cuda.device_array((ne,nt),dtype=np.float32)
-        vm_outi = cuda.device_array((ne,nt),dtype=np.float32)
-        vf_outi = cuda.device_array((ne,nt),dtype=np.float32)
+        v_outi = cuda.device_array((ne,nt),dtype=cpu_type)
+        vm_outi = cuda.device_array((ne,nt),dtype=cpu_type)
+        vf_outi = cuda.device_array((ne,nt),dtype=cpu_type)
         itheta_outi = cuda.device_array((ne,nt),dtype=np.int16)
         switch_outi = cuda.device_array((ne,nt),dtype=np.bool_)
         
@@ -275,12 +289,12 @@ def cuda_ker_two_opt(v_y_ni0, v_y_ni1, vf_y_ni0, vf_y_ni1, vm_y_ni0, vm_y_ni1, v
     # this assumes block is for the same a and theta
     ie, it = cuda.grid(2)
     
-    v_in_store  = cuda.shared.array((500,),f4)
-    vf_in_store = cuda.shared.array((500,),f4)
-    vm_in_store = cuda.shared.array((500,),f4)
+    v_in_store  = cuda.shared.array((500,),gpu_type)
+    vf_in_store = cuda.shared.array((500,),gpu_type)
+    vm_in_store = cuda.shared.array((500,),gpu_type)
     
-    vf_no_store = cuda.shared.array((500,),f4)
-    vm_no_store = cuda.shared.array((500,),f4)
+    vf_no_store = cuda.shared.array((500,),gpu_type)
+    vm_no_store = cuda.shared.array((500,),gpu_type)
     
     
     
@@ -289,7 +303,7 @@ def cuda_ker_two_opt(v_y_ni0, v_y_ni1, vf_y_ni0, vf_y_ni1, vm_y_ni0, vm_y_ni1, v
     nt = thtgrid.size
     
     
-    f1 = f4(1.0)
+    f1 = f8(1.0)
     
     if ie < ne and it < nt:
         

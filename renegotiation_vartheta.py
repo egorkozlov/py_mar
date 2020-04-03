@@ -15,7 +15,7 @@ from platform import system
 if system() != 'Darwin':
     ugpu = True
 else:
-    ugpu = False
+    ugpu = True
     
     
 

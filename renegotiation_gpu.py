@@ -31,47 +31,42 @@ def v_ren_gpu_oneopt(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, itht, wntht, th
     
     
     
-    v_out = np.empty((na,ne,nt),dtype=cpu_type)
-    vm_out = np.empty((na,ne,nt),dtype=cpu_type)
-    vf_out = np.empty((na,ne,nt),dtype=cpu_type)
-    itheta_out = np.empty((na,ne,nt),dtype=np.int16)
+    
+    
+    
+    v_out = cuda.device_array((na,ne,nt),dtype=cpu_type)
+    vm_out = cuda.device_array((na,ne,nt),dtype=cpu_type)
+    vf_out = cuda.device_array((na,ne,nt),dtype=cpu_type)
+    itheta_out = cuda.device_array((na,ne,nt),dtype=np.int16)
     
     thtgrid = cuda.to_device(thtgrid)
     
-    for ia in range(na):
+
+    threadsperblock = (1, 1, nt)
+        
+    b_a = na
+    b_exo = ne
+    b_theta = 1
     
-        threadsperblock = (1, nt)
-            
-        b_exo = ne
-        b_theta = 1
-        
-        blockspergrid = (b_exo, b_theta)
-        
-        v_yi, vf_yi, vm_yi = [cuda.to_device(
-                                np.ascontiguousarray(x[ia,:,:])
-                                            ) for x in (v_y_ni, vf_y_ni, vm_y_ni)]
-        
-        vf_ni, vm_ni = [cuda.to_device(
-                                        np.ascontiguousarray(x[ia,:,:])
-                                      ) for x in (vf_n_ni,vm_n_ni)]
-        
-        
-        v_outi = cuda.device_array((ne,nt),dtype=cpu_type)
-        vm_outi = cuda.device_array((ne,nt),dtype=cpu_type)
-        vf_outi = cuda.device_array((ne,nt),dtype=cpu_type)
-        itheta_outi = cuda.device_array((ne,nt),dtype=np.int16)
-        
-                         
-        
-        cuda_ker_one_opt[blockspergrid, threadsperblock](v_yi, vf_yi, vm_yi, vf_ni, vm_ni, 
-                                        itht, wntht, thtgrid,  
-                                        v_outi, vm_outi, vf_outi, itheta_outi)
+    blockspergrid = (b_a, b_exo, b_theta)
+    
+    v_y, vf_y, vm_y = [cuda.to_device(
+                            np.ascontiguousarray(x)
+                                        ) for x in (v_y_ni, vf_y_ni, vm_y_ni)]
+    
+    vf_n, vm_n = [cuda.to_device(
+                                    np.ascontiguousarray(x)
+                                  ) for x in (vf_n_ni,vm_n_ni)]
     
     
-        v_out[ia,:,:] = v_outi
-        vm_out[ia,:,:] = vm_outi
-        vf_out[ia,:,:] = vf_outi
-        itheta_out[ia,:,:] = itheta_outi
+    
+    
+    cuda_ker_one_opt[blockspergrid, threadsperblock](v_y, vf_y, vm_y, vf_n, vm_n, 
+                                    itht, wntht, thtgrid,  
+                                    v_out, vm_out, vf_out, itheta_out)
+    
+    v_out, vm_out, vf_out, itheta_out = (x.copy_to_host() 
+                            for x in (v_out, vm_out, vf_out, itheta_out))
     
     return v_out, vf_out, vm_out, itheta_out
     
@@ -81,7 +76,7 @@ def v_ren_gpu_oneopt(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, itht, wntht, th
 @cuda.jit   
 def cuda_ker_one_opt(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, itht, wntht, thtgrid, v_out, vm_out, vf_out, itheta_out):
     # this assumes block is for the same a and theta
-    ie, it = cuda.grid(2)
+    ia, ie, it = cuda.grid(3)
     
     v_in_store  = cuda.shared.array((500,),gpu_type)
     vf_in_store = cuda.shared.array((500,),gpu_type)
@@ -91,15 +86,15 @@ def cuda_ker_one_opt(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, itht, wntht, th
     vm_no_store = cuda.shared.array((500,),gpu_type)
     
     
-    
-    ne = v_y_ni.shape[0]
-    nt_crude = v_y_ni.shape[1]
+    na = v_y_ni.shape[0]
+    ne = v_y_ni.shape[1]
+    nt_crude = v_y_ni.shape[2]
     nt = thtgrid.size
     
     
     f1 = gpu_type(1.0)
     
-    if ie < ne and it < nt:
+    if ia < na and ie < ne and it < nt:
         
         it_int = itht[it]
         for ittc in range(nt_crude):
@@ -111,17 +106,17 @@ def cuda_ker_one_opt(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, itht, wntht, th
         wttc = f1 - wttp
         
         
-        v_in_store[it]  = wttc*v_y_ni[ie,ittc]  + wttp*v_y_ni[ie,ittp]
-        vf_in_store[it] = wttc*vf_y_ni[ie,ittc] + wttp*vf_y_ni[ie,ittp]
-        vm_in_store[it] = wttc*vm_y_ni[ie,ittc] + wttp*vm_y_ni[ie,ittp]
+        v_in_store[it]  = wttc*v_y_ni[ia,ie,ittc]  + wttp*v_y_ni[ia,ie,ittp]
+        vf_in_store[it] = wttc*vf_y_ni[ia,ie,ittc] + wttp*vf_y_ni[ia,ie,ittp]
+        vm_in_store[it] = wttc*vm_y_ni[ia,ie,ittc] + wttp*vm_y_ni[ia,ie,ittp]
         
-        vf_no_store[it] = wttc*vf_n_ni[ie,ittc] + wttp*vf_n_ni[ie,ittp]
-        vm_no_store[it] = wttc*vm_n_ni[ie,ittc] + wttp*vm_n_ni[ie,ittp]
+        vf_no_store[it] = wttc*vf_n_ni[ia,ie,ittc] + wttp*vf_n_ni[ia,ie,ittp]
+        vm_no_store[it] = wttc*vm_n_ni[ia,ie,ittc] + wttp*vm_n_ni[ia,ie,ittp]
         
         
-        v_out[ie,it] = v_in_store[it]
-        vf_out[ie,it] = vf_in_store[it] 
-        vm_out[ie,it] = vm_in_store[it] 
+        v_out[ia,ie,it] = v_in_store[it]
+        vf_out[ia,ie,it] = vf_in_store[it] 
+        vm_out[ia,ie,it] = vm_in_store[it] 
         
         cuda.syncthreads()
         
@@ -138,16 +133,16 @@ def cuda_ker_one_opt(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, itht, wntht, th
         
         if vf_in_store[it] >= vf_no and vm_in_store[it] >= vm_no:
         #if vf_y[ie,it] >= vf_no and vm_y[ie,it] >= vm_no:
-            itheta_out[ie,it] = it
+            itheta_out[ia,ie,it] = it
             return
         
         if vf_in_store[it] < vf_no and vm_in_store[it] < vm_no:
         #if vf_y[ie,it] < vf_no and vm_y[ie,it] < vm_no:
-            itheta_out[ie,it] = -1
+            itheta_out[ia,ie,it] = -1
             tht = thtgrid[it]
-            v_out[ie,it] = tht*vf_no + (1-tht)*vm_no
-            vf_out[ie,it] = vf_no
-            vm_out[ie,it] = vm_no
+            v_out[ia,ie,it] = tht*vf_no + (1-tht)*vm_no
+            vf_out[ia,ie,it] = vf_no
+            vm_out[ia,ie,it] = vm_no
             return
         
         
@@ -195,10 +190,10 @@ def cuda_ker_one_opt(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, itht, wntht, th
              
         if it_ren == -1:
             tht = thtgrid[it]
-            v_out[ie,it] = tht*vf_no + (1-tht)*vm_no
-            vf_out[ie,it] = vf_no
-            vm_out[ie,it] = vm_no
-            itheta_out[ie,it] = -1
+            v_out[ia,ie,it] = tht*vf_no + (1-tht)*vm_no
+            vf_out[ia,ie,it] = vf_no
+            vm_out[ia,ie,it] = vm_no
+            itheta_out[ia,ie,it] = -1
         else:
              
             # rescaling
@@ -206,10 +201,10 @@ def cuda_ker_one_opt(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, itht, wntht, th
             tht_new = thtgrid[it_ren]
             factor = (1-tht_old)/(1-tht_new) if tht_old < tht_new else tht_old/tht_new
              
-            v_out[ie,it] = factor*v_in_store[it_ren]
-            vf_out[ie,it] = vf_in_store[it_ren]
-            vm_out[ie,it] = vm_in_store[it_ren]
-            itheta_out[ie,it] = it_ren
+            v_out[ia,ie,it] = factor*v_in_store[it_ren]
+            vf_out[ia,ie,it] = vf_in_store[it_ren]
+            vm_out[ia,ie,it] = vm_in_store[it_ren]
+            itheta_out[ia,ie,it] = it_ren
 
 
 

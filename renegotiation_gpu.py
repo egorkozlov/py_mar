@@ -31,43 +31,72 @@ def v_ren_gpu_oneopt(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, itht, wntht, th
     
     
     
+    v_out = np.empty((na,ne,nt),dtype=cpu_type)
+    vm_out = np.empty((na,ne,nt),dtype=cpu_type)
+    vf_out = np.empty((na,ne,nt),dtype=cpu_type)
+    itheta_out = np.empty((na,ne,nt),dtype=np.int16)
     
+    nbatch = 2
     
+    istart = 0
+    ifinish = nbatch if nbatch < ne else ne
     
-    v_out = cuda.device_array((na,ne,nt),dtype=cpu_type)
-    vm_out = cuda.device_array((na,ne,nt),dtype=cpu_type)
-    vf_out = cuda.device_array((na,ne,nt),dtype=cpu_type)
-    itheta_out = cuda.device_array((na,ne,nt),dtype=np.int16)
+    # this natually splits everything onto slices
+    
     
     thtgrid = cuda.to_device(thtgrid)
     
-
-    threadsperblock = (1, 1, nt)
+    
+    v_out_i  = cuda.device_array((na,nbatch,nt),dtype=cpu_type)
+    vm_out_i = cuda.device_array((na,nbatch,nt),dtype=cpu_type)
+    vf_out_i = cuda.device_array((na,nbatch,nt),dtype=cpu_type)
+    itheta_out_i = cuda.device_array((na,nbatch,nt),dtype=np.int16)
+    
+    for ibatch in range(int(np.ceil(ne/nbatch))):
         
-    b_a = na
-    b_exo = ne
-    b_theta = 1
-    
-    blockspergrid = (b_a, b_exo, b_theta)
-    
-    v_y, vf_y, vm_y = [cuda.to_device(
-                            np.ascontiguousarray(x)
-                                        ) for x in (v_y_ni, vf_y_ni, vm_y_ni)]
-    
-    vf_n, vm_n = [cuda.to_device(
-                                    np.ascontiguousarray(x)
-                                  ) for x in (vf_n_ni,vm_n_ni)]
+        ne_here = ifinish - istart
+        
+        
+        
+        
+        threadsperblock = (nt, 1, 1)
+        
+        b_a = na
+        b_exo = ne_here
+        b_theta = 1
     
     
+        blockspergrid = (b_theta, b_a, b_exo)
+        
+        v_y, vf_y, vm_y = [cuda.to_device(
+                                np.ascontiguousarray(x[:,istart:ifinish,:])
+                                            ) for x in (v_y_ni, vf_y_ni, vm_y_ni)]
+        
+        vf_n, vm_n = [cuda.to_device(
+                                        np.ascontiguousarray(x[:,istart:ifinish,:])
+                                      ) for x in (vf_n_ni,vm_n_ni)]
+        
+        
     
+        
+        cuda_ker_one_opt[blockspergrid, threadsperblock](v_y, vf_y, vm_y, vf_n, vm_n, 
+                                        itht, wntht, thtgrid,  
+                                        v_out_i, vm_out_i, vf_out_i, itheta_out_i)
+        
+        
+        v_out[:,istart:ifinish,:] = v_out_i[:,:ne_here,:]
+        vm_out[:,istart:ifinish,:] = vm_out_i[:,:ne_here,:]
+        vf_out[:,istart:ifinish,:] = vf_out_i[:,:ne_here,:]
+        itheta_out[:,istart:ifinish,:] = itheta_out_i[:,:ne_here,:]
+        
+        
+        istart = ifinish
+        ifinish = ifinish+nbatch if ifinish+nbatch < ne else ne
     
-    cuda_ker_one_opt[blockspergrid, threadsperblock](v_y, vf_y, vm_y, vf_n, vm_n, 
-                                    itht, wntht, thtgrid,  
-                                    v_out, vm_out, vf_out, itheta_out)
-    
-    v_out, vm_out, vf_out, itheta_out = (x.copy_to_host() 
-                            for x in (v_out, vm_out, vf_out, itheta_out))
-    
+        
+        print('batch {} done'.format(ibatch))
+        
+        
     return v_out, vf_out, vm_out, itheta_out
     
 
@@ -76,7 +105,7 @@ def v_ren_gpu_oneopt(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, itht, wntht, th
 @cuda.jit   
 def cuda_ker_one_opt(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, itht, wntht, thtgrid, v_out, vm_out, vf_out, itheta_out):
     # this assumes block is for the same a and theta
-    ia, ie, it = cuda.grid(3)
+    it, ia, ie = cuda.grid(3)
     
     v_in_store  = cuda.shared.array((500,),gpu_type)
     vf_in_store = cuda.shared.array((500,),gpu_type)

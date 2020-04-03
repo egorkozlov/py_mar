@@ -83,6 +83,19 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
         assert np.allclose(vf_out,vf_out2)
         assert np.allclose(vm_out,vm_out2)
         
+        
+        
+        v_out3, vf_out3, vm_out3, itheta_out3  = \
+            v_ren_gpu_twop(V['Couple, M']['V'][None,...],
+                             V['Couple, M']['VF'][None,...],
+                             V['Couple, M']['VM'][None,...],
+                          vf_n, vm_n, itht, wntht, thtgrid)
+            
+        assert np.all(itheta_out3 == itheta_out)        
+        assert np.allclose(v_out,v_out3)
+        assert np.allclose(vf_out,vf_out3)
+        assert np.allclose(vm_out,vm_out3)
+        
          
     else:
         v_out, vf_out, vm_out, itheta_out, switch = \

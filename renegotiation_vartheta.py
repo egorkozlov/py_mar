@@ -11,6 +11,17 @@ from numba import njit
 from gridvec import VecOnGrid
 
 
+from platform import system
+if system() != 'Darwin':
+    ugpu = True
+else:
+    ugpu = False
+    
+    
+
+from renegotiation_gpu import v_ren_gpu_oneopt, v_ren_gpu_twoopt
+        
+
 def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescale=True,
              thetafun=None):
     # this returns value functions for couple that entered the period with
@@ -59,68 +70,46 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
     thtgrid = setup.thetagrid_fine
         
     if marriage:        
-        v_out, vf_out, vm_out, itheta_out, _ = \
-         v_ren_core_two_opts_with_int(V['Couple, M']['V'][None,...],
-                                      V['Couple, M']['VF'][None,...], 
-                                      V['Couple, M']['VM'][None,...], 
-                                      vf_n, vm_n,
-                                      itht, wntht, thtgrid, 
-                                      rescale = rescale)
         
+        if not ugpu:
+            v_out, vf_out, vm_out, itheta_out, _ = \
+             v_ren_core_two_opts_with_int(V['Couple, M']['V'][None,...],
+                                          V['Couple, M']['VF'][None,...], 
+                                          V['Couple, M']['VM'][None,...], 
+                                          vf_n, vm_n,
+                                          itht, wntht, thtgrid, 
+                                          rescale = rescale)
+        
+        else:
+            v_out, vf_out, vm_out, itheta_out  = \
+                v_ren_gpu_oneopt(V['Couple, M']['V'],
+                                 V['Couple, M']['VF'],
+                                 V['Couple, M']['VM'],
+                              vf_n, vm_n, itht, wntht, thtgrid)
+                
+            
         assert v_out.dtype == setup.dtype
-        
-        
-        from renegotiation_gpu import v_ren_gpu_oneopt
-        
-        v_out2, vf_out2, vm_out2, itheta_out2  = \
-            v_ren_gpu_oneopt(V['Couple, M']['V'],
-                             V['Couple, M']['VF'],
-                             V['Couple, M']['VM'],
-                          vf_n, vm_n, itht, wntht, thtgrid)
-            
-        assert np.all(itheta_out2 == itheta_out)        
-        assert np.allclose(v_out,v_out2)
-        assert np.allclose(vf_out,vf_out2)
-        assert np.allclose(vm_out,vm_out2)
-        
-        
-        
-        v_out3, vf_out3, vm_out3, itheta_out3  = \
-            v_ren_gpu_twop(V['Couple, M']['V'][None,...],
-                             V['Couple, M']['VF'][None,...],
-                             V['Couple, M']['VM'][None,...],
-                          vf_n, vm_n, itht, wntht, thtgrid)
-            
-        assert np.all(itheta_out3 == itheta_out)        
-        assert np.allclose(v_out,v_out3)
-        assert np.allclose(vf_out,vf_out3)
-        assert np.allclose(vm_out,vm_out3)
-        
          
     else:
-        v_out, vf_out, vm_out, itheta_out, switch = \
-            v_ren_core_two_opts_with_int(
-                       np.stack([V['Couple, C']['V'], V['Couple, M']['V']]),
-                       np.stack([V['Couple, C']['VF'],V['Couple, M']['VF']]), 
-                       np.stack([V['Couple, C']['VM'],V['Couple, M']['VM']]), 
-                                vf_n, vm_n,
-                                itht, wntht, thtgrid, rescale = rescale)        
+        
+        if not ugpu:
+            v_out, vf_out, vm_out, itheta_out, switch = \
+                v_ren_core_two_opts_with_int(
+                           np.stack([V['Couple, C']['V'], V['Couple, M']['V']]),
+                           np.stack([V['Couple, C']['VF'],V['Couple, M']['VF']]), 
+                           np.stack([V['Couple, C']['VM'],V['Couple, M']['VM']]), 
+                                    vf_n, vm_n,
+                                    itht, wntht, thtgrid, rescale = rescale)        
+        
+        else:
+            v_out, vf_out, vm_out, itheta_out, switch = \
+                v_ren_gpu_twoopt(V['Couple, C']['V'], V['Couple, M']['V'],
+                                 V['Couple, C']['VF'], V['Couple, M']['VF'],
+                                 V['Couple, C']['VM'], V['Couple, M']['VM'],
+                              vf_n, vm_n, itht, wntht, thtgrid)
         
         assert v_out.dtype == setup.dtype
         
-        
-        from renegotiation_gpu import v_ren_gpu_twoopt
-        
-        v_out2, vf_out2, vm_out2, itheta_out2, switch2 = \
-            v_ren_gpu_twoopt(V['Couple, C']['V'], V['Couple, M']['V'],
-                             V['Couple, C']['VF'], V['Couple, M']['VF'],
-                             V['Couple, C']['VM'], V['Couple, M']['VM'],
-                          vf_n, vm_n, itht, wntht, thtgrid)
-        assert np.all(itheta_out2 == itheta_out)        
-        assert np.all(switch==switch2)
-        assert np.allclose(v_out,v_out2)
-        assert np.allclose(vf_out,vf_out2)
-        assert np.allclose(vm_out,vm_out2)
         
     def r(x): return x
         

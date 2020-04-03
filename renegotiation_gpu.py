@@ -48,11 +48,11 @@ def v_ren_gpu_oneopt(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, itht, wntht, th
         blockspergrid = (b_exo, b_theta)
         
         v_yi, vf_yi, vm_yi = [cuda.to_device(
-                                np.ascontiguousarray(x[ia,:,:].copy())
+                                np.ascontiguousarray(x[ia,:,:])
                                             ) for x in (v_y_ni, vf_y_ni, vm_y_ni)]
         
         vf_ni, vm_ni = [cuda.to_device(
-                                        np.ascontiguousarray(x[ia,:,:].copy())
+                                        np.ascontiguousarray(x[ia,:,:])
                                       ) for x in (vf_n_ni,vm_n_ni)]
         
         

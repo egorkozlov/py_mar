@@ -20,6 +20,11 @@ def ev_single(setup,V,sown,female,t,trim_lvl=0.001):
     
     skip_mar = (pmeet < 1e-5)
     
+    
+    # do test here
+    ev_single_meet_test(setup,V,sown,female,t,
+                                      skip_mar=skip_mar,trim_lvl=trim_lvl)
+    
     EV_meet, dec = ev_single_meet(setup,V,sown,female,t,
                                       skip_mar=skip_mar,trim_lvl=trim_lvl)
     
@@ -95,8 +100,7 @@ def ev_single_meet(setup,V,sown,female,t,skip_mar=False,trim_lvl=0.000001):
         (vfoutc, vmoutc), nprc, decc, thtc =  res_c['Values'], res_c['NBS'], res_c['Decision'], res_c['theta']
         
         # choice is made based on Nash Surplus value
-        i_mar =(nprm>=nprc) #((vfoutm>=vfoutc) & (vmoutm>=vfoutc))# 
-        
+        i_mar =(nprm>=nprc) #((vfoutm>vfoutc) & (vmoutm>vfoutc))#         
         if female:
             vout = i_mar*vfoutm + (1-i_mar)*vfoutc
         else:
@@ -116,3 +120,41 @@ def ev_single_meet(setup,V,sown,female,t,skip_mar=False,trim_lvl=0.000001):
     mout['theta'] = tht
     
     return EV, mout
+
+
+
+
+def ev_single_meet_test(setup,V,sown,female,t,skip_mar=False,trim_lvl=0.000001):
+    # computes expected value of single person meeting a partner
+    
+    # this creates potential partners and integrates over them
+    # this also removes unlikely combinations of future z and partner's 
+    # characteristics so we have to do less bargaining
+    
+    nexo = setup.pars['nexo_t'][t]
+    ns = sown.size
+    
+    
+    
+    iexo = np.arange(nexo)
+    iassets_c = np.arange(ns)
+    # this just says that grid position of couple = grid position of single fem
+    
+
+
+    res_m = v_mar_igrid(setup,t,V,iassets_c,iexo,
+                             female=female,marriage=True)
+    
+    
+    res_c = v_mar_igrid(setup,t,V,iassets_c,iexo,
+                             female=female,marriage=False)
+    
+    (vfoutm,vmoutm), nprm, decm, thtm = res_m['Values'], res_m['NBS'], res_m['Decision'], res_m['theta']
+        
+    (vfoutc, vmoutc), nprc, decc, thtc =  res_c['Values'], res_c['NBS'], res_c['Decision'], res_c['theta']
+    
+    i_mar =((nprm>=nprc) & (nprm>0)) # ((vfoutm>vfoutc) & (vmoutm>vfoutc) & (nprm>0))# 
+   
+    
+    print('worked!')
+            

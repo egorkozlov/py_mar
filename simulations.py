@@ -52,23 +52,26 @@ class Agents:
         self.divorces=np.zeros((N,T),bool)
         
         # all the randomness is here
-        self.shocks_single_iexo = np.random.random_sample((N,T))
-        self.shocks_single_meet = np.random.random_sample((N,T))
-        self.shocks_couple_iexo = np.random.random_sample((N,T))
-        self.shocks_single_a = np.random.random_sample((N,T))
-        self.shocks_couple_a = np.random.random_sample((N,T))
-        self.shocks_div_a = np.random.random_sample((N,T))
+        shokko=np.random.random_sample((9,N,T))
+        self.shocks_single_iexo2 =shokko[8,:,:]# np.random.random_sample((N,T))
+        self.shocks_single_iexo =shokko[0,:,:]# np.random.random_sample((N,T))
+        self.shocks_single_meet =shokko[1,:,:]# np.random.random_sample((N,T))
+        self.shocks_couple_iexo =shokko[2,:,:]# np.random.random_sample((N,T))
+        self.shocks_single_a =shokko[3,:,:]# np.random.random_sample((N,T))
+        self.shocks_couple_a =shokko[4,:,:]# np.random.random_sample((N,T))
+      
+        self.shocks_div_a = shokko[5,:,:]#np.random.random_sample((N,T))
         
         
         z_t = self.setup.exogrid.zf_t if female else self.setup.exogrid.zm_t
         sig = self.setup.pars['sig_zf_0'] if female else self.setup.pars['sig_zm_0']
         z_prob = int_prob(z_t[0], sig = sig )
-        shocks_init = np.random.random_sample((N,))        
+        shocks_init = shokko[6,:,0]#np.random.random_sample((N,))        
         i_z = np.sum((shocks_init[:,None] > np.cumsum(z_prob)[None,:]), axis=1)
         iexoinit = i_z # initial state        
         
         
-        self.shocks_transition = np.random.random_sample((N,T))
+        self.shocks_transition = shokko[7,:,:]#np.random.random_sample((N,T))
         # no randomnes past this line please
         
         # initialize assets
@@ -325,7 +328,7 @@ class Agents:
                     pmat_cum = pmat.cumsum(axis=1)
                     
                     
-                    v = self.shocks_single_iexo[ind,t] #np.random.random_sample(ind.size) # draw uniform dist
+                    v = self.shocks_single_iexo2[ind,t] #np.random.random_sample(ind.size) # draw uniform dist
                     #This guy below (unitl it_out) account for 50% of single timem
                     pmat_cum[:,-1]=1.0
                     i_pmat = (v[:,None] > pmat_cum).sum(axis=1)  # index of the position in pmat
@@ -436,7 +439,8 @@ class Agents:
                     iz = izf if self.female else izm
                     
                     itht = self.itheta[ind,t+1] 
-                    agrid =  self.Mlist[ipol].setup.agrid_c                
+                    agrid =  self.Mlist[ipol].setup.agrid_c  
+                    agrids =  self.Mlist[ipol].setup.agrid_s
                     sc = agrid[isc] # needed only for dividing asssets               
                     
                     thts_all = decision['thetas']
@@ -499,13 +503,11 @@ class Agents:
                         sm = share_m*sc[i_div]
                         
                         s = sf if self.female else sm
-                        shks = self.shocks_div_a[ind[i_div],t]
-                        #aaa=self.Mlist[ipol].setup.agrid_s[VecOnGrid(self.Mlist[ipol].setup.agrid_s,s).roll(shocks=shks)]/(self.Mlist[ipol].setup.agrid_s[self.iassetss[ind[i_div],t+1]])
-                        #aaa1=(self.Mlist[ipol].setup.agrid_s[self.iassetss[ind[i_div],t+1]]>0) 
-                        #print(np.mean(aaa[aaa1]))
-                        self.iassets[ind[i_div],t+1] = VecOnGrid(self.Mlist[ipol].setup.agrid_s,s).roll(shocks=shks)
-                        #if sname == "Couple, M":print(np.mean(aaa[aaa1]))
+                        shks = 1-self.shocks_div_a[ind[i_div],t]
+
                         # if bribing happens we overwrite this
+                        self.iassets[ind[i_div],t+1] = VecOnGrid(self.Mlist[ipol].setup.agrid_s,s).roll(shocks=shks)
+                        
                         
                         if bil_bribing:
                             
@@ -523,12 +525,21 @@ class Agents:
                                 print('bribing happens in {} cases, that is {}% of all divorces'.format(n_b,share_b))
                                 self.iassets[ind[i_div][do_b],t+1] = iassets_ifdiv[do_b]
                                 
+                                #print(np.mean(agrid[isc[i_div][do_b]]/(agrids[decision['Bribing'][1][isc[i_div][do_b],iall[i_div][do_b],itht[i_div][do_b]]]+
+                                 #                                      agrids[decision['Bribing'][2][isc[i_div][do_b],iall[i_div][do_b],itht[i_div][do_b]]])))
+                                
+                                #aaa=self.Mlist[ipol].setup.agrid_c[self.iassets[ind[i_div][do_b],t+1]]/(self.Mlist[ipol].setup.agrid_c[self.iassetss[ind[i_div][do_b],t+1]])
+                                #aaa1=(self.Mlist[ipol].setup.agrid_c[self.iassetss[ind[i_div][do_b],t+1]]>0) 
+                                #if sname == "Couple, M":print(np.mean(aaa[aaa1]))
+                         
+                                
                         
                         self.itheta[ind[i_div],t+1] = -1
                         self.iexo[ind[i_div],t+1] = iz[i_div]
                         self.state[ind[i_div],t+1] = self.state_codes[ss]
                         if sname == "Couple, M":self.divorces[ind[i_div],t+1]=True
-                        
+                       
+
                         #FLS
                         self.ils_i[ind[i_div],t+1] = self.ils_def
                         

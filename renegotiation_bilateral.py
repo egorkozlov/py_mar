@@ -145,10 +145,11 @@ def ren_bilateral_wrap(setup,vy,vfy,vmy,vfn,vmn,vf_all_s,vm_all_s,aleft_c,
     
     def r(x): return x.astype(np.float32)        
     
-    
+   # print(aleft_c[bribe]-setup.agrid_s[iaout_f[bribe]]-setup.agrid_s[iaout_m[bribe]])
     return {'Decision': yes, 'thetas': ithetaout,
             'Values': (r(vout), r(vfout), r(vmout)),'Divorce':(vfn,vmn),
-            'Bribing':(bribe,ia_div_fem,ia_div_mal)}
+            'Bribing':(bribe,iaout_f,iaout_m)}
+            #'Bribing':(bribe,ia_div_fem,ia_div_mal)}
     
     
                     
@@ -295,6 +296,6 @@ def ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,vfn_as,vmn_as,aleft_c,ia_f_def_s,ia_m_
                         
                         continue
                         
-            
+  #  print(aleft_c[bribe]-agrid_s[iaout_f[bribe]]-agrid_s[iaout_m[bribe]])
     return vout, vfout, vmout, thetaout, yes, ithetaout, bribe, iaout_f, iaout_m
     

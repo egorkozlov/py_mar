@@ -57,6 +57,8 @@ if __name__ == '__main__':
     x0 = np.array([0.0,0.1810307,1.11501,0.543047,0.050264,0.08,0.9999,(1-0.21)/0.21])
     x0 = np.array([0.2,0.1110307,1.11501,0.543047,0.050264,0.005,-0.09])
     x0 = np.array([1.4,0.3110307,2.11501,0.343047,0.7550264,0.015,-0.09])
+    x0 = np.array([0.5535,0.599,1.84,0.246,0.7639,0.0168,-0.100])
+    x0 = np.array([0.919368,0.479426,2.05565,0.299191,0.730532,0.0232399,-0.0794582])
     
 
              
@@ -68,9 +70,9 @@ if __name__ == '__main__':
         path = None
     
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','models','agents','scaled residuals'],
-                                      #load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
-                                      solve_transition=True,                                    
-                                      save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
+                                      load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
+                                      #solve_transition=True,                                    
+                                      #save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       store_path=path,
                                       verbose=True,calibration_report=False,draw=graphs,graphs=graphs,
                                       welf=False) #Switch to true for decomposition of welfare analysis

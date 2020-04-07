@@ -63,6 +63,7 @@ def fun(x):
         xc=dump*xm+(1-dump)*xt[:,i]
         xc=xc.squeeze()
         
+        print('The initial position is {}'.format(xc))
         
         
         def q(pt):
@@ -77,7 +78,7 @@ def fun(x):
             
             
             
-        res=dfols.solve(q, xc, rhobeg = 0.1, rhoend=1e-4, maxfun=100, bounds=(xl,xu),
+        res=dfols.solve(q, xc, rhobeg = 0.1, rhoend=1e-3, maxfun=30, bounds=(xl,xu),
                         scaling_within_bounds=True,objfun_has_noise=True)
         
         

@@ -46,14 +46,14 @@ class ModelSetup(object):
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.0 
-        p['sig_partner_a'] = 0.1
+        p['sig_partner_a'] = 0.1#0.5
         p['sig_partner_z'] = 1.2#1.0#0.4 #This is crazy powerful for the diff in diff estimate
         p['sig_partner_mult'] = 1.0
-        p['dump_factor_z'] = 0.85
-        p['mean_partner_z_female'] = +0.02#0.8#0.4
-        p['mean_partner_z_male'] =  -0.02#-0.8#0.4
-        p['mean_partner_a_female'] = 0.0#0.3#0.1#0.4
-        p['mean_partner_a_male'] = -0.0#-0.1#-0.1#0.4
+        p['dump_factor_z'] = 0.85#0.82
+        p['mean_partner_z_female'] = 0.02#+0.03
+        p['mean_partner_z_male'] =  -0.02#-0.03
+        p['mean_partner_a_female'] = 0.0#0.1
+        p['mean_partner_a_male'] = 0.0#-0.1
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
         
@@ -78,10 +78,7 @@ class ModelSetup(object):
         p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.5960803  +.05829568*t -.00169143*t**2+ .00001446*t**3) for t in range(T)]
    
         
-              
- 
-        
-        
+  
         p['util_lam'] = 0.19#0.4
         p['util_alp'] = 0.5
         p['util_xi'] = 1.07

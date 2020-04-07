@@ -309,7 +309,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
         del mdl_list
         
     if 'agents' not in return_format:
-        del(agents)
+        del(agents_pooled,agents_fem,agents_mal)
         
   
             

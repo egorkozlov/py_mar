@@ -90,7 +90,7 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
             coh.loc[coh['HOWBEG0'+str(i+1)]=='coh','num']=coh.loc[coh['HOWBEG0'+str(i+1)]=='coh','num']+1.0   
                
     #Expand the data       
-    cohe=coh.loc[coh.index.repeat(coh.num)]   
+    cohe=coh.loc[coh.index.repeat(np.array(coh.num,dtype=np.int32))]   
        
        
     #Link each cohabitation to relationship number   

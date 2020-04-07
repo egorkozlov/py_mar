@@ -18,7 +18,7 @@ from platform import system
 from aux_routines import cp_take_along_axis
 
 
-if system() != 'Darwin' and system() != 'Windows':
+if system() != 'Darwin' and system() != 'Windows' and system()!='Linux':
 #if system() != 'Darwin':
     import cupy as cp
     ugpu = True

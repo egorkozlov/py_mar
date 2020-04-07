@@ -16,6 +16,7 @@ def strata_sample(namevar,dsample,frac=0.1,weights=False,distr=False,tsample=Fal
     #fed as dsample
     
     import pandas as pd
+    import numpy as np
     
     #Genrate array for pop count
     namevar_1=[None]*len(namevar)
@@ -67,8 +68,8 @@ def strata_sample(namevar,dsample,frac=0.1,weights=False,distr=False,tsample=Fal
     
     def map_fun(x):
         p = pop_count
-        if fraction_new.array[x]/fraction_current.array[x]<1.0:
-            return tsample[eval(subset[0:-1])].sample(frac=fraction_new.array[x]/fraction_current.array[x])
+        if np.array(fraction_new)[x]/np.array(fraction_current)[x]<1.0:
+            return tsample[eval(subset[0:-1])].sample(frac=np.array(fraction_new)[x]/np.array(fraction_current)[x])
         else:
             return tsample[eval(subset[0:-1])].sample(frac=1.0)
     

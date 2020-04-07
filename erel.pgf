@@ -315,7 +315,7 @@
 \definecolor{textcolor}{rgb}{0.000000,0.000000,0.000000}%
 \pgfsetstrokecolor{textcolor}%
 \pgfsetfillcolor{textcolor}%
-\pgftext[x=0.190741in,y=1.287820in,left,base]{\color{textcolor}\rmfamily\fontsize{11.000000}{13.200000}\selectfont \(\displaystyle 0.5\)}%
+\pgftext[x=0.190741in,y=1.287821in,left,base]{\color{textcolor}\rmfamily\fontsize{11.000000}{13.200000}\selectfont \(\displaystyle 0.5\)}%
 \end{pgfscope}%
 \begin{pgfscope}%
 \pgfsetbuttcap%
@@ -374,12 +374,12 @@
 \definecolor{currentstroke}{rgb}{0.000000,0.500000,0.000000}%
 \pgfsetstrokecolor{currentstroke}%
 \pgfsetdash{{5.550000pt}{2.400000pt}}{0.000000pt}%
-\pgfpathmoveto{\pgfqpoint{0.482292in}{1.203597in}}%
-\pgfpathlineto{\pgfqpoint{1.412292in}{1.670240in}}%
-\pgfpathlineto{\pgfqpoint{2.342292in}{1.854489in}}%
-\pgfpathlineto{\pgfqpoint{3.272292in}{1.947077in}}%
-\pgfpathlineto{\pgfqpoint{4.202292in}{2.014203in}}%
-\pgfpathlineto{\pgfqpoint{5.132292in}{2.020684in}}%
+\pgfpathmoveto{\pgfqpoint{0.482292in}{1.271422in}}%
+\pgfpathlineto{\pgfqpoint{1.412292in}{1.791847in}}%
+\pgfpathlineto{\pgfqpoint{2.342292in}{1.922875in}}%
+\pgfpathlineto{\pgfqpoint{3.272292in}{1.976394in}}%
+\pgfpathlineto{\pgfqpoint{4.202292in}{2.012842in}}%
+\pgfpathlineto{\pgfqpoint{5.132292in}{2.020686in}}%
 \pgfusepath{stroke}%
 \end{pgfscope}%
 \begin{pgfscope}%
@@ -408,12 +408,12 @@
 \definecolor{currentstroke}{rgb}{1.000000,0.000000,0.000000}%
 \pgfsetstrokecolor{currentstroke}%
 \pgfsetdash{{5.550000pt}{2.400000pt}}{0.000000pt}%
-\pgfpathmoveto{\pgfqpoint{0.482292in}{0.828154in}}%
-\pgfpathlineto{\pgfqpoint{1.412292in}{0.992497in}}%
-\pgfpathlineto{\pgfqpoint{2.342292in}{1.069808in}}%
-\pgfpathlineto{\pgfqpoint{3.272292in}{1.107769in}}%
-\pgfpathlineto{\pgfqpoint{4.202292in}{1.126287in}}%
-\pgfpathlineto{\pgfqpoint{5.132292in}{1.135082in}}%
+\pgfpathmoveto{\pgfqpoint{0.482292in}{0.748690in}}%
+\pgfpathlineto{\pgfqpoint{1.412292in}{0.867262in}}%
+\pgfpathlineto{\pgfqpoint{2.342292in}{0.930931in}}%
+\pgfpathlineto{\pgfqpoint{3.272292in}{0.978452in}}%
+\pgfpathlineto{\pgfqpoint{4.202292in}{1.000598in}}%
+\pgfpathlineto{\pgfqpoint{5.132292in}{1.005673in}}%
 \pgfusepath{stroke}%
 \end{pgfscope}%
 \begin{pgfscope}%

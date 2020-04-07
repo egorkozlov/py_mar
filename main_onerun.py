@@ -56,7 +56,7 @@ if __name__ == '__main__':
     x0 = np.array([0.701399,0.1810307,1.11501,0.643047,0.180264,0.0,0.71854,(1-0.21)/0.21])
     x0 = np.array([0.0,0.1810307,1.11501,0.543047,0.050264,0.08,0.9999,(1-0.21)/0.21])
     x0 = np.array([0.2,0.1110307,1.11501,0.543047,0.050264,0.005,-0.09])
-    x0 = np.array([1.4,0.3110307,2.1501,0.343047,0.7550264,0.015,-0.09])
+    x0 = np.array([1.4,0.3110307,2.11501,0.343047,0.7550264,0.015,-0.09])
     
 
              
@@ -73,7 +73,7 @@ if __name__ == '__main__':
                                       save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       store_path=path,
                                       verbose=True,calibration_report=False,draw=graphs,graphs=graphs,
-                                      welf=True) #Switch to true for decomposition of welfare analysis
+                                      welf=False) #Switch to true for decomposition of welfare analysis
                          
     print('Done. Residual in point x0 is {}'.format(out))
      

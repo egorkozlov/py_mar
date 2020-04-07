@@ -69,13 +69,14 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
      
      
     psi_check[single]=0.0 
+    state_psid=agents_male.state 
+    labor_psid=agents_male.ils_i 
+    iexo_psid=agents_male.iexo 
+    change_psid=agents_male.policy_ind 
      
     if draw: 
         #Import values for female labor supply (simulated men only) 
-        state_psid=agents_male.state 
-        labor_psid=agents_male.ils_i 
-        iexo_psid=agents_male.iexo 
-        change_psid=agents_male.policy_ind 
+
         iexo_w=agents.iexo  
         labor_w=agents.ils_i 
         female_w=agents.is_female 
@@ -647,7 +648,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     df_psidt=pd.DataFrame(data=ddd2,columns=["Index","age","unid"],index=ddd2[:,0]) 
     df_psidt['age']=df_psidt['age'].astype(np.float) 
      
-    if (len(df_psidt)>0) & (setup.pars['py']==1): 
+    if (len(df_psidt)>0) & (setup.pars['py']==1) & max(df_psidt['unid']>0.9) & min(df_psidt['unid']<0.9): 
         sampletemp=strata_sample(["'age'", "'unid'"],freq_psid_tot_data2,frac=0.1,tsample=df_psidt,distr=True) 
         final2t=df_psidt.merge(sampletemp,how='left',on='Index',indicator=True) 
          
@@ -744,7 +745,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     df_psidp=pd.DataFrame(data=ddd3,columns=["Index","age","unid","mar"],index=ddd3[:,0]) 
     df_psidp['age']=df_psidp['age'].astype(np.float) 
      
-    if (len(df_psidp)>0) &  (setup.pars['py']==1):   
+    if (len(df_psidp)>0) &  (setup.pars['py']==1) & max(df_psidp['unid']>0.9) & min(df_psidp['unid']<0.9):   
         sampletempp=strata_sample(["'age'", "'unid'", "'mar'"],freq_psid_par_data2,frac=0.02,tsample=df_psidp,distr=True) 
         final2p=df_psidp.merge(sampletempp,how='left',on='Index',indicator=True) 
          
@@ -782,18 +783,21 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     picko=(state_par[:]==2) & (ages>15) 
     mean_fls_m=np.zeros((2)) 
     if picky.any():mean_fls_m[0]=np.array(setup.ls_levels)[labor_par[picky]].mean()  
-    if picky.any():mean_fls_m[1]=np.array(setup.ls_levels)[labor_par[picko]].mean()  
+    if picko.any():mean_fls_m[1]=np.array(setup.ls_levels)[labor_par[picko]].mean()  
         
     mean_fls_c=0.0  
     picky=(state_par[:]==3) & (ages<=15) 
     picko=(state_par[:]==3) & (ages>15) 
     mean_fls_c=np.zeros((2)) 
     if picky.any():mean_fls_c[0]=np.array(setup.ls_levels)[labor_par[picky]].mean()  
-    if picky.any():mean_fls_c[1]=np.array(setup.ls_levels)[labor_par[picko]].mean()  
+    if picko.any():mean_fls_c[1]=np.array(setup.ls_levels)[labor_par[picko]].mean()  
       
     small=mean_fls_c<0.0001*np.ones((2)) 
     mean_fls_c[small]=0.0001*np.ones((2))[small] 
-    moments['fls_ratio']=mean_fls_m/mean_fls_c 
+    ratio=np.array([1,1])
+    ratio[0]=min(mean_fls_m[0]/mean_fls_c[0],2.0)
+    ratio[1]=min(mean_fls_m[1]/mean_fls_c[1],2.0)
+    moments['fls_ratio']=ratio
      
     grid=np.linspace(5,35,31,dtype=np.int16) 
     storem=np.zeros(grid.shape) 
@@ -892,7 +896,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     df_psidd=pd.DataFrame(data=ddd4,columns=["Index","age","unid"],index=ddd4[:,0]) 
     df_psidd['age']=df_psidd['age'].astype(np.float) 
      
-    if (len(df_psidd)>0) & (setup.pars['py']==1): 
+    if (len(df_psidd)>0) & (setup.pars['py']==1)   & max(df_psidd['unid']>0.9) & min(df_psidd['unid']<0.9):   
         sampletemp=strata_sample(["'age'", "'unid'"],freq_psid_div_data2,frac=0.1,tsample=df_psidd,distr=True) 
         final2d=df_psidd.merge(sampletemp,how='left',on='Index',indicator=True) 
          
@@ -1812,9 +1816,9 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.plot(eventgrid, event_psim,color='b', label='Marriage') 
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
-        plt.xlabel('Time Event Unid')    
+        plt.xlabel('Time Event Unilateral Divorce')    
         plt.ylabel('Love Shock')  
-         
+        plt.savefig('psiuni.pgf', bbox_inches = 'tight',pad_inches = 0)  
          
         fig = plt.figure()    
         f6=fig.add_subplot(2,1,1) 
@@ -1823,7 +1827,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.plot(eventgrid, pevent_psi_mar,color='b', label='Marriage') 
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
-        plt.xlabel('Time Event Unid')    
+        plt.xlabel('Time Event Unilateral Divorce')    
         plt.ylabel('Love Shock-Coefficient') 
          
         ##########################################    
@@ -1836,8 +1840,9 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.plot(eventgrid, event_thetam,color='b', label='Marriage') 
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
-        plt.xlabel('Time Event Unid')    
+        plt.xlabel('Time Event Unilateral Divorce')    
         plt.ylabel('Female Pareto weight')  
+        plt.savefig('weight.pgf', bbox_inches = 'tight',pad_inches = 0)  
          
         fig = plt.figure()    
         f6=fig.add_subplot(2,1,1) 
@@ -1846,7 +1851,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.plot(eventgrid, pevent_theta_mar,color='b', label='Marriage') 
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
-        plt.xlabel('Time Event Unid')    
+        plt.xlabel('Time Event Unilateral Divorce')    
         plt.ylabel('Female Pareto weight-Coefficient')  
    
         ##########################################    

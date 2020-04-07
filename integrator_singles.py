@@ -22,8 +22,8 @@ def ev_single(setup,V,sown,female,t,trim_lvl=0.001):
     
     
     # do test here
-    ev_single_meet_test(setup,V,sown,female,t,
-                                      skip_mar=skip_mar,trim_lvl=trim_lvl)
+    #ev_single_meet_test(setup,V,sown,female,t,
+     #                                 skip_mar=skip_mar,trim_lvl=trim_lvl)
     
     EV_meet, dec = ev_single_meet(setup,V,sown,female,t,
                                       skip_mar=skip_mar,trim_lvl=trim_lvl)

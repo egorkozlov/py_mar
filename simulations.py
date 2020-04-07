@@ -519,10 +519,10 @@ class Agents:
                             assert np.all(iassets_ifdiv[do_b] >= 0)
                             
                             if np.any(do_b):
-                                n_b = np.sum(do_b)
-                                n_tot = np.sum(i_div)
-                                share_b = int(100*n_b/n_tot)
-                                print('bribing happens in {} cases, that is {}% of all divorces'.format(n_b,share_b))
+                                #n_b = np.sum(do_b)
+                                #n_tot = np.sum(i_div)
+                                #share_b = int(100*n_b/n_tot)
+                                #print('bribing happens in {} cases, that is {}% of all divorces'.format(n_b,share_b))
                                 self.iassets[ind[i_div][do_b],t+1] = iassets_ifdiv[do_b]
                                 
                                 #print(np.mean(agrid[isc[i_div][do_b]]/(agrids[decision['Bribing'][1][isc[i_div][do_b],iall[i_div][do_b],itht[i_div][do_b]]]+

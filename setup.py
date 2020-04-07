@@ -50,10 +50,10 @@ class ModelSetup(object):
         p['sig_partner_z'] = 1.2#1.0#0.4 #This is crazy powerful for the diff in diff estimate
         p['sig_partner_mult'] = 1.0
         p['dump_factor_z'] = 0.85
-        p['mean_partner_z_female'] = +0.00#0.8#0.4
-        p['mean_partner_z_male'] =  -0.00#-0.8#0.4
+        p['mean_partner_z_female'] = +0.02#0.8#0.4
+        p['mean_partner_z_male'] =  -0.02#-0.8#0.4
         p['mean_partner_a_female'] = 0.0#0.3#0.1#0.4
-        p['mean_partner_a_male'] = 0.0#-0.1#-0.1#0.4
+        p['mean_partner_a_male'] = -0.0#-0.1#-0.1#0.4
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
         
@@ -86,7 +86,7 @@ class ModelSetup(object):
         p['util_alp'] = 0.5
         p['util_xi'] = 1.07
         p['util_kap'] = (1-0.21)/(0.21)
-        p['rprice_durables'] = 1.0
+        p['rprice_durables'] = 1.0#
         
 
         

@@ -343,12 +343,10 @@ def cuda_ker_two_opt(v_y_ni0, v_y_ni1, vf_y_ni0, vf_y_ni1, vm_y_ni0, vm_y_ni1, v
         
         
         if vf_in_store[it] >= vf_no and vm_in_store[it] >= vm_no:
-        #if vf_y[ia,ie,it] >= vf_no and vm_y[ia,ie,it] >= vm_no:
             itheta_out[ia,ie,it] = it
             return
         
         if vf_in_store[it] < vf_no and vm_in_store[it] < vm_no:
-        #if vf_y[ia,ie,it] < vf_no and vm_y[ia,ie,it] < vm_no:
             itheta_out[ia,ie,it] = -1
             tht = thtgrid[it]
             v_out[ia,ie,it] = tht*vf_no + (1-tht)*vm_no

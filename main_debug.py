@@ -13,6 +13,8 @@ import numpy as np
 import os
 os.environ['MKL_CBWR']='AUTO'
 
+from numba import config
+config.NUMBA_NUM_THREADS = 2
  
 
 

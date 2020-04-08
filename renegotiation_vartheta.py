@@ -7,7 +7,7 @@ Created on Mon Mar 23 19:33:42 2020
 """
 
 import numpy as np
-from numba import njit
+from numba import njit, prange
 from gridvec import VecOnGrid
 
 
@@ -15,7 +15,7 @@ from platform import system
 if system() != 'Darwin':
     ugpu = True
 else:
-    ugpu = True
+    ugpu = False
     
     
 
@@ -79,7 +79,7 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
                                           vf_n, vm_n,
                                           itht, wntht, thtgrid, 
                                           rescale = rescale)
-        
+             
         else:
             v_out, vf_out, vm_out, itheta_out  = \
                 v_ren_gpu_oneopt(V['Couple, M']['V'],
@@ -87,6 +87,7 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
                                  V['Couple, M']['VM'],
                               vf_n, vm_n, itht, wntht, thtgrid)
                 
+               
             
         assert v_out.dtype == setup.dtype
          
@@ -100,7 +101,7 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
                            np.stack([V['Couple, C']['VM'],V['Couple, M']['VM']]), 
                                     vf_n, vm_n,
                                     itht, wntht, thtgrid, rescale = rescale)        
-        
+            
         else:
             v_out, vf_out, vm_out, itheta_out, switch = \
                 v_ren_gpu_twoopt(V['Couple, C']['V'], V['Couple, M']['V'],
@@ -185,7 +186,7 @@ def v_div_vartheta(setup,dc,t,sc,Vmale,Vfemale,izf,izm,
 
 
 
-@njit
+@njit(parallel=True)
 def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, itht, wntht, thtgrid, 
                                  rescale=False):
     # this takes values with no interpolation and interpolates inside
@@ -229,8 +230,8 @@ def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, ith
     f1 = np.float32(1)
     
     
-    for ia in range(na):
-        for ie in range(ne):
+    for ia in prange(na):
+        for ie in prange(ne):
             # first we form value functions and choices
             # then we do renegotiation
             # this saves lots of operations

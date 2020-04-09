@@ -22,9 +22,9 @@ class ModelSetup(object):
         period_year=1#this can be 1,2,3 or 6
         transform=2#this tells how many periods to pull together for duration moments
         T = int(62/period_year)
-        Tret = int(47/period_year) # first period when the agent is retired
+        Tret = int(59/period_year) # first period when the agent is retired
         Tbef=int(2/period_year)
-        Tren  = int(47/period_year)#int(42/period_year) # period starting which people do not renegotiate/divroce
+        Tren  = int(59/period_year)#int(42/period_year) # period starting which people do not renegotiate/divroce
         Tmeet = int(47/period_year)#int(42/period_year) # period starting which you do not meet anyone
         p['py']=period_year
         p['ty']=transform
@@ -113,7 +113,7 @@ class ModelSetup(object):
         
         self.pars = p
         
-        self.dtype = np.float32 # type for all floats
+        self.dtype = np.float64 # type for all floats
         
        
         
@@ -133,7 +133,7 @@ class ModelSetup(object):
         #Cost of Divorce
         if divorce_costs == 'Default':
             # by default the costs are set in the bottom
-            self.div_costs = DivorceCosts()
+            self.div_costs = DivorceCosts(eq_split=1.0,assets_kept=0.9)
         else:
             if isinstance(divorce_costs,dict):
                 # you can feed in arguments to DivorceCosts
@@ -146,11 +146,11 @@ class ModelSetup(object):
         #Cost of Separation
         if separation_costs == 'Default':
             # by default the costs are set in the bottom
-            self.sep_costs = DivorceCosts()
+            self.sep_costs = DivorceCosts(eq_split=0.0,assets_kept=1.0)
         else:
             if isinstance(separation_costs,dict):
                 # you can feed in arguments to DivorceCosts
-                self.sep_costs = DivorceCosts(**divorce_costs)
+                self.sep_costs = DivorceCosts(**separation_costs)
             else:
                 # or just the output of DivorceCosts
                 assert isinstance(separation_costs,DivorceCosts)
@@ -414,7 +414,7 @@ class ModelSetup(object):
         gsparse = np.linspace(mint,mmax,nm-ndense)
         gdense = np.linspace(mmin,mint,ndense+1) # +1 as there is a common pt
         
-        self.mgrid = np.zeros(nm,dtype=np.float32)
+        self.mgrid = np.zeros(nm,dtype=self.dtype)
         self.mgrid[ndense:] = gsparse
         self.mgrid[:(ndense+1)] = gdense
         assert np.all(np.diff(self.mgrid)>0)
@@ -704,8 +704,8 @@ class ModelSetup(object):
         ntheta = self.ntheta
         nl = self.nls
         
-        uout = np.empty((nm,ntheta,nl),dtype=np.float32)
-        xout = np.empty((nm,ntheta,nl),dtype=np.float32)
+        uout = np.empty((nm,ntheta,nl),dtype=self.dtype)
+        xout = np.empty((nm,ntheta,nl),dtype=self.dtype)
         
         for il in range(nl):
             for itheta in range(ntheta):
@@ -752,7 +752,7 @@ class DivorceCosts(object):
                  u_lost_m=0.0,u_lost_f=0.0, # pure utility losses b/c of divorce
                  money_lost_m=0.0,money_lost_f=0.0, # pure money (asset) losses b/c of divorce
                  money_lost_m_ez=0.0,money_lost_f_ez=0.0, # money losses proportional to exp(z) b/c of divorce
-                 eq_split=0.0 #The more of less equal way assets are split within divorce
+                 eq_split=1.0 #The more of less equal way assets are split within divorce
                  ): # 
         
         self.unilateral_divorce = unilateral_divorce # w
@@ -789,14 +789,14 @@ def tauchen_drift(z_now,z_next,rho,sigma,mu):
     z_now = np.atleast_1d(z_now)
     z_next = np.atleast_1d(z_next)
     if z_next.size == 1:
-        return np.ones((z_now.size,1),dtype=np.float32)
+        return np.ones((z_now.size,1),dtype=z_now.dtype)
     
     d = np.diff(z_next)
     assert np.ptp(d) < 1e-5, 'Step size should be fixed'
     
     h_half = d[0]/2
     
-    Pi = np.zeros((z_now.size,z_next.size),dtype=np.float32)
+    Pi = np.zeros((z_now.size,z_next.size),dtype=z_now.dtype)
     
     ez = rho*z_now + mu
     
@@ -809,7 +809,7 @@ def tauchen_drift(z_now,z_next,rho,sigma,mu):
         
 
 def build_s_grid(agrid,n_between,da_min,da_max):
-    sgrid = np.array([0.0],np.float32)
+    sgrid = np.array([0.0],agrid.dtype)
     for j in range(agrid.size-1):
         step = (agrid[j+1] - agrid[j])/n_between
         if step >= da_min and step <= da_max:

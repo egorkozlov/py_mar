@@ -13,10 +13,6 @@ Created on Tue Oct 29 17:01:07 2019
 
 import numpy as np
 from timeit import default_timer
-#from numba import njit, vectorize
-#from memory_profiler import profile
-#from IPython import get_ipython
-#from asizeof import asizeof
 import os
 import psutil
 
@@ -32,7 +28,7 @@ from integrator_couples import ev_couple_m_c
 
 class Model(object):
     def __init__(self,iterator_name='default-timed',verbose=False,
-                 solve_till=None,**kwargs):
+                 solve_till=None,display_v=False,**kwargs):
         self.mstart = self.get_mem()
         self.mlast = self.get_mem()
         self.verbose = verbose
@@ -42,7 +38,7 @@ class Model(object):
         self.start = default_timer()
         self.last = default_timer()        
         self.time_dict = dict()        
-        
+        self.display_v = display_v
         
         if solve_till is not None:
             T = self.setup.pars['T']
@@ -68,7 +64,7 @@ class Model(object):
         def r(x): return round(x,2)
         
         if verbose and last_time>mintime:
-            print('{} is done in {} sec, total {} sec, memory used is {} Mb'.format(whatisdone,r(last_time),r(total_time),r(total_mem)))
+            print('{} is done in {} sec, total {} sec, mem is {} Mb'.format(whatisdone,r(last_time),r(total_time),r(total_mem)))
         self.last = default_timer()
         self.mlast = self.get_mem()
         
@@ -78,6 +74,8 @@ class Model(object):
             self.time_dict[whatisdone] = [last_time]
         
     def time_statistics(self,remove_worst=True,remove_single=False):
+        
+        print('Total time is {}'.format(default_timer() - self.start))
         for what, timelist in self.time_dict.items():
             
             if remove_single and len(timelist) == 1: continue
@@ -90,8 +88,9 @@ class Model(object):
                 time_arr = time_arr[time_arr<time_worst]
                 extra = ' (excl the worst)'
                 
-            av_time = round(np.mean(time_arr),2)            
-            print('On average {} took {} sec{}'.format(what,av_time,extra))
+            av_time = round(np.mean(time_arr),2) 
+            tot_time = round(np.sum(np.array(timelist)),2) 
+            print('On average {} took {}, total {} sec'.format(what,av_time,tot_time,extra))
             
     
     def _get_iterator(self,name='default'):
@@ -119,12 +118,21 @@ class Model(object):
             if desc == 'Female, single' or desc == 'Male, single':
                 
                 female = (desc == 'Female, single')                
-                V, c, x, s = v_iter_single(setup,t,EV,female,ushift)                            
+                V, c, x, s = v_iter_single(setup,t,EV,female,ushift)    
+
+                
+                if self.display_v: print('at t = {} for {} mean V[0,:] is {}'.format(t,desc,V[0,:].mean()))
+                                        
                 return {desc: {'V':V,'c':c,'x':x,'s':s}}   
+                
              
             elif desc == 'Couple, M' or desc == 'Couple, C':
                 
-                V, VF, VM, c, x, s, fls, V_all_l = v_iter_couple(setup,t,EV,ushift)                            
+                V, VF, VM, c, x, s, fls, V_all_l = v_iter_couple(setup,t,EV,ushift)    
+
+                      
+                if self.display_v: print('at t = {} for {} mean V[0,:,:] is {}'.format(t,desc,V[0,:,:].mean()))
+                        
                 return {desc: {'V':V,'VF':VF,'VM':VM,'c':c,'x':x,'s':s,'fls':fls,'V_all_l':V_all_l}}
           
             
@@ -139,6 +147,14 @@ class Model(object):
                 EV, dec = ev_couple_m_c(setup,V_next,t,True)
             elif desc == 'Couple, C':
                 EV, dec = ev_couple_m_c(setup,V_next,t,False)
+                
+                
+            if type(EV) is tuple:
+                EV0 = EV[0]
+                if self.display_v: print('at t = {} for {} mean EV[0,:,:,0] is {}'.format(t,desc,EV0[0,:,:,0].mean()))
+            else:
+                if self.display_v: print('at t = {} for {} EV[0,:] is {}'.format(t,desc,EV[0,:].mean()))
+                
                 
             return EV, dec
             

@@ -51,47 +51,6 @@ def last_true(mask, axis=None, invalid_val=-1):
 
 
 #if system() != 'Darwin' and system() != 'Windows':  import cupy as cp
-if system() != 'Darwin' and system()!='Linux':  import cupy as cp
-
-def cp_take_along_axis(a, indices, axis):
-    """Take values from the input array by matching 1d index and data slices.
-    Args:
-        a (cupy.ndarray): Array to extract elements.
-        indices (cupy.ndarray): Indices to take along each 1d slice of ``a``.
-        axis (int): The axis to take 1d slices along.
-    Returns:
-        cupy.ndarray: The indexed result.
-    .. seealso:: :func:`numpy.take_along_axis`
-    """
-
-    if indices.dtype.kind not in ('i', 'u'):
-        raise IndexError('`indices` must be an integer array')
-
-    if axis is None:
-        a = a.ravel()
-        axis = 0
-
-    ndim = a.ndim
-
-    if not (-ndim <= axis < ndim):
-        raise Exception('Axis overrun')
-
-    axis %= a.ndim
-
-    if ndim != indices.ndim:
-        raise ValueError(
-            '`indices` and `a` must have the same number of dimensions')
-
-    fancy_index = []
-    for i, n in enumerate(a.shape):
-        if i == axis:
-            fancy_index.append(indices)
-        else:
-            ind_shape = (1,) * i + (-1,) + (1,) * (ndim - i - 1)
-            fancy_index.append(cp.arange(n).reshape(ind_shape))
-
-    return a[fancy_index]
-
 
 
 

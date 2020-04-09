@@ -10,6 +10,14 @@ from model import Model
 import numpy as np
 
 
+import os
+os.environ['MKL_CBWR']='AUTO'
+
+from numba import config
+config.NUMBA_NUM_THREADS = 2
+ 
+
+
 x0 = np.array([0.2,0.0710307,1.11501,0.543047,0.050264,0.005,-0.09])
 
 from calibration_params import calibration_params
@@ -19,8 +27,11 @@ print(pars)
 
 pars.pop('alost')
 
-mdl = Model(**pars,verbose=True,solve_till=0)
+mdl = Model(**pars,verbose=False,solve_till=0,display_v=False)
 
 mdl.time_statistics()
 
 decisions = mdl.decisions[-2]['Female, single']['Decision']
+
+assert np.allclose(mdl.V[0]['Couple, M']['V'].mean(),-146.78784695910988)
+assert np.allclose(mdl.V[0]['Female, single']['V'].mean(),-201.98549187272707)

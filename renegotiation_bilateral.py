@@ -106,7 +106,6 @@ def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
         vf_y = switch*vf_y_mar + (~switch)*vf_y_coh
         vm_y = switch*vm_y_mar + (~switch)*vm_y_coh
         
-    vf_n, vm_n = [x.astype(v_y.dtype) for x in (vf_n,vm_n)] # type conversion
     
     result = ren_bilateral_wrap(setup,v_y,vf_y,vm_y,vf_n,vm_n,vf_all_s,vm_all_s,aleft_c_full,                       
                        iadiv_fem_full,iadiv_mal_full,rescale=True)
@@ -143,7 +142,7 @@ def ren_bilateral_wrap(setup,vy,vfy,vmy,vfn,vmn,vf_all_s,vm_all_s,aleft_c,
     #if np.any(bribe):
     #    print('Bribing happens in {}% of divorces'.format(round(100*np.mean(~yes & bribe)/np.mean(~yes))))
     
-    def r(x): return x.astype(np.float32)        
+    def r(x): return x      
     
    # print(aleft_c[bribe]-setup.agrid_s[iaout_f[bribe]]-setup.agrid_s[iaout_m[bribe]])
     return {'Decision': yes, 'thetas': ithetaout,

@@ -12,10 +12,9 @@ Both versions are needed as it is not clear whether we'll actually use cuda
 
 
 import numpy as np
-from numba import jit#, prange, cuda, float32
+from numba import njit, prange
 from platform import system
 
-from aux_routines import cp_take_along_axis
 
 
 if system() != 'Darwin' and system() != 'Windows' and system()!='Linux':
@@ -24,41 +23,10 @@ if system() != 'Darwin' and system() != 'Windows' and system()!='Linux':
     ugpu = True
 else:
     ugpu = False
-
-
-#@jit('float64[:](float64[:], int64, float64, float64)',nopython=True)
-
-
-
-def get_EVM(ind,wthis,EVin,use_gpu=False,dtype=np.float32):
-    # this essenitally doubles VecOnGrid.apply method
-    # but we cannot deprecate it unless we are sure VecOnGrid works on GPU 
-    # correctly
     
-    mr = cp if use_gpu else np
+def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,beta,ushift,
+                              use_gpu=ugpu,dtype=np.float32):
     
-    
-    ev_aux_shape  = EVin.shape[1:]
-    shap = (ind.size,) + ev_aux_shape
-    
-    
-    if dtype == np.float32:
-        EVout = mr.empty(shap,mr.float32)
-    else:
-        if use_gpu:
-            assert dtype==np.float64
-            EVout = mr.empty(shap,mr.float64)
-        else:
-            EVout = np.empty(shap,dtype)
-    
-    pb = wthis.reshape(((wthis.size,)+(1,)*len(ev_aux_shape)))
-    EVout[:] = pb*EVin[ind,...] + (1-pb)*EVin[ind+1,...]    
-    
-    return EVout
-
-
-
-def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,beta,ushift,use_gpu=ugpu,dtype=np.float32):
     # This optimizer avoids creating big arrays and uses parallel-CPU on 
     # machines without NUMBA-CUDA codes otherwise
     
@@ -82,11 +50,18 @@ def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,beta,ushift,use_gp
         
     
     if isinstance(EV,tuple):
-        assert len(EV) == 3
-        ind,p,EVin = EV
-        EV_by_l = get_EVM(ind,p,EVin,use_gpu=False,dtype=dtype) 
+        assert len(EV) == 2
+        vsgrid,EVin = EV
+        EVin = EVin.astype(dtype,copy=False)
+        EV_by_l = vsgrid.apply_preserve_shape(EVin)
+        assert EVin.shape[1:] == EV_by_l.shape[1:]
+        assert EVin.dtype == EV_by_l.dtype
+
+        
     
     ntheta = EV_by_l.shape[-2]
+    ns = sgrid.size
+    nm = mgrid.size
     
     tal = np.take_along_axis
     
@@ -96,20 +71,23 @@ def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,beta,ushift,use_gp
     s_opt_arr = np.empty((na,nexo,ntheta,nls),dtype=dtype)
     V_opt_arr = np.empty((na,nexo,ntheta,nls),dtype=dtype)
     
+    
+    
     for i, lval in enumerate(ls):
         
         EV_here = EV_by_l[...,i]
         util = utilint[...,i]
         xvals = xint[...,i]
         
-        money_left = money - (1-lval)*wf.reshape((1,nexo))
+        money_left = (money - (1-lval)*wf.reshape((1,nexo))).astype(dtype,copy=False)
         
         if not use_gpu:
             
             # preallocation helps a bit here          
             V, c, x, s = np.empty((4,na,nexo,ntheta),dtype=dtype)
             i_opt = -np.ones((na,nexo,ntheta),dtype=np.int16)                 
-            v_couple_local_intu(money_left,sgrid,EV_here,mgrid,util,xvals,beta,ushift,V,i_opt,c,x,s)
+            v_couple_par(money_left,sgrid,EV_here,mgrid,util,xvals,beta,ushift,V,i_opt,c,x,s)            
+            
             
         else:
             #print((EV_here.shape,(na,nexo,ntheta,nls)))
@@ -132,9 +110,13 @@ def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,beta,ushift,use_gp
     c = tal(c_opt_arr,i_ls,axis=3).squeeze(axis=3)
     s = tal(s_opt_arr,i_ls,axis=3).squeeze(axis=3)
     i_opt = tal(i_opt_arr,i_ls,axis=3).squeeze(axis=3)
-        
     i_ls = i_ls.squeeze(axis=3)
         
+    
+    assert V.dtype == dtype
+    assert c.dtype == dtype
+    assert s.dtype == dtype
+    
     
     ret = lambda q : q
         
@@ -142,117 +124,13 @@ def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,beta,ushift,use_gp
     
     
     
-    return ret(V), ret(c), ret(x), ret(s), ret(i_opt), ret(i_ls), ret(V_all).astype(dtype)
+    return ret(V), ret(c), ret(x), ret(s), ret(i_opt), ret(i_ls), ret(V_all)
 
 
 
 
-
-
-
-def v_optimize_single(money,sgrid,EV,sigma,beta,ushift,use_gpu=False,return_ind=False,dtype=np.float32):
-    # this is the optimizer for value functions
-    # 1. It can use cuda arrays (cupy) if use_gpu=True
-    # 2. It can accept few shapes of money array and EV
-    # 3. If money array and EV array are of different shapes money array is
-    # broadcasted (this is for the case where EV varies with theta and money
-    # are independent on theta)
-    # 4. money can be tuple of two elements (assets income and labor income),
-    # this form is more compact. In this case the array if formed by adding
-    # them (outter sum). 
-    # 5. EV can also be tuple of three elements, that are inputs to get_EVM
-    # in this case get_EVM is ran internally, this may help with large arrays
-    # so we transition less things to GPU
-    # Shape of the result is (money.shape[0],EV.shape[1:])
-    
-    # TBD: file opt_test.py has jit-able version of these functions .
-    # So far they are slower than this but they might be improved
-    
-    
-    
-    mr = cp if use_gpu else np # choose matrix routine
-    
-    if use_gpu:
-        if dtype==np.float32:
-            dtype_here = mr.float32 
-        elif dtype==np.float64:
-            dtype_here = mr.float64
-        else:
-            raise(Exception('unsupported type...'))
-    else:
-        dtype_here = dtype
-    
-    if isinstance(money,tuple):
-        assert len(money) == 2
-        
-        asset_income = money[0].reshape((money[0].size,1))
-        labor_income = money[1].reshape((1,money[1].size))
-        if use_gpu: asset_income, labor_income = cp.asarray(asset_income), cp.asarray(labor_income)
-        money = asset_income + labor_income # broadcasting 
-        
-    if isinstance(EV,tuple):
-        assert len(EV) == 3
-        (ind,p,EVin) = (cp.asarray(x) if use_gpu else x for x in EV)
-        EV = get_EVM(ind,p,EVin,use_gpu,dtype=dtype)
-    
-    
-    if use_gpu: # it is ok to use cp.asarray twice, it does not copy
-        money,sgrid,EV = (cp.asarray(x) for x in (money,sgrid,EV))
-    
-    
-    assert money.ndim == EV.ndim
-        
-    assert (money.ndim == EV.ndim), 'Shape mismatch?'
-    shp = money.shape
-    
-    V, c, s = mr.empty(shp,dtype_here), mr.empty(shp,dtype_here), mr.empty(shp,dtype_here)    
-    
-    oms = 1-sigma
-    
-    def u(c): return (c**(oms))/(oms)   
-    
-    ns = sgrid.size
-    
-    # this will use a weird fact that -2*(1,) = () (empty tuple)
-    
-    s_size = ((1,ns,1))
-    
-    s_expanded = sgrid.reshape(s_size)
-    
-    c_mat = mr.expand_dims(money,1) - s_expanded 
-    u_mat = mr.full(c_mat.shape,-mr.inf)
-    u_mat[c_mat>0] = u(c_mat[c_mat>0]) + ushift
-     
-    
-    V_arr = u_mat + beta*mr.expand_dims(EV,0)
-   
-    i_opt = V_arr.argmax(axis=1)
-    
-    s = sgrid[i_opt]
-    
-    c = money - s
-    
-    tal = cp_take_along_axis if use_gpu else np.take_along_axis
-    
-    V = u(c) + beta*tal(EV,i_opt,0)
-   
-    
-    if use_gpu:
-        ret = lambda x : cp.asnumpy(x)
-    else:
-        ret = lambda x : x
-        
-    
-    
-    if not return_ind:
-        return ret(V), ret(c), ret(s)
-    else:
-        return ret(V), ret(c), ret(s), ret(i_opt)
-
-
-from numba import prange                
-@jit(nopython=True)#,parallel=True)
-def v_couple_local_intu(money,sgrid,EV,mgrid,u_on_mgrid,x_on_mgrid,beta,uadd,V_opt,i_opt,c_opt,x_opt,s_opt):
+@njit(parallel=True)
+def v_couple_par(money,sgrid,EV,mgrid,u_on_mgrid,x_on_mgrid,beta,uadd,V_opt,i_opt,c_opt,x_opt,s_opt):
     # this is a looped version of the optimizer
     # the last two things are outputs
     
@@ -260,71 +138,99 @@ def v_couple_local_intu(money,sgrid,EV,mgrid,u_on_mgrid,x_on_mgrid,beta,uadd,V_o
     
     ns = sgrid.size
     
-    nm = mgrid.size
+    #nm = mgrid.size
     
     assert money.shape == (na,nexo)
     assert V_opt.shape == (na,nexo,ntheta) == i_opt.shape
     assert EV.shape == (ns,nexo,ntheta)
     
     
+
     
-    coh_min = mgrid[0] 
-    
-    for ind_a in prange(na):
-        for ind_exo in prange(nexo):
+    for ind_exo in prange(nexo):
+        EV_slice = EV[:,ind_exo,:]
+        for ind_a in prange(na):
             # finds index of maximum savings
             money_i = money[ind_a,ind_exo]
-            money_minus_coh = money_i - coh_min
+            i_opt_i, V_opt_i, x_opt_i, c_opt_i, s_opt_i = \
+                v_couple_par_int(money_i,sgrid,EV_slice,mgrid,u_on_mgrid,x_on_mgrid,beta,uadd)
             
-            ind_s = np.minimum( np.searchsorted(sgrid,money_minus_coh)-1,ns-1)
+            i_opt[ind_a,ind_exo,:] = i_opt_i
+            V_opt[ind_a,ind_exo,:] = V_opt_i
+            x_opt[ind_a,ind_exo,:] = x_opt_i
+            c_opt[ind_a,ind_exo,:] = c_opt_i
+            s_opt[ind_a,ind_exo,:] = s_opt_i
             
-            i_m = np.minimum( np.searchsorted(mgrid,money_i)-1,nm-1)
+
+@njit
+def v_couple_par_int(money_i,sgrid,EV_slice,mgrid,u_on_mgrid,x_on_mgrid,beta,uadd):
+    
+    ns = sgrid.size
+    nm = mgrid.size
+    ntheta = EV_slice.shape[1]
+    
+    i_opt_i = np.empty((ntheta,),dtype=np.int16)
+    V_opt_i = np.empty((ntheta,),dtype=np.float64)
+    x_opt_i = np.empty((ntheta,),dtype=np.float64)
+    c_opt_i = np.empty((ntheta,),dtype=np.float64)
+    s_opt_i = np.empty((ntheta,),dtype=np.float64)
+    
+    
+    money_minus_coh = money_i - mgrid[0]
             
-            i_m_all = np.zeros((ind_s+1,),np.int16)
+    ind_s = np.minimum( np.searchsorted(sgrid,money_minus_coh)-1,ns-1)
+    
+    i_m = np.minimum( np.searchsorted(mgrid,money_i)-1,nm-1)
+    
+    i_m_all = np.zeros((ind_s+1,),np.int16)
+    
+    i_m_all[0] = i_m
+    
+    for i_cand in range(1,ind_s+1):
+        m_after_s = money_i - sgrid[i_cand]
+        while mgrid[i_m] > m_after_s:
+            i_m -= 1                    
+        assert i_m >= 0
+        i_m_all[i_cand] = i_m
+        
+    
+    
+    
+    for ind_theta in range(ntheta):
+        
+        ugrid_ce = u_on_mgrid[:,ind_theta]
+        EVval = EV_slice[:,ind_theta]
+        
+        io = 0
+        Vo = -1e20
+        
+        
+        for i_cand in range(ind_s+1):
             
-            i_m_all[0] = i_m
+            i_m = i_m_all[i_cand]
+            u_cand = ugrid_ce[i_m]
             
-            for i_cand in range(1,ind_s+1):
-                m_after_s = money_i - sgrid[i_cand]
-                while mgrid[i_m] > m_after_s:
-                    i_m -= 1                    
-                assert i_m >= 0
-                i_m_all[i_cand] = i_m
-                
+            V_cand = u_cand + beta*EVval[i_cand]
             
-            for ind_theta in range(ntheta):
-                
-                ugrid_ce = u_on_mgrid[:,ind_theta]
-                bEVval = beta*EV[:,ind_exo,ind_theta]
-                
-                io = 0
-                Vo = -1e20
-                
-                
-                for i_cand in range(ind_s+1):
-                    
-                    i_m = i_m_all[i_cand]
-                    u_cand = ugrid_ce[i_m]
-                    
-                    V_cand = u_cand + bEVval[i_cand]
-                    
-                    if i_cand == 0 or V_cand > Vo:
-                        io, Vo = i_cand, V_cand                     
-                    
-                
-                i_opt[ind_a,ind_exo,ind_theta] = io
-                V_opt[ind_a,ind_exo,ind_theta] = Vo + uadd# NB: this V is imprecise
-                # you can recover V from optimal savings & consumption later
-                x = x_on_mgrid[i_m_all[io],ind_theta]
-                x_opt[ind_a,ind_exo,ind_theta] = x
-                c_opt[ind_a,ind_exo,ind_theta] = money_i - x - sgrid[io]
-                s_opt[ind_a,ind_exo,ind_theta] = sgrid[io]        
-                assert Vo > -1e20
+            if i_cand == 0 or V_cand > Vo:
+                io, Vo = i_cand, V_cand                     
             
+        
+        i_opt_i[ind_theta] = io
+        V_opt_i[ind_theta] = Vo + uadd# NB: this V is imprecise
+        # you can recover V from optimal savings & consumption later
+        x_opt_i[ind_theta] = x_on_mgrid[i_m_all[io],ind_theta]
+        c_opt_i[ind_theta] = money_i - x_opt_i[ind_theta] - sgrid[io]
+        s_opt_i[ind_theta] = sgrid[io]        
+        assert Vo > -1e20
+    return i_opt_i, V_opt_i, x_opt_i, c_opt_i, s_opt_i
+
     
 
 from math import ceil
 from numba import cuda
+
+
 
 def v_couple_gpu(money,sgrid,EV,mgrid,util,xvals,beta,uadd,use_kernel_pool=False):
     

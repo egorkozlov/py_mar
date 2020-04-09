@@ -13,7 +13,7 @@ from renegotiation_unilateral import v_no_ren
 from renegotiation_unilateral import v_ren_new as v_ren_uni
 from renegotiation_bilateral import v_ren_new as v_ren_bil
 from renegotiation_vartheta import v_ren_vt
-
+from renegotiation_new import v_ren
 
 def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True):
     # computes expected value of couple entering the next period with an option
@@ -24,16 +24,9 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True):
         uni_div = setup.div_costs.unilateral_divorce if marriage else setup.sep_costs.unilateral_divorce
         if uni_div:
             # choose your fighter
-            out = v_ren_uni(setup,Vpostren,marriage,t)
-            #out = v_ren_vt(setup,Vpostren,marriage,t)
-            from renegotiation_new import v_ren
-            out2 = v_ren(setup,Vpostren,marriage,t)
-            assert np.all(out['thetas'] == out2['thetas'])
-            assert np.all(out['Decision'] == out2['Decision'])
-            assert np.allclose(out['Values'][0],out2['Values'][0])
-            assert np.allclose(out['Values'][1],out2['Values'][1])
-            assert np.allclose(out['Values'][2],out2['Values'][2])
-            print('worked')
+            #out = v_ren_uni(setup,Vpostren,marriage,t)
+            #out = v_ren_vt(setup,Vpostren,marriage,t)            
+            out = v_ren(setup,Vpostren,marriage,t)
         else:
             out = v_ren_bil(setup,Vpostren,marriage,t)
     else:

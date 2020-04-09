@@ -170,7 +170,7 @@ def v_div_vartheta(setup,dc,t,sc,Vmale,Vfemale,izf,izm,
     
     i_mal = mal_gets.i
     wn_mal = mal_gets.wnext
-    wt_mal = setup.dtype(1) - wn_fem
+    wt_mal = setup.dtype(1) - wn_mal
     
     
     Vf_divorce = wt_fem[None,None,:]*Vf_divorce_M[:,:,i_fem] + \

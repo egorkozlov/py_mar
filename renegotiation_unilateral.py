@@ -45,19 +45,6 @@ def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
     
     
     # this is the part for bilateral divorce
-    a_fem, a_mal = share_f[None,:]*setup.agrid_c[:,None], share_m[None,:]*setup.agrid_c[:,None]
-    aleft_c = a_fem + a_mal
-    iadiv_fem, iadiv_mal = [np.minimum(np.searchsorted(setup.agrid_s,x),setup.na-1)
-                                        for x in [a_fem, a_mal]]
-    na_s, nexo, ntheta = setup.na, ind.size, setup.ntheta_fine
-    iadiv_fem_full, iadiv_mal_full = [np.broadcast_to(x[...,None],(na_s,nexo,ntheta)) 
-                                        for x in [iadiv_fem, iadiv_mal]]
-    aleft_c_full = np.broadcast_to(aleft_c[...,None],(na_s,nexo,ntheta))
-    
-    vf_all_s = V['Female, single']['V'][:,izf]
-    vm_all_s = V['Male, single']['V'][:,izm]
-        
-    
     
     
     sc = setup.agrid_c
@@ -99,7 +86,7 @@ def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
         vm_y_mar = expnd(V['Couple, M']['VM'])
         # switching criterion
         #switch = (vf_y_mar>vf_y_coh) & (vm_y_mar>vm_y_coh)
-        switch = (v_y_mar>= v_y_coh)
+        switch = (v_y_mar >= v_y_coh)
         
         v_y = switch*v_y_mar + (~switch)*v_y_coh
         vf_y = switch*vf_y_mar + (~switch)*vf_y_coh

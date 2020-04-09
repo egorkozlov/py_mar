@@ -54,7 +54,7 @@ if __name__ == '__main__':
     from p_client import compute_for_values
     pts = [lb + rs(lb.shape)*(ub-lb) for _ in range(1)]
     pts = [('compute',translator(x)) for x in pts]    
-    outs = compute_for_values(pts,timeout=7200.0)
+    outs = compute_for_values(pts,timeout=72000.0)
     print('Everything worked, output is {}'.format(outs))
     
     
@@ -67,7 +67,7 @@ if __name__ == '__main__':
     
 
     #Tik Tak Optimization
-    param=tiktak(N=200,N_st=10,skip_local=False,skip_global=False)
+    param=tiktak(N=400,N_st=15,skip_local=False,skip_global=True)
     
     print('f is {} and x is {}'.format(param[0],param[1]))
     

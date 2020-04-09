@@ -94,8 +94,9 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     ########################################## 
     #WELFARE DECOMPOSITION HERE 
     ######################################### 
-    if len(mdl_list) > 1: 
-        welf_dec(mdl_list,agents) 
+    if draw:
+        if len(mdl_list) > 1: 
+            welf_dec(mdl_list,agents) 
          
     ##########################################    
     #START COMPUTATION OF SIMULATED MOMENTS    
@@ -415,54 +416,55 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     ###################################################   
     # Second regression for the length of cohabitation   
     ###################################################   
-    data_coh_panda=pd.DataFrame(data=spells_empirical,columns=['age','duration','end','rel','uni'])    
-       
-    if np.var(data_rel_panda['uni'])>0.0001: 
-        #Regression    
-        try:    
-        #FE_ols = smf.ols(formula='duration ~ uni+C(age)', data = data_coh_panda.dropna()).fit()    
-        #beta_dur_s=FE_ols.params['uni']    
+    if draw:
+        data_coh_panda=pd.DataFrame(data=spells_empirical,columns=['age','duration','end','rel','uni'])    
            
-            from lifelines import CoxPHFitter   
-            cph = CoxPHFitter()   
-            data_coh_panda['age2']=data_coh_panda['age']**2   
-            data_coh_panda['age3']=data_coh_panda['age']**3   
-            data_coh_panda['rel2']=data_coh_panda['rel']**2   
-            data_coh_panda['rel3']=data_coh_panda['rel']**3   
-            #data_coh_panda=pd.get_dummies(data_coh_panda, columns=['age'])   
+        if np.var(data_rel_panda['uni'])>0.0001: 
+            #Regression    
+            try:    
+            #FE_ols = smf.ols(formula='duration ~ uni+C(age)', data = data_coh_panda.dropna()).fit()    
+            #beta_dur_s=FE_ols.params['uni']    
                
-            #Standard Cox   
-            data_coh_panda['endd']=1.0   
-            data_coh_panda.loc[data_coh_panda['end']==3.0,'endd']=0.0   
-            data_coh_panda1=data_coh_panda.drop(['end'], axis=1)   
-            cox_join=cph.fit(data_coh_panda1, duration_col='duration', event_col='endd')   
-            haz_join=cox_join.hazard_ratios_['uni']   
-               
-            #Cox where risk is marriage   
-            data_coh_panda['endd']=0.0   
-            data_coh_panda.loc[data_coh_panda['end']==2.0,'endd']=1.0   
-            data_coh_panda2=data_coh_panda.drop(['end'], axis=1)   
-            cox_mar=cph.fit(data_coh_panda2, duration_col='duration', event_col='endd')   
-            haz_mar=cox_mar.hazard_ratios_['uni']   
-               
-            #Cox where risk is separatio   
-            data_coh_panda['endd']=0.0   
-            data_coh_panda.loc[data_coh_panda['end']==0.0,'endd']=1.0   
-            data_coh_panda3=data_coh_panda.drop(['end'], axis=1)   
-            cox_sep=cph.fit(data_coh_panda3, duration_col='duration', event_col='endd')   
-            haz_sep=cox_sep.hazard_ratios_['uni']   
-               
-        except:    
+                from lifelines import CoxPHFitter   
+                cph = CoxPHFitter()   
+                data_coh_panda['age2']=data_coh_panda['age']**2   
+                data_coh_panda['age3']=data_coh_panda['age']**3   
+                data_coh_panda['rel2']=data_coh_panda['rel']**2   
+                data_coh_panda['rel3']=data_coh_panda['rel']**3   
+                #data_coh_panda=pd.get_dummies(data_coh_panda, columns=['age'])   
+                   
+                #Standard Cox   
+                data_coh_panda['endd']=1.0   
+                data_coh_panda.loc[data_coh_panda['end']==3.0,'endd']=0.0   
+                data_coh_panda1=data_coh_panda.drop(['end'], axis=1)   
+                cox_join=cph.fit(data_coh_panda1, duration_col='duration', event_col='endd')   
+                haz_join=cox_join.hazard_ratios_['uni']   
+                   
+                #Cox where risk is marriage   
+                data_coh_panda['endd']=0.0   
+                data_coh_panda.loc[data_coh_panda['end']==2.0,'endd']=1.0   
+                data_coh_panda2=data_coh_panda.drop(['end'], axis=1)   
+                cox_mar=cph.fit(data_coh_panda2, duration_col='duration', event_col='endd')   
+                haz_mar=cox_mar.hazard_ratios_['uni']   
+                   
+                #Cox where risk is separatio   
+                data_coh_panda['endd']=0.0   
+                data_coh_panda.loc[data_coh_panda['end']==0.0,'endd']=1.0   
+                data_coh_panda3=data_coh_panda.drop(['end'], axis=1)   
+                cox_sep=cph.fit(data_coh_panda3, duration_col='duration', event_col='endd')   
+                haz_sep=cox_sep.hazard_ratios_['uni']   
+                   
+            except:    
+                print('No data for unilateral divorce regression...')    
+                haz_sep=1.0  
+                haz_join=1.0  
+                haz_mar=1.0  
+        else: 
             print('No data for unilateral divorce regression...')    
             haz_sep=1.0  
             haz_join=1.0  
             haz_mar=1.0  
-    else: 
-        print('No data for unilateral divorce regression...')    
-        haz_sep=1.0  
-        haz_join=1.0  
-        haz_mar=1.0  
-         
+             
     ##################################    
     # Construct the Hazard functions    
     #################################    

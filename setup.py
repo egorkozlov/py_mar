@@ -22,9 +22,9 @@ class ModelSetup(object):
         period_year=1#this can be 1,2,3 or 6
         transform=2#this tells how many periods to pull together for duration moments
         T = int(62/period_year)
-        Tret = int(59/period_year) # first period when the agent is retired
+        Tret = int(47/period_year) # first period when the agent is retired
         Tbef=int(2/period_year)
-        Tren  = int(59/period_year)#int(42/period_year) # period starting which people do not renegotiate/divroce
+        Tren  = int(47/period_year)#int(42/period_year) # period starting which people do not renegotiate/divroce
         Tmeet = int(47/period_year)#int(42/period_year) # period starting which you do not meet anyone
         p['py']=period_year
         p['ty']=transform
@@ -322,8 +322,8 @@ class ModelSetup(object):
         
         # grid for theta
         self.ntheta = 21
-        self.thetamin = 0.01
-        self.thetamax = 0.99
+        self.thetamin = 0.02
+        self.thetamax = 0.98
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta,dtype=self.dtype)
         
         

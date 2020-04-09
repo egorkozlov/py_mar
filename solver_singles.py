@@ -46,7 +46,7 @@ def v_iter_single(setup,t,EV,female,ushift,force_f32=False):
     assert EV.dtype == dtype_here
     
     V_0, c_opt, x_opt, s_opt, i_opt, _, _ = \
-        v_optimize_couple(money_t,sgrid_s,(ind,p,EV[:,:,None,None]),setup.mgrid,
+        v_optimize_couple(money_t,sgrid_s,(setup.vsgrid_s,EV[:,:,None,None]),setup.mgrid,
                              using_pre_u[:,None,None],
                              using_pre_x[:,None,None],
                                  ls,beta,ushift,dtype=dtype)

@@ -12,7 +12,7 @@ from gridvec import VecOnGrid
 
 
 from platform import system
-if system() != 'Darwin':
+if system() != 'Darwin' and system()!= 'Windows' and system()!= 'Linux':
     ugpu = True
 else:
     ugpu = False
@@ -81,6 +81,7 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
                                           rescale = rescale)
              
         else:
+           
             v_out, vf_out, vm_out, itheta_out  = \
                 v_ren_gpu_oneopt(V['Couple, M']['V'],
                                  V['Couple, M']['VF'],
@@ -170,7 +171,7 @@ def v_div_vartheta(setup,dc,t,sc,Vmale,Vfemale,izf,izm,
     
     i_mal = mal_gets.i
     wn_mal = mal_gets.wnext
-    wt_mal = setup.dtype(1) - wn_fem
+    wt_mal = setup.dtype(1) - wn_mal#wn_fem
     
     
     Vf_divorce = wt_fem[None,None,:]*Vf_divorce_M[:,:,i_fem] + \

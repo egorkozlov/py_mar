@@ -69,9 +69,9 @@ def strata_sample(namevar,dsample,frac=0.1,weights=False,distr=False,tsample=Fal
     def map_fun(x):
         p = pop_count
         if np.array(fraction_new)[x]/np.array(fraction_current)[x]<1.0:
-            return tsample[eval(subset[0:-1])].sample(frac=np.array(fraction_new)[x]/np.array(fraction_current)[x])
+            return tsample[eval(subset[0:-1])].sample(frac=np.array(fraction_new)[x]/np.array(fraction_current,random_state=5)[x])
         else:
-            return tsample[eval(subset[0:-1])].sample(frac=1.0)
+            return tsample[eval(subset[0:-1])].sample(frac=1.0,random_state=5)
     
     stratified_sample= list(map(map_fun, range(len(pop_count))))
 

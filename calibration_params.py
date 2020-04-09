@@ -18,8 +18,8 @@ def calibration_params(xin=None,xfix=None):
     # just in case...
     
     params = OrderedDict(
-              ulost=(0.39, 2.00, 0.02),
-              sigma_psi=(0.05, 0.72, 0.01),#sigma_psi=(0.005, 0.8, 0.01),
+              ulost=(0.29, 1.50, 0.02),
+              sigma_psi=(0.03, 1.22, 0.01),#sigma_psi=(0.005, 0.8, 0.01),
               sigma_psi_mult=(1.10, 3.12, 0.002),#sigma_psi_mult=(0.5, 5.0, 0.02),
               pmeet=(0.23, 0.64, 0.007),#pmeet=(0.1, 1.0, 0.7),
               util_alp=(0.554, 0.856, 0.005),#util_alp=(0.01, 0.4, 0.25),

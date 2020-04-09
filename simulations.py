@@ -16,7 +16,7 @@ class Agents:
     def __init__(self,Mlist,age_uni,female=False,pswitchlist=None,N=15000,T=None,verbose=True,nosim=False):
             
             
-        np.random.seed(18)
+        np.random.seed(8)
   
         # take the stuff from the model and arguments
         # note that this does not induce any copying just creates links
@@ -492,7 +492,8 @@ class Agents:
                         share_f, share_m = costs.shares_if_split(income_share_fem)
                         
                         #Uncomment bnelowe if ren_theta
-                        #share_f = costs.shares_if_split_theta(self.setup,self.setup.thetagrid[self.setup.v_thetagrid_fine.i[itht]+1])
+                        share_f = costs.shares_if_split_theta(self.setup,self.setup.thetagrid[self.setup.v_thetagrid_fine.i[itht]+1])[i_div]
+                        share_m=1-share_f
                       
                         #sf = share_f[i_div]*sc[i_div]
                         #assert np.all(share_f[i_div]>=0) and np.all(share_f[i_div]<=1)

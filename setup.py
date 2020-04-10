@@ -395,9 +395,9 @@ class ModelSetup(object):
         
         
         # building m grid
-        ezfmin = min([np.min(np.exp(g+t)) for g,t in zip(exogrid['zf_t'],p['f_wage_trend'])])
+        ezfmin = min([np.min(0.8*np.exp(g+t)) for g,t in zip(exogrid['zf_t'],p['f_wage_trend'])])
         ezmmin = min([np.min(np.exp(g+t)) for g,t in zip(exogrid['zm_t'],p['m_wage_trend'])])
-        ezfmax = max([np.max(np.exp(g+t)) for g,t in zip(exogrid['zf_t'],p['f_wage_trend'])])
+        ezfmax = max([np.max(0.8*np.exp(g+t)) for g,t in zip(exogrid['zf_t'],p['f_wage_trend'])])
         ezmmax = max([np.max(np.exp(g+t)) for g,t in zip(exogrid['zm_t'],p['m_wage_trend'])])
         
         

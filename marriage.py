@@ -129,7 +129,7 @@ def mar_loop(vfy,vmy,vfn,vmn,gamma):
             sf_i = sf[ia,iexo,:]
             sm_i = sm[ia,iexo,:]
             
-            both = (sf_i > 0) & (sm_i > 0)
+            both = (sf_i >= 0) & (sm_i >= 0)
             
             good = np.any(both)
              
@@ -188,7 +188,7 @@ def mar_mat(vfy,vmy,vfn,vmn,gamma):
         sm_a = sm[any_agree,:]
         nbs_a = np.zeros(sf_a.shape,dtype=np.float32)
         
-        a_pos = (sf_a>0) & (sm_a>0)
+        a_pos = (sf_a>=0) & (sm_a>=0)
         
         nbs_a[a_pos] = (sf_a[a_pos]**gamma) * (sm_a[a_pos]**(1-gamma))
         inds_best = np.argmax(nbs_a,axis=1)

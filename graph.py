@@ -15,8 +15,8 @@ import matplotlib.backends.backend_pdf
 #from ren_mar_alt import v_mar_igrid 
 #from ren_mar_alt import v_ren_new 
 from marriage import v_mar_igrid 
-from renegotiation_unilateral import v_ren_new as v_ren_uni
-from renegotiation_bilateral import v_ren_new as v_ren_bil
+from renegotiation_unilateral import v_ren_uni
+from renegotiation_bilateral import v_ren_bil
 
  
 def v_reshape(setup,desc,field,V_by_t,Tmax): 

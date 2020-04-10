@@ -60,6 +60,7 @@ if __name__ == '__main__':
     x0 = np.array([0.5535,0.599,1.84,0.246,0.7639,0.0168,-0.100])
     x0 = np.array([0.919368,0.479426,2.05565,0.299191,0.730532,0.0232399,-0.0794582])
     x0 = np.array([0.434023,0.45043,1.58133,0.378945,0.774602,0.0184355,-0.0584258])
+    x0 = np.array([ 0.866640625, 0.857421875,3.1042187500000002,0.297265625,0.6507343750000001,0.01860078125,-0.0893671875])
     
 
              
@@ -71,8 +72,8 @@ if __name__ == '__main__':
         path = None
     
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','models','agents','scaled residuals'],
-                                      load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
-                                      #solve_transition=True,                                    
+                                      #load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
+                                      solve_transition=True,                                    
                                       #save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       store_path=path,
                                       verbose=True,calibration_report=False,draw=graphs,graphs=graphs,

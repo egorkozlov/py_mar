@@ -10,11 +10,10 @@ import numpy as np
 #from ren_mar_pareto import v_ren_new, v_no_ren
 #from ren_mar_alt import v_ren_new, v_no_ren
 from renegotiation_unilateral import v_no_ren   
-from renegotiation_unilateral import v_ren_new as v_ren_uni
-from renegotiation_bilateral import v_ren_new as v_ren_bil
+from renegotiation_unilateral import v_ren_uni
+from renegotiation_bilateral import v_ren_bil
 from renegotiation_vartheta import v_ren_vt
-from ren_mar_pareto import v_ren_new as ren_pareto
-
+#from ren_mar_pareto import v_ren_new as ren_pareto
 
 def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True):
     # computes expected value of couple entering the next period with an option
@@ -26,7 +25,7 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True):
         if uni_div:
             # choose your fighter
             #out = v_ren_uni(setup,Vpostren,marriage,t)
-            out = v_ren_vt(setup,Vpostren,marriage,t)#ren_pareto(setup,Vpostren,marriage,t)#
+            out = v_ren_vt(setup,Vpostren,marriage,t)            
         else:
             out = v_ren_bil(setup,Vpostren,marriage,t)
     else:

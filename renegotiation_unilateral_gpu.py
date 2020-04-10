@@ -6,6 +6,8 @@ Created on Thu Mar 26 19:56:40 2020
 @author: egorkozlov
 """
 
+# this is to be used with renegotiation_unilateral
+
 from numba import cuda, f4, f8, i2, b1
 import numpy as np
 

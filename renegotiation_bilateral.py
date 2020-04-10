@@ -11,7 +11,7 @@ from numba import njit, vectorize
 from gridvec import VecOnGrid
 
 
-def v_ren_new(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescale=True):
+def v_ren_bil(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescale=True):
     # this returns value functions for couple that entered the period with
     # (s,Z,theta) from the grid and is allowed to renegotiate them or breakup
     # 

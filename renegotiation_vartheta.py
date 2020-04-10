@@ -19,7 +19,7 @@ else:
     
     
 
-from renegotiation_gpu import v_ren_gpu_oneopt, v_ren_gpu_twoopt
+from renegotiation_vartheta_gpu import v_ren_gpu_oneopt, v_ren_gpu_twoopt
         
 
 def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescale=True,

@@ -116,7 +116,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False,
     
     assert np.all(c_opt > 0)
     
-    psi_r = psi[None,:,None].astype(dtype)
+    psi_r = psi[None,:,None].astype(setup.dtype,copy=False)
     
     # finally obtain value functions of partners
     uf, um = setup.u_part(c_opt,x_opt,il_opt,theta_val[None,None,:],ushift,psi_r)

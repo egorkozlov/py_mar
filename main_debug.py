@@ -18,14 +18,21 @@ config.NUMBA_NUM_THREADS = 2
  
 
 
-x0 = np.array([0.2,0.0710307,1.11501,0.543047,0.050264,0.005,-0.09])
+x0 = np.array([0.0,0.2,0.0710307,1.11501,0.543047,0.050264,0.005,1.5])
 
 from calibration_params import calibration_params
 
 pars = calibration_params()[-1](x0)
 print(pars)
+try:
+    pars.pop('alost')
+except:
+    pass
 
-pars.pop('alost')
+try:
+    pars.pop('ulost')
+except:
+    pass
 
 mdl = Model(**pars,verbose=False,solve_till=0,display_v=False)
 

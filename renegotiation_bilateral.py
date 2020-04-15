@@ -11,7 +11,7 @@ from numba import njit, vectorize
 from gridvec import VecOnGrid
 
 
-def v_ren_bil(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescale=True):
+def v_ren_bil(setup,V,marriage,t,return_extra=False,return_vdiv_only=False):
     # this returns value functions for couple that entered the period with
     # (s,Z,theta) from the grid and is allowed to renegotiate them or breakup
     # 
@@ -108,7 +108,7 @@ def v_ren_bil(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
         
     
     result = ren_bilateral_wrap(setup,v_y,vf_y,vm_y,vf_n,vm_n,vf_all_s,vm_all_s,aleft_c_full,                       
-                       iadiv_fem_full,iadiv_mal_full,rescale=True)
+                       iadiv_fem_full,iadiv_mal_full)
     
     
     
@@ -117,7 +117,6 @@ def v_ren_bil(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
         
         
     
-        
     extra = {'Values':result['Values'],
              'Value of Divorce, male': vm_n, 'Value of Divorce, female': vf_n}
     
@@ -127,8 +126,7 @@ def v_ren_bil(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
         return result, extra
     
 def ren_bilateral_wrap(setup,vy,vfy,vmy,vfn,vmn,vf_all_s,vm_all_s,aleft_c,                       
-                       ia_div_fem,ia_div_mal,rescale=True):
-    # v_ren_core_interp(setup,vy,vfy,vmy,vf_n,vm_n,unilateral,show_sc=False,rescale=False)
+                       ia_div_fem,ia_div_mal):
     tgrid = setup.thetagrid_fine
     
     
@@ -139,6 +137,8 @@ def ren_bilateral_wrap(setup,vy,vfy,vmy,vfn,vmn,vf_all_s,vm_all_s,aleft_c,
                            setup.agrid_s,
                            tgrid)
     
+    v_resc = vout # rescale does not happen here
+    
     #if np.any(bribe):
     #    print('Bribing happens in {}% of divorces'.format(round(100*np.mean(~yes & bribe)/np.mean(~yes))))
     
@@ -146,7 +146,7 @@ def ren_bilateral_wrap(setup,vy,vfy,vmy,vfn,vmn,vf_all_s,vm_all_s,aleft_c,
     
    # print(aleft_c[bribe]-setup.agrid_s[iaout_f[bribe]]-setup.agrid_s[iaout_m[bribe]])
     return {'Decision': yes, 'thetas': ithetaout,
-            'Values': (r(vout), r(vfout), r(vmout)),'Divorce':(vfn,vmn),
+            'Values': (r(v_resc),r(vout), r(vfout), r(vmout)),'Divorce':(vfn,vmn),
             'Bribing':(bribe,iaout_f,iaout_m)}
             #'Bribing':(bribe,ia_div_fem,ia_div_mal)}
     

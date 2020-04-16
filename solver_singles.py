@@ -35,7 +35,7 @@ def v_iter_single(setup,t,EV,female,ushift,force_f32=False):
     
     
     
-    ls = np.array([0.8],dtype=dtype) if female else np.array([1.0],dtype=dtype)
+    ls = np.array([setup.ls_levels[-1]],dtype=dtype) if female else np.array([setup.mlevel],dtype=dtype)
     money_t = (R*agrid_s,np.exp(zvals + ztrend),np.zeros_like(zvals))
     
     
@@ -56,6 +56,12 @@ def v_iter_single(setup,t,EV,female,ushift,force_f32=False):
     
     V_0, c_opt, x_opt, s_opt, i_opt =  \
         (x.squeeze(axis=2) for x in [V_0, c_opt, x_opt, s_opt, i_opt])
+        
+#    wf = money_t[1].reshape((1,money_t[1].size))*0.1
+#    wm = money_t[2].reshape((1,money_t[2].size))
+#    asset_income = money_t[0].reshape((money_t[0].size,1))
+#    money = wf + wm + asset_income
+#    aaa=money-c_opt-x_opt-s_opt
     
     
     EVexp = setup.vsgrid_s.apply_preserve_shape(EV)

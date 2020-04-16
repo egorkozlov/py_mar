@@ -19,7 +19,7 @@ from scipy import sparse
 class ModelSetup(object):
     def __init__(self,nogrid=False,divorce_costs='Default',separation_costs='Default',**kwargs): 
         p = dict()       
-        period_year=1#this can be 1,2,3 or 6
+        period_year=6#this can be 1,2,3 or 6
         transform=2#this tells how many periods to pull together for duration moments
         T = int(62/period_year)
         Tret = int(47/period_year) # first period when the agent is retired
@@ -40,8 +40,8 @@ class ModelSetup(object):
         p['n_zm_t']      = [5]*Tret + [1]*(T-Tret)
         p['sigma_psi_mult'] = 0.28
         p['sigma_psi']   = 0.11
-        p['R_t'] = [1.02**period_year]*T
         p['n_psi_t']     = [11]*T
+        p['R_t'] = [1.02**period_year]*T
         p['beta_t'] = [0.98**period_year]*T
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
@@ -77,7 +77,12 @@ class ModelSetup(object):
         p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-0.5620125  +0.06767721*t -0.00192571*t**2+ 0.00001573*t**3) for t in range(T)]
         p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.5960803  +.05829568*t -.00169143*t**2+ .00001446*t**3) for t in range(T)]
    
-        
+
+#        p['f_wage_trend'] = [(-0.5620125  +0.06767721*t -0.00192571*t**2+ 0.00001573*t**3) for t in range(T)]
+#        p['f_wage_trend_single'] =  [(-.5960803  +.05829568*t -.00169143*t**2+ .00001446*t**3) for t in range(T)]
+#        p['m_wage_trend'] = [(-0.5620125  +0.06767721*t -0.00192571*t**2+ 0.00001573*t**3) for t in range(T)]
+#        p['m_wage_trend_single'] = [(-.5960803  +.05829568*t -.00169143*t**2+ .00001446*t**3) for t in range(T)]
+           
   
         p['util_lam'] = 0.19#0.4
         p['util_alp'] = 0.5
@@ -122,6 +127,7 @@ class ModelSetup(object):
         
         # female labor supply
         self.ls_levels = np.array([0.0,0.8],dtype=self.dtype)
+        self.mlevel=1.0
         #self.ls_utilities = np.array([p['uls'],0.0],dtype=self.dtype)
         self.ls_pdown = np.array([p['pls'],0.0],dtype=self.dtype)
         self.nls = len(self.ls_levels)
@@ -133,7 +139,7 @@ class ModelSetup(object):
         #Cost of Divorce
         if divorce_costs == 'Default':
             # by default the costs are set in the bottom
-            self.div_costs = DivorceCosts(eq_split=1.0,assets_kept=0.9)
+            self.div_costs = DivorceCosts(eq_split=1.0,assets_kept=1.0)
         else:
             if isinstance(divorce_costs,dict):
                 # you can feed in arguments to DivorceCosts
@@ -395,10 +401,10 @@ class ModelSetup(object):
         
         
         # building m grid
-        ezfmin = min([np.min(0.8*np.exp(g+t)) for g,t in zip(exogrid['zf_t'],p['f_wage_trend'])])
-        ezmmin = min([np.min(np.exp(g+t)) for g,t in zip(exogrid['zm_t'],p['m_wage_trend'])])
-        ezfmax = max([np.max(0.8*np.exp(g+t)) for g,t in zip(exogrid['zf_t'],p['f_wage_trend'])])
-        ezmmax = max([np.max(np.exp(g+t)) for g,t in zip(exogrid['zm_t'],p['m_wage_trend'])])
+        ezfmin = min([np.min(self.ls_levels[-1]*np.exp(g+t)) for g,t in zip(exogrid['zf_t'],p['f_wage_trend'])])
+        ezmmin = min([np.min(self.mlevel*np.exp(g+t)) for g,t in zip(exogrid['zm_t'],p['m_wage_trend'])])
+        ezfmax = max([np.max(self.ls_levels[-1]*np.exp(g+t)) for g,t in zip(exogrid['zf_t'],p['f_wage_trend'])])
+        ezmmax = max([np.max(self.mlevel*np.exp(g+t)) for g,t in zip(exogrid['zm_t'],p['m_wage_trend'])])
         
         
         
@@ -667,24 +673,24 @@ class ModelSetup(object):
         return u_aux(c,self.pars['crra_power'])#(c**(1-self.pars['crra_power']))/(1-self.pars['crra_power'])
     
     
-    def u_pub(self,x,l):
+    def u_pub(self,x,l,mt=0.0):
         alp = self.pars['util_alp_m']
         xi = self.pars['util_xi']
         lam = self.pars['util_lam']
         kap = self.pars['util_kap_m']        
-        return alp*(x**lam + kap*(1-l)**lam)**((1-xi)/lam)/(1-xi)
+        return alp*(x**lam + kap*(1+mt-l)**lam)**((1-xi)/lam)/(1-xi)
     
     
     def u_part(self,c,x,il,theta,ushift,psi): # this returns utility of each partner out of some c
         kf, km = self.c_mult(theta)   
         l = self.ls_levels[il]
-        upub = self.u_pub(x,l) + ushift + psi
+        upub = self.u_pub(x,l,mt=1.0-self.mlevel) + ushift + psi
         return self.u(kf*c) + upub, self.u(km*c) + upub
     
     def u_couple(self,c,x,il,theta,ushift,psi): # this returns utility of each partner out of some c
         umult = self.u_mult(theta) 
         l = self.ls_levels[il]
-        return umult*self.u(c) + self.u_pub(x,l) + ushift + psi
+        return umult*self.u(c) + self.u_pub(x,l,mt=1.0-self.mlevel) + ushift + psi
     
     def u_single_pub(self,c,x,l):
         return self.u(c) + self.u_pub(x,l)
@@ -711,7 +717,7 @@ class ModelSetup(object):
             for itheta in range(ntheta):
                 A = self.u_mult(self.thetagrid[itheta])
                 ls = self.ls_levels[il]
-                x, c, u = int_sol(self.mgrid,A=A,alp=alp,sig=sig,xi=xi,lam=lam,kap=kap,lbr=ls)
+                x, c, u = int_sol(self.mgrid,A=A,alp=alp,sig=sig,xi=xi,lam=lam,kap=kap,lbr=ls,mt=1.0-self.mlevel)
                 uout[:,itheta,il] = u
                 xout[:,itheta,il] = x
                 
@@ -722,10 +728,10 @@ class ModelSetup(object):
         
         # singles have just one level of labor supply (work all the time)
         
-        xout, cout, uout = int_sol(self.mgrid,A=1,alp=alp,sig=sig,xi=xi,lam=lam,kap=kap,lbr=self.ls_levels[-1])
+        xout, cout, uout = int_sol(self.mgrid,A=1,alp=alp,sig=sig,xi=xi,lam=lam,kap=kap,lbr=self.ls_levels[-1])#self.ls_levels[-1]
         self.usinglef_precomputed_u = uout
         self.usinglef_precomputed_x = xout
-        xout, cout, uout = int_sol(self.mgrid,A=1,alp=alp,sig=sig,xi=xi,lam=lam,kap=kap,lbr=1.0)
+        xout, cout, uout = int_sol(self.mgrid,A=1,alp=alp,sig=sig,xi=xi,lam=lam,kap=kap,lbr=self.mlevel)
         self.usinglem_precomputed_u = uout
         self.usinglem_precomputed_x = xout
     

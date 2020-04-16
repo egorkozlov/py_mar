@@ -78,6 +78,9 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False,
     istart = 0
     ifinish = nbatch if nbatch < nexo else nexo
     
+    #Time husband contribute to build Q
+    mt=1.0-setup.mlevel
+    
     # this natually splits everything onto slices
     
     
@@ -93,7 +96,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False,
         V_pure_i, c_opt_i, x_opt_i, s_opt_i, i_opt_i, il_opt_i, V_all_l_i = \
            v_optimize_couple(money_t,sgrid,EV_t,setup.mgrid,
                              setup.ucouple_precomputed_u,setup.ucouple_precomputed_x,
-                                 ls,beta,ushift,dtype=dtype_here)
+                                 ls,beta,ushift,dtype=dtype_here,mt=mt)
            
         V_ret_i = V_pure_i + psi[None,istart:ifinish,None]
         

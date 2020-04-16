@@ -25,7 +25,7 @@ else:
     ugpu = False
     
 def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,beta,ushift,
-                              use_gpu=ugpu,dtype=np.float32):
+                              use_gpu=ugpu,dtype=np.float32,mt=0.0):
     
     # This optimizer avoids creating big arrays and uses parallel-CPU on 
     # machines without NUMBA-CUDA codes otherwise
@@ -79,7 +79,7 @@ def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,beta,ushift,
         util = utilint[...,i]
         xvals = xint[...,i]
         
-        money_left = (money - (1-lval)*wf.reshape((1,nexo))).astype(dtype,copy=False)
+        money_left = (money - (1-lval)*wf.reshape((1,nexo))- mt*wm.reshape((1,nexo))).astype(dtype,copy=False)
         
         if not use_gpu:
             

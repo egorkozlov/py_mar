@@ -15,6 +15,8 @@ import numpy as np
 from timeit import default_timer
 import os
 import psutil
+import gc
+gc.disable()
 
 
 #if system() != 'Darwin':
@@ -28,7 +30,7 @@ from integrator_couples import ev_couple_m_c
 
 class Model(object):
     def __init__(self,iterator_name='default-timed',verbose=False,
-                 solve_till=None,display_v=False,**kwargs):
+                 solve_till=None,display_v=False,draw=False,**kwargs):
         self.mstart = self.get_mem()
         self.mlast = self.get_mem()
         self.verbose = verbose
@@ -46,7 +48,7 @@ class Model(object):
             print('T is {}, but solving till T = {}'.format(T,solve_till))
         
         
-        self.solve(till=solve_till)
+        self.solve(till=solve_till,draw=draw)
         
     def get_mem(self):
         return psutil.Process(os.getpid()).memory_info().rss/1e6
@@ -138,15 +140,15 @@ class Model(object):
             
         # and the integrator   
         
-        def v_integrator(setup,desc,t,V_next):
+        def v_integrator(setup,desc,t,V_next,draw=False):
             
             if desc == 'Female, single' or desc == 'Male, single':
                 female = (desc == 'Female, single')
                 EV, dec = ev_single(setup,V_next,setup.agrid_s,female,t)
             elif desc == 'Couple, M':
-                EV, dec = ev_couple_m_c(setup,V_next,t,True)
+                EV, dec = ev_couple_m_c(setup,V_next,t,True,draw=draw)
             elif desc == 'Couple, C':
-                EV, dec = ev_couple_m_c(setup,V_next,t,False)
+                EV, dec = ev_couple_m_c(setup,V_next,t,False,draw=draw)
                 
                 
             if type(EV) is tuple:
@@ -164,8 +166,8 @@ class Model(object):
         
         if name == 'default' or name == 'default-timed':
             timed = (name == 'default-timed')
-            def iterate(desc,t,Vnext):
-                EV, dec = v_integrator(self.setup,desc,t,Vnext)
+            def iterate(desc,t,Vnext,draw=False):
+                EV, dec = v_integrator(self.setup,desc,t,Vnext,draw=draw)
                 if timed: self.time('Integration for {}'.format(desc))
                 vout = v_iterator(self.setup,desc,t,EV)
                 if timed: self.time('Optimization for {}'.format(desc))
@@ -211,7 +213,7 @@ class Model(object):
             del v
         
     
-    def solve(self,till=None,save=False):
+    def solve(self,till=None,save=False,draw=False):
         
         show_mem = self.verbose
         
@@ -232,13 +234,19 @@ class Model(object):
                 if t == T-1:
                     V_d, dec = self.initializer(desc,t)
                 else:
-                    V_d, dec = self.iterator(desc,t,Vnext)   
+                    V_d, dec = self.iterator(desc,t,Vnext,draw=draw)
+                    
+                    #Take out some stuff if now draw
+                    if t<T-1:
+                        if desc == 'Female, single' or desc == 'Male, single':
+                            if not draw:del dec['c'],dec['s'],dec['x']
                    
                 Vnow.update(V_d)
                 decnow.update({desc:dec})
                 
             self.V = [Vnow] + self.V
             self.decisions = [decnow] + self.decisions
+            if (t<T-3) & (not draw):del self.V[2]  
             
             
             #if show_mem:

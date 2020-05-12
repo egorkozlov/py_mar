@@ -650,7 +650,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     df_psidt=pd.DataFrame(data=ddd2,columns=["Index","age","unid"],index=ddd2[:,0]) 
     df_psidt['age']=df_psidt['age'].astype(np.float) 
      
-    try:#if (len(df_psidt)>0) & (setup.pars['py']==1) & (max(df_psidt['unid'])>0.9) & (min(df_psidt['unid'])<0.9): 
+    if 1>2:#try:#if (len(df_psidt)>0) & (setup.pars['py']==1) & (max(df_psidt['unid'])>0.9) & (min(df_psidt['unid'])<0.9): 
         sampletemp=strata_sample(["'age'", "'unid'"],freq_psid_tot_data2,frac=0.1,tsample=df_psidt,distr=True) 
         final2t=df_psidt.merge(sampletemp,how='left',on='Index',indicator=True) 
          
@@ -672,7 +672,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
          
         print('The average deviation from actual to final psid_tot ditribution is {:0.2f}%'.format(np.mean(abs(prima_psid_tot-dopo_psid_tot))*100)) 
           
-    except:#else: 
+    else:#except:#else: 
         keep3=[True]*len(df_psidt) 
     ############ 
     #Average FLS 

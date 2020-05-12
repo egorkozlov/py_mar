@@ -11,6 +11,10 @@ Created on Sat Dec 14 10:58:43 2019
 import numpy as np
 import pickle, dill
 import os
+import psutil
+import gc
+gc.disable()
+
 #import cProfile
 
 
@@ -303,12 +307,12 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     del(out_dict)
     
     # memory management
-    if 'models' not in return_format:
+    if ('models' not in return_format) | (draw==False):
         for m in mdl_list:
             del(m)
         del mdl_list
         
-    if 'agents' not in return_format:
+    if ('agents' not in return_format) | (draw==False):
         del(agents_pooled,agents_fem,agents_mal)
         
   

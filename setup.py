@@ -327,7 +327,7 @@ class ModelSetup(object):
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)
         
         # grid for theta
-        self.ntheta = 21
+        self.ntheta = 11
         self.thetamin = 0.02
         self.thetamax = 0.98
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta,dtype=self.dtype)
@@ -428,7 +428,7 @@ class ModelSetup(object):
         self.u_precompute()
         
         
-    def mar_mats_assets(self,npoints=8,abar=0.1):
+    def mar_mats_assets(self,npoints=4,abar=0.1):
         # for each grid point on single's grid it returns npoints positions
         # on (potential) couple's grid's and assets of potential partner 
         # (that can be off grid) and correpsonding probabilities. 

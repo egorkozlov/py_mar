@@ -13,7 +13,7 @@ from gridvec import VecOnGrid
 
 class Agents:
 
-    def __init__(self,Mlist,age_uni,female=False,pswitchlist=None,N=15000,T=None,verbose=True,nosim=False):
+    def __init__(self,Mlist,age_uni,female=False,pswitchlist=None,N=15000,T=None,verbose=True,nosim=False,draw=False):
             
             
         np.random.seed(8)
@@ -44,6 +44,7 @@ class Agents:
         self.T = T
         self.verbose = verbose
         self.timer = self.Mlist[0].time
+        self.draw=draw
         
         self.female = female
         self.single_state = 'Female, single' if female else 'Male, single'        
@@ -208,8 +209,8 @@ class Agents:
                         self.iassets[ind,t+1] = VecOnGrid(self.setup.agrid_s,anext).roll(shocks=self.shocks_single_a[ind,t])
                         self.iassetss[ind,t+1] = self.iassets[ind,t+1].copy()
                     self.s[ind,t] = anext
-                    self.c[ind,t] = pol['c'][self.iassets[ind,t],self.iexo[ind,t]]
-                    self.x[ind,t] = pol['x'][self.iassets[ind,t],self.iexo[ind,t]]
+                    if self.draw:self.c[ind,t] = pol['c'][self.iassets[ind,t],self.iexo[ind,t]]
+                    if self.draw:self.x[ind,t] = pol['x'][self.iassets[ind,t],self.iexo[ind,t]]
                    
                 else:
                     
@@ -220,8 +221,8 @@ class Agents:
                     
                     anext = pol['s'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
                     self.s[ind,t] = anext
-                    self.x[ind,t] = pol['x'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
-                    self.c[ind,t] = pol['c'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
+                    if self.draw:self.x[ind,t] = pol['x'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
+                    if self.draw:self.c[ind,t] = pol['c'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
                     if t+1<self.T:
                         self.iassets[ind,t+1] = VecOnGrid(self.setup.agrid_c,anext).roll(shocks=self.shocks_couple_a[ind,t])
                         self.iassetss[ind,t+1] = self.iassets[ind,t+1].copy()

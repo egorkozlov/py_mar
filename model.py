@@ -140,11 +140,11 @@ class Model(object):
             
         # and the integrator   
         
-        def v_integrator(setup,desc,t,V_next,draw=False):
+        def v_integrator(setup,desc,t,V_next,decc=None,draw=False):
             
             if desc == 'Female, single' or desc == 'Male, single':
                 female = (desc == 'Female, single')
-                EV, dec = ev_single(setup,V_next,setup.agrid_s,female,t)
+                EV, dec = ev_single(setup,V_next,setup.agrid_s,female,t,decc=decc)
             elif desc == 'Couple, M':
                 EV, dec = ev_couple_m_c(setup,V_next,t,True,draw=draw)
             elif desc == 'Couple, C':
@@ -166,8 +166,8 @@ class Model(object):
         
         if name == 'default' or name == 'default-timed':
             timed = (name == 'default-timed')
-            def iterate(desc,t,Vnext,draw=False):
-                EV, dec = v_integrator(self.setup,desc,t,Vnext,draw=draw)
+            def iterate(desc,t,Vnext,decc=None,draw=False):
+                EV, dec = v_integrator(self.setup,desc,t,Vnext,decc=decc,draw=draw)
                 if timed: self.time('Integration for {}'.format(desc))
                 vout = v_iterator(self.setup,desc,t,EV)
                 if timed: self.time('Optimization for {}'.format(desc))
@@ -230,24 +230,38 @@ class Model(object):
             
             Vnext = self.V[0] if t<T-1 else None
             
-            for desc in self.setup.state_names:
+            for desc in reversed(self.setup.state_names):
                 if t == T-1:
                     V_d, dec = self.initializer(desc,t)
                 else:
-                    V_d, dec = self.iterator(desc,t,Vnext,draw=draw)
                     
-                    #Take out some stuff if now draw
-                    if t<T-1:
-                        if desc == 'Female, single' or desc == 'Male, single':
-                            if not draw:del dec['c'],dec['s'],dec['x']
+                    if desc == 'Female, single' or desc == 'Male, single':
+           
+                        V_d, dec = self.iterator(desc,t,Vnext,decnow['Couple, C'],draw=draw)  
+                        #Take out some stuff if now draw
+                        if t<T-1:
+                            if not draw:del dec['c'],dec['x']
+                    else:
+                           
+                        V_d, dec = self.iterator(desc,t,Vnext,draw=draw) 
+                        
+                               
+                 
+                    
+      
                    
                 Vnow.update(V_d)
                 decnow.update({desc:dec})
                 
             self.V = [Vnow] + self.V
             self.decisions = [decnow] + self.decisions
-            if (t<T-3) & (not draw):del self.V[2]  
             
+            #Free up some memory
+            if (t<T-3) & (not draw):
+                del self.V[2]
+                if desc == 'Couple, M' or desc == 'Couple, C':
+                    if not draw:del self.decisions[2]['Couple, C']['c'],self.decisions[2]['Couple, C']['x']
+                    if not draw:del self.decisions[2]['Couple, M']['c'],self.decisions[2]['Couple, M']['x']
             
             #if show_mem:
              #   print('The size of V is {} giga'.format(asizeof(self.V)/1000000000))

@@ -205,8 +205,8 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     N=150000
     Nf=int(N*age_uni['share_female'])
     Nm=N-Nf
-    agents_fem = Agents( mdl_list ,age_uni['female'],female=True,pswitchlist=transition_matricesf,verbose=False,N=Nf)
-    agents_mal = Agents( mdl_list ,age_uni['male'],female=False,pswitchlist=transition_matricesm,verbose=False,N=Nm)
+    agents_fem = Agents( mdl_list ,age_uni['female'],female=True,pswitchlist=transition_matricesf,verbose=False,N=Nf,draw=draw)
+    agents_mal = Agents( mdl_list ,age_uni['male'],female=False,pswitchlist=transition_matricesm,verbose=False,N=Nm,draw=draw)
     agents_pooled = AgentsPooled([agents_fem,agents_mal])
     
     

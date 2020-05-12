@@ -104,7 +104,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
         if not solve_transition:
             
             mdl = Model(iterator_name=iter_name,divorce_costs=dc,
-                        separation_costs=sc,**params)
+                        separation_costs=sc,draw=draw,**params)
             mdl_list = [mdl]
             
         else:
@@ -115,10 +115,10 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
             
             
             mdl_before = Model(iterator_name=iter_name,divorce_costs=dc_before,
-                        separation_costs=sc,**params)
+                        separation_costs=sc,draw=draw,**params)
             
             mdl_after = Model(iterator_name=iter_name,divorce_costs=dc_after,
-                        separation_costs=sc,**params)  
+                        separation_costs=sc,draw=draw,**params)  
             
             mdl = mdl_before # !!! check if this makes a difference
             # I think that it is not used for anything other than getting 
@@ -205,8 +205,8 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     N=150000
     Nf=int(N*age_uni['share_female'])
     Nm=N-Nf
-    agents_fem = Agents( mdl_list ,age_uni['female'],female=True,pswitchlist=transition_matricesf,verbose=False,N=Nf)
-    agents_mal = Agents( mdl_list ,age_uni['male'],female=False,pswitchlist=transition_matricesm,verbose=False,N=Nm)
+    agents_fem = Agents( mdl_list ,age_uni['female'],female=True,pswitchlist=transition_matricesf,verbose=False,N=Nf,draw=draw)
+    agents_mal = Agents( mdl_list ,age_uni['male'],female=False,pswitchlist=transition_matricesm,verbose=False,N=Nm,draw=draw)
     agents_pooled = AgentsPooled([agents_fem,agents_mal])
     
     

@@ -44,12 +44,12 @@ if __name__ == '__main__':
     #import warnings
     #warnings.filterwarnings("error")
     #For graphs later
-    graphs=False
+    graphs=True
     #Build  data moments and pickle them
-    #dat_moments(period=1,sampling_number=4,transform=2)
+    dat_moments(period=1,sampling_number=4,transform=2)
     
          
-    #Initialize the file with parameters
+    #•o#Initialize the file with parameters
     
     
     
@@ -63,7 +63,7 @@ if __name__ == '__main__':
     #x0 = np.array([ 0.866640625, 0.857421875,3.1042187500000002,0.297265625,0.6507343750000001,0.01860078125,-0.0893671875,1.07])
     
 
-             
+             -
 
     #Name and location of files
     if system() == 'Windows':   

@@ -94,40 +94,40 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
     else:
         
         if not ugpu:
-            # v_out_nor, vf_out, vm_out, itheta_out, switch = \
-            #     v_ren_core_two_opts_with_int(
-            #                np.stack([V['Couple, C']['V'], V['Couple, M']['V']]),
-            #                np.stack([V['Couple, C']['VF'],V['Couple, M']['VF']]), 
-            #                np.stack([V['Couple, C']['VM'],V['Couple, M']['VM']]), 
-            #                         vf_n, vm_n,
-            #                         itht, wntht, thtgrid)     
-                
-                
-            #First: cohabitation versus separation
-            v_out_nor_1, vf_out_1, vm_out_1, itheta_out_1,_ = \
+            v_out_nor, vf_out, vm_out, itheta_out, switch = \
                 v_ren_core_two_opts_with_int(
-                            V['Couple, C']['V'][None,...],
-                            V['Couple, C']['VF'][None,...], 
-                            V['Couple, C']['VM'][None,...], 
+                            np.stack([V['Couple, C']['V'], V['Couple, M']['V']]),
+                            np.stack([V['Couple, C']['VF'],V['Couple, M']['VF']]), 
+                            np.stack([V['Couple, C']['VM'],V['Couple, M']['VM']]), 
                                     vf_n, vm_n,
-                                    itht, wntht, thtgrid)  
+                                    itht, wntht, thtgrid)     
                 
                 
-            #Second: Marriage versus envelop
-            v_out_nor, vf_out, vm_out, itheta_out,_ = \
-                v_ren_core_two_opts_with_int2(
-                            V['Couple, C']['V'][None,...],
-                            V['Couple, C']['VF'][None,...], 
-                            V['Couple, C']['VM'][None,...], 
-                                    vf_out_1, vm_out_1,
-                                    itht, wntht, thtgrid)  
+            # #First: cohabitation versus separation
+            # v_out_nor_1, vf_out_1, vm_out_1, itheta_out_1,_ = \
+            #     v_ren_core_two_opts_with_int(
+            #                 V['Couple, C']['V'][None,...],
+            #                 V['Couple, C']['VF'][None,...], 
+            #                 V['Couple, C']['VM'][None,...], 
+            #                         vf_n, vm_n,
+            #                         itht, wntht, thtgrid)  
+                
+                
+            # #Second: Marriage versus envelop
+            # v_out_nor, vf_out, vm_out, itheta_out,_ = \
+            #     v_ren_core_two_opts_with_int2(
+            #                 V['Couple, C']['V'][None,...],
+            #                 V['Couple, C']['VF'][None,...], 
+            #                 V['Couple, C']['VM'][None,...], 
+            #                         vf_out_1, vm_out_1,
+            #                         itht, wntht, thtgrid)  
             
-            #Get switch
-            switch=(itheta_out>=0)
+            # #Get switch
+            # switch=(itheta_out>=0)
             
-            #Adjust thetaout
-            nomar=(itheta_out<0)
-            itheta_out[nomar]=itheta_out_1[nomar]
+            # #Adjust thetaout
+            # nomar=(itheta_out<0)
+            # itheta_out[nomar]=itheta_out_1[nomar]
             
         else:
             v_out_nor, vf_out, vm_out, itheta_out, switch = \

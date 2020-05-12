@@ -202,7 +202,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
         
    
     #Get Number of simulated agent, malea and female
-    N=150000
+    N=45000
     Nf=int(N*age_uni['share_female'])
     Nm=N-Nf
     agents_fem = Agents( mdl_list ,age_uni['female'],female=True,pswitchlist=transition_matricesf,verbose=False,N=Nf,draw=draw)
@@ -279,22 +279,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     
     
     
-    if calibration_report:
-        print('')
-        print('')
-        print('Calibration report')
-        print('ulost = {:.4f} , s_psi = {:.4f}, s_psi0 = {:.4f}, uls = {:.4f}, pmeet = {:.4f}'.format(ulost,sigma_psi,sigma_psi_init,uls, pmeet))
-        print('')
-        print('')
-        print('Average {:.4f} mar and {:.4f} cohab'.format(np.mean(mar_s),np.mean(coh_s)))
-        print('Hazard of sep is {:.4f}, hazard of div is {:.4f}'.format(np.mean(hazs_s),np.mean(hazd_s)))        
-        print('Hazard of Marriage is {:.4f}'.format(np.mean(hazm_s)))
-        print('Calibration residual is {:.4f}'.format(dist))
-        print('')
-        print('')
-        print('End of calibration report')
-        print('')
-        print('')
+    
     
     
     

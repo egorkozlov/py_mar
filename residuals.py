@@ -104,7 +104,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
         if not solve_transition:
             
             mdl = Model(iterator_name=iter_name,divorce_costs=dc,
-                        separation_costs=sc,**params)
+                        separation_costs=sc,draw=draw,**params)
             mdl_list = [mdl]
             
         else:
@@ -115,10 +115,10 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
             
             
             mdl_before = Model(iterator_name=iter_name,divorce_costs=dc_before,
-                        separation_costs=sc,**params)
+                        separation_costs=sc,draw=draw,**params)
             
             mdl_after = Model(iterator_name=iter_name,divorce_costs=dc_after,
-                        separation_costs=sc,**params)  
+                        separation_costs=sc,draw=draw,**params)  
             
             mdl = mdl_before # !!! check if this makes a difference
             # I think that it is not used for anything other than getting 

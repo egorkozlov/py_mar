@@ -15,7 +15,7 @@ import matplotlib.backends.backend_pdf
 #from ren_mar_alt import v_mar_igrid 
 #from ren_mar_alt import v_ren_new 
 from marriage import v_mar_igrid 
-from renegotiation_unilateral import v_ren_uni
+from renegotiation_vartheta import v_ren_vt as v_ren_uni
 from renegotiation_bilateral import v_ren_bil
 
  

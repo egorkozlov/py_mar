@@ -49,7 +49,7 @@ if __name__ == '__main__':
     dat_moments(period=1,sampling_number=4,transform=2)
     
          
-    #•o#Initialize the file with parameters
+    #•oa#Initialize the file with parameters
     
     
     

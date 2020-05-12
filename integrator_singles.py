@@ -121,10 +121,13 @@ def ev_single_meet(setup,V,sown,female,t,skip_mar=False,trim_lvl=0.000001,dec_c=
 #         #coh=((i_mar==False) & ((i_mar*decm + (~i_mar)*decc)==True))
 #         coh=((i_mar*decm + (~i_mar)*decc)==True)
 #         if np.any(coh):
-#             indsi=inds[coh[0,:]]
-#             thtci=thtc[coh]
-#             ass=np.ones(i_mar[coh].shape,dtype=np.int32)*0
-#             i_mar[coh]=(~dec_c['Cohabitation preferred to Marriage'][ass,indsi,thtci])
+            
+#             #Get index of iexo complete grid
+#             mask=np.in1d(np.linspace(0,len(V_next[0,:])-1,len(V_next[0,:]-1)),inds)
+#             index_1=np.array(mask[None,...,None]+dec_c['Cohabitation preferred to Marriage']*0,dtype=bool)
+            
+                   
+#             i_mar[coh]=(~dec_c['Cohabitation preferred to Marriage'][index_1])
 # #          
             
         dec[:,:,iconv[:,i]] = (i_mar*decm + (~i_mar)*decc)[:,None,:]

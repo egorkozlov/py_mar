@@ -94,9 +94,9 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     ########################################## 
     #WELFARE DECOMPOSITION HERE 
     ######################################### 
-    #if draw:
-       # if len(mdl_list) > 1: 
-        #    welf_dec(mdl_list,agents) 
+    if draw:
+        if len(mdl_list) > 1: 
+            welf_dec(mdl_list,agents) 
          
     ##########################################    
     #START COMPUTATION OF SIMULATED MOMENTS    
@@ -988,66 +988,66 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         log_inc_rel=np.zeros((2,len(state_w)))  
          
         #Create wages 
-        wage_f=np.zeros(state_w.shape) 
-        wage_m=np.zeros(state_w.shape) 
+        wage_f=np.ones(state_w.shape)*[np.nan]
+        wage_m=np.ones(state_w.shape)*[np.nan]
          
-        wage_fc=np.zeros(len(state_w[0,:])) 
-        wage_mc=np.zeros(len(state_w[0,:])) 
-        wage_fm=np.zeros(len(state_w[0,:])) 
-        wage_mm=np.zeros(len(state_w[0,:])) 
+        wage_fc=np.ones(len(state_w[0,:]))*[np.nan]
+        wage_mc=np.ones(len(state_w[0,:])) *[np.nan]
+        wage_fm=np.ones(len(state_w[0,:])) *[np.nan]
+        wage_mm=np.ones(len(state_w[0,:])) *[np.nan]
          
-        wage_f2=np.zeros(state_w.shape) 
-        wage_m2=np.zeros(state_w.shape) 
-        wage_fp=np.zeros(state_w.shape) 
-        wage_mp=np.zeros(state_w.shape) 
+        wage_f2=np.ones(state_w.shape) *[np.nan]
+        wage_m2=np.ones(state_w.shape) *[np.nan]
+        wage_fp=np.ones(state_w.shape) *[np.nan]
+        wage_mp=np.ones(state_w.shape) *[np.nan]
          
-        wage_fpc=np.zeros(len(state_w[0,:])) 
-        wage_mpc=np.zeros(len(state_w[0,:])) 
-        wage_fpm=np.zeros(len(state_w[0,:])) 
-        wage_mpm=np.zeros(len(state_w[0,:])) 
+        wage_fpc=np.ones(len(state_w[0,:])) *[np.nan]
+        wage_mpc=np.ones(len(state_w[0,:])) *[np.nan]
+        wage_fpm=np.ones(len(state_w[0,:])) *[np.nan]
+        wage_mpm=np.ones(len(state_w[0,:])) *[np.nan]
          
-        wage_fs=np.zeros(len(state_w[0,:])) 
-        wage_ms=np.zeros(len(state_w[0,:])) 
+        wage_fs=np.ones(len(state_w[0,:])) *[np.nan]
+        wage_ms=np.ones(len(state_w[0,:])) *[np.nan]
          
-        var_wage_fc=np.zeros(len(state_w[0,:])) 
-        var_wage_mc=np.zeros(len(state_w[0,:])) 
-        var_wage_fm=np.zeros(len(state_w[0,:])) 
-        var_wage_mm=np.zeros(len(state_w[0,:])) 
+        var_wage_fc=np.ones(len(state_w[0,:])) *[np.nan]
+        var_wage_mc=np.ones(len(state_w[0,:])) *[np.nan]
+        var_wage_fm=np.ones(len(state_w[0,:])) *[np.nan]
+        var_wage_mm=np.ones(len(state_w[0,:])) *[np.nan]
          
-        var_wage_fpc=np.zeros(len(state_w[0,:])) 
-        var_wage_mpc=np.zeros(len(state_w[0,:])) 
-        var_wage_fpm=np.zeros(len(state_w[0,:])) 
-        var_wage_mpm=np.zeros(len(state_w[0,:])) 
+        var_wage_fpc=np.ones(len(state_w[0,:])) *[np.nan]
+        var_wage_mpc=np.ones(len(state_w[0,:])) *[np.nan]
+        var_wage_fpm=np.ones(len(state_w[0,:])) *[np.nan]
+        var_wage_mpm=np.ones(len(state_w[0,:])) *[np.nan]
          
         #For assets 
-        assets_fc=np.zeros(len(state_w[0,:])) 
-        assets_fm=np.zeros(len(state_w[0,:])) 
-        assets_mc=np.zeros(len(state_w[0,:])) 
-        assets_mm=np.zeros(len(state_w[0,:])) 
+        assets_fc=np.ones(len(state_w[0,:])) *[np.nan]
+        assets_fm=np.ones(len(state_w[0,:])) *[np.nan]
+        assets_mc=np.ones(len(state_w[0,:])) *[np.nan]
+        assets_mm=np.ones(len(state_w[0,:])) *[np.nan]
          
-        assets_fpc=np.zeros(len(state_w[0,:])) 
-        assets_fpm=np.zeros(len(state_w[0,:])) 
-        assets_mpc=np.zeros(len(state_w[0,:])) 
-        assets_mpm=np.zeros(len(state_w[0,:])) 
+        assets_fpc=np.ones(len(state_w[0,:])) *[np.nan]
+        assets_fpm=np.ones(len(state_w[0,:])) *[np.nan]
+        assets_mpc=np.ones(len(state_w[0,:])) *[np.nan]
+        assets_mpm=np.ones(len(state_w[0,:])) *[np.nan]
          
-        var_assets_fc=np.zeros(len(state_w[0,:])) 
-        var_assets_fm=np.zeros(len(state_w[0,:])) 
-        var_assets_mc=np.zeros(len(state_w[0,:])) 
-        var_assets_mm=np.zeros(len(state_w[0,:])) 
+        var_assets_fc=np.ones(len(state_w[0,:])) *[np.nan]
+        var_assets_fm=np.ones(len(state_w[0,:])) *[np.nan]
+        var_assets_mc=np.ones(len(state_w[0,:])) *[np.nan]
+        var_assets_mm=np.ones(len(state_w[0,:])) *[np.nan]
          
-        var_assets_fpc=np.zeros(len(state_w[0,:])) 
-        var_assets_fpm=np.zeros(len(state_w[0,:])) 
-        var_assets_mpc=np.zeros(len(state_w[0,:])) 
-        var_assets_mpm=np.zeros(len(state_w[0,:])) 
+        var_assets_fpc=np.ones(len(state_w[0,:])) *[np.nan]
+        var_assets_fpm=np.ones(len(state_w[0,:])) *[np.nan]
+        var_assets_mpc=np.ones(len(state_w[0,:])) *[np.nan]
+        var_assets_mpm=np.ones(len(state_w[0,:])) *[np.nan]
          
-        corr_ass_sepm=np.zeros(len(state_w[0,:])) 
-        corr_ass_sepf=np.zeros(len(state_w[0,:])) 
-        share_ass_sepm=np.zeros(len(state_w[0,:])) 
-        share_ass_sepf=np.zeros(len(state_w[0,:])) 
-        mcorr_ass_sepm=np.zeros(len(state_w[0,:])) 
-        mcorr_ass_sepf=np.zeros(len(state_w[0,:])) 
-        mshare_ass_sepm=np.zeros(len(state_w[0,:])) 
-        mshare_ass_sepf=np.zeros(len(state_w[0,:])) 
+        corr_ass_sepm=np.ones(len(state_w[0,:])) *[np.nan]
+        corr_ass_sepf=np.ones(len(state_w[0,:])) *[np.nan]
+        share_ass_sepm=np.ones(len(state_w[0,:])) *[np.nan]
+        share_ass_sepf=np.ones(len(state_w[0,:])) *[np.nan]
+        mcorr_ass_sepm=np.ones(len(state_w[0,:])) *[np.nan]
+        mcorr_ass_sepf=np.ones(len(state_w[0,:])) *[np.nan]
+        mshare_ass_sepm=np.ones(len(state_w[0,:])) *[np.nan]
+        mshare_ass_sepf=np.ones(len(state_w[0,:])) *[np.nan]
          
          
         psis=np.zeros(state_w.shape) 
@@ -1351,7 +1351,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         data_ev1_panda=pd.DataFrame(data=data_ev1,columns=['labor','event','age','id','state'])   
         data_ev1_panda.loc[data_ev1_panda['event']>10,'event']=np.nan  
         data_ev1_panda.loc[data_ev1_panda['event']<-10,'event']=np.nan  
-        data_ev1_panda=data_ev1_panda.dropna(subset=['event'])#.sample(n=10000,random_state=1)  
+        data_ev1_panda=data_ev1_panda.dropna(subset=['event'])#♦.sample(n=5000000,random_state=1)  
         
         olstc = smf.ols(formula='labor ~ C(age)+C(event, Treatment(reference=-1))', data = data_ev1_panda[data_ev1_panda['state']==3]  ).fit() 
         olstm = smf.ols(formula='labor ~ C(age)+C(event, Treatment(reference=-1))', data = data_ev1_panda[data_ev1_panda['state']==2]  ).fit() 
@@ -1359,17 +1359,18 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         
         
         #Create an Array for the results 
-        pevent_theta_mar=np.ones(len(eventgrid))*np.nan 
-        pevent_theta_coh=np.ones(len(eventgrid))*np.nan 
-        pevent_psi_mar=np.ones(len(eventgrid))*np.nan 
-        pevent_psi_coh=np.ones(len(eventgrid))*np.nan 
-        pevent_mar=np.ones(len(eventgrid))*np.nan 
-        pevent_lc=np.ones(len(eventgrid))*np.nan
-        pevent_lm=np.ones(len(eventgrid))*np.nan
-        pevent_lt=np.ones(len(eventgrid))*np.nan
+        eventgrid2=eventgrid[5:-5]
+        pevent_theta_mar=np.ones(len(eventgrid2))*np.nan 
+        pevent_theta_coh=np.ones(len(eventgrid2))*np.nan 
+        pevent_psi_mar=np.ones(len(eventgrid2))*np.nan 
+        pevent_psi_coh=np.ones(len(eventgrid2))*np.nan 
+        pevent_mar=np.ones(len(eventgrid2))*np.nan 
+        pevent_lc=np.ones(len(eventgrid2))*np.nan
+        pevent_lm=np.ones(len(eventgrid2))*np.nan
+        pevent_lt=np.ones(len(eventgrid2))*np.nan
          
         i=0 
-        for e in eventgrid: 
+        for e in eventgrid2: 
              
             try: 
                 pevent_mar[i]=ols_mar.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]'] 
@@ -1393,14 +1394,14 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
                  
 
         #Adjust for the reference point        
-        pevent_mar[9]=0 
-        pevent_theta_mar[9]=0 
-        pevent_theta_coh[9]=0 
-        pevent_psi_mar[9]=0 
-        pevent_psi_coh[9]=0 
-        pevent_lt[9]=0
-        pevent_lm[9]=0
-        pevent_lc[9]=0
+        pevent_mar[4]=0 
+        pevent_theta_mar[4]=0 
+        pevent_theta_coh[4]=0 
+        pevent_psi_mar[4]=0 
+        pevent_psi_coh[4]=0 
+        pevent_lt[4]=0
+        pevent_lm[4]=0
+        pevent_lc[4]=0
                  
         #Check correlations 
         assets_ww=assets_w[:,:60]
@@ -1447,7 +1448,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         corrm=np.corrcoef(np.log(wage_mt[nsinglefc2]),np.log(wage_fpt[nsinglefc2]*setup.ls_levels[-1])) 
         corrm1=np.corrcoef(np.log(wage_mt[nsinglefm2]),np.log(wage_fpt[nsinglefm2]*setup.ls_levels[-1])) 
         share_fcm=np.mean(wage_ft[nsinglefc1]*setup.ls_levels[-1]/(wage_mpt[nsinglefc1]+wage_ft[nsinglefc1]*setup.ls_levels[-1])) 
-        share_fmm=np.mean(wage_ft[nsinglefm1]*setup.ls_levels[-1]/(wage_mpt[nsinglefm1]+wage_ft[nsinglefm1]*setup.ls_levels[-1])) 
+        share_fmm=np.mean(wage_ft_mod[nsinglefm1_mod1]*labor_w_mod[nsinglefm1_mod1]*setup.ls_levels[-1]/
+                         (wage_mpt_mod[nsinglefm1_mod1]*0.8+wage_ft_mod[nsinglefm1_mod1]*labor_w_mod[nsinglefm1_mod1]*setup.ls_levels[-1])) 
         share_mcm=np.mean(wage_fpt[nsinglefc2]*setup.ls_levels[-1]/(wage_mt[nsinglefc2]+wage_fpt[nsinglefc2]*setup.ls_levels[-1])) 
         share_mmm=np.mean(wage_fpt[nsinglefm2]*setup.ls_levels[-1]/(wage_mt[nsinglefm2]+wage_fpt[nsinglefm2]*setup.ls_levels[-1])) 
         
@@ -1528,7 +1530,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         # Hazard of Divorce    
         #############################################    
         fig = plt.figure()    
-        f1=fig.add_subplot(2,1,1)    
+        f1=fig.add_subplot(1.5,1,1)    
         lg=min(len(hazd_d),len(hazd))  
         if lg<2:    
             one='o'    
@@ -1536,32 +1538,34 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         else:    
             one='r'    
             two='b'    
-        plt.plot(np.array(range(lg))+1, hazd[0:lg],one, linestyle='--',linewidth=1.5, label='Hazard of Divorce - S')    
-        plt.plot(np.array(range(lg))+1, hazd_d[0:lg],two,linewidth=1.5, label='Hazard of Divorce - D')    
-        plt.fill_between(np.array(range(lg))+1, hazd_i[0,0:lg], hazd_i[1,0:lg],alpha=0.2,facecolor='b')    
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
-                  fancybox=True, shadow=True, ncol=3, fontsize='x-small')    
+        plt.plot(np.array(range(lg)), hazd[0:lg],one, linestyle='--',linewidth=1.5, label='Simulation')    
+        plt.plot(np.array(range(lg)), hazd_d[0:lg],two,linewidth=1.5, label='Data')    
+        plt.fill_between(np.array(range(lg)), hazd_i[0,0:lg], hazd_i[1,0:lg],alpha=0.2,facecolor='b')    
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
+                  fancybox=True, shadow=True, ncol=2, fontsize=14)    
         plt.ylim(ymin=0)    
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')    
-        plt.xlabel('Duration - Years')    
-        plt.ylabel('Hazard')    
+        plt.xlabel('Duration - Years', fontsize=16)    
+        plt.ylabel('Hazard', fontsize=16)    
+        plt.xticks(np.arange(6), ('1-2', '3-4', '5-6', '7-8', '9-10','11-12'))
         plt.savefig('hazd.pgf', bbox_inches = 'tight',pad_inches = 0)  
              
         #############################################    
         # Hazard of Separation    
         #############################################    
         fig = plt.figure()    
-        f1=fig.add_subplot(2,1,1)    
+        f1=fig.add_subplot(1.5,1,1)    
         lg=min(len(hazs_d),len(hazs))  
-        plt.plot(np.array(range(lg))+1, hazs[0:lg],one, linestyle='--',linewidth=1.5, label='Hazard of Separation - S')    
-        plt.plot(np.array(range(lg))+1, hazs_d[0:lg],two,linewidth=1.5, label='Hazard of Separation - D')    
-        plt.fill_between(np.array(range(lg))+1, hazs_i[0,0:lg], hazs_i[1,0:lg],alpha=0.2,facecolor='b')    
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
-                  fancybox=True, shadow=True, ncol=3, fontsize='x-small')    
+        plt.plot(np.array(range(lg)), hazs[0:lg],one, linestyle='--',linewidth=1.5, label='Simulation')    
+        plt.plot(np.array(range(lg)), hazs_d[0:lg],two,linewidth=1.5, label='Data')    
+        plt.fill_between(np.array(range(lg)), hazs_i[0,0:lg], hazs_i[1,0:lg],alpha=0.2,facecolor='b')    
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
+                  fancybox=True, shadow=True, ncol=2, fontsize=14)    
         plt.ylim(ymin=0)    
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')    
-        plt.xlabel('Duration - Years')    
-        plt.ylabel('Hazard')    
+        plt.xlabel('Duration - Years', fontsize=16)    
+        plt.ylabel('Hazard', fontsize=16)    
+        plt.xticks(np.arange(3), ('1-2', '3-4', '5-6'))
         plt.savefig('hazs.pgf', bbox_inches = 'tight',pad_inches = 0)  
             
              
@@ -1569,18 +1573,19 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         # Hazard of Marriage    
         #############################################    
         fig = plt.figure()    
-        f1=fig.add_subplot(2,1,1)    
+        f1=fig.add_subplot(1.5,1,1)    
         lg=min(len(hazm_d),len(hazm))  
     
-        plt.plot(np.array(range(lg))+1, hazm[0:lg],one, linestyle='--',linewidth=1.5, label='Hazard of Marriage - S')    
-        plt.plot(np.array(range(lg))+1, hazm_d[0:lg],two,linewidth=1.5, label='Hazard of Marriage - D')    
-        plt.fill_between(np.array(range(lg))+1, hazm_i[0,0:lg], hazm_i[1,0:lg],alpha=0.2,facecolor='b')    
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
-                  fancybox=True, shadow=True, ncol=3, fontsize='x-small')    
+        plt.plot(np.array(range(lg)), hazm[0:lg],one, linestyle='--',linewidth=1.5, label='Simulation')    
+        plt.plot(np.array(range(lg)), hazm_d[0:lg],two,linewidth=1.5, label='Data')    
+        plt.fill_between(np.array(range(lg)), hazm_i[0,0:lg], hazm_i[1,0:lg],alpha=0.2,facecolor='b')    
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
+                  fancybox=True, shadow=True, ncol=2, fontsize=14)    
         plt.ylim(ymin=0)    
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')    
-        plt.xlabel('Duration - Years')    
-        plt.ylabel('Hazard')    
+        plt.xlabel('Duration - Years', fontsize=16)    
+        plt.ylabel('Hazard', fontsize=16)    
+        plt.xticks(np.arange(3), ('1-2', '3-4', '5-6'))
         plt.savefig('hazm.pgf', bbox_inches = 'tight',pad_inches = 0)  
             
         ##########################################    
@@ -1593,11 +1598,11 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
             plt.plot(np.array(range(lenn)), ass_rel[ist,:,0],color=print(ist/len(state_codes)),markersize=6, label=sname)    
         plt.plot(np.array(range(lenn)), ass_rel[2,:,1], linestyle='--',color=print(2/len(state_codes)),markersize=6, label='Marriage male') 
         plt.plot(np.array(range(lenn)), ass_rel[3,:,1], linestyle='--',color=print(3/len(state_codes)),markersize=6, label='Cohabitation other') 
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
-                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
+                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize=14)    
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')    
-        plt.xlabel('Time')    
-        plt.ylabel('Assets')    
+        plt.xlabel('Time', fontsize=16)    
+        plt.ylabel('Assets', fontsize=16)    
              
         ##########################################    
         # Income Over the Live Cycle    
@@ -1625,113 +1630,101 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         inc_women = pd.read_csv("income_women.csv")   
          
          
-        fig = plt.figure()    
+        fig = plt.figure()   
+        
         f3=fig.add_subplot(2,1,1)    
          
         lend=len(inc_men['earn_age']) 
         agea=np.array(range(lend))+20 
-        plt.plot(agea, inc_men['earn_age'], marker='o',color=print(3/len(state_codes)),markersize=6, label='Men Data') 
-        plt.plot(agea, inc_women['earn_age'], marker='o',color=print(2/len(state_codes)),markersize=6, label='Women Data') 
-        plt.plot(agea, log_inc_rel[0,mdl.setup.pars['Tbef']:lend+mdl.setup.pars['Tbef']],color=print(2/len(state_codes)),markersize=6, label='Women Simulation') 
-        plt.plot(agea, log_inc_rel[1,mdl.setup.pars['Tbef']:lend+mdl.setup.pars['Tbef']],color=print(3/len(state_codes)),markersize=6, label='Men Simulation') 
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
-                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
+        
+        plt.plot(agea, inc_men['earn_age'],color='b',markersize=6, label='Men Data') 
+        plt.plot(agea, inc_women['earn_age'],color='k',markersize=6, label='Women Data') 
+        plt.plot(agea, log_inc_rel[0,mdl.setup.pars['Tbef']:lend+mdl.setup.pars['Tbef']],linestyle='--',color='m',markersize=6, label='Women Simulation') 
+        plt.plot(agea, log_inc_rel[1,mdl.setup.pars['Tbef']:lend+mdl.setup.pars['Tbef']],linestyle='--',color='r',markersize=6, label='Men Simulation') 
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.30),    
+                  fancybox=True, shadow=True, ncol=2, fontsize='x-small')    
         plt.xlabel('Age')    
-        plt.ylabel('Income')  
-                     
+        plt.ylabel('Log Wages')  
+       
+        plt.savefig('datasimwage.pgf', bbox_inches = 'tight',pad_inches = 0) 
          
         ##########################################    
         # More on Income 
         ##########################################  
          
- 
-         
+
         fig = plt.figure()    
-        f3=fig.add_subplot(2,1,1)    
+        f3=fig.add_subplot(1.5,1,1)    
          
         lend=len(wage_fs) 
         agea=np.array(range(lend))+20 
-        
-        plt.plot(agea, wage_fs, marker='o',color='g',markersize=3, label='Women single') 
-        plt.plot(agea, wage_ms, marker='o',color='y',markersize=3, label='Men single') 
-        plt.plot(agea, wage_fc,color='r',markersize=3, label='Women coh') 
-        plt.plot(agea, wage_mc,color='b',markersize=3, label='Men coh') 
-        plt.plot(agea, wage_fm,color='m',markersize=3, label='Women mar') 
-        plt.plot(agea, wage_mm,color='k',markersize=3, label='Men mar') 
-        plt.plot(agea, wage_fpc,linestyle='--',color='r',markersize=3, label='Women coh-o') 
-        plt.plot(agea, wage_mpc,linestyle='--',color='b',markersize=3, label='Men coh-o') 
-        plt.plot(agea, wage_fpm,linestyle='--',color='m',markersize=3, label='Women mar-o') 
-        plt.plot(agea, wage_mpm,linestyle='--',color='k',markersize=3, label='Men mar-o') 
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
-                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
-        plt.xlabel('Age')    
-        plt.ylabel('Log Income')  
+               
+        plt.plot(agea[5:60], wage_fm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],color='b',markersize=3, label='Women (main person)') 
+        plt.plot(agea[5:60], wage_mm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],color='k',markersize=3, label='Men (main person)') 
+        plt.plot(agea[5:60], wage_fpm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],linestyle='--',color='r',markersize=3, label='Women (met person)') 
+        plt.plot(agea[5:60], wage_mpm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],linestyle='--',color='m',markersize=3, label='Men (met person)') 
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
+                  fancybox=True, shadow=True, ncol=2, fontsize=14)    
+        plt.xlabel('Age', fontsize=16)    
+        plt.ylabel('Average Log Wage', fontsize=16)
+        plt.savefig('sy_minc.pgf', bbox_inches = 'tight',pad_inches = 0)  
          
         ##########################################    
         # Variance Income 
         ##########################################         
         fig = plt.figure()    
-        f3=fig.add_subplot(2,1,1)    
+        f3=fig.add_subplot(1.5,1,1)    
          
         lend=len(wage_fs) 
         agea=np.array(range(lend))+20 
         
-        plt.plot(agea, var_wage_fc,color='r',markersize=3, label='Women coh') 
-        plt.plot(agea, var_wage_mc,color='b',markersize=3, label='Men coh') 
-        plt.plot(agea, var_wage_fm,color='m',markersize=3, label='Women mar') 
-        plt.plot(agea, var_wage_mm,color='k',markersize=3, label='Men mar') 
-        plt.plot(agea, var_wage_fpc,linestyle='--',color='r',markersize=3, label='Women coh-o') 
-        plt.plot(agea, var_wage_mpc,linestyle='--',color='b',markersize=3, label='Men coh-o') 
-        plt.plot(agea, var_wage_fpm,linestyle='--',color='m',markersize=3, label='Women mar-o') 
-        plt.plot(agea, var_wage_mpm,linestyle='--',color='k',markersize=3, label='Men mar-o') 
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
-                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
-        plt.xlabel('Age')    
-        plt.ylabel('Log Income Variance')  
+        plt.plot(agea[5:60], var_wage_fm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],color='b',markersize=3, label='Women (main person)') 
+        plt.plot(agea[5:60], var_wage_mm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],color='k',markersize=3, label='Men (main person)') 
+        plt.plot(agea[5:60], var_wage_fpm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],linestyle='--',color='r',markersize=3, label='Women (met person)') 
+        plt.plot(agea[5:60], var_wage_mpm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],linestyle='--',color='m',markersize=3, label='Men (met person)') 
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
+                  fancybox=True, shadow=True, ncol=2, fontsize=14)    
+        plt.xlabel('Age', fontsize=16)    
+        plt.ylabel('Log Wage Variance', fontsize=16)  
+        plt.savefig('sy_vinc.pgf', bbox_inches = 'tight',pad_inches = 0)
          
         ##########################################    
         # Level Assets Assets 
         ##########################################         
         fig = plt.figure()    
-        f3=fig.add_subplot(2,1,1)    
+        f3=fig.add_subplot(1.5,1,1)    
          
         lend=len(wage_fs) 
         agea=np.array(range(lend))+20 
         
-        plt.plot(agea, assets_fc,color='r',markersize=3, label='Women coh') 
-        plt.plot(agea, assets_mc,color='b',markersize=3, label='Men coh') 
-        plt.plot(agea, assets_fm,color='m',markersize=3, label='Women mar') 
-        plt.plot(agea, assets_mm,color='k',markersize=3, label='Men mar') 
-        plt.plot(agea, assets_fpc,linestyle='--',color='r',markersize=3, label='Women coh-o') 
-        plt.plot(agea, assets_mpc,linestyle='--',color='b',markersize=3, label='Men coh-o') 
-        plt.plot(agea, assets_fpm,linestyle='--',color='m',markersize=3, label='Women mar-o') 
-        plt.plot(agea, assets_mpm,linestyle='--',color='k',markersize=3, label='Men mar-o') 
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
-                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
-        plt.xlabel('Age')    
-        plt.ylabel('Asset level first meeting')  
+        plt.plot(agea[5:60], assets_fm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],color='b',markersize=3, label='Women (main person)') 
+        plt.plot(agea[5:60], assets_mm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],color='k',markersize=3, label='Men (main person)') 
+        plt.plot(agea[5:60], assets_fpm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],linestyle='--',color='r',markersize=3, label='Women (met person)') 
+        plt.plot(agea[5:60], assets_mpm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],linestyle='--',color='m',markersize=3, label='Men (met person)') 
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
+                  fancybox=True, shadow=True, ncol=2, fontsize=14)    
+        plt.xlabel('Age', fontsize=16)    
+        plt.ylabel('Average Assets', fontsize=16)  
+        plt.savefig('sy_mass.pgf', bbox_inches = 'tight',pad_inches = 0)
          
         ##########################################    
         # Variance Assets first meeting 
         ##########################################         
         fig = plt.figure()    
-        f3=fig.add_subplot(2,1,1)    
+        f3=fig.add_subplot(1.5,1,1)    
          
         lend=len(wage_fs) 
         agea=np.array(range(lend))+20 
         
-        plt.plot(agea, var_assets_fc,color='r',markersize=3, label='Women coh') 
-        plt.plot(agea, var_assets_mc,color='b',markersize=3, label='Men coh') 
-        plt.plot(agea, var_assets_fm,color='m',markersize=3, label='Women mar') 
-        plt.plot(agea, var_assets_mm,color='k',markersize=3, label='Men mar') 
-        plt.plot(agea, var_assets_fpc,linestyle='--',color='r',markersize=3, label='Women coh-o') 
-        plt.plot(agea, var_assets_mpc,linestyle='--',color='b',markersize=3, label='Men coh-o') 
-        plt.plot(agea, var_assets_fpm,linestyle='--',color='m',markersize=3, label='Women mar-o') 
-        plt.plot(agea, var_assets_mpm,linestyle='--',color='k',markersize=3, label='Men mar-o') 
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
-                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
+        plt.plot(agea[5:60], var_assets_fm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],color='b',markersize=3, label='Women (main person)') 
+        plt.plot(agea[5:60], var_assets_mm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],color='k',markersize=3, label='Men (main person)') 
+        plt.plot(agea[5:60], var_assets_fpm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],linestyle='--',color='r',markersize=3, label='Women (met person)') 
+        plt.plot(agea[5:60], var_assets_mpm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],linestyle='--',color='m',markersize=3, label='Men (met person)') 
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
+                  fancybox=True, shadow=True, ncol=2, fontsize=14)    
         plt.xlabel('Age')    
         plt.ylabel('Asset Variance first meeting')  
+        plt.savefig('sy_vass.pgf', bbox_inches = 'tight',pad_inches = 0)
          
         ##########################################    
         # Correlation Assets at Breack up 
@@ -1804,7 +1797,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.fill_between(xa, coh_i[0,0:lg], coh_i[1,0:lg],alpha=0.2,facecolor='r')    
         plt.plot(xa, reltt[3,0:lg]/N,'r',linestyle='--',linewidth=1.5, label='Cohabiting - S')    
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
-                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
+                  fancybox=True, shadow=True, ncol=2, fontsize='x-small')    
         plt.ylim(ymax=1.0)    
         plt.xlabel('Age')    
         plt.ylabel('Share')    
@@ -1833,13 +1826,14 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
          
         sns.kdeplot(psis[state_w==3], shade=True,shade_lowest=False,linewidth=0.01, color="r", bw=.05,label = 'Cohabitaition') 
         sns.kdeplot(psis[state_w==2], shade=True,shade_lowest=False,linewidth=0.01, color="b", bw=.05,label = 'Marriage') 
-        sns.kdeplot(psis[changec], color="r", bw=.05,label = 'Cohabitaition Beg') 
-        sns.kdeplot(psis[changem], color="b", bw=.05,label = 'Marriage Beg')   
+        sns.kdeplot(psis[changec], color="r", bw=.05,label = 'Cohabitaition at Meeting') 
+        sns.kdeplot(psis[changem], color="b", bw=.05,label = 'Marriage at Meeting')   
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
         plt.xlabel('Love Shock')    
         plt.ylabel('Denisty')  
-         
+       
+        
         ##########################################    
         # Distribution of Love - Cumulative 
         ##########################################   
@@ -1861,7 +1855,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.plot(basem[:-1], cumulativem/max(cumulativem), c='blue',label = 'Marriage') 
         #plt.plot(basect[:-1], cumulativect/max(cumulativect),linestyle='--', c='red',label = 'Cohabitaition-All') 
         #plt.plot(basemt[:-1], cumulativemt/max(cumulativemt),linestyle='--', c='blue',label = 'Marriage-All') 
-        plt.legend(loc='best', ncol=1, fontsize='x-small')    
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
+                  fancybox=True, shadow=True, ncol=2, fontsize='x-small')     
         plt.xlabel('Love Shock $\psi$')    
         plt.ylabel('Probability')  
         plt.savefig('psidist.pgf', bbox_inches = 'tight',pad_inches = 0)  
@@ -1885,7 +1880,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         # plot the cumulative function 
         plt.plot(basec[:-1], cumulativec/max(cumulativec), c='red',label = 'Bilateral') 
         plt.plot(basem[:-1], cumulativem/max(cumulativem), c='blue',label = 'Unilateral') 
-        plt.legend(loc='best', ncol=1, fontsize='x-small')    
+        plt.legend(loc='upper center', ncol=2, fontsize='x-small')    
         plt.xlabel('Love Shock $\psi$')    
         plt.ylabel('Probability')  
         plt.savefig('psipol.pgf', bbox_inches = 'tight',pad_inches = 0)  
@@ -1899,79 +1894,93 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
          
         sns.kdeplot(theta_w[state_w==3], shade=True,shade_lowest=False,linewidth=0.01, color="r", bw=.05,label = 'Cohabitaition') 
         sns.kdeplot(theta_w[state_w==2], shade=True,shade_lowest=False,linewidth=0.01, color="b", bw=.05,label = 'Marriage') 
-        sns.kdeplot(theta_w[changec], color="r", bw=.05,label = 'Cohabitaition Beg') 
-        sns.kdeplot(theta_w[changem], color="b", bw=.05,label = 'Marriage Beg')  
+        sns.kdeplot(theta_w[changec], color="r", bw=.05,label = 'Cohabitaition at Meeting') 
+        sns.kdeplot(theta_w[changem], color="b", bw=.05,label = 'Marriage at Meeting')  
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
-                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
+                  fancybox=True, shadow=True, ncol=2, fontsize='x-small')    
         plt.xlabel('Female Pareto Weight')    
         plt.ylabel('Denisty')  
-         
+        plt.savefig('thtdist.pgf', bbox_inches = 'tight',pad_inches = 0) 
          
          
         ##########################################    
         # Event Study Love Shock 
         ##########################################   
         fig = plt.figure()    
-        f6=fig.add_subplot(2,1,1) 
+        f6=fig.add_subplot(1.5,1,1) 
          
-        plt.plot(eventgrid, event_psic,color='r', label='Cohabitation') 
-        plt.plot(eventgrid, event_psim,color='b', label='Marriage') 
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
+        plt.plot(eventgrid, event_psic,color='r',linestyle='-',  marker='+', label='Cohabitation') 
+        plt.plot(eventgrid, event_psim,color='b',linestyle='--', marker='x', label='Marriage') 
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
-        plt.xlabel('Time Event Unilateral Divorce')    
-        plt.ylabel('Love Shock')  
+        plt.xlabel('Event time (Model Years)')    
+        plt.ylabel('Love Shock $\psi$')  
         plt.savefig('psiuni.pgf', bbox_inches = 'tight',pad_inches = 0)  
          
         fig = plt.figure()    
-        f6=fig.add_subplot(2,1,1) 
+        f6=fig.add_subplot(1.5,1,1) 
          
-        plt.plot(eventgrid, pevent_psi_coh,color='r', label='Cohabitation') 
-        plt.plot(eventgrid, pevent_psi_mar,color='b', label='Marriage') 
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
-                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
-        plt.xlabel('Time Event Unilateral Divorce')    
-        plt.ylabel('Love Shock-Coefficient') 
+        plt.plot(eventgrid2, pevent_psi_coh,color='r',linestyle='-',  marker='+', label='Cohabitation') 
+        plt.plot(eventgrid2, pevent_psi_mar,color='b',linestyle='--', marker='x', label='Marriage') 
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
+                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize=16)    
+        plt.xlabel('Event time (Model Years)', fontsize=16)    
+        plt.ylabel('$\psi$---Variation from Baseline', fontsize=16) 
+        plt.savefig('e_psi.pgf', bbox_inches = 'tight',pad_inches = 0)  
          
         ##########################################    
         # Event Study Pareto Weight 
         ##########################################   
         fig = plt.figure()    
-        f6=fig.add_subplot(2,1,1) 
+        f6=fig.add_subplot(1.5,1,1) 
          
-        plt.plot(eventgrid, event_thetac,color='r', label='Cohabitation') 
-        plt.plot(eventgrid, event_thetam,color='b', label='Marriage') 
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
+        plt.plot(eventgrid, event_thetac,color='r',linestyle='-',  marker='+', label='Cohabitation') 
+        plt.plot(eventgrid, event_thetam,color='b',linestyle='--', marker='x', label='Marriage') 
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
         plt.xlabel('Time Event Unilateral Divorce')    
-        plt.ylabel('Female Pareto weight')  
+        plt.ylabel(r'$\theta$ ')  
         plt.savefig('weight.pgf', bbox_inches = 'tight',pad_inches = 0)  
          
         fig = plt.figure()    
-        f6=fig.add_subplot(2,1,1) 
+        f6=fig.add_subplot(1.5,1,1) 
          
-        plt.plot(eventgrid, pevent_theta_coh,color='r', label='Cohabitation') 
-        plt.plot(eventgrid, pevent_theta_mar,color='b', label='Marriage') 
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
-                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
-        plt.xlabel('Time Event Unilateral Divorce')    
-        plt.ylabel('Female Pareto weight-Coefficient')  
+        plt.plot(eventgrid2, pevent_theta_coh,color='r',linestyle='-',  marker='+', label='Cohabitation') 
+        plt.plot(eventgrid2, pevent_theta_mar,color='b',linestyle='--', marker='x', label='Marriage') 
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
+                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize=16)    
+        plt.xlabel('Event time (Model Years)', fontsize=16)    
+        plt.ylabel(r'$\theta$---Variation from Baseline', fontsize=16)  
+        plt.savefig('e_theta.pgf', bbox_inches = 'tight',pad_inches = 0)  
         
         ##########################################    
         # Event Study flp
         ##########################################   
         fig = plt.figure()    
-        f6=fig.add_subplot(2,1,1) 
+        f6=fig.add_subplot(1.5,1,1) 
          
-        plt.plot(eventgrid, event_laborc,color='r', label='Cohabitation') 
-        plt.plot(eventgrid, event_laborm,color='b', label='Marriage') 
-        plt.plot(eventgrid, event_labor,color='k', label='Cohabitation') 
+        plt.plot(eventgrid, event_laborc,color='r',linestyle='-',  marker='+',label='Cohabitation') 
+        plt.plot(eventgrid, event_laborm,color='b',linestyle='--', marker='x', label='Marriage') 
+        plt.plot(eventgrid, event_labor,color='k',linestyle=':', marker='1', label='Marriage+Cohabitation') 
 
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
-        plt.xlabel('Time Event Unilateral Divorce')    
+        plt.xlabel('Event Time (Model Years)')    
         plt.ylabel('FLP')  
-        plt.savefig('fls.pgf', bbox_inches = 'tight',pad_inches = 0)  
+        plt.savefig('fls.pgf', bbox_inches = 'tight',pad_inches = 0) 
+        
+        fig = plt.figure()    
+        f6=fig.add_subplot(1.5,1,1) 
          
+        plt.plot(eventgrid2[:-2], pevent_lc[:-2],color='r',linestyle='-',  marker='+',label='Cohabitation') 
+        plt.plot(eventgrid2[:-2], pevent_lm[:-2],color='b',linestyle='--', marker='x', label='Marriage') 
+        plt.plot(eventgrid2[:-2], pevent_lt[:-2],color='k',linestyle=':', marker='1', label='Marriage+Cohabitation') 
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
+                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize=16)    
+        plt.xlabel('Time Event (Model Years)', fontsize=16)    
+        plt.ylabel('FLP---Variation from Baseline', fontsize=16)  
+        plt.savefig('e_flp.pgf', bbox_inches = 'tight',pad_inches = 0)  
+        
       
    
         ##########################################    
@@ -1999,26 +2008,12 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         f6=fig.add_subplot(2,1,1) 
          
  
-        plt.plot(eventgrid, pevent_mar,color='b', label='Event Study Unid') 
+        plt.plot(eventgrid2, pevent_mar,color='b',linestyle='--', label='Event Study Unid') 
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
-        plt.xlabel('Time Event')    
-        plt.ylabel('Marriage-Coefficient')  
+        plt.xlabel('Event Time (Model Years)')    
+        plt.ylabel('Share Married')  
     
-        ########################################## 
-        #Event Study flp
-        ########################################## 
-        fig = plt.figure()    
-        f6=fig.add_subplot(2,1,1) 
-         
- 
-        plt.plot(eventgrid, pevent_lc,color='b', label='Event Study Unid C') 
-        plt.plot(eventgrid, pevent_lm,color='r', label='Event Study Unid M') 
-        plt.plot(eventgrid, pevent_lt,color='k', label='Event Study Unid total') 
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
-                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
-        plt.xlabel('Time Event')    
-        plt.ylabel('Coefficient')  
           
         ##########################################    
         # FLS: Marriage vs. cohabitation  

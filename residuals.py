@@ -60,12 +60,12 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
         ulost = 0.0
         
     try:
-        alost = params.pop('alost')
+        akept = params.pop('akept')
     except:
-        alost = 0.0
+        akept = 0.0
     
     # this is for the default model
-    dc = DivorceCosts(unilateral_divorce=False,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)
+    dc = DivorceCosts(unilateral_divorce=False,assets_kept = akept,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)
     sc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.00,u_lost_f=0.00,eq_split=0.0)
     
     
@@ -109,8 +109,8 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
             
         else:
             # specify the changes here manually
-            dc_before = DivorceCosts(unilateral_divorce=False,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)
-            dc_after  = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)
+            dc_before = DivorceCosts(unilateral_divorce=False,assets_kept = akept,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)
+            dc_after  = DivorceCosts(unilateral_divorce=True,assets_kept = akept,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)
             
             
             
@@ -202,7 +202,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
         
    
     #Get Number of simulated agent, malea and female
-    N=150000
+    N=15000
     Nf=int(N*age_uni['share_female'])
     Nm=N-Nf
     agents_fem = Agents( mdl_list ,age_uni['female'],female=True,pswitchlist=transition_matricesf,verbose=False,N=Nf,draw=draw)

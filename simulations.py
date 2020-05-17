@@ -493,8 +493,8 @@ class Agents:
                         share_f, share_m = costs.shares_if_split(income_share_fem)
                         
                         #Uncomment bnelowe if ren_theta
-                        share_f = costs.shares_if_split_theta(self.setup,self.setup.thetagrid[self.setup.v_thetagrid_fine.i[itht]+1])[i_div]
-                        share_m=1-share_f
+                        share_f1 ,share_m1= costs.shares_if_split_theta(self.setup,self.setup.thetagrid[self.setup.v_thetagrid_fine.i[itht]],costs)
+                        share_f,share_m=share_f1[i_div],share_m1[i_div]
                       
                         #sf = share_f[i_div]*sc[i_div]
                         #assert np.all(share_f[i_div]>=0) and np.all(share_f[i_div]<=1)
@@ -505,11 +505,11 @@ class Agents:
                         sm = share_m*sc[i_div]
                         
                         s = sf if self.female else sm
-                        shks = 1-self.shocks_div_a[ind[i_div],t]
+                        shks = self.shocks_div_a[ind[i_div],t]
 
                         # if bribing happens we overwrite this
                         self.iassets[ind[i_div],t+1] = VecOnGrid(self.Mlist[ipol].setup.agrid_s,s).roll(shocks=shks)
-                        
+                        #if sname == "Couple, C":print(np.mean(share_f),np.mean(share_m),np.mean(self.setup.thetagrid[self.setup.v_thetagrid_fine.i[itht]][i_div]))
                         
                         if bil_bribing:
                             
@@ -521,18 +521,18 @@ class Agents:
                             assert np.all(iassets_ifdiv[do_b] >= 0)
                             
                             if np.any(do_b):
-                                #n_b = np.sum(do_b)
-                                #n_tot = np.sum(i_div)
-                                #share_b = int(100*n_b/n_tot)
+                                n_b = np.sum(do_b)
+                                n_tot = np.sum(i_div)
+                                share_b = int(100*n_b/n_tot)
                                 #print('bribing happens in {} cases, that is {}% of all divorces'.format(n_b,share_b))
                                 self.iassets[ind[i_div][do_b],t+1] = iassets_ifdiv[do_b]
                                 
-                                #print(np.mean(agrid[isc[i_div][do_b]]/(agrids[decision['Bribing'][1][isc[i_div][do_b],iall[i_div][do_b],itht[i_div][do_b]]]+
-                                 #                                      agrids[decision['Bribing'][2][isc[i_div][do_b],iall[i_div][do_b],itht[i_div][do_b]]])))
+                                #print(np.mean(agrid[isc[i_div][do_b]]*costs.assets_kept/(agrid[decision['Bribing'][1][isc[i_div][do_b],iall[i_div][do_b],itht[i_div][do_b]]]+
+                                                              #         agrid[decision['Bribing'][2][isc[i_div][do_b],iall[i_div][do_b],itht[i_div][do_b]]])))
                                 
-                                #aaa=self.Mlist[ipol].setup.agrid_c[self.iassets[ind[i_div][do_b],t+1]]/(self.Mlist[ipol].setup.agrid_c[self.iassetss[ind[i_div][do_b],t+1]])
-                                #aaa1=(self.Mlist[ipol].setup.agrid_c[self.iassetss[ind[i_div][do_b],t+1]]>0) 
-                                #if sname == "Couple, M":print(np.mean(aaa[aaa1]))
+                    #            aaa=self.Mlist[ipol].setup.agrid_c[self.iassets[ind[i_div][do_b],t+1]]/(self.Mlist[ipol].setup.agrid_c[self.iassetss[ind[i_div][do_b],t+1]])
+                     #           aaa1=(self.Mlist[ipol].setup.agrid_c[self.iassetss[ind[i_div][do_b],t+1]]>0) 
+                      #          if sname == "Couple, M":print(np.mean(aaa[aaa1]))
                          
                                 
                         

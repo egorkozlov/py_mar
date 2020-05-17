@@ -781,14 +781,15 @@ class DivorceCosts(object):
         return share_f, share_m
     
     
-    def shares_if_split_theta(self,setup,theta):
+    def shares_if_split_theta(self,setup,theta,dc):
         
         #First build the title based sharing rule
-        sharef=setup.c_mult(theta)[0]
-        shf=(0.5*self.eq_split + sharef*(1-self.eq_split))
-        share_f = self.assets_kept*shf
+        sharef=theta#setup.c_mult(theta)[0]
+        shf=(0.5*dc.eq_split + sharef*(1-dc.eq_split))
+        share_f = dc.assets_kept*shf
+        share_m=dc.assets_kept*(1-shf)
         
-        return share_f
+        return share_f,share_m
        
         
 def tauchen_drift(z_now,z_next,rho,sigma,mu):

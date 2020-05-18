@@ -52,8 +52,8 @@ class ModelSetup(object):
         p['dump_factor_z'] = 0.85#0.82
         p['mean_partner_z_female'] = 0.02#+0.03
         p['mean_partner_z_male'] =  -0.02#-0.03
-        p['mean_partner_a_female'] = 0.2#0.1
-        p['mean_partner_a_male'] = -0.2#-0.1
+        p['mean_partner_a_female'] = 0.5#0.1
+        p['mean_partner_a_male'] = -0.5#-0.1
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
         

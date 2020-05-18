@@ -54,7 +54,7 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
     vf_n, vm_n = v_div_vartheta(
         setup, dc, t, sc,
         V['Male, single']['V'], V['Female, single']['V'],
-        izf, izm, cost_fem=dc.money_lost_f, cost_mal=dc.money_lost_m, fun=thetafun)
+        izf, izm, cost_fem=dc.assets_kept, cost_mal=dc.assets_kept, fun=thetafun)
     
     assert vf_n.dtype == setup.dtype
     

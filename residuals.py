@@ -64,6 +64,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     except:
         akept = 0.0
     
+  
     # this is for the default model
     dc = DivorceCosts(unilateral_divorce=False,assets_kept = akept,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)
     sc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.00,u_lost_f=0.00,eq_split=0.0)
@@ -262,9 +263,9 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
   
  
     
-    if verbose:
-        print('data moments are {}'.format(dat))
-        print('simulated moments are {}'.format(sim))
+    #if verbose:
+    print('data moments are {}'.format(dat))
+    print('simulated moments are {}'.format(sim))
     
     resid_all = np.array([x if (not np.isnan(x) and not np.isinf(x)) else 1e6 for x in res_all])
     

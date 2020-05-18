@@ -60,7 +60,7 @@ def v_ren_uni(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
     vf_n, vm_n = v_div_byshare(
         setup, dc, t, sc, share_f, share_m,
         V['Male, single']['V'], V['Female, single']['V'],
-        izf, izm, cost_fem=dc.money_lost_f, cost_mal=dc.money_lost_m)
+        izf, izm, cost_fem=dc.assets_kept, cost_mal=dc.assets_kept)
     
     
     assert vf_n.dtype == vm_n.dtype
@@ -175,8 +175,8 @@ def v_div_allsplits(setup,dc,t,sc,Vmale,Vfemale,izm,izf,
     
     # find utilities of divorce for different divisions of assets
     for i, shr in enumerate(shrs):
-        sv_m = VecOnGrid(setup.agrid_s,shr*sc - cost_mal)
-        sv_f = VecOnGrid(setup.agrid_s,shr*sc - cost_fem)
+        sv_m = VecOnGrid(setup.agrid_s,shr*sc*cost_mal)
+        sv_f = VecOnGrid(setup.agrid_s,shr*sc*cost_fem)
         
         Vm_divorce_M[...,i] = sv_m.apply(Vmale,    axis=0,take=(1,izm),reshape_i=True) - dc.u_lost_m
         Vf_divorce_M[...,i] = sv_f.apply(Vfemale,  axis=0,take=(1,izf),reshape_i=True) - dc.u_lost_f

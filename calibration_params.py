@@ -18,17 +18,30 @@ def calibration_params(xin=None,xfix=None):
     # just in case...
     
     params = OrderedDict(
-              akept=(0.19, 0.80, 0.1),
+              akept=(0.7, 0.95, 0.1),
               sigma_psi=(0.03, 0.9, 0.01),#sigma_psi=(0.005, 0.8, 0.01),
-              sigma_psi_mult=(1.10, 3.12, 0.2),#sigma_psi_mult=(0.5, 5.0, 0.02),
-              pmeet=(0.23, 0.64, 0.01),#pmeet=(0.1, 1.0, 0.7),
-              util_alp=(0.554, 0.856, 0.01),#util_alp=(0.01, 0.4, 0.25),
-              u_shift_mar = (0.0110, 0.0251, 0.001),#u_shift_mar = (0.0, 0.5, 0.0001),
+              sigma_psi_mult=(1.10, 4.12, 0.2),#sigma_psi_mult=(0.5, 5.0, 0.02),
+              pmeet=(0.13, 0.64, 0.01),#pmeet=(0.1, 1.0, 0.7),
+              util_alp=(0.3504, 0.856, 0.01),#util_alp=(0.01, 0.4, 0.25),
+              u_shift_mar = (0.0110, 0.0351, 0.001),#u_shift_mar = (0.0, 0.5, 0.0001),
               z_drift = (-0.129, -0.04, -0.001),#z_drift = (-0.3, 0.0, -0.1)
               util_xi=(1.01, 1.4, 0.001)
                         )
-             
-    
+                        
+    #params = OrderedDict(
+     #         akept=(0.907274, 0.907276, 0.1),
+      #        sigma_psi=(0.671454, 0.671456, 0.01),#sigma_psi=(0.005, 0.8, 0.01),
+       #       sigma_psi_mult=(1.6691, 1.6693, 0.2),#sigma_psi_mult=(0.5, 5.0, 0.02),
+        #      pmeet=(0.25998, 0.26, 0.01),#pmeet=(0.1, 1.0, 0.7),
+         #     util_alp=(0.606655, 0.606657, 0.01),#util_alp=(0.01, 0.4, 0.25),
+          #    u_shift_mar = (0.0212377, 0.0212379, 0.001),#u_shift_mar = (0.0, 0.5, 0.0001),
+           #   z_drift = (-0.0506905,-0.0506903, -0.001),#z_drift = (-0.3, 0.0, -0.1)
+            #  util_xi=(1.07131,1.07133, 0.001)
+             #           )
+                
+                
+                        
+   
     # update params is some dict with values was supplied
     if xin is not None:
         assert type(xin) is dict
@@ -59,7 +72,7 @@ def calibration_params(xin=None,xfix=None):
         ub_here = params[x][1]
         x_here = params[x][2]
         
-        if np.abs(ub_here - lb_here) < 1e-4: # if ub and lb are equal
+        if np.abs(ub_here - lb_here) < 1e-8: # if ub and lb are equal
             assert lb_here <= x_here <= ub_here
             keys_fixed.append(x)
             x_fixed.append(x_here)

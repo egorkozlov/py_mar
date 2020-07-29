@@ -1492,7 +1492,10 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
             print('The max level of assets for couples is {:.2f}, the grid upper bound is {:.2f}'.format(np.amax(assets_t[cond]),max(mdl.setup.agrid_c)))    
              
         #Setup a file for the graphs    
-        pdf = matplotlib.backends.backend_pdf.PdfPages("moments_graphs.pdf")    
+        import time
+        timestr = time.strftime("%H%M%S")
+        
+        pdf = matplotlib.backends.backend_pdf.PdfPages("moments"+timestr+"_graphs.pdf")    
              
         #################    
         #Get data moments    

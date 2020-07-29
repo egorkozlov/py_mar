@@ -638,7 +638,7 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
         W_in=np.zeros((dim,dim))   
         for i in range(dim):   
             for j in range(dim):   
-                W_in[i,j]=(1/(boot-1))*np.cov(col[i,:],col[j,:])[0][1]   
+                W_in[i,j]=np.cov(col[i,:],col[j,:])[0][1]   
                  
         if not covariances:   
             W_in = np.diag(np.diag(W_in))   
@@ -647,7 +647,7 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
         W=np.linalg.inv(W_in)   
            
         # normalize   
-        W = W/W.sum()   
+        #W = W/W.sum()   
           
     elif relative:  
           

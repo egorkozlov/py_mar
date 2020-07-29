@@ -9,6 +9,7 @@ import numpy as np
 from rw_approximations import rouw_nonst, normcdf_tr,tauchen_nonst
 from mc_tools import combine_matrices_two_lists, int_prob,cut_matrix
 from scipy.stats import norm
+from scipy import optimize
 from collections import namedtuple
 from gridvec import VecOnGrid
 
@@ -34,10 +35,11 @@ class ModelSetup(object):
         p['Tbef'] = Tbef
         p['sig_zf_0']  = 0.5449176#0.4096**(0.5)
         p['sig_zf']    = .0272437**(0.5)#0.0399528**(0.5)
-        p['n_zf_t']      = [5]*Tret + [1]*(T-Tret)
         p['sig_zm_0']  = 0.54896510#.405769**(0.5)
         p['sig_zm']    = .025014**(0.5)#0.0417483**(0.5)
-        p['n_zm_t']      = [5]*Tret + [1]*(T-Tret)
+        p['n_zf_t']      = [6]*Tret + [6]*(T-Tret)
+        p['n_zm_t']      = [3]*Tret + [3]*(T-Tret)
+        p['n_zf_correct']=3
         p['sigma_psi_mult'] = 0.28
         p['sigma_psi']   = 0.11
         p['n_psi_t']     = [11]*T
@@ -174,10 +176,59 @@ class ModelSetup(object):
             # FIXME: this uses number of points from 0th entry. 
             # in principle we can generalize this
             
-            p['n_zf_t']      = [5]*Tret + [5]*(T-Tret)
-            p['n_zm_t']      = [5]*Tret + [5]*(T-Tret)
-            exogrid['zf_t'],  exogrid['zf_t_mat'] = rouw_nonst(p['T'],p['sig_zf']*period_year**0.5,p['sig_zf_0'],p['n_zf_t'][0])
-            exogrid['zm_t'],  exogrid['zm_t_mat'] = rouw_nonst(p['T'],p['sig_zm']*period_year**0.5,p['sig_zm_0'],p['n_zm_t'][0])
+            exogrid['zf_t'],  exogrid['zf_t_mat'],zft,zftmat,exogrid['zm_t'],  exogrid['zm_t_mat']=dict(),dict(),dict(),dict(),dict(),dict()
+            zft,       zftmat                    = rouw_nonst(p['T'],p['sig_zf']*period_year**0.5,p['sig_zf_0'],p['n_zf_t'][0]-p['n_zf_correct'])
+            exogrid['zm_t'],  exogrid['zm_t_mat']= rouw_nonst(p['T'],p['sig_zm']*period_year**0.5,p['sig_zm_0'],p['n_zm_t'][0])
+          
+            #Embody the grid for women in a bigger one
+            if p['n_zf_correct']>0:
+
+                exogrid['zf_t']=list()
+                exogrid['zf_t_mat']=list()
+                for t in range(p['T']):
+                    
+                    
+                    #Extend grid
+                    h=zft[t][1]-zft[t][0]
+                    # dist1=zft[t][0]-h
+                    # dist0=zft[t][0]-p['n_zf_correct']*h
+                    dist2=zft[t][0]-h
+                    dist1=zft[t][0]-(p['n_zf_correct']-1)*h
+                    dist0=zft[t][0]-p['n_zf_correct']*h
+                    
+                    #Copy transition matrix
+                    exogrid['zf_t']=exogrid['zf_t']+[np.concatenate((np.array([dist0,dist1,dist2]),zft[t]))]
+                    #exogrid['zf_t']=exogrid['zf_t']+[np.concatenate((np.array([dist0,dist1]),zft[t]))]
+                    #exogrid['zf_t']=exogrid['zf_t']+[np.concatenate((np.array([dist1]),zft[t]))]
+                    exogrid['zf_t_mat']=exogrid['zf_t_mat']+[np.zeros((p['n_zf_t'][t],p['n_zf_t'][t]))]
+                    exogrid['zf_t_mat'][t][p['n_zf_correct']:,p['n_zf_correct']:]=zftmat[t]
+                    
+                    #Shift transition matrix to fill values
+                    if t<p['T']-1:
+                        
+                        exogrid['zf_t_mat'][t][0,:-p['n_zf_correct']]=zftmat[t][0,:]
+                        exogrid['zf_t_mat'][t][1,:-p['n_zf_correct']]=zftmat[t][1,:]
+                        exogrid['zf_t_mat'][t][2,:-p['n_zf_correct']]=zftmat[t][2,:]
+                       
+                            
+                    else:
+                        exogrid['zf_t_mat'][t]=None
+                       
+                    
+            else:    
+
+                exogrid['zf_t']=zft
+                exogrid['zf_t_mat']=zftmat
+
+                    
+                    
+            #Drift the grids
+            for t in range(Tret):
+                exogrid['zf_t'][t]=exogrid['zf_t'][t]
+            for t in range(Tret-2):
+                exogrid['zm_t'][t]=exogrid['zm_t'][t]
+                    
+                    
             
             ################################
             #First mimic US pension system
@@ -254,9 +305,9 @@ class ModelSetup(object):
             #Create a new bad version of transition matrix p(zf_t)
             
             
-            zf_bad = [tauchen_drift(exogrid['zf_t'][t], exogrid['zf_t'][t+1], 
-                                    1.0, p['sig_zf'], p['z_drift'])
-                        for t in range(self.pars['Tret']-1) ]
+            zf_bad = [tauchen_drift(exogrid['zf_t'][t].copy(), exogrid['zf_t'][t+1].copy(), 
+                                                1.0, p['sig_zf'], p['z_drift'], exogrid['zf_t_mat'][t])
+                                    for t in range(self.pars['Tret']-1) ]
             
             #Account for retirement here
             zf_bad = zf_bad+[exogrid['zf_t_mat'][t] for t in range(self.pars['Tret']-1,self.pars['T']-1)]+ [None]
@@ -521,12 +572,12 @@ class ModelSetup(object):
         for iz in range(n_zown):
             p_psi = int_prob(psi_couple,mu=0,sig=sigma_psi_init)
             if female:
-                p_zm  = int_prob(z_partner, mu=setup.pars['dump_factor_z']*z_partner[iz]+
+                p_zm  = int_prob(z_partner, mu=setup.pars['dump_factor_z']*z_own[iz]+
                                   mean+setup.pars['mean_partner_z_female'],sig=(1-setup.pars['dump_factor_z'])**
                                   0.5*sig_z_partner*setup.pars['sig_partner_mult'])
                 p_zf  = zmat_own[iz,:]
             else:
-                p_zf  = int_prob(z_partner, mu=setup.pars['dump_factor_z']*z_partner[iz]+ 
+                p_zf  = int_prob(z_partner, mu=setup.pars['dump_factor_z']*z_own[iz]+ 
                                  mean+setup.pars['mean_partner_z_male'],sig=(1-setup.pars['dump_factor_z'])**
                                  0.5*sig_z_partner*setup.pars['sig_partner_mult'])
                 p_zm  = zmat_own[iz,:]
@@ -792,7 +843,7 @@ class DivorceCosts(object):
         return share_f,share_m
        
         
-def tauchen_drift(z_now,z_next,rho,sigma,mu):
+def tauchen_drift(z_now,z_next,rho,sigma,mu,mat):
     z_now = np.atleast_1d(z_now)
     z_next = np.atleast_1d(z_next)
     if z_next.size == 1:
@@ -804,14 +855,46 @@ def tauchen_drift(z_now,z_next,rho,sigma,mu):
     h_half = d[0]/2
     
     Pi = np.zeros((z_now.size,z_next.size),dtype=z_now.dtype)
+    Pii = np.zeros((z_now.size,z_next.size),dtype=z_now.dtype)
     
     ez = rho*z_now + mu
     
-    Pi[:,0] = normcdf_tr( ( z_next[0] + h_half - ez )/sigma)
-    Pi[:,-1] = 1 - normcdf_tr( (z_next[-1] - h_half - ez ) / sigma )
-    for j in range(1,z_next.size - 1):
-        Pi[:,j] = normcdf_tr( ( z_next[j] + h_half - ez )/sigma) - \
-                    normcdf_tr( ( z_next[j] - h_half - ez )/sigma)
+    
+    def f(x):
+        
+        pi=int_prob(z_next,mu=x,sig=sigma)
+        return np.exp(ez[j])/np.exp(np.sum(z_next*pi))-1.0
+
+    for j in range(z_next.size):
+        Pi[j,:]=int_prob(z_next,mu=ez[j],sig=sigma)
+        if (abs(ez[j]-np.sum(z_next*Pi[j,:]))>0.001):
+            
+            if (f(ez[j]-1.0)>0 and f(ez[j]+1.0)<0):
+                sol = optimize.root_scalar(f, x0=ez[j],bracket=[ez[j]-1.0, ez[j]+1.0], maxiter=200,xtol=0.0001,method='bisect')
+                mu1=sol.root
+            #mu1=rho*z_now[j]+mu-(-ez[j]+np.sum(z_next*Pi[j,:]))
+                Pi[j,:]=int_prob(z_next,mu=mu1,sig=sigma)
+            
+        
+   
+       
+            
+            # if(-mu1+np.sum(z_next*Pi[j,:])<-0.01):
+            #     mu1=mu1-(-mu1+np.sum(z_next*Pi[j,:]))
+            #     Pi[j,:]=int_prob(z_next,mu=mu1,sig=sigma)
+                
+            # if(-mu1+np.sum(z_next*Pi[j,:])>0.01):
+            #     mu2=mu1+(-mu1+np.sum(z_next*Pi[j,:]))
+            #     Pi[j,:]=int_prob(z_next,mu=mu2,sig=sigma)
+        
+
+    
+    # Pi[:,0] = normcdf_tr( ( z_next[0] + h_half - ez )/sigma)
+    # Pi[:,-1] = 1 - normcdf_tr( (z_next[-1] - h_half - ez ) / sigma )
+    # for j in range(1,z_next.size - 1):
+    #     Pi[:,j] = normcdf_tr( ( z_next[j] + h_half - ez )/sigma) - \
+    #         normcdf_tr( ( z_next[j] - h_half - ez )/sigma)
+    #for j in range(z_next.size):print(ez[j],np.sum(z_next*Pi[j,:]))
     return Pi
         
 

@@ -322,9 +322,9 @@
 \definecolor{currentstroke}{rgb}{1.000000,0.000000,0.000000}%
 \pgfsetstrokecolor{currentstroke}%
 \pgfsetdash{{5.550000pt}{2.400000pt}}{0.000000pt}%
-\pgfpathmoveto{\pgfqpoint{0.847861in}{3.471411in}}%
-\pgfpathlineto{\pgfqpoint{2.961497in}{2.534655in}}%
-\pgfpathlineto{\pgfqpoint{5.075133in}{2.594559in}}%
+\pgfpathmoveto{\pgfqpoint{0.847861in}{3.511504in}}%
+\pgfpathlineto{\pgfqpoint{2.961497in}{2.668748in}}%
+\pgfpathlineto{\pgfqpoint{5.075133in}{2.910917in}}%
 \pgfusepath{stroke}%
 \end{pgfscope}%
 \begin{pgfscope}%

@@ -60,7 +60,7 @@ class ModelSetup(object):
         p['pmeet'] = 0.5
         
         p['z_drift'] = -0.09#-0.1
-        
+        p['rho_s']    =  0.0 #correlation in shocks
         
         p['wage_gap'] = 0.6
         p['wret'] = 0.6#0.5
@@ -298,9 +298,7 @@ class ModelSetup(object):
                 
             
             zfzm, zfzmmat = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], exogrid['zf_t_mat'], exogrid['zm_t_mat'])
-            all_t, all_t_mat = combine_matrices_two_lists(zfzm,exogrid['psi_t'],zfzmmat,exogrid['psi_t_mat'])
-            all_t_mat_sparse_T = [sparse.csc_matrix(D.T) if D is not None else None for D in all_t_mat]
-            
+
             
             #Create a new bad version of transition matrix p(zf_t)
             
@@ -314,8 +312,50 @@ class ModelSetup(object):
             
             zf_t_mat_down = zf_bad
             
-            zfzm, zfzmmat = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], zf_t_mat_down, exogrid['zm_t_mat'])
-            all_t_down, all_t_mat_down = combine_matrices_two_lists(zfzm,exogrid['psi_t'],zfzmmat,exogrid['psi_t_mat'])
+            zfzm2, zfzmmat2 = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], zf_t_mat_down, exogrid['zm_t_mat'])
+            
+            if p['rho_s']>0:
+                for t in range(p['Tret']-1):
+                    for j in range(p['n_zm_t'][t]):
+                        for ym in range(p['n_zm_t'][t]):
+                        
+                            
+                            rhom=(1.0-p['rho_s']**2)**0.5
+                            prec=exogrid['zm_t'][t][j] if t>0 else 0.0
+                            drif=p['rho_s']*p['sig_zf']/p['sig_zm']*(exogrid['zm_t'][t+1][ym]-prec)
+                            mat1=tauchen_drift(exogrid['zf_t'][t].copy(), exogrid['zf_t'][t+1].copy(), 1.0, rhom*p['sig_zf'], drif, exogrid['zf_t_mat'][t])
+                            mat2=tauchen_drift(exogrid['zf_t'][t].copy(), exogrid['zf_t'][t+1].copy(), 1.0, rhom*p['sig_zf'], drif+p['z_drift'], exogrid['zf_t_mat'][t])
+                            for i in range(p['n_zf_t'][t]): 
+                        
+                                #Modify the grid for women
+                                exogrid['zf_t_mat2'][t][i,:]= mat1[i,:]
+
+                                exogrid['zf_t_mat2d'][t][i,:]=mat2[i,:]
+                                
+                                ##Update the big Matrix
+                                for yf in range(p['n_zf_t'][t]):
+                                
+                                    
+                                    zfzmmat[t][i*(p['n_zm_t'][t]-1)+j+i,yf*(p['n_zm_t'][t]-1)+ym+yf]=exogrid['zf_t_mat2'][t][i,yf]*exogrid['zm_t_mat'][t][j,ym]
+                                    zfzmmat2[t][i*(p['n_zm_t'][t]-1)+j+i,yf*(p['n_zm_t'][t]-1)+ym+yf]=exogrid['zf_t_mat2d'][t][i,yf]*exogrid['zm_t_mat'][t][j,ym]
+           
+            
+            #Adjust retirement as in Heatcote et al.
+            for t in range(p['Tret'],p['T']):
+                for j in range(len(zfzm[t])):
+                    pref=max(np.exp(zfzm[t][j][0])+np.exp(zfzm[t][j][1]),1.5*max(np.exp(zfzm[t][j][0]),np.exp(zfzm[t][j][1])))
+                    zfzm[t][j][0]=-20.0
+                    zfzm[t][j][1]=np.log(pref)
+                    pref=max(np.exp(zfzm2[t][j][0])+np.exp(zfzm2[t][j][1]),1.5*max(np.exp(zfzm2[t][j][0]),np.exp(zfzm2[t][j][1])))
+                    zfzm2[t][j][0]=-20.0
+                    zfzm2[t][j][1]=np.log(pref)
+            
+            
+            #Put everything together
+            all_t, all_t_mat = combine_matrices_two_lists(zfzm,exogrid['psi_t'],zfzmmat,exogrid['psi_t_mat'])
+            all_t_mat_sparse_T = [sparse.csc_matrix(D.T) if D is not None else None for D in all_t_mat]
+            
+            all_t_down, all_t_mat_down = combine_matrices_two_lists(zfzm2,exogrid['psi_t'],zfzmmat2,exogrid['psi_t_mat'])
             all_t_mat_down_sparse_T = [sparse.csc_matrix(D.T) if D is not None else None for D in all_t_mat_down]
             
             

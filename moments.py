@@ -184,6 +184,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     # 2) Gender 
     #  
     ################################################################### 
+    
+
      
     #Import the distribution from the data 
     with open('freq_nsfh.pkl', 'rb') as file:    
@@ -246,6 +248,55 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         print('The average deviation from actual to final ditribution is {:0.2f}%'.format(np.mean(abs(prima-dopo))*100)) 
     except: 
         print('No stratified sampling') 
+        
+      ###########################################    
+    #Sample selection - get age at censoring   
+    ##########################################  
+    #Build the event matrix 
+    eage_unid_e=np.argmax(changep,axis=1) 
+    enever_e=(changep[:,0]==0) & (eage_unid_e[:]==0) 
+    eage_unid_e[enever_e]=1000 
+    eage_unid_e[changep[:,-1]==0]=1000 
+    eage_unid_e[~enever_e]=eage_unid_e[~enever_e]+18
+    eu=np.repeat(np.expand_dims(eage_unid_e,axis=1),len(changep[0,:]),axis=1)
+    
+    with open('freqj.pkl', 'rb') as file:     
+        freq_rawt=pickle.load(file)     
+             
+    freq_raw=freq_rawt[0]
+    femk=freq_rawt[1]
+    agek=freq_rawt[2]
+    aged=np.ones((state[:,0].shape))    
+        
+     
+    #Get the right category
+    for ii in range(len(freq_raw[:,0])):
+        for j in range(len(freq_raw[0,:])):
+            
+            freq=freq_raw[ii,j]
+            se=femk[ii,j]
+            ag=agek[ii,j]
+            summa=0.0    
+            summa1=0.0    
+            if np.any(np.any(np.where((female==se) & (eu==ag))[0])):
+                start=np.min(np.where((female==se) & (eu==ag))[0])
+              
+                for i in freq:    
+                    summa+=freq[int(i)]   
+                    #print(round((i-18)/mdl.setup.pars['py'],0) ,int(summa1*len(aged[(female==0) & (educ=='e')])/sum(freq.values())),int(summa*len(aged[(female==0) & (educ=='e')])/sum(freq.values())))
+                    aged[start+int(summa1*len(aged[(female[:,0]==se) & (eu[:,0]==ag)])/sum(freq.values())):start+int(summa*len(aged[(female[:,0]==se) & (eu[:,0]==ag)])/sum(freq.values()))]=round((i-18)/mdl.setup.pars['py'],0)    
+                   
+                    summa1+=freq[int(i)]    
+        
+  
+    aged=np.array(aged,dtype=np.int16)  
+    aged=np.reshape(np.repeat(aged,len(state[0,:])),state.shape)
+    #Get if censored
+    agei=np.cumsum(np.ones(aged.shape,dtype=np.int16),axis=1)-1   
+    censored=aged>agei
+    
+  
+
     ###################################################################   
     #Get age we stop observing spells: this matters for hazards 
     ###################################################################   
@@ -281,6 +332,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     is_unid_lim = -1*np.ones((N,nspells),dtype=np.int16)    
     n_spell = -1*np.ones((N,nspells),dtype=np.int16)    
     is_spell = np.zeros((N,nspells),dtype=np.bool)    
+   
        
          
     state_beg[:,0] = 0 # THIS ASSUMES EVERYONE STARTS AS SINGLE   #TODO consistent with men stuff? 
@@ -290,10 +342,14 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     ispell = np.zeros((N,),dtype=np.int8)    
          
     for t in range(1,mdl.setup.pars['T']):    
-        ichange = ((state[:,t-1] != state[:,t]))    
-        sp_length[((~ichange)),ispell[((~ichange))]] += 1    
-        #ichange = ((state[:,t-1] != state[:,t]) & (t<=aged[:,t]))    
-        #sp_length[((~ichange) & (t<=aged[:,t])),ispell[((~ichange) & (t<=aged[:,t]))]] += 1    
+        # ichange = ((state[:,t-1] != state[:,t]))    
+        # sp_length[((~ichange)),ispell[((~ichange))]] += 1    
+ 
+        
+        ichange = ((state[:,t-1] != state[:,t])) & (censored[:,t]==True)
+        ifinish=((~ichange) & (censored[:,t]==False) & (censored[:,t-1]==True))
+        sp_length[((~ichange) & (censored[:,t]==True)),ispell[((~ichange) & (censored[:,t]==True))]] += 1    
+        
              
         if not np.any(ichange): continue    
              

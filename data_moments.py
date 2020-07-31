@@ -407,14 +407,14 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
     #Get age at which unilateral divorced was introduced   
     hi['age_unid']=0.0   
     hi.loc[hi['unil']==0,'age_unid']=1000.0   
-    hi.loc[hi['unil']!=0,'age_unid']=hi['unil']-hi['birth']     
+    hi.loc[hi['unil']!=0,'age_unid']=hi['unil']-hi['birth']
          
        
     #Get age in the second survey   
     date_age=pd.read_csv('age_drop.csv')   
        
     #From hi make '-1' if law changed before the guy starts   
-    hi.loc[hi['age_unid']<0,'age_unid']=-1   
+    hi.loc[hi['age_unid']<18.0,'age_unid']=18.0 
        
        
 
@@ -487,6 +487,20 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
          #   print ("% d : % d"%(key, value))    
            
         return freq   
+    
+    
+    def CountFrequencyw(my_list,weight):    
+     
+        # Creating an empty dictionary     
+        freq = {}    
+        for item in my_list:    
+            if (item in freq):    
+                freq[item] += np.sum(weight[item])   
+            else:    
+                freq[item] = np.sum(weight[item])   
+           
+           
+        return freq   
            
     
     #Modify age unid
@@ -501,6 +515,29 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
     #Frequencies for age at intervire  
     freq_ai=CountFrequency(hi['ageint'].tolist())   
     
+    #Get distribution at censoring
+    ageuni=[*CountFrequency(hi['age_unid'].tolist())]
+    hi['isfem']=0
+    hi.loc[hi['M2DP01']=='FEMALE','isfem']=1.0
+    fem=[*CountFrequency(hi['isfem'].tolist())]
+    
+    
+    freqja=np.zeros((len(fem),len(ageuni)),dtype=object)
+    freqjb=np.zeros((len(fem),len(ageuni)),dtype=object)
+    freqjc=np.zeros((len(fem),len(ageuni)),dtype=object)
+   
+    for i,i1 in zip(fem,range(len(fem))):
+        for j,j1 in zip(ageuni,range(len(ageuni))):
+           
+            freqja[i1,j1]=CountFrequency(hi['ageint'][(hi['isfem']==i) & (hi['age_unid']==j)].tolist())
+            freqjb[i1,j1]=i
+            freqjc[i1,j1]=j
+            
+    freqj=[freqja,freqjb,freqjc]
+            
+            
+    
+       
     #Frequencies of agents by age at unid and gender
     freq_nsfh = hi[['M2DP01','age_unid','SAMWT']]#hi.groupby(['M2DP01','age_unid'])['SAMWT'].count()
        
@@ -514,7 +551,7 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
     listofTuples = [("hazs" , hazs), ("hazm" , hazm),("hazd" , hazd),("emar" , emar),  
                     ("ecoh" , ecoh), ("fls_ratio" , fls_ratio),("wage_ratio" , wage_ratio),("div_ratio" , div_ratio),
                     ("mean_fls" , mean_fls),("mar" , mar),("coh" , coh),  
-                    ("freq_pc" , freq_pc), ("freq_i" , freq_i),("beta_unid" , beta_unid),("freq_ai" , freq_ai),
+                    ("freq_pc" , freq_pc), ("freq_i" , freq_i),("beta_unid" , beta_unid),("freq_ai" , freq_ai),("freqj",freqj),
                     ("freq_nsfh" , freq_nsfh),("freq_psid_tot" , freq_psid_tot),("freq_psid_par" , freq_psid_par),("freq_psid_div" , freq_psid_div)]   
     dic_mom=dict(listofTuples)   
        
@@ -536,6 +573,7 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
     data=pd.read_csv('histo.csv')      
     data_h=pd.read_csv('hrs.csv') 
     data_d=pd.read_csv('divo.csv')
+    
        
     data_h['wgt']=1.0
     data_d['wgt']=1.0
@@ -563,7 +601,8 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
     freq_nsfh=dic['freq_nsfh']  
     freq_psid_tot=dic['freq_psid_tot']  
     freq_psid_par=dic['freq_psid_par']  
-    freq_psid_div=dic['freq_psid_div']  
+    freq_psid_div=dic['freq_psid_div'] 
+    freqj=dic['freqj'] 
     beta_unid=dic['beta_unid']   
        
        
@@ -691,6 +730,10 @@ def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=Fal
     #Export Age at interview  
     with open('age_sint.pkl', 'wb+') as file:   
         pickle.dump(freq_ai,file)    
+        
+    #Joint frequencies age at censoring
+    with open('freqj.pkl', 'wb+') as file:   
+        pickle.dump(freqj,file)    
         
     #Frequency of NSFH types
     with open('freq_nsfh.pkl', 'wb+') as file:   

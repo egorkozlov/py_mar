@@ -492,10 +492,16 @@ class Agents:
                                    
                         share_f, share_m = costs.shares_if_split(income_share_fem)
                         
-                        #Uncomment bnelowe if ren_theta
-                        share_f1 ,share_m1= costs.shares_if_split_theta(self.setup,self.setup.thetagrid[self.setup.v_thetagrid_fine.i[itht]],costs)
-                        share_f,share_m=share_f1[i_div],share_m1[i_div]
+
                       
+                        try:
+                            share_f=self.setup.ashare[decision['assdev']][isc,iall,itht][i_div]
+                            share_m=1-self.setup.ashare[decision['assdev']][isc,iall,itht][i_div]
+                        except:
+                            #Uncomment bnelowe if ren_theta
+                            share_f1 ,share_m1= costs.shares_if_split_theta(self.setup,self.setup.thetagrid[self.setup.v_thetagrid_fine.i[itht]],costs)
+                            share_f,share_m=share_f1[i_div],share_m1[i_div]
+                            
                         #sf = share_f[i_div]*sc[i_div]
                         #assert np.all(share_f[i_div]>=0) and np.all(share_f[i_div]<=1)
                         #sm = share_m[i_div]*sc[i_div]
@@ -503,6 +509,8 @@ class Agents:
                         sf = share_f*sc[i_div]
                         assert np.all(share_f>=0) and np.all(share_f<=1)
                         sm = share_m*sc[i_div]
+                        
+                       
                         
                         s = sf if self.female else sm
                         shks = self.shocks_div_a[ind[i_div],t]

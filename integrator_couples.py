@@ -13,6 +13,7 @@ from renegotiation_unilateral import v_no_ren
 from renegotiation_unilateral import v_ren_uni
 from renegotiation_bilateral import v_ren_bil
 from renegotiation_vartheta import v_ren_vt
+from renegotiation_decisions import v_ren_vt as v_ren_dec 
 #from ren_mar_pareto import v_ren_new as ren_pareto
 
 def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True,draw=False):
@@ -22,14 +23,75 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True,draw=False):
     can_divorce = setup.pars['can divorce'][t]
     if can_divorce:
         uni_div = setup.div_costs.unilateral_divorce if marriage else setup.sep_costs.unilateral_divorce
+        title = setup.div_costs.eq_split if marriage else setup.sep_costs.eq_split 
         if uni_div:
+            
             # choose your fighter
-            #out = v_ren_uni(setup,Vpostren,marriage,t)
-            out = v_ren_vt(setup,Vpostren,marriage,t)            
+            if title>0.5:
+                out = v_ren_vt(setup,Vpostren,marriage,t)#v_ren_uni(setup,Vpostren,marriage,t)
+            else:
+                out = v_ren_dec(setup,Vpostren,marriage,t)            
         else:
             out = v_ren_bil(setup,Vpostren,marriage,t)
     else:
         out = v_no_ren(setup,Vpostren,marriage,t)
+
+    
+
+
+
+    ############################################################
+    #Now, if title based regime get the optimal division rule
+    ###########################################################
+    if len(out['Values'][0].shape)>3:
+        
+        def mmult(a,b):
+            if use_sparse:
+                return (a*b).astype(a.dtype,copy=False)
+            else:
+                return np.dot(a,b.T).astype(a.dtype,copy=False)
+            
+            
+        #Get expected value after prod shocks
+        M = setup.exogrid.all_t_mat_psi_spt[t] if use_sparse else setup.exogrid.all_t_mat_psi[t]
+            
+        sharea=out['Values'][0].shape[-1]
+        na, nexo, ntheta = setup.na, setup.pars['nexo_t'][t], setup.ntheta_fine
+        Vexp = np.zeros((na,nexo,ntheta,sharea),dtype=setup.dtype)
+        for itheta in range(setup.ntheta_fine):
+            for ishare in range(sharea):
+                Vexp[...,itheta,ishare]=mmult(out['Values'][0][...,itheta,ishare],M)
+                
+        #Now choose the bet division of assets
+        Vexp_max=np.argmax(Vexp,axis=-1)#np.argmax(out['Values'][1],axis=-1)#
+        temp=np.cumsum(np.ones(out['Values'][0].shape,dtype=np.int32),axis=-1)-1
+        
+        #Take right age using a mask
+        #columns=np.linspace(1,len(Vexp[0,:]),len(Vexp[0,:]),dtype=np.int16)
+        dime=out['Values'][1].shape[-1]
+        col=np.reshape(np.repeat(Vexp_max,dime),out['Values'][0].shape)
+        mask=(col-temp==0)
+    
+        out['Values']=(np.reshape(out['Values'][0][mask],Vexp_max.shape),
+                       np.reshape(out['Values'][1][mask],Vexp_max.shape),
+                       np.reshape(out['Values'][2][mask],Vexp_max.shape),
+                       np.reshape(out['Values'][3][mask],Vexp_max.shape))
+        
+        out['Decision']=np.reshape(out['Decision'][mask],Vexp_max.shape)
+        out['thetas']=np.reshape(out['thetas'][mask],Vexp_max.shape)
+        out['Divorce']=(np.reshape(out['Divorce'][0][mask[:,:,10,:]],(Vexp_max.shape[0],Vexp_max.shape[1])),
+                        np.reshape(out['Divorce'][1][mask[:,:,10,:]],(Vexp_max.shape[0],Vexp_max.shape[1])))
+        
+        
+        if not marriage:
+            out['Cohabitation preferred to Marriage']=np.reshape(out['Cohabitation preferred to Marriage'][mask],Vexp_max.shape)
+       
+        #Get the preferred division of assets
+        out['assdev']=Vexp_max
+        print('The mean asset share is {},conditional on diovrce, conditional on div is {}'.format(np.mean(setup.ashare[Vexp_max]),np.mean(setup.ashare[Vexp_max][out['thetas']==-1])))
+        
+        
+       
     _Vren2 =out['Values'] if draw else out.pop('Values') 
     #_Vren2=out['Values']
     dec = out
@@ -40,10 +102,11 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True,draw=False):
     Vren = {'M':{'VR':tk(_Vren2[0]),'VC':tk(_Vren2[1]), 'VF':tk(_Vren2[2]),'VM':tk(_Vren2[3])},
             'SF':Vpostren['Female, single'],
             'SM':Vpostren['Male, single']}
-
+    
+    ###########################################################
+    ###########################################################
     
     # accounts for exogenous transitions
-    
     EVr, EVc, EVf, EVm = ev_couple_exo(setup,Vren['M'],t,use_sparse,down=False)
     
     

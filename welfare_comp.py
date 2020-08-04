@@ -233,11 +233,12 @@ def welf_dec(mdl,agents):
             
             #Get who divorce
 
-            womd[divo1,t]=(mdl[1].decisions[t-1]['Couple, M']['Divorce'][0][agents.iassetss[divo1,t],iexos[divo1,t],mdl[1].setup.igridcoarse[agents.itheta[divo1,t-1]]]>VF[agents.iassets[divo1,t],iexos[divo1,t],agents.itheta[divo1,t-1]])
-            mend[divo1,t]=(mdl[1].decisions[t-1]['Couple, M']['Divorce'][1][agents.iassetss[divo1,t],iexos[divo1,t],mdl[1].setup.igridcoarse[agents.itheta[divo1,t-1]]]>VM[agents.iassets[divo1,t],iexos[divo1,t],agents.itheta[divo1,t-1]])
-            
-          #  womd[divo1,t]=(mdl[1].decisions[t-1]['Couple, M']['Divorce'][0][agents.iassetss[divo1,t],iexos[divo1,t]]>VF[agents.iassets[divo1,t],iexos[divo1,t],agents.itheta[divo1,t-1]])
-          #  mend[divo1,t]=(mdl[1].decisions[t-1]['Couple, M']['Divorce'][1][agents.iassetss[divo1,t],iexos[divo1,t]]>VM[agents.iassets[divo1,t],iexos[divo1,t],agents.itheta[divo1,t-1]])
+            if mdl[1].decisions[t-1]['Couple, M']['Divorce'][0].ndim>2:
+                womd[divo1,t]=(mdl[1].decisions[t-1]['Couple, M']['Divorce'][0][agents.iassetss[divo1,t],iexos[divo1,t],mdl[1].setup.igridcoarse[agents.itheta[divo1,t-1]]]>VF[agents.iassets[divo1,t],iexos[divo1,t],agents.itheta[divo1,t-1]])
+                mend[divo1,t]=(mdl[1].decisions[t-1]['Couple, M']['Divorce'][1][agents.iassetss[divo1,t],iexos[divo1,t],mdl[1].setup.igridcoarse[agents.itheta[divo1,t-1]]]>VM[agents.iassets[divo1,t],iexos[divo1,t],agents.itheta[divo1,t-1]])
+            else:
+                womd[divo1,t]=(mdl[1].decisions[t-1]['Couple, M']['Divorce'][0][agents.iassetss[divo1,t],iexos[divo1,t]]>VF[agents.iassets[divo1,t],iexos[divo1,t],agents.itheta[divo1,t-1]])
+                mend[divo1,t]=(mdl[1].decisions[t-1]['Couple, M']['Divorce'][1][agents.iassetss[divo1,t],iexos[divo1,t]]>VM[agents.iassets[divo1,t],iexos[divo1,t],agents.itheta[divo1,t-1]])
             
         ########################
         #MEN HERE
@@ -262,11 +263,12 @@ def welf_dec(mdl,agents):
             
             #Get who divorce
   
-            womd1[divom1,t]=(mdl[1].decisions[t-1]['Couple, M']['Divorce'][0][agents.iassetss[divom1,t],iexos[divom1,t],mdl[1].setup.igridcoarse[agents.itheta[divom1,t-1]]]>VF[agents.iassets[divom1,t],iexos[divom1,t],agents.itheta[divom1,t-1]])
-            mend1[divom1,t]=(mdl[1].decisions[t-1]['Couple, M']['Divorce'][1][agents.iassetss[divom1,t],iexos[divom1,t],mdl[1].setup.igridcoarse[agents.itheta[divom1,t-1]]]>VM[agents.iassets[divom1,t],iexos[divom1,t],agents.itheta[divom1,t-1]])
-            
-         #   womd1[divom1,t]=(mdl[1].decisions[t-1]['Couple, M']['Divorce'][0][agents.iassetss[divom1,t],iexos[divom1,t]]>VF[agents.iassets[divom1,t],iexos[divom1,t],agents.itheta[divom1,t-1]])
-         #   mend1[divom1,t]=(mdl[1].decisions[t-1]['Couple, M']['Divorce'][1][agents.iassetss[divom1,t],iexos[divom1,t]]>VM[agents.iassets[divom1,t],iexos[divom1,t],agents.itheta[divom1,t-1]])
+            if mdl[1].decisions[t-1]['Couple, M']['Divorce'][0].ndim>2:
+                womd1[divom1,t]=(mdl[1].decisions[t-1]['Couple, M']['Divorce'][0][agents.iassetss[divom1,t],iexos[divom1,t],mdl[1].setup.igridcoarse[agents.itheta[divom1,t-1]]]>VF[agents.iassets[divom1,t],iexos[divom1,t],agents.itheta[divom1,t-1]])
+                mend1[divom1,t]=(mdl[1].decisions[t-1]['Couple, M']['Divorce'][1][agents.iassetss[divom1,t],iexos[divom1,t],mdl[1].setup.igridcoarse[agents.itheta[divom1,t-1]]]>VM[agents.iassets[divom1,t],iexos[divom1,t],agents.itheta[divom1,t-1]])
+            else:
+                womd1[divom1,t]=(mdl[1].decisions[t-1]['Couple, M']['Divorce'][0][agents.iassetss[divom1,t],iexos[divom1,t]]>VF[agents.iassets[divom1,t],iexos[divom1,t],agents.itheta[divom1,t-1]])
+                mend1[divom1,t]=(mdl[1].decisions[t-1]['Couple, M']['Divorce'][1][agents.iassetss[divom1,t],iexos[divom1,t]]>VM[agents.iassets[divom1,t],iexos[divom1,t],agents.itheta[divom1,t-1]])
             
         
  

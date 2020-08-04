@@ -13,7 +13,7 @@ from gridvec import VecOnGrid
 
 
 from platform import system
-if system() != 'Darwin':
+if (system() != 'Darwin') & (system() != 'Windows'):
     ugpu = True
 else:
     ugpu = False

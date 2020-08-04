@@ -1409,10 +1409,12 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         data_ev1_panda.loc[data_ev1_panda['event']<-10,'event']=np.nan  
         data_ev1_panda=data_ev1_panda.dropna(subset=['event'])#♦.sample(n=5000000,random_state=1)  
         
-        olstc = smf.ols(formula='labor ~ C(age)+C(event, Treatment(reference=-1))', data = data_ev1_panda[data_ev1_panda['state']==3]  ).fit() 
-        olstm = smf.ols(formula='labor ~ C(age)+C(event, Treatment(reference=-1))', data = data_ev1_panda[data_ev1_panda['state']==2]  ).fit() 
-        olstt = smf.ols(formula='labor ~ C(age)+C(event, Treatment(reference=-1))', data = data_ev1_panda[data_ev1_panda['state']>-1]  ).fit() 
-        
+        try:
+            olstc = smf.ols(formula='labor ~ C(age)+C(event, Treatment(reference=-1))', data = data_ev1_panda[data_ev1_panda['state']==3]  ).fit() 
+            olstm = smf.ols(formula='labor ~ C(age)+C(event, Treatment(reference=-1))', data = data_ev1_panda[data_ev1_panda['state']==2]  ).fit() 
+            olstt = smf.ols(formula='labor ~ C(age)+C(event, Treatment(reference=-1))', data = data_ev1_panda[data_ev1_panda['state']>-1]  ).fit() 
+        except:
+            print('skip ols')
         
         #Create an Array for the results 
         eventgrid2=eventgrid[5:-5]

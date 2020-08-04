@@ -358,6 +358,8 @@ class ModelSetup(object):
             all_t_down, all_t_mat_down = combine_matrices_two_lists(zfzm2,exogrid['psi_t'],zfzmmat2,exogrid['psi_t_mat'])
             all_t_mat_down_sparse_T = [sparse.csc_matrix(D.T) if D is not None else None for D in all_t_mat_down]
             
+            all_t_down, all_t_mat_psi = combine_matrices_two_lists(zfzm2,exogrid['psi_t'],np.eye(len(zfzmmat2)),exogrid['psi_t_mat'])
+            all_t_mat_psi_spt = [sparse.csc_matrix(D.T) if D is not None else None for D in all_t_mat_down]
             
             
             all_t_mat_by_l = [ [(1-p)*m + p*md if m is not None else None 
@@ -372,6 +374,8 @@ class ModelSetup(object):
             
             exogrid['all_t_mat_by_l'] = all_t_mat_by_l
             exogrid['all_t_mat_by_l_spt'] = all_t_mat_by_l_spt
+            exogrid['all_t_mat_psi']=all_t_mat_psi
+            exogrid['all_t_mat_psi_spt']=all_t_mat_psi_spt
             
             exogrid['all_t'] = all_t
             
@@ -422,6 +426,10 @@ class ModelSetup(object):
         self.thetamin = 0.02
         self.thetamax = 0.98
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta,dtype=self.dtype)
+        
+        
+        #Grid for the share in assets
+        self.ashare = np.linspace(self.thetamin,self.thetamax,9,dtype=self.dtype)
         
         
         
@@ -881,6 +889,8 @@ class DivorceCosts(object):
         share_m=dc.assets_kept*(1-shf)
         
         return share_f,share_m
+    
+
        
         
 def tauchen_drift(z_now,z_next,rho,sigma,mu,mat):

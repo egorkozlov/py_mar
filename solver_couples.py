@@ -134,6 +134,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False,
     V_mal = um + beta*np.take_along_axis(np.take_along_axis(EVm_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
     V_all = uc + beta*np.take_along_axis(np.take_along_axis(EVc_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
     #def r(x): return x.astype(dtype)
+  
     
     def r(x): return x
     
@@ -144,10 +145,25 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False,
     assert x_opt.dtype == dtype
     assert s_opt.dtype == dtype
     
+    Vm=EV_mal_by_l[:,:,:,0]#V_mal
+    Vexp=EV_fem_by_l[:,:,:,0]#V_fem
+    temp1=np.linspace(1,setup.pars['nexo_t'][t],setup.pars['nexo_t'][t])-1
+    izf=setup.all_indices(t,temp1)[1]
+    izm=setup.all_indices(t,temp1)[2]
+    psi=setup.all_indices(t,temp1)[3]
+    index2=np.array(setup.all_indices(t,(izm,izf,psi))[0],dtype=np.int16)
+    indt=np.linspace(setup.ntheta,1,setup.ntheta,dtype=np.int16)-1
+    Vexp2a=Vexp[:,index2,:]
+    Vf=Vexp2a[:,:,indt]
+    
+    aaa=np.where(abs(Vm-Vf)>1e-07)
+  
+    #assert np.all(abs(Vm-Vf)<1e-07)
+    print('difference in solver is {} in {}'.format(np.max(abs(Vm-Vf)),t))    
     try:
-        assert np.allclose(V_all,V_couple,atol=1e-4,rtol=1e-3)
+        assert np.allclose(V_all,V_couple,atol=1e-6,rtol=1e-5)
     except:
-        #print('max difference in V is {}'.format(np.max(np.abs(V_all-V_couple))))
+        print('max difference in V is {}'.format(np.max(np.abs(V_all-V_couple))))
         pass
     
     return r(V_all), r(V_fem), r(V_mal), r(c_opt), r(x_opt), r(s_opt), il_opt, r(V_all_l)

@@ -35,11 +35,11 @@ class ModelSetup(object):
         p['Tbef'] = Tbef
         p['sig_zf_0']  = 0.5449176#0.4096**(0.5)
         p['sig_zf']    = .0272437**(0.5)#0.0399528**(0.5)
-        p['sig_zm_0']  = 0.54896510#.405769**(0.5)
-        p['sig_zm']    = .025014**(0.5)#0.0417483**(0.5)
-        p['n_zf_t']      = [6]*Tret + [6]*(T-Tret)
+        p['sig_zm_0']  =  0.5449176#0.54896510#.405769**(0.5)
+        p['sig_zm']    = .0272437**(0.5)#025014**(0.5)#0.0417483**(0.5)
+        p['n_zf_t']      = [3]*Tret + [3]*(T-Tret)
         p['n_zm_t']      = [3]*Tret + [3]*(T-Tret)
-        p['n_zf_correct']=3
+        p['n_zf_correct']=0
         p['sigma_psi_mult'] = 0.28
         p['sigma_psi']   = 0.11
         p['n_psi_t']     = [11]*T
@@ -52,10 +52,10 @@ class ModelSetup(object):
         p['sig_partner_z'] = 1.2#1.0#0.4 #This is crazy powerful for the diff in diff estimate
         p['sig_partner_mult'] = 1.0
         p['dump_factor_z'] = 0.85#0.82
-        p['mean_partner_z_female'] = 0.02#+0.03
-        p['mean_partner_z_male'] =  -0.02#-0.03
-        p['mean_partner_a_female'] = 0.5#0.1
-        p['mean_partner_a_male'] = -0.5#-0.1
+        p['mean_partner_z_female'] = 0.0#0.02#+0.03
+        p['mean_partner_z_male'] =  0.0#-0.02#-0.03
+        p['mean_partner_a_female'] = 0.0#0.5#0.1
+        p['mean_partner_a_male'] = 0.0#-0.5#-0.1
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
         
@@ -70,14 +70,14 @@ class ModelSetup(object):
         
         
         p['u_shift_mar'] = 0.0
-        p['u_shift_coh'] = -0.00
+        p['u_shift_coh'] = 0.00
         
          
         #Wages over time
         p['f_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-.74491918 +.04258303*t -.0016542*t**2+.00001775*t**3) for t in range(T)]
         p['f_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.6805060 +.04629912*t -.00160467*t**2+.00001626*t**3) for t in range(T)]
-        p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-0.5620125  +0.06767721*t -0.00192571*t**2+ 0.00001573*t**3) for t in range(T)]
-        p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.5960803  +.05829568*t -.00169143*t**2+ .00001446*t**3) for t in range(T)]
+        p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-.74491918 +.04258303*t -.0016542*t**2+.00001775*t**3) for t in range(T)]
+        p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.6805060 +.04629912*t -.00160467*t**2+.00001626*t**3) for t in range(T)]
    
 
 #        p['f_wage_trend'] = [(-0.5620125  +0.06767721*t -0.00192571*t**2+ 0.00001573*t**3) for t in range(T)]
@@ -128,7 +128,7 @@ class ModelSetup(object):
         self.state_names = ['Female, single','Male, single','Couple, M', 'Couple, C']
         
         # female labor supply
-        self.ls_levels = np.array([0.0,0.8],dtype=self.dtype)
+        self.ls_levels = np.array([0.8,0.8],dtype=self.dtype)
         self.mlevel=0.8
         #self.ls_utilities = np.array([p['uls'],0.0],dtype=self.dtype)
         self.ls_pdown = np.array([p['pls'],0.0],dtype=self.dtype)
@@ -222,11 +222,11 @@ class ModelSetup(object):
 
                     
                     
-            #Drift the grids
-            for t in range(Tret):
-                exogrid['zf_t'][t]=exogrid['zf_t'][t]
-            for t in range(Tret-2):
-                exogrid['zm_t'][t]=exogrid['zm_t'][t]
+            # #Drift the grids
+            # for t in range(Tret):
+            #     exogrid['zf_t'][t]=exogrid['zf_t'][t]
+            # for t in range(Tret-2):
+            #     exogrid['zm_t'][t]=exogrid['zm_t'][t]
                     
                     
             
@@ -314,41 +314,41 @@ class ModelSetup(object):
             
             zfzm2, zfzmmat2 = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], zf_t_mat_down, exogrid['zm_t_mat'])
             
-            if p['rho_s']>0:
-                for t in range(p['Tret']-1):
-                    for j in range(p['n_zm_t'][t]):
-                        for ym in range(p['n_zm_t'][t]):
+            # if p['rho_s']>0:
+            #     for t in range(p['Tret']-1):
+            #         for j in range(p['n_zm_t'][t]):
+            #             for ym in range(p['n_zm_t'][t]):
                         
                             
-                            rhom=(1.0-p['rho_s']**2)**0.5
-                            prec=exogrid['zm_t'][t][j] if t>0 else 0.0
-                            drif=p['rho_s']*p['sig_zf']/p['sig_zm']*(exogrid['zm_t'][t+1][ym]-prec)
-                            mat1=tauchen_drift(exogrid['zf_t'][t].copy(), exogrid['zf_t'][t+1].copy(), 1.0, rhom*p['sig_zf'], drif, exogrid['zf_t_mat'][t])
-                            mat2=tauchen_drift(exogrid['zf_t'][t].copy(), exogrid['zf_t'][t+1].copy(), 1.0, rhom*p['sig_zf'], drif+p['z_drift'], exogrid['zf_t_mat'][t])
-                            for i in range(p['n_zf_t'][t]): 
+            #                 rhom=(1.0-p['rho_s']**2)**0.5
+            #                 prec=exogrid['zm_t'][t][j] if t>0 else 0.0
+            #                 drif=p['rho_s']*p['sig_zf']/p['sig_zm']*(exogrid['zm_t'][t+1][ym]-prec)
+            #                 mat1=tauchen_drift(exogrid['zf_t'][t].copy(), exogrid['zf_t'][t+1].copy(), 1.0, rhom*p['sig_zf'], drif, exogrid['zf_t_mat'][t])
+            #                 mat2=tauchen_drift(exogrid['zf_t'][t].copy(), exogrid['zf_t'][t+1].copy(), 1.0, rhom*p['sig_zf'], drif+p['z_drift'], exogrid['zf_t_mat'][t])
+            #                 for i in range(p['n_zf_t'][t]): 
                         
-                                #Modify the grid for women
-                                exogrid['zf_t_mat2'][t][i,:]= mat1[i,:]
+            #                     #Modify the grid for women
+            #                     exogrid['zf_t_mat2'][t][i,:]= mat1[i,:]
 
-                                exogrid['zf_t_mat2d'][t][i,:]=mat2[i,:]
+            #                     exogrid['zf_t_mat2d'][t][i,:]=mat2[i,:]
                                 
-                                ##Update the big Matrix
-                                for yf in range(p['n_zf_t'][t]):
+            #                     ##Update the big Matrix
+            #                     for yf in range(p['n_zf_t'][t]):
                                 
                                     
-                                    zfzmmat[t][i*(p['n_zm_t'][t]-1)+j+i,yf*(p['n_zm_t'][t]-1)+ym+yf]=exogrid['zf_t_mat2'][t][i,yf]*exogrid['zm_t_mat'][t][j,ym]
-                                    zfzmmat2[t][i*(p['n_zm_t'][t]-1)+j+i,yf*(p['n_zm_t'][t]-1)+ym+yf]=exogrid['zf_t_mat2d'][t][i,yf]*exogrid['zm_t_mat'][t][j,ym]
+            #                         zfzmmat[t][i*(p['n_zm_t'][t]-1)+j+i,yf*(p['n_zm_t'][t]-1)+ym+yf]=exogrid['zf_t_mat2'][t][i,yf]*exogrid['zm_t_mat'][t][j,ym]
+            #                         zfzmmat2[t][i*(p['n_zm_t'][t]-1)+j+i,yf*(p['n_zm_t'][t]-1)+ym+yf]=exogrid['zf_t_mat2d'][t][i,yf]*exogrid['zm_t_mat'][t][j,ym]
            
             
-            #Adjust retirement as in Heatcote et al.
-            for t in range(p['Tret'],p['T']):
-                for j in range(len(zfzm[t])):
-                    pref=max(np.exp(zfzm[t][j][0])+np.exp(zfzm[t][j][1]),1.5*max(np.exp(zfzm[t][j][0]),np.exp(zfzm[t][j][1])))
-                    zfzm[t][j][0]=-20.0
-                    zfzm[t][j][1]=np.log(pref)
-                    pref=max(np.exp(zfzm2[t][j][0])+np.exp(zfzm2[t][j][1]),1.5*max(np.exp(zfzm2[t][j][0]),np.exp(zfzm2[t][j][1])))
-                    zfzm2[t][j][0]=-20.0
-                    zfzm2[t][j][1]=np.log(pref)
+            # #Adjust retirement as in Heatcote et al.
+            # for t in range(p['Tret'],p['T']):
+            #     for j in range(len(zfzm[t])):
+            #         pref=max(np.exp(zfzm[t][j][0])+np.exp(zfzm[t][j][1]),1.5*max(np.exp(zfzm[t][j][0]),np.exp(zfzm[t][j][1])))
+            #         zfzm[t][j][0]=-20.0
+            #         zfzm[t][j][1]=np.log(pref)
+            #         pref=max(np.exp(zfzm2[t][j][0])+np.exp(zfzm2[t][j][1]),1.5*max(np.exp(zfzm2[t][j][0]),np.exp(zfzm2[t][j][1])))
+            #         zfzm2[t][j][0]=-20.0
+            #         zfzm2[t][j][1]=np.log(pref)
             
             
             #Put everything together
@@ -358,16 +358,18 @@ class ModelSetup(object):
             all_t_down, all_t_mat_down = combine_matrices_two_lists(zfzm2,exogrid['psi_t'],zfzmmat2,exogrid['psi_t_mat'])
             all_t_mat_down_sparse_T = [sparse.csc_matrix(D.T) if D is not None else None for D in all_t_mat_down]
             
-            all_t_down, all_t_mat_psi = combine_matrices_two_lists(zfzm2,exogrid['psi_t'],np.eye(len(zfzmmat2)),exogrid['psi_t_mat'])
+            temp=list()
+            temp=temp+[np.eye(len(zfzmmat2[0])) for i in range(len(zfzmmat2))]
+            all_t_down, all_t_mat_psi = combine_matrices_two_lists(zfzm2,exogrid['psi_t'],temp,exogrid['psi_t_mat'])
             all_t_mat_psi_spt = [sparse.csc_matrix(D.T) if D is not None else None for D in all_t_mat_down]
             
             
             all_t_mat_by_l = [ [(1-p)*m + p*md if m is not None else None 
-                                for m , md in zip(all_t_mat,all_t_mat_down)]
+                                for m , md in zip(all_t_mat,all_t_mat)]
                                for p in self.ls_pdown ]
             
             all_t_mat_by_l_spt = [ [(1-p)*m + p*md if m is not None else None
-                                    for m, md in zip(all_t_mat_sparse_T,all_t_mat_down_sparse_T)]
+                                    for m, md in zip(all_t_mat_sparse_T,all_t_mat_sparse_T)]
                                for p in self.ls_pdown ]
             
             
@@ -389,19 +391,19 @@ class ModelSetup(object):
             
             
         #Grid Couple
-        self.na = 40#40
+        self.na = 50#40
         self.amin = 0
-        self.amax = 80
-        self.amax1 = 180
+        self.amax = 55#80
+        self.amax1 = 95#180
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
-        tune=2.5
+        tune=15
         self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
-        self.agrid_c[-1]=self.amax1
-        self.agrid_c[-2]=120
+        #self.agrid_c[-1]=self.amax1
+        #self.agrid_c[-2]=85#120
         # this builds finer grid for potential savings
-        s_between = 7 # default numer of points between poitns on agrid
-        s_da_min = 0.1 # minimal step (does not create more points)
-        s_da_max = 1.0 # maximal step (creates more if not enough)
+        s_between = 5 # default numer of points between poitns on agrid
+        s_da_min = 0.0001 # minimal step (does not create more points)
+        s_da_max = 10.0 # maximal step (creates more if not enough)
         
         self.sgrid_c = build_s_grid(self.agrid_c,s_between,s_da_min,s_da_max)
         self.vsgrid_c = VecOnGrid(self.agrid_c,self.sgrid_c)
@@ -409,22 +411,22 @@ class ModelSetup(object):
         
          
         #Grid Single
-        scale = 1.1
+        scale = 1.0
         self.amin_s = 0
         self.amax_s = self.amax/scale
         self.agrid_s = np.linspace(self.amin_s,self.amax_s,self.na,dtype=self.dtype)
         #self.agrid_s[self.na-1]=18#180
-        tune_s=2.5
+        tune_s=15
         self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
-        self.agrid_s[-1]=self.amax1/scale
-        self.agrid_c[-2]=120/scale
+        #self.agrid_s[-1]=self.amax1/scale
+        #self.agrid_c[-2]=85/scale
         self.sgrid_s = build_s_grid(self.agrid_s,s_between,s_da_min,s_da_max)
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)
         
         # grid for theta
-        self.ntheta = 11
-        self.thetamin = 0.02
-        self.thetamax = 0.98
+        self.ntheta = 21
+        self.thetamin = 0.1
+        self.thetamax = 0.9
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta,dtype=self.dtype)
         
         
@@ -437,7 +439,7 @@ class ModelSetup(object):
         
         
         # construct finer grid for bargaining
-        ntheta_fine = 5*self.ntheta # actual number may be a bit bigger
+        ntheta_fine = 1*self.ntheta # actual number may be a bit bigger
         self.thetagrid_fine = np.unique(np.concatenate( (self.thetagrid,np.linspace(self.thetamin,self.thetamax,ntheta_fine,dtype=self.dtype)) ))
         self.ntheta_fine = self.thetagrid_fine.size
         
@@ -513,8 +515,8 @@ class ModelSetup(object):
         mmax = ezfmax + ezmmax + np.max(self.pars['R_t'])*self.amax1
         mint = (ezfmax + ezmmax) # poin where more dense grid begins
         
-        ndense = 600
-        nm = 1500
+        ndense = 6000
+        nm = 15000
         
         gsparse = np.linspace(mint,mmax,nm-ndense)
         gdense = np.linspace(mmin,mint,ndense+1) # +1 as there is a common pt
@@ -854,7 +856,7 @@ class DivorceCosts(object):
     def __init__(self, 
                  unilateral_divorce=True, # whether to allow for unilateral divorce
                  assets_kept = 1.0, # how many assets of couple are splited (the rest disappears)
-                 u_lost_m=0.0,u_lost_f=0.0, # pure utility losses b/c of divorce
+                 u_lost_m=0.0,u_lost_f=0.0, # pure utility losses b/c of divorceagri
                  money_lost_m=0.0,money_lost_f=0.0, # pure money (asset) losses b/c of divorce
                  money_lost_m_ez=0.0,money_lost_f_ez=0.0, # money losses proportional to exp(z) b/c of divorce
                  eq_split=1.0 #The more of less equal way assets are split within divorce

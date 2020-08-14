@@ -166,6 +166,24 @@ def v_ren_uni(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,resca
 
 
 shrs_def = [0.05,0.1,0.15,0.2,0.25,0.3,0.35,0.40,0.45,0.5,0.55,0.6,0.65,0.7,0.75,0.8,0.85,0.9,0.95]#[0.2,0.35,0.5,0.65,0.8]
+# def v_div_allsplits(setup,dc,t,sc,Vmale,Vfemale,izm,izf,
+#                         shrs=None,cost_fem=0.0,cost_mal=0.0):
+#     if shrs is None: shrs = shrs_def # grid on possible assets divisions    
+#     shp  =  (sc.size,izm.size,len(shrs))  
+#     Vm_divorce_M = np.zeros(shp) 
+#     Vf_divorce_M = np.zeros(shp)
+    
+#     # find utilities of divorce for different divisions of assets
+#     for i, shr in enumerate(shrs):
+#         sv_m = VecOnGrid(setup.agrid_s,shr*sc*cost_mal*setup.scale,trim=True)
+#         sv_f = VecOnGrid(setup.agrid_s,shr*sc*cost_fem*setup.scale,trim=True)
+        
+#         Vm_divorce_M[...,i] = sv_m.apply(Vmale,    axis=0,take=(1,izm),reshape_i=True) - dc.u_lost_m
+#         Vf_divorce_M[...,i] = sv_f.apply(Vfemale,  axis=0,take=(1,izf),reshape_i=True) - dc.u_lost_f
+    
+#     return Vm_divorce_M, Vf_divorce_M
+
+
 def v_div_allsplits(setup,dc,t,sc,Vmale,Vfemale,izm,izf,
                         shrs=None,cost_fem=0.0,cost_mal=0.0):
     if shrs is None: shrs = shrs_def # grid on possible assets divisions    
@@ -175,15 +193,29 @@ def v_div_allsplits(setup,dc,t,sc,Vmale,Vfemale,izm,izf,
     
     # find utilities of divorce for different divisions of assets
     for i, shr in enumerate(shrs):
-        sv_m = VecOnGrid(setup.agrid_s,shr*sc*cost_mal)
-        sv_f = VecOnGrid(setup.agrid_s,shr*sc*cost_fem)
+        sv_m,wm = interp_npp(setup.agrid_s,shr*sc*cost_mal,trim_half=True)
+        sv_f,wf = interp_npp(setup.agrid_s,shr*sc*cost_fem,trim_half=True)
         
-        Vm_divorce_M[...,i] = sv_m.apply(Vmale,    axis=0,take=(1,izm),reshape_i=True) - dc.u_lost_m
-        Vf_divorce_M[...,i] = sv_f.apply(Vfemale,  axis=0,take=(1,izf),reshape_i=True) - dc.u_lost_f
-    
+        for zz in range(setup.pars['n_zm_t'][t]):Vm_divorce_M[:,(izm==zz),i] = np.reshape(np.repeat(Vmale[sv_m,zz]*(1-wm)+Vmale[sv_m+1,zz]*wm     - dc.u_lost_m,np.sum(izm==zz)),Vm_divorce_M[:,(izm==zz),i].shape)
+        for zz in range(setup.pars['n_zf_t'][t]):Vf_divorce_M[:,(izf==zz),i] = np.reshape(np.repeat(Vfemale[sv_f,zz]*(1-wf)+Vfemale[sv_f+1,zz]*wf - dc.u_lost_f,np.sum(izf==zz)),Vf_divorce_M[:,(izf==zz),i].shape)
+        
+        
+            
+        
+   
     return Vm_divorce_M, Vf_divorce_M
     
-
+def interp_npp(grid,xnew,return_wnext=True,trim=False,trim_half=False):    
+    # this finds grid positions and weights for performing linear interpolation
+    # this implementation uses numpy
+    
+    if trim: xnew = np.minimum(grid[-1], np.maximum(grid[0],xnew) )
+    if trim_half: xnew = np.maximum(grid[0],xnew) 
+    
+    j = np.minimum( np.searchsorted(grid,xnew,side='left')-1, grid.size-2 )
+    wnext = (xnew - grid[j])/(grid[j+1] - grid[j])
+    
+    return j, (wnext if return_wnext else 1-wnext) 
 
 def v_div_byshare(setup,dc,t,sc,share_fem,share_mal,Vmale,Vfemale,izf,izm,
                   shrs=None,cost_fem=0.0,cost_mal=0.0):
@@ -312,7 +344,7 @@ def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_no, vm_no, itht, w
     ichoice_out = np.zeros(v_out.shape,dtype=np.bool_)
     
     
-    f1 = np.float32(1)
+    f1 = np.float64(1)
     
     
     for ia in prange(na):

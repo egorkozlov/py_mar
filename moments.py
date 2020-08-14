@@ -1773,10 +1773,10 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         lend=len(wage_fs) 
         agea=np.array(range(lend))+20 
         
-        plt.plot(agea, share_ass_sepf,color='r',markersize=3, label='Separation-fm') 
-        plt.plot(agea, share_ass_sepm,color='b',markersize=3, label='Separation-mm') 
-        plt.plot(agea, mshare_ass_sepf,color='m',markersize=3, label='Divorce-fm') 
-        plt.plot(agea, mshare_ass_sepm,color='k',markersize=3, label='Divorce-mm') 
+        plt.plot(agea, agents.share_s[0:len(agea)],color='r',markersize=3, label='Separation-fm') 
+        plt.plot(agea, agents.share_s[len(agea):],color='b',markersize=3, label='Separation-mm') 
+        plt.plot(agea, agents.share_m[0:len(agea)],color='m',markersize=3, label='Divorce-fm') 
+        plt.plot(agea, agents.share_m[len(agea):],color='k',markersize=3, label='Divorce-mm') 
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
         plt.xlabel('Age')    

@@ -52,7 +52,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False,
     wm = np.exp(zm + zmtrend)
     
     
-    dtype_here = np.float32 if force_f32 else dtype
+    dtype_here = np.float64 if force_f32 else dtype
     
     if EV_tuple is None:
         EVr_by_l, EVc_by_l, EV_fem_by_l, EV_mal_by_l = np.zeros(((4,) + shp + (nls,)), dtype=dtype )
@@ -158,7 +158,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False,
     
     aaa=np.where(abs(Vm-Vf)>1e-07)
   
-    #assert np.all(abs(Vm-Vf)<1e-07)
+    assert np.all(abs(Vm-Vf)<1e-07)
     print('difference in solver is {} in {}'.format(np.max(abs(Vm-Vf)),t))    
     try:
         assert np.allclose(V_all,V_couple,atol=1e-6,rtol=1e-5)

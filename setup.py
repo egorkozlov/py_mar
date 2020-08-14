@@ -74,10 +74,10 @@ class ModelSetup(object):
         
          
         #Wages over time
-        p['f_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-.74491918 +.04258303*t -.0016542*t**2+.00001775*t**3) for t in range(T)]
-        p['f_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.6805060 +.04629912*t -.00160467*t**2+.00001626*t**3) for t in range(T)]
-        p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-.74491918 +.04258303*t -.0016542*t**2+.00001775*t**3) for t in range(T)]
-        p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.6805060 +.04629912*t -.00160467*t**2+.00001626*t**3) for t in range(T)]
+        p['f_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(4+-.74491918 +.04258303*t -.0016542*t**2+.00001775*t**3) for t in range(T)]
+        p['f_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(4+-.6805060 +.04629912*t -.00160467*t**2+.00001626*t**3) for t in range(T)]
+        p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(4+-.74491918 +.04258303*t -.0016542*t**2+.00001775*t**3) for t in range(T)]
+        p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(4+-.6805060 +.04629912*t -.00160467*t**2+.00001626*t**3) for t in range(T)]
    
 
 #        p['f_wage_trend'] = [(-0.5620125  +0.06767721*t -0.00192571*t**2+ 0.00001573*t**3) for t in range(T)]
@@ -393,17 +393,17 @@ class ModelSetup(object):
         #Grid Couple
         self.na = 50#40
         self.amin = 0
-        self.amax = 55#80
+        self.amax = 5500#80
         self.amax1 = 95#180
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
-        tune=15
+        tune=2500
         self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         #self.agrid_c[-1]=self.amax1
         #self.agrid_c[-2]=85#120
         # this builds finer grid for potential savings
         s_between = 5 # default numer of points between poitns on agrid
-        s_da_min = 0.0001 # minimal step (does not create more points)
-        s_da_max = 10.0 # maximal step (creates more if not enough)
+        s_da_min = 0.001 # minimal step (does not create more points)
+        s_da_max = 50.0 # maximal step (creates more if not enough)
         
         self.sgrid_c = build_s_grid(self.agrid_c,s_between,s_da_min,s_da_max)
         self.vsgrid_c = VecOnGrid(self.agrid_c,self.sgrid_c)
@@ -411,27 +411,30 @@ class ModelSetup(object):
         
          
         #Grid Single
-        scale = 1.0
+        scale = 2.0
+        self.scale=scale
         self.amin_s = 0
         self.amax_s = self.amax/scale
         self.agrid_s = np.linspace(self.amin_s,self.amax_s,self.na,dtype=self.dtype)
         #self.agrid_s[self.na-1]=18#180
-        tune_s=15
+        tune_s=2500
         self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
         #self.agrid_s[-1]=self.amax1/scale
         #self.agrid_c[-2]=85/scale
+        self.agrid_s=self.agrid_c/self.scale
         self.sgrid_s = build_s_grid(self.agrid_s,s_between,s_da_min,s_da_max)
+        
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)
         
         # grid for theta
         self.ntheta = 21
-        self.thetamin = 0.1
-        self.thetamax = 0.9
+        self.thetamin = 0.05
+        self.thetamax = 0.95
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta,dtype=self.dtype)
         
         
         #Grid for the share in assets
-        self.ashare = np.linspace(self.thetamin,self.thetamax,9,dtype=self.dtype)
+        self.ashare = np.linspace(0.1,0.9,9,dtype=self.dtype)
         
         
         

@@ -174,7 +174,7 @@ def ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,vfn_as,vmn_as,aleft_c,ia_f_def_s,ia_m_
     bribe = np.zeros((na,nexo,nt),dtype=np.bool_)
     
     
-    thetaout = -1*np.ones(vout.shape,dtype=np.float32)
+    thetaout = -1*np.ones(vout.shape,dtype=np.float64)
     ithetaout = -1*np.ones(vout.shape,dtype=np.int16)
     
     iaout_f = -1*np.ones(vout.shape,dtype=np.int16)

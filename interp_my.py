@@ -22,8 +22,8 @@ def interpolate_vv(x,xd,y,istart,testorder=False,xd_ordered=True):
     
     
     xdi = np.empty(xd.size, np.int32)
-    xdpi = np.empty(xd.size, np.float32)
-    yd = np.empty(xd.size, np.float32)
+    xdpi = np.empty(xd.size, np.float64)
+    yd = np.empty(xd.size, np.float64)
     
     nxd,nx = (xd.shape[0],x.shape[0])
     
@@ -68,27 +68,27 @@ def interpolate_vv(x,xd,y,istart,testorder=False,xd_ordered=True):
 
 
 def test_interpolate_vv():
-    x = np.array([0,6,12],np.float32)
-    y = np.array([5,4,3],np.float32)
+    x = np.array([0,6,12],np.float64)
+    y = np.array([5,4,3],np.float64)
     
-    xq = np.array([3],np.float32)
+    xq = np.array([3],np.float64)
     istart = np.array([0],np.int32)
     
     assert interpolate_vv(x,xq,y,istart)[2] == 4.5, 'one point is not ok'
     
-    xq = np.array([-6],np.float32)
+    xq = np.array([-6],np.float64)
     assert interpolate_vv(x,xq,y,istart)[2] == 6, 'extrapolation is not ok'
     
     istart = np.array([0,0],np.int32)
     
-    xq = np.array([9,15],np.float32)
+    xq = np.array([9,15],np.float64)
     assert np.all(interpolate_vv(x,xq,y,istart)[2] == np.array([3.5,2.5])), 'vector is not ok'
     
 
 @jit(nopython=no_py)
 def interpolate_precomputed(xdi,xdpi,y):
     
-    Yq = np.empty(xdi.shape,np.float32)
+    Yq = np.empty(xdi.shape,np.float64)
     
     for irow in range(0,Yq.shape[0]):
             xi  =  xdi[irow]
@@ -152,7 +152,7 @@ def interpolate_matrix_vector(x,Y,xq,startatzero=False):
     # given by vector xq
     # 
     
-    Yq = np.empty((xq.shape[0],Y.shape[1]),np.float32)
+    Yq = np.empty((xq.shape[0],Y.shape[1]),np.float64)
     
     
     

@@ -31,11 +31,13 @@ def interp(grid,xnew,return_wnext=True,use_cp=False,check_sorted=False,trim=Fals
         return interp_tu(grid,xnew,return_wnext=return_wnext,tirm=trim)
 
 
-def interp_np(grid,xnew,return_wnext=True,trim=False):    
+def interp_np(grid,xnew,return_wnext=True,trim=False,trim_half=False):    
     # this finds grid positions and weights for performing linear interpolation
     # this implementation uses numpy
     
     if trim: xnew = np.minimum(grid[-1], np.maximum(grid[0],xnew) )
+    if trim_half: xnew = np.maximum(grid[0],xnew) 
+  
     
     j = np.minimum( np.searchsorted(grid,xnew,side='left')-1, grid.size-2 )
     wnext = (xnew - grid[j])/(grid[j+1] - grid[j])
@@ -54,8 +56,9 @@ def interp_tu(grid,xnew,return_wnext=True,trim=True):
     assert xnew.ndim==1, "xnew should be 1-dimensional array"
     
     j_to = np.empty(xnew.shape,np.int32)
-    w_to = np.empty(xnew.shape,np.float32)
+    w_to = np.empty(xnew.shape,np.float64)
     
+    #value_to = np.minimum(grid[-1], np.maximum(grid[0], xnew) ) if trim else xnew
     value_to = np.minimum(grid[-1], np.maximum(grid[0], xnew) ) if trim else xnew
     
     

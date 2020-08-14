@@ -53,7 +53,8 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True,draw=False):
             
             
         #Get expected value after prod shocks
-        M = setup.exogrid.all_t_mat_psi_spt[t] if use_sparse else setup.exogrid.all_t_mat_psi[t-1]
+       # M = setup.exogrid.all_t_mat_psi_spt[t] if use_sparse else setup.exogrid.all_t_mat_psi[t-1]
+        M = setup.exogrid.all_t_mat_by_l_spt[0][t] if use_sparse else setup.exogrid.all_t_mat_by_l[0][t]
             
         sharea=out['Values'][1].shape[-1]
         na, nexo, ntheta = setup.na, setup.pars['nexo_t'][t], setup.ntheta_fine
@@ -62,7 +63,8 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True,draw=False):
             for ishare in range(sharea):
                 Vexp[...,itheta,ishare]=mmult(out['Values'][1][...,itheta,ishare],M)
                 
-        Vexp=out['Values'][1]  
+                
+        #Vexp=out['Values'][1]  
 
         #Now choose the bet division of assets
         Vexp_max=np.argmax(Vexp,axis=-1)#np.argmax(Vexp,axis=-1)#
@@ -104,9 +106,9 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True,draw=False):
         wha=(izf==izm)[:,:,:,0]
         whb=Vexp_max!=Vexp_max2
         
-        whc=(abs(Vexp_max+Vexp_max3-len(setup.ashare)+1)>1e-08)
+        whc=(abs(Vexp_max+Vexp_max3-len(setup.ashare)+1)>1e-12)
         
-        wh= (whb) | (whc)#(wha)  | 
+        wh= (whb) | (whc)  | (wha) 
         
         Vexp_max[wh]=np.full(Vexp_max2.shape,int((len(setup.ashare)-1)/2))[wh]
         Vexp_max2[wh]=np.full(Vexp_max2.shape,int((len(setup.ashare)-1)/2))[wh]
@@ -145,20 +147,20 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True,draw=False):
         
         indc=np.where(abs(Vmm-Vff)>1e-05)
         
-        
-        aaa=np.where(abs(Vexp2-Vexp)>1e-05)
+        if t==45:
+            aaa=np.where(abs(Vexp2-Vexp)>1e-05)
         bbb=np.where(abs(Vexp_max2-Vexp_max)>1e-05)
-        #assert np.all(abs(Vexp2-Vexp)<1e-05)
-        #assert np.all(abs(Vexp_max2-Vexp_max)<1e-05)
+      
         
 
-      
+       
     
         #assert np.all(np.max(Vexp,axis=-1)==np.reshape(Vexp[mask],Vexp_max.shape))
         out['Values']=(np.reshape(out['Values'][0][mask],Vexp_max.shape),
                        np.reshape(out['Values'][1][mask],Vexp_max.shape),
                        np.reshape(out['Values'][2][mask],Vexp_max.shape),
                        np.reshape(out['Values'][3][mask],Vexp_max.shape))
+        
         
         out['Decision']=np.reshape(out['Decision'][mask],Vexp_max.shape)
         out['thetas']=np.reshape(out['thetas'][mask],Vexp_max.shape)
@@ -200,6 +202,8 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True,draw=False):
        
         
         thetac=(thetam+thetaf!=setup.ntheta_fine)[thetam!=thetaf]
+        
+       
         print('theta mean is {} in {}'.format(np.mean(thetac),t))
         
       
@@ -269,3 +273,5 @@ def ev_couple_exo(setup,Vren,t,use_sparse=True,down=False):
     
     
     return EVr, EVc, EVf, EVm
+
+

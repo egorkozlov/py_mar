@@ -279,7 +279,7 @@ def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, ith
     ichoice_out = np.zeros(v_out.shape,dtype=np.bool_)
     
     
-    f1 = np.float32(1)
+    f1 = np.float64(1)
     
     
     for ia in prange(na):
@@ -463,7 +463,7 @@ def v_ren_core_two_opts_with_int2(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, it
     ichoice_out = np.zeros(v_out.shape,dtype=np.bool_)
     
     
-    f1 = np.float32(1)
+    f1 = np.float64(1)
     
     
     for ia in prange(na):
@@ -641,7 +641,7 @@ def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, ith
     ichoice_out = np.zeros(v_out.shape,dtype=np.bool_)
     
     
-    f1 = np.float32(1)
+    f1 = np.float64(1)
     
     
     for ia in prange(na):

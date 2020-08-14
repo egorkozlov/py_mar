@@ -25,7 +25,7 @@ from graph import graphs
 from solver_couples import v_iter_couple
 from solver_singles import v_iter_single
 from integrator_singles import ev_single
-from integrator_couples import ev_couple_m_c
+from integrator_couples1 import ev_couple_m_c
 
 
 class Model(object):
@@ -150,7 +150,7 @@ class Model(object):
             elif desc == 'Couple, C':
                 EV, dec = ev_couple_m_c(setup,V_next,t,False,draw=draw)
                 
-                
+
             if type(EV) is tuple:
                 EV0 = EV[0]
                 if self.display_v: print('at t = {} for {} mean EV[0,:,:,0] is {}'.format(t,desc,EV0[0,:,:,0].mean()))
@@ -247,12 +247,19 @@ class Model(object):
                         
                                
                  
-                    
+              
       
-                   
+                     
                 Vnow.update(V_d)
                 decnow.update({desc:dec})
                 
+            if t<=46:
+                
+                print('max diff is {}'.format(np.min(Vnow['Couple, M']['V']-Vnow['Couple, C']['V'])))
+                #assert np.all(Vnow['Couple, M']['V']>= Vnow['Couple, C']['V']) 
+            #if t<=46:assert np.all(decnow['Couple, M']['Values'][0]>= decnow['Couple, C']['Values'][0]) 
+            
+       
             self.V = [Vnow] + self.V
             self.decisions = [decnow] + self.decisions
             

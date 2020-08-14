@@ -117,7 +117,7 @@ def v_mar_igrid_alessandra(setup,t,V,icouple,ind_or_inds,*,female,marriage,inter
     #states the couple decides to 
     
     
-    which=V['Couple, M']['V'][icouple,...]> V['Couple, C']['V'][icouple,...]
+    which=V['Couple, M']['V'][icouple,...]>= V['Couple, C']['V'][icouple,...]
     
     
     dtype = setup.dtype
@@ -152,10 +152,10 @@ def v_mar_igrid_alessandra(setup,t,V,icouple,ind_or_inds,*,female,marriage,inter
     
     if female:
         Vfs = VFval_single[:,izf]
-        Vms = VMval_single[:,izm]#s_partner_v.apply(VMval_single,axis=0,take=(1,izm))
+        Vms = s_partner_v.apply(VMval_single,axis=0,take=(1,izm))
     else:
         Vms = VMval_single[:,izm]
-        Vfs = VFval_single[:,izf]#s_partner_v.apply(VFval_single,axis=0,take=(1,izf))
+        Vfs = s_partner_v.apply(VFval_single,axis=0,take=(1,izf))
         
         
         
@@ -196,7 +196,7 @@ def v_no_mar(setup,t,V,icouple,ind_or_inds,*,female,marriage):
     vmout, vfout = V['Male, single']['V'][:,izm], V['Female, single']['V'][:,izf]
     
     
-    nbsout = np.zeros_like(vmout,dtype=np.float32)
+    nbsout = np.zeros_like(vmout,dtype=np.float64)
     ithetaout = -np.ones_like(vmout,dtype=np.int16)
     agree = np.full_like(vmout,False,dtype=np.bool)
     i_mar = np.full_like(vmout,False,dtype=np.bool)
@@ -235,12 +235,12 @@ def mar_loop2(vfy,vmy,vfn,vmn,which):
             sf_i = sf[ia,iexo,:]
             sm_i = sm[ia,iexo,:]
             
-            both = (sf_i > 0) & (sm_i > 0)
+            both = (sf_i >= 0) & (sm_i >= 0)
             
             good = np.any(both)
              
             agree[ia,iexo] = good
-            f1 = np.float32(1)
+            f1 = np.float64(1)
             
             if good:
                 nbs = np.zeros(ntheta,dtype=np.float64)
@@ -308,7 +308,7 @@ def mar_loop(vfy,vmy,vfn,vmn):
             good = np.any(both)
              
             agree[ia,iexo] = good
-            f1 = np.float32(1)
+            f1 = np.float64(1)
             
             if good:
                 nbs = np.zeros(ntheta,dtype=np.float64)

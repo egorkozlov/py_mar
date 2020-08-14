@@ -109,7 +109,8 @@ class Agents:
         self.c = np.zeros((N,T),np.float32)
         self.x = np.zeros((N,T),np.float32)
         self.s = np.zeros((N,T),np.float32)
-        
+        self.share_m=np.zeros(T,np.float32)
+        self.share_s=np.zeros(T,np.float32)
 
         
         
@@ -226,7 +227,9 @@ class Agents:
                     if t+1<self.T:
                         self.iassets[ind,t+1] = VecOnGrid(self.setup.agrid_c,anext).roll(shocks=self.shocks_couple_a[ind,t])
                         self.iassetss[ind,t+1] = self.iassets[ind,t+1].copy()
-                    
+                   
+                wh=anext<0
+                anext[wh]=0.0
                 assert np.all(anext >= 0)
     
     
@@ -517,6 +520,8 @@ class Agents:
 
                         # if bribing happens we overwrite this
                         self.iassets[ind[i_div],t+1] = VecOnGrid(self.Mlist[ipol].setup.agrid_s,s).roll(shocks=shks)
+                        if sname == "Couple, C":self.share_s[t]=np.mean(sf)/(np.mean(sf)+np.mean(sm))
+                        if sname == "Couple, M":self.share_m[t]=np.mean(sf)/(np.mean(sf)+np.mean(sm))
                         #if sname == "Couple, C":print(np.mean(share_f),np.mean(share_m),np.mean(self.setup.thetagrid[self.setup.v_thetagrid_fine.i[itht]][i_div]))
                         
                         if bil_bribing:
@@ -637,6 +642,8 @@ class AgentsPooled:
         self.c = combine([a.c for a in AgentsList])
         self.s = combine([a.s for a in AgentsList])
         self.x = combine([a.x for a in AgentsList])
+        self.share_m = combine([a.share_m for a in AgentsList])
+        self.share_s = combine([a.share_s for a in AgentsList])
         self.shocks_single_iexo=combine([a.shocks_single_iexo for a in AgentsList])
         self.shocks_couple_a=combine([a.shocks_couple_a for a in AgentsList])
         self.shocks_single_a=combine([a.shocks_single_a for a in AgentsList])

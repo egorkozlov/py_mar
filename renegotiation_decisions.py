@@ -94,21 +94,21 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
     else:
         
         if not ugpu:
-            # v_out_nor, vf_out, vm_out, itheta_out, switch = \
-            #     v_ren_core_two_opts_with_int2(
-            #                 np.stack(V['Couple, C']['V'][None,...]),
-            #                 np.stack(V['Couple, C']['VF'][None,...]), 
-            #                 np.stack(V['Couple, C']['VM'][None,...]), 
-            #                         vf_n, vm_n,
-            #                         itht, wntht, thtgrid,setup.ashare)     
-                
             v_out_nor, vf_out, vm_out, itheta_out, switch = \
                 v_ren_core_two_opts_with_int(
-                            np.stack([V['Couple, C']['V'], V['Couple, M']['V']]),
-                            np.stack([V['Couple, C']['VF'],V['Couple, M']['VF']]), 
-                            np.stack([V['Couple, C']['VM'],V['Couple, M']['VM']]), 
+                            np.stack(V['Couple, C']['V'][None,...]),
+                            np.stack(V['Couple, C']['VF'][None,...]), 
+                            np.stack(V['Couple, C']['VM'][None,...]), 
                                     vf_n, vm_n,
-                                    itht, wntht, thtgrid,setup.ashare)  
+                                    itht, wntht, thtgrid,setup.ashare)     
+                
+            # v_out_nor, vf_out, vm_out, itheta_out, switch = \
+            #     v_ren_core_two_opts_with_int(
+            #                 np.stack([V['Couple, C']['V'], V['Couple, M']['V']]),
+            #                 np.stack([V['Couple, C']['VF'],V['Couple, M']['VF']]), 
+            #                 np.stack([V['Couple, C']['VM'],V['Couple, M']['VM']]), 
+            #                         vf_n, vm_n,
+            #                         itht, wntht, thtgrid,setup.ashare)  
                 
             
             # #First: cohabitation versus separation
@@ -295,7 +295,7 @@ def v_ren_core_two_opts_with_int2(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, it
     ichoice_out = np.zeros(v_out.shape,dtype=np.bool_)
     
     
-    f1 = np.float32(1)
+    f1 = np.float64(1)
     
     
     for ia in prange(na):
@@ -308,8 +308,8 @@ def v_ren_core_two_opts_with_int2(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, it
             vf_opt = np.empty((nt,),dtype=dtype)
             vm_opt = np.empty((nt,),dtype=dtype)
             
-            vf_no_t = np.empty((nt,),dtype=dtype)
-            vm_no_t = np.empty((nt,),dtype=dtype)
+           #♦ vf_no_t = np.empty((nt,),dtype=dtype)
+            #vm_no_t = np.empty((nt,),dtype=dtype)
             
             # this part does all interpolations and maximization
             for it in prange(nt):
@@ -494,7 +494,8 @@ def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, ith
     ichoice_out = np.zeros(v_out.shape,dtype=np.bool_)
     
     
-    f1 = np.float32(1)
+    f1 = np.float64(1)
+  
     
     
     for ia in prange(na):
@@ -507,8 +508,8 @@ def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, ith
             vf_opt = np.empty((nt,),dtype=dtype)
             vm_opt = np.empty((nt,),dtype=dtype)
             
-            vf_no_t = np.empty((nt,),dtype=dtype)
-            vm_no_t = np.empty((nt,),dtype=dtype)
+            #vf_no_t = np.empty((nt,),dtype=dtype)
+            #vm_no_t = np.empty((nt,),dtype=dtype)
             
             # this part does all interpolations and maximization
             for it in prange(nt):
@@ -521,8 +522,8 @@ def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, ith
                     return x[ia,ie,it_c]*wt_c + x[ia,ie,it_cp]*wn_c
                 
                 v_y_0 = wsum(v_y_ni_0)
-                vf_no_t[it] = wsum(vf_n_ni)
-                vm_no_t[it] = wsum(vm_n_ni)
+                #vf_no_t[it] = wsum(vf_n_ni)
+                #vm_no_t[it] = wsum(vm_n_ni)
 
                 
                 
@@ -546,16 +547,17 @@ def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, ith
                     vm_opt[it] = wsum(vm_y_ni_0)
                     v_opt[it] = v_y_0
                 
-                
+
             #Here below renegotiation
             for si in range(ns):
                 
                 vf_no = vf_n_ni[ia,ie,si]
                 vm_no = vm_n_ni[ia,ie,si]
                 
+
                 
                 for it in range(nt):
-                    
+                  
         
                     
                     vf_y = vf_opt[it]                

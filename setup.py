@@ -74,10 +74,10 @@ class ModelSetup(object):
         
          
         #Wages over time
-        p['f_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(4+-.74491918 +.04258303*t -.0016542*t**2+.00001775*t**3) for t in range(T)]
-        p['f_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(4+-.6805060 +.04629912*t -.00160467*t**2+.00001626*t**3) for t in range(T)]
-        p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(4+-.74491918 +.04258303*t -.0016542*t**2+.00001775*t**3) for t in range(T)]
-        p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(4+-.6805060 +.04629912*t -.00160467*t**2+.00001626*t**3) for t in range(T)]
+        p['f_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(8+-.74491918 +.04258303*t -.0016542*t**2+.00001775*t**3) for t in range(T)]
+        p['f_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(8+-.6805060 +.04629912*t -.00160467*t**2+.00001626*t**3) for t in range(T)]
+        p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(8+-.74491918 +.04258303*t -.0016542*t**2+.00001775*t**3) for t in range(T)]
+        p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(8+-.6805060 +.04629912*t -.00160467*t**2+.00001626*t**3) for t in range(T)]
    
 
 #        p['f_wage_trend'] = [(-0.5620125  +0.06767721*t -0.00192571*t**2+ 0.00001573*t**3) for t in range(T)]
@@ -136,6 +136,8 @@ class ModelSetup(object):
         
         
         
+        #Trim values
+        self.trim=0.00000000001
         
         
         #Cost of Divorce
@@ -297,7 +299,7 @@ class ModelSetup(object):
 
                 
             
-            zfzm, zfzmmat = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], exogrid['zf_t_mat'], exogrid['zm_t_mat'])
+            zfzm, zfzmmat = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], exogrid['zf_t_mat'], exogrid['zm_t_mat'],trim=self.trim)
 
             
             #Create a new bad version of transition matrix p(zf_t)
@@ -312,7 +314,7 @@ class ModelSetup(object):
             
             zf_t_mat_down = zf_bad
             
-            zfzm2, zfzmmat2 = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], zf_t_mat_down, exogrid['zm_t_mat'])
+            zfzm2, zfzmmat2 = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], zf_t_mat_down, exogrid['zm_t_mat'],trim=self.trim)
             
             # if p['rho_s']>0:
             #     for t in range(p['Tret']-1):
@@ -352,15 +354,15 @@ class ModelSetup(object):
             
             
             #Put everything together
-            all_t, all_t_mat = combine_matrices_two_lists(zfzm,exogrid['psi_t'],zfzmmat,exogrid['psi_t_mat'])
+            all_t, all_t_mat = combine_matrices_two_lists(zfzm,exogrid['psi_t'],zfzmmat,exogrid['psi_t_mat'],trim=self.trim)
             all_t_mat_sparse_T = [sparse.csc_matrix(D.T) if D is not None else None for D in all_t_mat]
             
-            all_t_down, all_t_mat_down = combine_matrices_two_lists(zfzm2,exogrid['psi_t'],zfzmmat2,exogrid['psi_t_mat'])
+            all_t_down, all_t_mat_down = combine_matrices_two_lists(zfzm2,exogrid['psi_t'],zfzmmat2,exogrid['psi_t_mat'],trim=self.trim)
             all_t_mat_down_sparse_T = [sparse.csc_matrix(D.T) if D is not None else None for D in all_t_mat_down]
             
             temp=list()
             temp=temp+[np.eye(len(zfzmmat2[0])) for i in range(len(zfzmmat2))]
-            all_t_down, all_t_mat_psi = combine_matrices_two_lists(zfzm2,exogrid['psi_t'],temp,exogrid['psi_t_mat'])
+            all_t_down, all_t_mat_psi = combine_matrices_two_lists(zfzm2,exogrid['psi_t'],temp,exogrid['psi_t_mat'],trim=self.trim)
             all_t_mat_psi_spt = [sparse.csc_matrix(D.T) if D is not None else None for D in all_t_mat_down]
             
             
@@ -393,10 +395,10 @@ class ModelSetup(object):
         #Grid Couple
         self.na = 50#40
         self.amin = 0
-        self.amax = 5500#80
-        self.amax1 = 5500#180
+        self.amax = 250000#80
+        self.amax1 = 250000#180
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
-        tune=20
+        tune=2000
         self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         self.agrid_c[0]=0.0
         #self.agrid_c[-1]=self.amax1
@@ -404,7 +406,7 @@ class ModelSetup(object):
         # this builds finer grid for potential savings
         s_between = 5 # default numer of points between poitns on agrid
         s_da_min = 0.001 # minimal step (does not create more points)
-        s_da_max = 200.0 # maximal step (creates more if not enough)
+        s_da_max = 20000.0 # maximal step (creates more if not enough)
         
         self.sgrid_c = build_s_grid(self.agrid_c,s_between,s_da_min,s_da_max)
         self.vsgrid_c = VecOnGrid(self.agrid_c,self.sgrid_c)
@@ -443,7 +445,7 @@ class ModelSetup(object):
         
         
         # construct finer grid for bargaining
-        ntheta_fine = 2*self.ntheta # actual number may be a bit bigger
+        ntheta_fine = 1*self.ntheta # actual number may be a bit bigger
         self.thetagrid_fine = np.unique(np.concatenate( (self.thetagrid,np.linspace(self.thetamin,self.thetamax,ntheta_fine,dtype=self.dtype)) ))
         self.ntheta_fine = self.thetagrid_fine.size
         
@@ -590,13 +592,14 @@ class ModelSetup(object):
 
         
     
-    def mar_mats_iexo(self,t,female=True,trim_lvl=0.001):
+    def mar_mats_iexo(self,t,female=True):
         # TODO: check timing
         # this returns transition matrix for single agents into possible couples
         # rows are single's states
         # columnts are couple's states
         # you have to transpose it if you want to use it for integration
         setup = self
+        trim_lvl=setup.trim
         
         nexo = setup.pars['nexo_t'][t]
         sigma_psi_init = setup.pars['sigma_psi_init']

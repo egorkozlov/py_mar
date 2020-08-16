@@ -42,17 +42,23 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True,draw=False):
     
     
     
-    tk = lambda x : x[:,:,setup.theta_orig_on_fine]
     
-    Vren = {'M':{'VR':tk(_Vren2[0]),'VC':tk(_Vren2[1]), 'VF':tk(_Vren2[2]),'VM':tk(_Vren2[3])},
-            'SF':Vpostren['Female, single'],
-            'SM':Vpostren['Male, single']}
+
+    
+
     
     ###########################################################
     ###########################################################
     
     
     if len(out['Values'][1].shape)>3:
+        
+        tk = lambda x : x[:,:,setup.theta_orig_on_fine,:]
+        
+        Vren = {'M':{'VR':_Vren2[0],'VC':_Vren2[1], 'VF':_Vren2[2],'VM':_Vren2[3]},
+        'SF':Vpostren['Female, single'],
+        'SM':Vpostren['Male, single']}
+        
         # accounts for exogenous transitions
         EVr, EVc, EVf, EVm = ev_couple_exo(setup,Vren['M'],t,use_sparse,down=False)
         
@@ -78,7 +84,7 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True,draw=False):
         psi=setup.all_indices(t,temp1)[3]
         index2=setup.all_indices(t,(izm,izf,psi))[0]
         Vexp2t=Vexp[:,index2[0,:,0,0,0],:,:,:]
-        indt=np.linspace(setup.ntheta,1,setup.ntheta,dtype=np.int16)-1
+        indt=np.linspace(setup.ntheta_fine,1,setup.ntheta_fine,dtype=np.int16)-1
         Vexptt=Vexp2t[:,:,indt,:,:]
         indt2=np.linspace(len(setup.ashare),1,len(setup.ashare),dtype=np.int16)-1
         Vexp2=Vexptt[:,:,:,:,indt2]
@@ -189,11 +195,21 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True,draw=False):
       
 
     else:
+        
+        tk = lambda x : x[:,:,setup.theta_orig_on_fine]
+        Vren = {'M':{'VR':tk(_Vren2[0]),'VC':tk(_Vren2[1]), 'VF':tk(_Vren2[2]),'VM':tk(_Vren2[3])},
+            'SF':Vpostren['Female, single'],
+            'SM':Vpostren['Male, single']}
         EVr, EVc, EVf, EVm = ev_couple_exo1(setup,Vren['M'],t,use_sparse,down=False)
+        assert EVr.dtype == setup.dtype
+        dec = out.copy()
+    
+        return (EVr, EVc, EVf, EVm), dec
+
     assert EVr.dtype == setup.dtype
     dec = out.copy()
     
-    return (EVr, EVc, EVf, EVm), dec
+    return (tk(EVr), tk(EVc), tk(EVf), tk(EVm)), dec
 
 
 def ev_couple_exo(setup,Vren,t,use_sparse=True,down=False):
@@ -213,7 +229,7 @@ def ev_couple_exo(setup,Vren,t,use_sparse=True,down=False):
     
     nl = len(setup.exogrid.all_t_mat_by_l_spt)
     
-    na, nexo, ntheta = setup.na, setup.pars['nexo_t'][t], setup.ntheta 
+    na, nexo, ntheta = setup.na, setup.pars['nexo_t'][t], setup.ntheta_fine
     
     
     Vr, Vc, Vf, Vm = Vren['VR'], Vren['VC'], Vren['VF'], Vren['VM']

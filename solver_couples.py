@@ -164,22 +164,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False,
     assert c_opt.dtype == dtype
     assert x_opt.dtype == dtype
     assert s_opt.dtype == dtype
-    
-    Vm=EV_mal_by_l[:,:,:,0]#V_mal
-    Vexp=EV_fem_by_l[:,:,:,0]#V_fem
-    temp1=np.linspace(1,setup.pars['nexo_t'][t],setup.pars['nexo_t'][t])-1
-    izf=setup.all_indices(t,temp1)[1]
-    izm=setup.all_indices(t,temp1)[2]
-    psi=setup.all_indices(t,temp1)[3]
-    index2=np.array(setup.all_indices(t,(izm,izf,psi))[0],dtype=np.int16)
-    indt=np.linspace(setup.ntheta,1,setup.ntheta,dtype=np.int16)-1
-    Vexp2a=Vexp[:,index2,:]
-    Vf=Vexp2a[:,:,indt]
-    
-    aaa=np.where(abs(Vm-Vf)>1e-07)
   
-    assert np.all(abs(Vm-Vf)<1e-07)
-    print('difference in solver is {} in {}'.format(np.max(abs(Vm-Vf)),t))    
     try:
         assert np.allclose(V_all,V_couple,atol=1e-6,rtol=1e-5)
     except:

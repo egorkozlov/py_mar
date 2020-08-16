@@ -144,7 +144,7 @@ class Model(object):
             
             if desc == 'Female, single' or desc == 'Male, single':
                 female = (desc == 'Female, single')
-                EV, dec = ev_single(setup,V_next,setup.agrid_s,female,t,decc=decc)
+                EV, dec = ev_single(setup,V_next,setup.agrid_s,female,t,decc=decc,trim_lvl=setup.trim)
             elif desc == 'Couple, M':
                 EV, dec = ev_couple_m_c(setup,V_next,t,True,draw=draw)
             elif desc == 'Couple, C':
@@ -256,7 +256,7 @@ class Model(object):
             if t<=45:
                 
                 print('max diff is {}'.format(np.min(Vnow['Couple, M']['V']-Vnow['Couple, C']['V'])))
-                assert np.all(Vnow['Couple, M']['V']>= Vnow['Couple, C']['V']) 
+                #assert np.all(Vnow['Couple, M']['V']>= Vnow['Couple, C']['V']) 
             #if t<=46:assert np.all(decnow['Couple, M']['Values'][0]>= decnow['Couple, C']['Values'][0]) 
             
        

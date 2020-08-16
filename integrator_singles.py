@@ -175,8 +175,7 @@ def ev_single_meet(setup,V,sown,female,t,skip_mar=False,trim_lvl=0.000001,dec_c=
     mout['M or C'] = morc
     mout['theta'] = tht
     
-    if t<=46:
-       print('her')
+   
     
     return EV, mout
 

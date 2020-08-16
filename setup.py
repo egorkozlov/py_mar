@@ -394,16 +394,17 @@ class ModelSetup(object):
         self.na = 50#40
         self.amin = 0
         self.amax = 5500#80
-        self.amax1 = 95#180
+        self.amax1 = 5500#180
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
-        tune=2500
+        tune=20
         self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
+        self.agrid_c[0]=0.0
         #self.agrid_c[-1]=self.amax1
         #self.agrid_c[-2]=85#120
         # this builds finer grid for potential savings
         s_between = 5 # default numer of points between poitns on agrid
         s_da_min = 0.001 # minimal step (does not create more points)
-        s_da_max = 50.0 # maximal step (creates more if not enough)
+        s_da_max = 200.0 # maximal step (creates more if not enough)
         
         self.sgrid_c = build_s_grid(self.agrid_c,s_between,s_da_min,s_da_max)
         self.vsgrid_c = VecOnGrid(self.agrid_c,self.sgrid_c)
@@ -417,7 +418,7 @@ class ModelSetup(object):
         self.amax_s = self.amax/scale
         self.agrid_s = np.linspace(self.amin_s,self.amax_s,self.na,dtype=self.dtype)
         #self.agrid_s[self.na-1]=18#180
-        tune_s=2500
+        tune_s=25
         self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
         #self.agrid_s[-1]=self.amax1/scale
         #self.agrid_c[-2]=85/scale
@@ -427,7 +428,7 @@ class ModelSetup(object):
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)
         
         # grid for theta
-        self.ntheta = 21
+        self.ntheta = 11
         self.thetamin = 0.05
         self.thetamax = 0.95
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta,dtype=self.dtype)
@@ -442,7 +443,7 @@ class ModelSetup(object):
         
         
         # construct finer grid for bargaining
-        ntheta_fine = 1*self.ntheta # actual number may be a bit bigger
+        ntheta_fine = 2*self.ntheta # actual number may be a bit bigger
         self.thetagrid_fine = np.unique(np.concatenate( (self.thetagrid,np.linspace(self.thetamin,self.thetamax,ntheta_fine,dtype=self.dtype)) ))
         self.ntheta_fine = self.thetagrid_fine.size
         
@@ -524,9 +525,14 @@ class ModelSetup(object):
         gsparse = np.linspace(mint,mmax,nm-ndense)
         gdense = np.linspace(mmin,mint,ndense+1) # +1 as there is a common pt
         
+        
+       
+        
         self.mgrid = np.zeros(nm,dtype=self.dtype)
         self.mgrid[ndense:] = gsparse
         self.mgrid[:(ndense+1)] = gdense
+        self.mgrid = np.geomspace(mmin+tune,mmax+tune,num=nm)-tune
+        
         assert np.all(np.diff(self.mgrid)>0)
         
         self.u_precompute()

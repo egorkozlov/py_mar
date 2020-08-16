@@ -46,7 +46,7 @@ if __name__ == '__main__':
     #For graphs later
     graphs=True
     #Build  data moments and pickle them
-    dat_moments(period=1,sampling_number=4,transform=2)
+    #dat_moments(period=1,sampling_number=4,transform=2)
     
          
     #Initialize the file with parameters
@@ -91,7 +91,7 @@ if __name__ == '__main__':
         zmi=2
         psii=10
         ti=0
-        thi=10
+        thi=5
          
         #Actual Graphs
         mdl[0].graph(ai,zfi,zmi,psii,ti,thi)

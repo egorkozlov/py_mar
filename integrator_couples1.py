@@ -78,7 +78,7 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True,draw=False):
         psi=setup.all_indices(t,temp1)[3]
         index2=setup.all_indices(t,(izm,izf,psi))[0]
         Vexp2t=Vexp[:,index2[0,:,0,0,0],:,:,:]
-        indt=np.linspace(setup.ntheta_fine,1,setup.ntheta_fine,dtype=np.int16)-1
+        indt=np.linspace(setup.ntheta,1,setup.ntheta,dtype=np.int16)-1
         Vexptt=Vexp2t[:,:,indt,:,:]
         indt2=np.linspace(len(setup.ashare),1,len(setup.ashare),dtype=np.int16)-1
         Vexp2=Vexptt[:,:,:,:,indt2]
@@ -127,6 +127,8 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True,draw=False):
         if t==44:
             
             print('here')
+            
+       
         #assert np.all(np.max(Vexp,axis=-1)==np.reshape(Vexp[mask],Vexp_max.shape))
         out['Values']=(np.reshape(np.repeat(out['Values'][0][:,:,:,np.newaxis,:], 2, axis=3)[mask],Vexp_max.shape)[:,:,:,0],
                        np.reshape(np.repeat(out['Values'][1][:,:,:,np.newaxis,:], 2, axis=3)[mask],Vexp_max.shape)[:,:,:,0],
@@ -166,7 +168,7 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True,draw=False):
             Vf=Vexp2a[:,:,indt]
             
             aaa=np.where(abs(Vm-Vf)>1e-07)
-            assert np.all(abs(Vm-Vf)<1e-09)
+            #assert np.all(abs(Vm-Vf)<1e-09)
             print('difference in integrator is {} in {}'.format(np.max(abs(Vm-Vf)),t))
             print('SINGLE DIFF is {} in {}'.format(np.max(abs(Vpostren['Male, single']['V']-Vpostren['Female, single']['V'])),t))
             
@@ -256,7 +258,7 @@ def ev_couple_exo1(setup,Vren,t,use_sparse=True,down=False):
     
     nl = len(setup.exogrid.all_t_mat_by_l_spt)
     
-    na, nexo, ntheta = setup.na, setup.pars['nexo_t'][t], setup.ntheta 
+    na, nexo, ntheta = setup.na, setup.pars['nexo_t'][t], setup.ntheta
     
     
     Vr, Vc, Vf, Vm = Vren['VR'], Vren['VC'], Vren['VF'], Vren['VM']

@@ -245,7 +245,7 @@ def mar_loop2(vfy,vmy,vfn,vmn,which):
             if good:
                 nbs = np.zeros(ntheta,dtype=np.float64)
                 nbs[both] = sf_i[both]* sm_i[both]
-                i_best = 10#nbs.argmax()
+                i_best = 5#nbs.argmax()
                 nbs_best = nbs[i_best]
                 #assert nbs_best > 0
                 
@@ -313,7 +313,7 @@ def mar_loop(vfy,vmy,vfn,vmn):
             if good:
                 nbs = np.zeros(ntheta,dtype=np.float64)
                 nbs[both] = sf_i[both]* sm_i[both]
-                i_best = 10#nbs.argmax()
+                i_best = 5#nbs.argmax()
                 nbs_best = nbs[i_best]
                 #assert nbs_best > 0
                 

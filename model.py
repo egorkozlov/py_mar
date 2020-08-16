@@ -25,7 +25,7 @@ from graph import graphs
 from solver_couples import v_iter_couple
 from solver_singles import v_iter_single
 from integrator_singles import ev_single
-from integrator_couples1 import ev_couple_m_c
+from integrator_couples import ev_couple_m_c
 
 
 class Model(object):

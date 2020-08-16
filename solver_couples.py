@@ -85,47 +85,37 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False,
     
     
     
-    # for ibatch in range(int(np.ceil(nexo/nbatch))):
-    #     #money_i = money[:,:]
-    #     assert ifinish > istart
+    for ibatch in range(int(np.ceil(nexo/nbatch))):
+        #money_i = money[:,:]
+        assert ifinish > istart
         
-    #     money_t = (R*agrid, wf[istart:ifinish], wm[istart:ifinish])
-    #     EV_t = (setup.vsgrid_c,EVr_by_l[:,istart:ifinish,:,:])
+        money_t = (R*agrid, wf[istart:ifinish], wm[istart:ifinish])
+        EV_t = (setup.vsgrid_c,EVr_by_l[:,istart:ifinish,:,:])
         
         
-    #     V_pure_i, c_opt_i, x_opt_i, s_opt_i, i_opt_i, il_opt_i, V_all_l_i = \
-    #        v_optimize_couple(money_t,sgrid,EV_t,setup.mgrid,
-    #                          setup.ucouple_precomputed_u,setup.ucouple_precomputed_x,
-    #                              ls,beta,ushift,dtype=dtype_here,mt=mt)
+        V_pure_i, c_opt_i, x_opt_i, s_opt_i, i_opt_i, il_opt_i, V_all_l_i = \
+            v_optimize_couple(money_t,sgrid,EV_t,setup.mgrid,
+                              setup.ucouple_precomputed_u,setup.ucouple_precomputed_x,
+                                  ls,beta,ushift,dtype=dtype_here,mt=mt)
            
-    #     V_ret_i = V_pure_i + psi[None,istart:ifinish,None]
+        V_ret_i = V_pure_i + psi[None,istart:ifinish,None]
         
-    #     # if dtype_here != dtype type conversion happens here
+        # if dtype_here != dtype type conversion happens here
         
-    #     V_couple[:,istart:ifinish,:] = V_ret_i # this estimate of V can be improved
-    #     c_opt[:,istart:ifinish,:] = c_opt_i 
-    #     s_opt[:,istart:ifinish,:] = s_opt_i
-    #     i_opt[:,istart:ifinish,:] = i_opt_i
-    #     x_opt[:,istart:ifinish,:] = x_opt_i
-    #     il_opt[:,istart:ifinish,:] = il_opt_i
-    #     V_all_l[:,istart:ifinish,:,:] = V_all_l_i # we need this for l choice so it is ok
+        V_couple[:,istart:ifinish,:] = V_ret_i # this estimate of V can be improved
+        c_opt[:,istart:ifinish,:] = c_opt_i 
+        s_opt[:,istart:ifinish,:] = s_opt_i
+        i_opt[:,istart:ifinish,:] = i_opt_i
+        x_opt[:,istart:ifinish,:] = x_opt_i
+        il_opt[:,istart:ifinish,:] = il_opt_i
+        V_all_l[:,istart:ifinish,:,:] = V_all_l_i # we need this for l choice so it is ok
         
         
-    #     istart = ifinish
-    #     ifinish = ifinish+nbatch if ifinish+nbatch < nexo else nexo
+        istart = ifinish
+        ifinish = ifinish+nbatch if ifinish+nbatch < nexo else nexo
         
-    #     if verbose: print('Batch {} done at {} sec'.format(ibatch,default_timer()-start))
-    
-    money_t = (R*agrid, wf, wm)
-    EV_t = (setup.vsgrid_c,EVr_by_l[:,:,:,:])
-    
-    
-    V_pure_i, c_opt, x_opt, s_opt, i_opt, il_opt, V_all_l = \
-       v_optimize_couple(money_t,sgrid,EV_t,setup.mgrid,
-                         setup.ucouple_precomputed_u,setup.ucouple_precomputed_x,
-                             ls,beta,ushift,dtype=dtype_here,mt=mt)
-       
-    V_couple = V_pure_i + psi[None,:,None]
+        if verbose: print('Batch {} done at {} sec'.format(ibatch,default_timer()-start))
+  
     
   
     assert np.all(c_opt > 0)
@@ -146,15 +136,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False,
     V_all = uc + beta*np.take_along_axis(np.take_along_axis(EVc_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
     #def r(x): return x.astype(dtype)
   
-    
-    if t==45:
-        #Problem and ia=49,iexo=27,itheta=4
-        #for marriage V_all[49,27,4]=-1.562246827410901
-        
-        #applying choices of cohabitants: 
-        #V=setup.u_couple(397.8538247170836,1.6866382019328785e-08,0,setup.thetagrid[4],ushift,psi_r[0,27,0])+beta*EVc_all[194,27,4,0]
-        #=-1.5605697273814978//-1.5607925092279569
-        print('e')
+  
     
     def r(x): return x
     
@@ -168,7 +150,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False,
     try:
         assert np.allclose(V_all,V_couple,atol=1e-6,rtol=1e-5)
     except:
-        print('max difference in V is {}'.format(np.max(np.abs(V_all-V_couple))))
+        #print('max difference in V is {}'.format(np.max(np.abs(V_all-V_couple))))
         pass
     
     return r(V_all), r(V_fem), r(V_mal), r(c_opt), r(x_opt), r(s_opt), il_opt, r(V_all_l), r(EVc_all)

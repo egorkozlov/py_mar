@@ -426,7 +426,7 @@ class ModelSetup(object):
         
         
         #Grid for the share in assets
-        self.ashare = np.linspace(0.1,0.9,9,dtype=self.dtype)
+        self.ashare = np.linspace(0.1,0.9,7,dtype=self.dtype)
         
         
         

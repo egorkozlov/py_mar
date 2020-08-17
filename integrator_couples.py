@@ -167,31 +167,18 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True,draw=False):
             indt=np.linspace(setup.ntheta_fine,1,setup.ntheta_fine,dtype=np.int16)-1
             Vexp2a=Vexp[:,index2,:]
             Vf=Vexp2a[:,:,indt]
-            
-            aaa=np.where(abs(Vm-Vf)>1e-07)
-            #assert np.all(abs(Vm-Vf)<1e-09)
+    
             print('difference in integrator is {} in {}'.format(np.max(abs(Vm-Vf)),t))
             print('SINGLE DIFF is {} in {}'.format(np.max(abs(Vpostren['Male, single']['V']-Vpostren['Female, single']['V'])),t))
             
-            #assert np.all(abs(Vm-Vf)<1e-07)
-            #assert np.all(abs(Vpostren['Male, single']['V']-Vpostren['Female, single']['V'])<1e-07)
-    
-            #Eliminate below
-            thetam=out['thetas']
-            thetaf1=out['thetas'][:,index2,:]
-            thetaf=thetaf1[:,:,indt]
-           
-            
-            thetac=(thetam+thetaf!=setup.ntheta_fine)[thetam!=thetaf]
-            
-           
-            print('theta mean is {} in {}'.format(np.mean(thetac),t))
+          
             
       
 
     else:
         
         tk = lambda x : x[:,:,setup.theta_orig_on_fine]
+        
         Vren = {'M':{'VR':tk(_Vren2[0]),'VC':tk(_Vren2[1]), 'VF':tk(_Vren2[2]),'VM':tk(_Vren2[3])},
             'SF':Vpostren['Female, single'],
             'SM':Vpostren['Male, single']}

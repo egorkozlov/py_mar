@@ -108,7 +108,7 @@ class Model(object):
         
         # first we define the iterator
          
-        def v_iterator(setup,desc,t,EV=None):
+        def v_iterator(setup,desc,t,EV=None,dec=None,draw=False):
             # this takes integrated future type-specific value function and returns
             # this period value function. Integration is done separately.
             # If None is feeded for EV this assumes that we are in the last period
@@ -136,7 +136,10 @@ class Model(object):
                 if (title>0.5) | (not setup.pars['can divorce'][t]):
                     V, VF, VM, c, x, s, fls, V_all_l, EV = v_iter_couple(setup,t,EV,ushift)   
                 else:
-                    V, VF, VM, c, x, s, fls, V_all_l, EV = v_iter_couple_title(setup,t,EV,ushift)   
+                    V, VF, VM, c, x, s, fls, V_all_l, EV,dec = v_iter_couple_title(setup,t,EV,ushift,dec,desc,draw)
+                    
+                    return ({desc: {'V':V,'VF':VF,'VM':VM,'c':c,'x':x,'s':s,'fls':fls,'V_all_l':V_all_l, 'EV':EV}},dec)
+          
 
                       
                 if self.display_v: print('at t = {} for {} mean V[0,:,:] is {}'.format(t,desc,V[0,:,:].mean()))
@@ -175,7 +178,15 @@ class Model(object):
             def iterate(desc,t,Vnext,decc=None,draw=False):
                 EV, dec = v_integrator(self.setup,desc,t,Vnext,decc=decc,draw=draw)
                 if timed: self.time('Integration for {}'.format(desc))
-                vout = v_iterator(self.setup,desc,t,EV)
+                vout_temp = v_iterator(self.setup,desc,t,EV,dec,draw=draw)
+                
+                #This is for the title based case, where 
+                if isinstance(vout_temp,tuple):
+                    vout=vout_temp[0]
+                    dec=vout_temp[1]
+                else:
+                    vout=vout_temp
+                    
                 if timed: self.time('Optimization for {}'.format(desc))
                 
                 self.wrap_decisions(desc,dec,vout)

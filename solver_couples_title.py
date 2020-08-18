@@ -16,7 +16,7 @@ if system() != 'Darwin' and system() != 'Windows':
 else:    
     nbatch_def = 17
 
-def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False,
+def v_iter_couple(setup,t,EV_tuple,ushift,dec,desc,draw=True,nbatch=nbatch_def,verbose=False,
                               force_f32 = False):
     
     if verbose: start = default_timer()
@@ -232,7 +232,29 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False,
         #•print('max difference in V is {}'.format(np.max(np.abs(V_all-V_couple))))
         pass
     
-    return r(V_all), r(V_fem), r(V_mal), r(c_opt), r(x_opt), r(s_opt), il_opt, r(V_all_l), r(EVc_all)
+    
+    ################################################
+    #ADJUST DECISION ACCORDING TO DIVISION OF ASSETS
+    ################################################
+    if draw:
+        
+     
+        dec['Values']=(np.reshape(dec['Values'][0][mask],Vexp_max.shape),
+                       np.reshape(dec['Values'][1][mask],Vexp_max.shape),
+                       np.reshape(dec['Values'][2][mask],Vexp_max.shape),
+                       np.reshape(dec['Values'][3][mask],Vexp_max.shape))
+         
+    dec['Decision']=np.reshape(dec['Decision'][mask],Vexp_max.shape)
+    dec['thetas']=np.reshape(dec['thetas'][mask],Vexp_max.shape)
+     
+    if desc=='Couple, C':
+        dec['Cohabitation preferred to Marriage']=np.reshape(dec['Cohabitation preferred to Marriage'][mask],Vexp_max.shape)
+   
+ 
+    dec['assdev']=Vexp_max
+    print('The mean asset share is {},conditional on diovrce, conditional on div is {}'.format(np.mean(setup.ashare[Vexp_max]),np.mean(setup.ashare[Vexp_max[1:30,:,:]][dec['thetas'][1:30,:,:]==-1])))
+
+    return r(V_all), r(V_fem), r(V_mal), r(c_opt), r(x_opt), r(s_opt), il_opt, r(V_all_l), r(EVc_all), dec
 
 
 

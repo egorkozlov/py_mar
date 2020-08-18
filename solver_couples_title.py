@@ -177,7 +177,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,dec,desc,draw=True,nbatch=nbatch_def,v
     
     whc=(abs(Vexp_max+Vexp_max3-len(setup.ashare)+1)>1e-12)
     
-    wh= (whb) | (whc)  | (wha) #np.full(whb.shape,False,dtype=bool)#
+    wh=np.full(whb.shape,False,dtype=bool)# (whb) | (whc)  | (wha) #
     
     Vexp_max[wh]=np.full(Vexp_max2.shape,int((len(setup.ashare)-1)/2))[wh]
     Vexp_max2[wh]=np.full(Vexp_max2.shape,int((len(setup.ashare)-1)/2))[wh]
@@ -225,11 +225,11 @@ def v_iter_couple(setup,t,EV_tuple,ushift,dec,desc,draw=True,nbatch=nbatch_def,v
     assert x_opt.dtype == dtype
     assert s_opt.dtype == dtype
   
-    #assert np.allclose(V_all,V_couple,atol=1e-6,rtol=1e-5)
+    assert np.allclose(V_all,np.reshape(V_couple[mask],Vexp_max.shape),atol=1e-4,rtol=1e-1)
     try:
         assert np.allclose(V_all,V_couple,atol=1e-6,rtol=1e-5)
     except:
-        #•print('max difference in V is {}'.format(np.max(np.abs(V_all-V_couple))))
+        print('max difference in V is {}'.format(np.max(np.abs(V_all-np.reshape(V_couple[mask],Vexp_max.shape)))))
         pass
     
     

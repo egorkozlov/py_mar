@@ -224,11 +224,11 @@ class ModelSetup(object):
 
                     
                     
-            # #Drift the grids
-            # for t in range(Tret):
-            #     exogrid['zf_t'][t]=exogrid['zf_t'][t]
-            # for t in range(Tret-2):
-            #     exogrid['zm_t'][t]=exogrid['zm_t'][t]
+            #Drift the grids
+            for t in range(Tret):
+                exogrid['zf_t'][t]=exogrid['zf_t'][t]
+            for t in range(Tret-2):
+                exogrid['zm_t'][t]=exogrid['zm_t'][t]
                     
                     
             
@@ -292,7 +292,12 @@ class ModelSetup(object):
             exogrid['psi_t_mat'][Tret+1] = np.diag(np.ones(len(exogrid['psi_t_mat'][Tret-1])))
             
    
-            
+            #Here I impose no change in psi from retirement till the end of time 
+            for t in range(Tret,T-1):
+               
+                exogrid['psi_t'][t] = exogrid['psi_t'][Tret-1]#np.array([np.log(p['wret'])])             
+                exogrid['psi_t_mat'][t] = np.diag(np.ones(len(exogrid['psi_t'][t])))#p.atleast_2d(1.0)
+
             zfzm, zfzmmat = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], exogrid['zf_t_mat'], exogrid['zm_t_mat'],trim=self.trim)
 
             
@@ -384,10 +389,10 @@ class ModelSetup(object):
         #Grid Couple
         self.na = 50#40
         self.amin = 0
-        self.amax = 250000#80
-        self.amax1 = 250000#180
+        self.amax = 450000#80
+        self.amax1 = 450000#180
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
-        tune=2000
+        tune=20000
         self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         self.agrid_c[0]=0.0
         #self.agrid_c[-1]=self.amax1
@@ -510,8 +515,8 @@ class ModelSetup(object):
         mmax = ezfmax + ezmmax + np.max(self.pars['R_t'])*self.amax1
         mint = (ezfmax + ezmmax) # poin where more dense grid begins
         
-        ndense = 6000
-        nm = 15000
+        ndense = 60000
+        nm = 150000
         
         gsparse = np.linspace(mint,mmax,nm-ndense)
         gdense = np.linspace(mmin,mint,ndense+1) # +1 as there is a common pt

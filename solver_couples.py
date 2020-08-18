@@ -147,6 +147,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False,
     assert x_opt.dtype == dtype
     assert s_opt.dtype == dtype
   
+    assert np.allclose(V_all,V_couple,atol=1e-4,rtol=1e-1)
     try:
         assert np.allclose(V_all,V_couple,atol=1e-6,rtol=1e-5)
     except:

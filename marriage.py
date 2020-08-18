@@ -32,7 +32,7 @@ def v_mar_igrid(setup,t,V,icouple,ind_or_inds,*,female,marriage,interpolate=True
     #states the couple decides to 
     
     
-    which=V['Couple, M']['V'][icouple,...]+1e-12>= V['Couple, C']['V'][icouple,...]
+    which=V['Couple, M']['V'][icouple,...]+1e-08>= V['Couple, C']['V'][icouple,...]
     
     
     dtype = setup.dtype
@@ -155,7 +155,7 @@ def mar_loop(vfy,vmy,vfn,vmn,which):
             if good:
                 nbs = np.zeros(ntheta,dtype=np.float64)
                 nbs[both] = sf_i[both]* sm_i[both]
-                i_best = 5#nbs.argmax()
+                i_best = nbs.argmax()
                 nbs_best = nbs[i_best]
 
                     

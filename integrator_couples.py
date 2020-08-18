@@ -139,10 +139,11 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True,draw=False):
         out['Decision']=np.reshape(np.repeat(out['Decision'][:,:,:,np.newaxis,:], 2, axis=3)[mask],Vexp_max.shape)[:,:,:,0]
         out['thetas']=np.reshape(np.repeat(out['thetas'][:,:,:,np.newaxis,:], 2, axis=3)[mask],Vexp_max.shape)[:,:,:,0]
       
-        EVr=np.reshape(EVr[mask],Vexp_max.shape)
-        EVc=np.reshape(EVc[mask],Vexp_max.shape)
-        EVf=np.reshape(EVf[mask],Vexp_max.shape)
-        EVm=np.reshape(EVm[mask],Vexp_max.shape)
+        if title>0.5:
+            EVr=EVr[:,:,:,:,int((len(setup.ashare)-1)/2)]
+            EVc=EVc[:,:,:,:,int((len(setup.ashare)-1)/2)]
+            EVf=EVf[:,:,:,:,int((len(setup.ashare)-1)/2)]
+            EVm=EVm[:,:,:,:,int((len(setup.ashare)-1)/2)]
 
         # out['Divorce']=(np.reshape(out['Divorce'][0][mask[:,:,0,:]],(Vexp_max.shape[0],Vexp_max.shape[1])),
         #                 np.reshape(out['Divorce'][1][mask[:,:,0,:]],(Vexp_max.shape[0],Vexp_max.shape[1])))
@@ -191,7 +192,7 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True,draw=False):
     assert EVr.dtype == setup.dtype
     dec = out.copy()
     
-    return (tk(EVr), tk(EVc), tk(EVf), tk(EVm)), dec
+    return (EVr, EVc, EVf, EVm), dec#(tk(EVr), tk(EVc), tk(EVf), tk(EVm)), dec
 
 
 def ev_couple_exo(setup,Vren,t,use_sparse=True,down=False):

@@ -23,6 +23,7 @@ gc.disable()
 from setup import ModelSetup
 from graph import graphs
 from solver_couples import v_iter_couple
+from solver_couples_title import v_iter_couple as v_iter_couple_title
 from solver_singles import v_iter_single
 from integrator_singles import ev_single
 from integrator_couples import ev_couple_m_c
@@ -130,7 +131,12 @@ class Model(object):
              
             elif desc == 'Couple, M' or desc == 'Couple, C':
                 
-                V, VF, VM, c, x, s, fls, V_all_l, EV = v_iter_couple(setup,t,EV,ushift)    
+                #Choose the solver according to division of assets
+                title = setup.div_costs.eq_split if desc == 'Couple, M' else setup.sep_costs.eq_split 
+                if (title>0.5) | (not setup.pars['can divorce'][t]):
+                    V, VF, VM, c, x, s, fls, V_all_l, EV = v_iter_couple(setup,t,EV,ushift)   
+                else:
+                    V, VF, VM, c, x, s, fls, V_all_l, EV = v_iter_couple_title(setup,t,EV,ushift)   
 
                       
                 if self.display_v: print('at t = {} for {} mean V[0,:,:] is {}'.format(t,desc,V[0,:,:].mean()))

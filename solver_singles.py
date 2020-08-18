@@ -23,6 +23,7 @@ def v_iter_single(setup,t,EV,female,ushift,force_f32=False):
     
     using_pre_u=setup.usinglef_precomputed_u if female else setup.usinglem_precomputed_u
     using_pre_x=setup.usinglef_precomputed_x if female else setup.usinglem_precomputed_x
+    using_pre_c=setup.usinglef_precomputed_c if female else setup.usinglem_precomputed_c
     zvals = setup.exogrid.zf_t[t] if female else setup.exogrid.zm_t[t]
     ztrend = setup.pars['f_wage_trend'][t] if female else setup.pars['m_wage_trend'][t]
     #sigma = setup.pars['crra_power']
@@ -50,6 +51,7 @@ def v_iter_single(setup,t,EV,female,ushift,force_f32=False):
         v_optimize_couple(money_t,sgrid_s,(setup.vsgrid_s,EV[:,:,None,None]),setup.mgrid,
                              using_pre_u[:,None,None],
                              using_pre_x[:,None,None],
+                             using_pre_c[:,None,None],
                                  ls,beta,ushift,dtype=dtype)
     
     

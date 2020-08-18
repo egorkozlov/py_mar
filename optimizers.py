@@ -24,7 +24,7 @@ if system() != 'Darwin' and system() != 'Windows' and system()!='Linux':
 else:
     ugpu = False
     
-def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,beta,ushift,
+def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,cint,ls,beta,ushift,
                               use_gpu=ugpu,dtype=np.float64,mt=0.0):
     
     # This optimizer avoids creating big arrays and uses parallel-CPU on 
@@ -78,6 +78,7 @@ def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,beta,ushift,
         EV_here = EV_by_l[...,i]
         util = utilint[...,i]
         xvals = xint[...,i]
+        cvals = cint[...,i]
         
         money_left = (money - (1-lval)*wf.reshape((1,nexo))- mt*wm.reshape((1,nexo))).astype(dtype,copy=False)
         
@@ -86,7 +87,7 @@ def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,beta,ushift,
             # preallocation helps a bit here          
             V, c, x, s = np.empty((4,na,nexo,ntheta),dtype=dtype)
             i_opt = -np.ones((na,nexo,ntheta),dtype=np.int32)                 
-            v_couple_par(money_left,sgrid,EV_here,mgrid,util,xvals,beta,ushift,V,i_opt,c,x,s)            
+            v_couple_par(money_left,sgrid,EV_here,mgrid,util,xvals,cvals,beta,ushift,V,i_opt,c,x,s)            
             
             
         else:
@@ -130,7 +131,7 @@ def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,ls,beta,ushift,
 
 
 @njit(parallel=True)
-def v_couple_par(money,sgrid,EV,mgrid,u_on_mgrid,x_on_mgrid,beta,uadd,V_opt,i_opt,c_opt,x_opt,s_opt):
+def v_couple_par(money,sgrid,EV,mgrid,u_on_mgrid,x_on_mgrid,c_on_grid,beta,uadd,V_opt,i_opt,c_opt,x_opt,s_opt):
     # this is a looped version of the optimizer
     # the last two things are outputs
     
@@ -153,7 +154,7 @@ def v_couple_par(money,sgrid,EV,mgrid,u_on_mgrid,x_on_mgrid,beta,uadd,V_opt,i_op
             # finds index of maximum savings
             money_i = money[ind_a,ind_exo]
             i_opt_i, V_opt_i, x_opt_i, c_opt_i, s_opt_i = \
-                v_couple_par_int(money_i,sgrid,EV_slice,mgrid,u_on_mgrid,x_on_mgrid,beta,uadd)
+                v_couple_par_int(money_i,sgrid,EV_slice,mgrid,u_on_mgrid,x_on_mgrid,c_on_grid,beta,uadd)
             
             i_opt[ind_a,ind_exo,:] = i_opt_i
             V_opt[ind_a,ind_exo,:] = V_opt_i
@@ -163,7 +164,7 @@ def v_couple_par(money,sgrid,EV,mgrid,u_on_mgrid,x_on_mgrid,beta,uadd,V_opt,i_op
             
 
 @njit
-def v_couple_par_int(money_i,sgrid,EV_slice,mgrid,u_on_mgrid,x_on_mgrid,beta,uadd):
+def v_couple_par_int(money_i,sgrid,EV_slice,mgrid,u_on_mgrid,x_on_mgrid,c_on_mgrid,beta,uadd):
     
     ns = sgrid.size
     nm = mgrid.size
@@ -225,7 +226,8 @@ def v_couple_par_int(money_i,sgrid,EV_slice,mgrid,u_on_mgrid,x_on_mgrid,beta,uad
         V_opt_i[ind_theta] = Vo + uadd# NB: this V is imprecise
         # you can recover V from optimal savings & consumption later
         x_opt_i[ind_theta] = x_on_mgrid[i_m_all[io],ind_theta]
-        c_opt_i[ind_theta] = money_i - x_opt_i[ind_theta] - sgrid[io]
+        c_opt_i[ind_theta] = c_on_mgrid[i_m_all[io],ind_theta]#c_on_mgrid[i_m_all[io],ind_theta]
+      
         s_opt_i[ind_theta] = sgrid[io]        
         
         assert Vo > -1e20

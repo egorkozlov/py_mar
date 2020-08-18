@@ -96,6 +96,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False,
         V_pure_i, c_opt_i, x_opt_i, s_opt_i, i_opt_i, il_opt_i, V_all_l_i = \
             v_optimize_couple(money_t,sgrid,EV_t,setup.mgrid,
                               setup.ucouple_precomputed_u,setup.ucouple_precomputed_x,
+                              setup.ucouple_precomputed_c,
                                   ls,beta,ushift,dtype=dtype_here,mt=mt)
            
         V_ret_i = V_pure_i + psi[None,istart:ifinish,None]

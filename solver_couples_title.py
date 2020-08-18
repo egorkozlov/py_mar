@@ -95,6 +95,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,dec,desc,draw=True,nbatch=nbatch_def,v
         V_pure_i, c_opt_i, x_opt_i, s_opt_i, i_opt_i, il_opt_i, V_all_l_i = \
             v_optimize_couple(money_t,sgrid,EV_t,setup.mgrid,
                               setup.ucouple_precomputed_u,setup.ucouple_precomputed_x,
+                              setup.ucouple_precomputed_c,
                                   ls,beta,ushift,dtype=dtype_here,mt=mt)
            
         V_ret_i = V_pure_i + psi[None,:,None]
@@ -183,9 +184,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,dec,desc,draw=True,nbatch=nbatch_def,v
     Vexp_max2[wh]=np.full(Vexp_max2.shape,int((len(setup.ashare)-1)/2))[wh]
     Vexp_max3[wh]=np.full(Vexp_max2.shape,int((len(setup.ashare)-1)/2))[wh]
                   
-    
-
-    
+ 
    
     temp=np.cumsum(np.ones(Vexp.shape,dtype=np.int32),axis=-1)-1
     
@@ -235,15 +234,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,dec,desc,draw=True,nbatch=nbatch_def,v
     
     ################################################
     #ADJUST DECISION ACCORDING TO DIVISION OF ASSETS
-    ################################################
-    if draw:
-        
-     
-        dec['Values']=(np.reshape(dec['Values'][0][mask],Vexp_max.shape),
-                       np.reshape(dec['Values'][1][mask],Vexp_max.shape),
-                       np.reshape(dec['Values'][2][mask],Vexp_max.shape),
-                       np.reshape(dec['Values'][3][mask],Vexp_max.shape))
-         
+    ################################################         
     dec['Decision']=np.reshape(dec['Decision'][mask],Vexp_max.shape)
     dec['thetas']=np.reshape(dec['thetas'][mask],Vexp_max.shape)
      
@@ -254,6 +245,15 @@ def v_iter_couple(setup,t,EV_tuple,ushift,dec,desc,draw=True,nbatch=nbatch_def,v
     dec['assdev']=Vexp_max
     print('The mean asset share is {},conditional on diovrce, conditional on div is {}'.format(np.mean(setup.ashare[Vexp_max]),np.mean(setup.ashare[Vexp_max[1:30,:,:]][dec['thetas'][1:30,:,:]==-1])))
 
+
+    if draw:
+        #mask=np.full(mask.shape,False)
+        #mask[:,:,:,3]=True
+ 
+        dec['Values']=(np.reshape(dec['Values'][0][mask],Vexp_max.shape),
+                       np.reshape(dec['Values'][1][mask],Vexp_max.shape),
+                       np.reshape(dec['Values'][2][mask],Vexp_max.shape),
+                       np.reshape(dec['Values'][3][mask],Vexp_max.shape))
     return r(V_all), r(V_fem), r(V_mal), r(c_opt), r(x_opt), r(s_opt), il_opt, r(V_all_l), r(EVc_all), dec
 
 

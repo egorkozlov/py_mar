@@ -106,8 +106,11 @@ def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,cint,ls,beta,ushift,
         
         
     i_ls = np.expand_dims(V_opt_arr.argmax(axis=3),3)
-    
+  
     V = tal(V_opt_arr,i_ls,axis=3).squeeze(axis=3)
+  
+    
+   
     c = tal(c_opt_arr,i_ls,axis=3).squeeze(axis=3)
     s = tal(s_opt_arr,i_ls,axis=3).squeeze(axis=3)
     i_opt = tal(i_opt_arr,i_ls,axis=3).squeeze(axis=3)
@@ -121,11 +124,11 @@ def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,cint,ls,beta,ushift,
     
     ret = lambda q : q
         
-    V_all = V_opt_arr
+    #V_all = V_opt_arr
     
     
     
-    return ret(V), ret(c), ret(x), ret(s), ret(i_opt), ret(i_ls), ret(V_all)
+    return ret(V), ret(c), ret(x), ret(s), ret(i_opt), ret(i_ls), ret(V_opt_arr)
 
 
 
@@ -212,14 +215,18 @@ def v_couple_par_int(money_i,sgrid,EV_slice,mgrid,u_on_mgrid,x_on_mgrid,c_on_mgr
         
         
         for i_cand in range(ind_s+1):
-            
+           # print(ind_theta,i_cand)
             i_m = i_m_all[i_cand]
             u_cand = ugrid_ce[i_m]
             
             V_cand = u_cand + beta*EVval[i_cand]
             
             if i_cand == 0 or V_cand > Vo:
-                io, Vo = i_cand, V_cand                     
+                io, Vo = i_cand, V_cand     
+            if V_cand< Vo:break
+               # print(222222222222222,ind_theta,i_cand)
+                
+                            
             
         
         i_opt_i[ind_theta] = io

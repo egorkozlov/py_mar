@@ -120,6 +120,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False,
     
   
     assert np.all(c_opt > 0)
+   
     
     psi_r = psi[None,:,None].astype(setup.dtype,copy=False)
     
@@ -135,8 +136,9 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False,
     V_fem = uf + beta*np.take_along_axis(np.take_along_axis(EVf_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
     V_mal = um + beta*np.take_along_axis(np.take_along_axis(EVm_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
     V_all = uc + beta*np.take_along_axis(np.take_along_axis(EVc_all,i_opt[...,None],0),il_opt[...,None],3).squeeze(axis=3)
+   
     #def r(x): return x.astype(dtype)
-  
+    
   
     
     def r(x): return x
@@ -148,11 +150,12 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False,
     assert x_opt.dtype == dtype
     assert s_opt.dtype == dtype
   
-    assert np.allclose(V_all,V_couple,atol=1e-4,rtol=1e-1)
+    assert np.allclose(V_all,V_couple,atol=1e-4,rtol=1e-4)
+    print('max difference in V is {}'.format(np.max(np.abs(V_all-V_couple))))
     try:
         assert np.allclose(V_all,V_couple,atol=1e-6,rtol=1e-5)
     except:
-        #print('max difference in V is {}'.format(np.max(np.abs(V_all-V_couple))))
+        
         pass
     
     return r(V_all), r(V_fem), r(V_mal), r(c_opt), r(x_opt), r(s_opt), il_opt, r(V_all_l), r(EVc_all)

@@ -112,6 +112,7 @@ def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,cint,ls,beta,ushift,
     
    
     c = tal(c_opt_arr,i_ls,axis=3).squeeze(axis=3)
+    x = tal(x_opt_arr,i_ls,axis=3).squeeze(axis=3)
     s = tal(s_opt_arr,i_ls,axis=3).squeeze(axis=3)
     i_opt = tal(i_opt_arr,i_ls,axis=3).squeeze(axis=3)
     i_ls = i_ls.squeeze(axis=3)

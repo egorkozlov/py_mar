@@ -128,7 +128,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,dec,desc,draw=True,nbatch=nbatch_def,v
     for j in range(len(setup.ashare)):V_all[:,:,:,j] = uc[:,:,:,j] + beta*np.take_along_axis(np.take_along_axis(EVc_all[:,:,:,:,j],i_opt[...,None,j],0),il_opt[...,None,j],3).squeeze(axis=3)
     for j in range(len(setup.ashare)):V_fem[:,:,:,j] = uf[:,:,:,j] + beta*np.take_along_axis(np.take_along_axis(EVf_all[:,:,:,:,j],i_opt[...,None,j],0),il_opt[...,None,j],3).squeeze(axis=3)
     for j in range(len(setup.ashare)):V_mal[:,:,:,j] = um[:,:,:,j] + beta*np.take_along_axis(np.take_along_axis(EVm_all[:,:,:,:,j],i_opt[...,None,j],0),il_opt[...,None,j],3).squeeze(axis=3)
-    V_all=V_couple
+   
     
       ################################
     #HERE CHOICE OF ASSETS SPLITS
@@ -248,7 +248,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,dec,desc,draw=True,nbatch=nbatch_def,v
 
     if draw:
         mask=np.full(mask.shape,False)
-        mask[:,:,:,3]=True
+        mask[:,:,:,int((len(setup.ashare)-1)/2)]=True
  
         dec['Values']=(np.reshape(dec['Values'][0][mask],Vexp_max.shape),
                        np.reshape(dec['Values'][1][mask],Vexp_max.shape),

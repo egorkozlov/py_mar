@@ -224,7 +224,7 @@ def v_couple_par_int(money_i,sgrid,EV_slice,mgrid,u_on_mgrid,x_on_mgrid,c_on_mgr
             
             if i_cand == 0 or V_cand > Vo:
                 io, Vo = i_cand, V_cand     
-            if V_cand< Vo:break
+            #if V_cand< Vo:break
                # print(222222222222222,ind_theta,i_cand)
                 
                             

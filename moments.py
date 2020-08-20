@@ -1661,10 +1661,10 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.plot(np.array(range(lenn)), ass_rel[2,:,1], linestyle='--',color=print(2/len(state_codes)),markersize=6, label='Marriage male') 
         plt.plot(np.array(range(lenn)), ass_rel[3,:,1], linestyle='--',color=print(3/len(state_codes)),markersize=6, label='Cohabitation other') 
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
-                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize=14)    
+                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize=8)    
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')    
-        plt.xlabel('Time', fontsize=16)    
-        plt.ylabel('Assets', fontsize=16)    
+        plt.xlabel('Time', fontsize=8)    
+        plt.ylabel('Assets', fontsize=8)    
              
         ##########################################    
         # Income Over the Live Cycle    

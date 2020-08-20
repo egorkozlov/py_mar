@@ -42,7 +42,7 @@ class ModelSetup(object):
         p['n_zf_correct']=3
         p['sigma_psi_mult'] = 0.28
         p['sigma_psi']   = 0.11
-        p['n_psi_t']     = [11]*T
+        p['n_psi_t']     = [12]*T
         p['R_t'] = [1.02**period_year]*T
         p['beta_t'] = [0.98**period_year]*T
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
@@ -387,20 +387,20 @@ class ModelSetup(object):
             
             
         #Grid Couple
-        self.na = 50#40
+        self.na = 40#40
         self.amin = 0
-        self.amax = 80
-        self.amax1 = 180
+        self.amax = 120
+        self.amax1 = 120
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
-        tune=80
-        #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
+        tune=0.04#80
+        self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         self.agrid_c[0]=0.0
         #self.agrid_c[-1]=self.amax1
         #self.agrid_c[-2]=85#120
         # this builds finer grid for potential savings
-        s_between = 7#15 # default numer of points between poitns on agrid
-        s_da_min = 0.0001 # minimal step (does not create more points)
-        s_da_max = 1.0 # maximal step (creates more if not enough)
+        s_between = 1#15 # default numer of points between poitns on agrid
+        s_da_min = 0.1 # minimal step (does not create more points)
+        s_da_max = 0.4 # maximal step (creates more if not enough)
         
         self.sgrid_c = build_s_grid(self.agrid_c,s_between,s_da_min,s_da_max)
         self.vsgrid_c = VecOnGrid(self.agrid_c,self.sgrid_c)
@@ -431,7 +431,7 @@ class ModelSetup(object):
         
         
         #Grid for the share in assets
-        self.ashare = np.linspace(0.1,0.9,7,dtype=self.dtype)
+        self.ashare = np.linspace(0.1,0.9,3,dtype=self.dtype)
         
         
         
@@ -510,8 +510,8 @@ class ModelSetup(object):
         mmax = ezfmax + ezmmax + np.max(self.pars['R_t'])*self.amax1
         mint = (ezfmax + ezmmax) # poin where more dense grid begins
         
-        ndense = 6000
-        nm = 15000
+        ndense = 2000
+        nm = 85000
         
         gsparse = np.linspace(mint,mmax,nm-ndense)
         gdense = np.linspace(mmin,mint,ndense+1) # +1 as there is a common pt

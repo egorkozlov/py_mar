@@ -62,7 +62,7 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     T = setup.pars['Tret'] 
     agrid = setup.agrid_c 
     agrids = setup.agrid_s 
-    psig = setup.exogrid.psi_t[ti] 
+    psig = setup.exogrid.psi_t[psii] 
     vtoutf=np.zeros([T,len(agrids),len(psig)]) 
     thetf=np.zeros([T,len(agrids),len(psig)]) 
     thetf_c=np.zeros([T,len(agrids),len(psig)]) 
@@ -370,7 +370,7 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     plt.plot(agrid, V_ren_c,'y', markersize=4,label='After Ren C') 
     plt.plot(agrid, V_ren_m,'k', linestyle='--',markersize=4, label='After Ren M') 
     #plt.plot(agrid, Vm_div[0:len(agrid),zfi,zmi,ti],'b',markersize=2, label='Male Divorce')  
-    plt.plot(agrid, setup.thetagrid[thi]*Vf_div[0:len(agrid),zfi,zmi,ti]+(1-setup.thetagrid[thi])*Vm_div[0:len(agrid),zfi,zmi,ti],'r', linestyle='--',markersize=2,label='Female Divorce')  
+    plt.plot(agrid, setup.thetagrid[thi]*Vf_div[0:len(agrid),zfi,zmi,thi]+(1-setup.thetagrid[thi])*Vm_div[0:len(agrid),zfi,zmi,thi],'r', linestyle='--',markersize=2,label='Female Divorce')  
     plt.ylabel('Utility') 
     plt.xlabel('Assets') 
     #plt.title('Utility  Divorce costs: men=0.5, women=0.5') 

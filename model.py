@@ -134,17 +134,17 @@ class Model(object):
                 #Choose the solver according to division of assets
                 title = setup.div_costs.eq_split if desc == 'Couple, M' else setup.sep_costs.eq_split 
                 if (title>0.5) | (not setup.pars['can divorce'][t]):
-                    V, VF, VM, c, x, s, fls, V_all_l, EV = v_iter_couple(setup,t,EV,ushift)   
+                    V, VF, VM, c, x, s, fls= v_iter_couple(setup,t,EV,ushift)   
                 else:
-                    V, VF, VM, c, x, s, fls, V_all_l, EV,dec = v_iter_couple_title(setup,t,EV,ushift,dec,desc,draw)
+                    V, VF, VM, c, x, s, fls,dec = v_iter_couple_title(setup,t,EV,ushift,dec,desc,draw)
                     
-                    return ({desc: {'V':V,'VF':VF,'VM':VM,'c':c,'x':x,'s':s,'fls':fls,'V_all_l':V_all_l, 'EV':EV}},dec)
+                    return ({desc: {'V':V,'VF':VF,'VM':VM,'c':c,'x':x,'s':s,'fls':fls}},dec)
           
 
                       
                 if self.display_v: print('at t = {} for {} mean V[0,:,:] is {}'.format(t,desc,V[0,:,:].mean()))
                         
-                return {desc: {'V':V,'VF':VF,'VM':VM,'c':c,'x':x,'s':s,'fls':fls,'V_all_l':V_all_l, 'EV':EV}}
+                return {desc: {'V':V,'VF':VF,'VM':VM,'c':c,'x':x,'s':s,'fls':fls}}
           
             
         # and the integrator   
@@ -212,19 +212,22 @@ class Model(object):
         v = vout[desc]
         if desc == 'Couple, M' or desc == 'Couple, C':
             
-            #cint = self.setup.v_thetagrid_fine.apply(v['c'],axis=2)
-            sint = self.setup.v_thetagrid_fine.apply(v['s'],axis=2).astype(self.dtype)
-            cint = self.setup.v_thetagrid_fine.apply(v['c'],axis=2).astype(self.dtype)
-            xint = self.setup.v_thetagrid_fine.apply(v['x'],axis=2).astype(self.dtype)
+            dec.update({'s':v['s'],'c':v['c'],'x':v['x'],'fls':v['fls']})
+            del v
             
-            Vint = self.setup.v_thetagrid_fine.apply(v['V_all_l'],axis=2).astype(self.dtype)
+        #     #cint = self.setup.v_thetagrid_fine.apply(v['c'],axis=2)
+        #     sint = self.setup.v_thetagrid_fine.apply(v['s'],axis=2).astype(self.dtype)
+        #     cint = self.setup.v_thetagrid_fine.apply(v['c'],axis=2).astype(self.dtype)
+        #     xint = self.setup.v_thetagrid_fine.apply(v['x'],axis=2).astype(self.dtype)
             
-            if Vint.ndim < 4: Vint = Vint[:,:,:,None]
+        #     Vint = self.setup.v_thetagrid_fine.apply(v['V_all_l'],axis=2).astype(self.dtype)
             
-            fls = Vint.argmax(axis=3).astype(np.int8)
+        #     if Vint.ndim < 4: Vint = Vint[:,:,:,None]
             
-            dec.update({'s':sint,'fls':fls,'c':cint,'x':xint})
-            del sint,fls
+        #     fls = Vint.argmax(axis=3).astype(np.int8)
+            
+        #     dec.update({'s':sint,'fls':fls,'c':cint,'x':xint})
+        #     del sint,fls
         else:
             dec.update({'s':v['s'],'c':v['c'],'x':v['x']})
             del v
@@ -270,11 +273,11 @@ class Model(object):
                 Vnow.update(V_d)
                 decnow.update({desc:dec})
                 
-            if t<=45:
+            # if t<=45:
                 
-                print('max diff is {}'.format(np.min(Vnow['Couple, M']['V']-Vnow['Couple, C']['V'])))
-                #assert np.all(Vnow['Couple, M']['V']>= Vnow['Couple, C']['V']) 
-            #if t<=46:assert np.all(decnow['Couple, M']['Values'][0]>= decnow['Couple, C']['Values'][0]) 
+            #     #print('max diff is {}'.format(np.min(Vnow['Couple, M']['V']-Vnow['Couple, C']['V'])))
+            #     #assert np.all(Vnow['Couple, M']['V']>= Vnow['Couple, C']['V']) 
+            # #if t<=46:assert np.all(decnow['Couple, M']['Values'][0]>= decnow['Couple, C']['Values'][0]) 
             
        
             self.V = [Vnow] + self.V

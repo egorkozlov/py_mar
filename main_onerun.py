@@ -53,7 +53,7 @@ if __name__ == '__main__':
     #Initialize the file with parameters
     x0 = np.array([ 0.907796616288,0.66724274788,1.72325126224,0.257165346817,0.674319051376,0.0212082568096,-0.0641441084303,1.08579410058])
     x0 = np.array([ 0.907796616288,0.0106724274788,1.12325126224,0.257165346817,0.00000000000074319051376,0.0,0.0,1.08579410058])
-    x0 = np.array([ 0.4,0.0924274788,1.12325126224,0.257165346817,0.7,0.0212082568096,-0.06,1.08579410058])
+    x0 = np.array([ 0.9,0.0924274788,4.12325126224,0.257165346817,0.7,-0.06,1.08579410058])
    
 
     #Name and location of files
@@ -64,7 +64,7 @@ if __name__ == '__main__':
     
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','models','agents','scaled residuals'],
                                       #load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
-                                      solve_transition=True,                                    
+                                      solve_transition=False,                                    
                                       #save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       store_path=path,
                                       verbose=True,calibration_report=False,draw=graphs,graphs=graphs,

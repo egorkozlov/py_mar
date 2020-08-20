@@ -228,7 +228,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,dec,desc,draw=True,nbatch=nbatch_def,v
     try:
         assert np.allclose(V_all,V_couple,atol=1e-6,rtol=1e-5)
     except:
-        print('max difference in V is {}'.format(np.max(np.abs(V_all-np.reshape(V_couple[mask],Vexp_max.shape)))))
+        #print('max difference in V is {}'.format(np.max(np.abs(V_all-np.reshape(V_couple[mask],Vexp_max.shape)))))
         pass
     
     
@@ -254,7 +254,8 @@ def v_iter_couple(setup,t,EV_tuple,ushift,dec,desc,draw=True,nbatch=nbatch_def,v
                        np.reshape(dec['Values'][1][mask],Vexp_max.shape),
                        np.reshape(dec['Values'][2][mask],Vexp_max.shape),
                        np.reshape(dec['Values'][3][mask],Vexp_max.shape))
-    return r(V_all), r(V_fem), r(V_mal), r(c_opt), r(x_opt), r(s_opt), il_opt, r(V_all_l), r(EVc_all), dec
+   # return r(V_all), r(V_fem), r(V_mal), r(c_opt), r(x_opt), r(s_opt), il_opt, r(V_all_l), r(EVc_all), dec
+    return r(V_all), r(V_fem), r(V_mal), r(c_opt), r(x_opt), r(s_opt), il_opt, dec
 
 
 

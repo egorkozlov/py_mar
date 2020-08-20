@@ -1,789 +1,833 @@
-# -*- coding: utf-8 -*-    
-"""    
-Created on Thu Nov 14 10:26:49 2019    
-     
-This file comupte simulated moments + optionally    
-plots some graphs    
-     
-@author: Fabio    
-"""    
-     
-import numpy as np    
-import matplotlib.pyplot as plt    
-import matplotlib.backends.backend_pdf   
-  
-#Avoid error for having too many figures 
-plt.rcParams.update({'figure.max_open_warning': 0}) 
-from statutils import strata_sample 
-from welfare_comp import welf_dec 
-  
-#For nice graphs with matplotlib do the following  
-matplotlib.use("pgf")  
-matplotlib.rcParams.update({  
-    "pgf.texsystem": "pdflatex",  
-    'font.family': 'serif',  
-    'font.size' : 11,  
-    'text.usetex': True,  
-    'pgf.rcfonts': False,  
-})  
-  
-  
-import pickle    
-import pandas as pd    
-import statsmodels.api as sm    
-import statsmodels.formula.api as smf    
-   
-     
-def moment(mdl_list,agents,agents_male,draw=True,validation=False):    
-#This function compute moments coming from the simulation    
-#Optionally it can also plot graphs about them. It is feeded with    
-#matrixes coming from simulations    
-     
- 
- 
-    mdl=mdl_list[0] 
- 
-         
-    #Import simulated values   
-    state=agents.state  
-    assets_t=mdl.setup.agrid_c[agents.iassets] 
-    assets_t[agents.state<=1]=mdl.setup.agrid_s[agents.iassets[agents.state<=1]] 
-    iexo=agents.iexo      
-    theta_t=mdl.setup.thetagrid_fine[agents.itheta]    
-    setup = mdl.setup   
-    female=agents.is_female 
-    cons=agents.c 
-    consx=agents.x 
-    labor=agents.ils_i 
-    shks = agents.shocks_single_iexo  
-    psi_check=np.zeros(state.shape) 
-    shift_check=np.array((state==2),dtype=np.float32) 
-    single=np.array((state==0),dtype=bool) 
-    betag=mdl.setup.pars['beta_t'][0]**(np.linspace(1,len(state[0,:]),len(state[0,:]))-1) 
-    betam=np.reshape(np.repeat(betag,len(state[:,0])),(len(state[:,0]),len(betag)),order='F') 
-    #agegrid=np.reshape(agegridtemp,resha) 
-     
-    #Fill psi and ushift here 
-    for i in range(len(state[0,:])): 
-        psi_check[:,i]=((setup.exogrid.psi_t[i][(setup.all_indices(i,iexo[:,i]))[3]]))  
-     
-     
-    psi_check[single]=0.0 
-    state_psid=agents_male.state 
-    labor_psid=agents_male.ils_i 
-    iexo_psid=agents_male.iexo 
-    change_psid=agents_male.policy_ind 
-     
-    if draw: 
-        #Import values for female labor supply (simulated men only) 
-
-        iexo_w=agents.iexo  
-        labor_w=agents.ils_i 
-        female_w=agents.is_female 
-        divorces_w=agents.divorces 
-        state_w=agents.state  
-        theta_w=mdl.setup.thetagrid_fine[agents.itheta]  
-        assets_w=mdl.setup.agrid_c[agents.iassets] 
-        assets_w[agents.state<=1]=mdl.setup.agrid_s[agents.iassets[agents.state<=1]] 
-        assetss_w=mdl.setup.agrid_c[agents.iassetss] 
-        assetss_w[agents.state<=1]=mdl.setup.agrid_s[agents.iassetss[agents.state<=1]] 
-        changep_w=agents.policy_ind  
- 
-    moments=dict() 
-         
-    ########################################## 
-    #WELFARE DECOMPOSITION HERE 
-    ######################################### 
-    if draw:
-        if len(mdl_list) > 1: 
-            welf_dec(mdl_list,agents) 
-         
-    ##########################################    
-    #START COMPUTATION OF SIMULATED MOMENTS    
-    #########################################    
-       
-         
-    #Create a file with the age of the change foreach person    
-    changep=agents.policy_ind   
-        
-         
-    #Get states codes    
-    state_codes = {name: i for i, name in enumerate(mdl.setup.state_names)}    
-       
-     ###########################################    
-    #Sample selection    
-    ###########################################    
-        
-    #Sample Selection to replicate the fact that    
-    #in NSFH wave two cohabitning couples were    
-    #excluded.    
-    #Birth cohorts: 45-55    
-    #Second wave of NLSFH:1992-1994.    
-    #    
-    #Assume that people are interviewd in 1993 and that age is uniformly    
-    #distributed. Clearly we can adjust this later on.    
-        
-        
-        
-    #First cut the first two periods give new 'length'    
-    assets_t=assets_t[:,:mdl.setup.pars['T']]    
-    iexo=iexo[:,:mdl.setup.pars['T']]    
-    state=state[:,:mdl.setup.pars['T']]    
-    theta_t=theta_t[:,:mdl.setup.pars['T']]    
-    female=female[:,:mdl.setup.pars['T']]    
-    labor_psid=labor_psid[:,:mdl.setup.pars['T']] 
-    iexo_psid=iexo_psid[:,:mdl.setup.pars['T']] 
-     
-    if draw: 
-        iexo_w=iexo_w[:,:mdl.setup.pars['T']] 
-        labor_w=labor_w[:,:mdl.setup.pars['T']] 
-        change_psid=change_psid[:,:mdl.setup.pars['T']] 
-        state_psid=state_psid[:,:mdl.setup.pars['T']] 
-        female_w=female_w[:,:mdl.setup.pars['T']] 
-        state_w=state_w[:,:mdl.setup.pars['T']] 
-        assets_w=assets_w[:,:mdl.setup.pars['T']] 
-        assetss_w=assetss_w[:,:mdl.setup.pars['T']] 
-        theta_w=theta_w[:,:mdl.setup.pars['T']] 
-        changep_w=changep_w[:,:mdl.setup.pars['T']] 
-        divorces_w=divorces_w[:,:mdl.setup.pars['T']] 
-       
-        
-    ####################################################################    
-    #Now drop observation to mimic the actual data gathering process    
-    ####################################################################    
-        
-       #Get distribution of age conditional on cohabiting on the second wave    
-    with open('age_sw.pkl', 'rb') as file:    
-        age_sw=pickle.load(file)    
-            
-    keep=(assets_t[:,0]>-1)    
-       
- 
-     
-       
-     
-    ################################################################### 
-    # Draw from simulated agents to match NSFH distribution 
-    # according to the following stratas: 
-    # 1) Age at unilateral divorce 
-    # 2) Gender 
-    #  
-    ################################################################### 
-    
-
-     
-    #Import the distribution from the data 
-    with open('freq_nsfh.pkl', 'rb') as file:    
-        freq_nsfh_data=pickle.load(file)   
-     
-    #value=mdl.V[0]['Female, single']['V'][0,iexo_w[:,0]] 
-    #Make data compatible with current age 
-    freq_nsfh_data['age_unid']=freq_nsfh_data['age_unid']-18.0 
-    freq_nsfh_data.loc[freq_nsfh_data['age_unid']<=0.0,'age_unid']=0.0 
-    freq_nsfh_data.loc[freq_nsfh_data['age_unid']>=900.0,'age_unid']=1000 
-     
-    #Drop if no change in law! 
-    if np.all(changep==0): 
-        freq_nsfh_data.loc[freq_nsfh_data['age_unid']<1910.0,'age_unid']=1000 
-    
-  
-         
-    freq_nsfh=freq_nsfh_data.groupby(['M2DP01','age_unid'])['SAMWT'].count() 
-    #Create a Dataframe with simulated data to perform the draw 
-    age_unid=np.argmax(changep,axis=1) 
-    never=(changep[:,0]==0) & (age_unid[:]==0) 
-    age_unid[never]=1000 
-    age_unid[changep[:,-1]==0]=1000 
-     
-    fem=np.array(['FEMALE']*len(female)) 
-    fem[female[:,0]==0]='MALE' 
-     
-    inde=np.linspace(1,len(fem),len(fem),dtype=np.int32) 
-     
-    ddd=np.stack((inde,age_unid,fem),axis=0).T 
-    df=pd.DataFrame(data=ddd,columns=["Index","age","sex"],index=ddd[:,0]) 
-    df['age']=df['age'].astype(np.float) 
-    keep2=[True]*len(df) 
-     
-    #Keep again for all relevant variables    
-    state=state[keep2,]      
-    changep=changep[keep2,]  
-    female=female[keep2,] 
-    iexo=iexo[keep2,] 
-    assets_t=assets_t[keep2,] 
-    labor=labor[keep2,] 
-   
-     
-    #Initial distribution 
-    prima=freq_nsfh/np.sum(freq_nsfh) 
-     
-    #Final distribution 
-    final3=df[keep2] 
-    final4=final3.groupby(['sex','age'])['sex'].count() 
-    dopo=final4/np.sum(final4) 
-     
-    try: 
-        print('The average deviation from actual to final ditribution is {:0.2f}%'.format(np.mean(abs(prima-dopo))*100)) 
-    except: 
-        print('No stratified sampling') 
-        
-      ###########################################    
-    #Sample selection - get age at censoring   
-    ##########################################  
-    #Build the event matrix 
-    eage_unid_e=np.argmax(changep,axis=1) 
-    enever_e=(changep[:,0]==0) & (eage_unid_e[:]==0) 
-    eage_unid_e[enever_e]=1000 
-    eage_unid_e[changep[:,-1]==0]=1000 
-    eage_unid_e[~enever_e]=eage_unid_e[~enever_e]+18
-    eu=np.repeat(np.expand_dims(eage_unid_e,axis=1),len(changep[0,:]),axis=1)
-    
-    with open('freqj.pkl', 'rb') as file:     
-        freq_rawt=pickle.load(file)     
-             
-    freq_raw=freq_rawt[0]
-    femk=freq_rawt[1]
-    agek=freq_rawt[2]
-    aged=np.ones((state[:,0].shape))    
-        
-     
-    #Get the right category
-    for ii in range(len(freq_raw[:,0])):
-        for j in range(len(freq_raw[0,:])):
-            
-            freq=freq_raw[ii,j]
-            se=femk[ii,j]
-            ag=agek[ii,j]
-            summa=0.0    
-            summa1=0.0    
-            if np.any(np.any(np.where((female==se) & (eu==ag))[0])):
-                start=np.min(np.where((female==se) & (eu==ag))[0])
-              
-                for i in freq:    
-                    summa+=freq[int(i)]   
-                    #print(round((i-18)/mdl.setup.pars['py'],0) ,int(summa1*len(aged[(female==0) & (educ=='e')])/sum(freq.values())),int(summa*len(aged[(female==0) & (educ=='e')])/sum(freq.values())))
-                    aged[start+int(summa1*len(aged[(female[:,0]==se) & (eu[:,0]==ag)])/sum(freq.values())):start+int(summa*len(aged[(female[:,0]==se) & (eu[:,0]==ag)])/sum(freq.values()))]=round((i-18)/mdl.setup.pars['py'],0)    
-                   
-                    summa1+=freq[int(i)]    
-        
-  
-    aged=np.array(aged,dtype=np.int16)  
-    aged=np.reshape(np.repeat(aged,len(state[0,:])),state.shape)
-    #Get if censored
-    agei=np.cumsum(np.ones(aged.shape,dtype=np.int16),axis=1)-1   
-    censored=aged>agei
-    
-  
-
-    ###################################################################   
-    #Get age we stop observing spells: this matters for hazards 
-    ###################################################################   
-    with open('age_sint.pkl', 'rb') as file:    
-        age_sint=pickle.load(file)    
-            
-    aged=np.ones((state.shape))   
-       
-    
-    summa=0.0   
-    summa1=0.0   
-    for i in age_sint:   
-        summa+=age_sint[int(i)]   
-        aged[int(summa1*len(aged[:])/sum(age_sint.values())):int(summa*len(aged[:])/sum(age_sint.values()))]=round((i-20)/mdl.setup.pars['py'],0)   
-        summa1+=age_sint[int(i)]   
-       
-    aged=np.array(aged,dtype=np.int16)   
-    ###########################################    
-    #Moments: Construction of Spells    
-    ###########################################    
-    nspells = (state[:,1:]!=state[:,:-1]).astype(np.int).sum(axis=1).max() + 1   
-    index=np.array(np.linspace(1,len(state[:,0]),len(state[:,0]))-1,dtype=np.int16)   
-    N=len(iexo[:,0])   
-    state_beg = -1*np.ones((N,nspells),dtype=np.int8)    
-    time_beg = -1*np.ones((N,nspells),dtype=np.bool)    
-    did_end = np.zeros((N,nspells),dtype=np.bool)    
-    state_end = -1*np.ones((N,nspells),dtype=np.int8)    
-    time_end = -1*np.ones((N,nspells),dtype=np.bool)    
-    sp_length = -1*np.ones((N,nspells),dtype=np.int16)    
-    sp_person = -1*np.ones((N,nspells),dtype=np.int16)    
-    is_unid = -1*np.ones((N,nspells),dtype=np.int16)    
-    is_unid_end = -1*np.ones((N,nspells),dtype=np.int16)    
-    is_unid_lim = -1*np.ones((N,nspells),dtype=np.int16)    
-    n_spell = -1*np.ones((N,nspells),dtype=np.int16)    
-    is_spell = np.zeros((N,nspells),dtype=np.bool)    
-   
-       
-         
-    state_beg[:,0] = 0 # THIS ASSUMES EVERYONE STARTS AS SINGLE   #TODO consistent with men stuff? 
-    time_beg[:,0] = 0    
-    sp_length[:,0] = 1    
-    is_spell[:,0] = True    
-    ispell = np.zeros((N,),dtype=np.int8)    
-         
-    for t in range(1,mdl.setup.pars['T']):    
-        # ichange = ((state[:,t-1] != state[:,t]))    
-        # sp_length[((~ichange)),ispell[((~ichange))]] += 1    
- 
-        
-        ichange = ((state[:,t-1] != state[:,t])) & (censored[:,t]==True)
-        ifinish=((~ichange) & (censored[:,t]==False) & (censored[:,t-1]==True))
-        sp_length[((~ichange) & (censored[:,t]==True)),ispell[((~ichange) & (censored[:,t]==True))]] += 1    
-        
-             
-        if not np.any(ichange): continue    
-             
-        did_end[ichange,ispell[ichange]] = True    
-             
-        is_spell[ichange,ispell[ichange]+1] = True    
-        sp_length[ichange,ispell[ichange]+1] = 1 # if change then 1 year right    
-        state_end[ichange,ispell[ichange]] = state[ichange,t]    
-        sp_person[ichange,ispell[ichange]] = index[ichange]   
-        time_end[ichange,ispell[ichange]] = t-1    
-        state_beg[ichange,ispell[ichange]+1] = state[ichange,t]     
-        time_beg[ichange,ispell[ichange]+1] = t    
-        n_spell[ichange,ispell[ichange]+1]=ispell[ichange]+1   
-        is_unid[ichange,ispell[ichange]+1]=changep[ichange,t]   
-        is_unid_lim[ichange,ispell[ichange]+1]=changep[ichange,aged[ichange,0]]   
-        is_unid_end[ichange,ispell[ichange]]=changep[ichange,t-1]   
-           
-             
-        ispell[ichange] = ispell[ichange]+1    
-             
-             
-    allspells_beg = state_beg[is_spell]    
-    allspells_len = sp_length[is_spell]    
-    allspells_end = state_end[is_spell] # may be -1 if not ended    
-    allspells_timeb = time_beg[is_spell]   
-    allspells_isunid=is_unid[is_spell]   
-    allspells_isunidend=is_unid_end[is_spell]   
-    allspells_isunidlim=is_unid_lim[is_spell]   
-    allspells_person=sp_person[is_spell]   
-    allspells_nspells=n_spell[is_spell]   
-       
-       
-         
-    # If the spell did not end mark it as ended with the state at its start    
-    allspells_end[allspells_end==-1] = allspells_beg[allspells_end==-1]    
-    allspells_isunidend[allspells_isunidend==-1] = allspells_isunidlim[allspells_isunidend==-1]   
-    allspells_nspells[allspells_nspells==-1]=0   
-    allspells_nspells=allspells_nspells+1   
-        
-    #Use this to construct hazards   
-    spells = np.stack((allspells_beg,allspells_len,allspells_end),axis=1)    
-       
-    #Use this for empirical analysis   
-    spells_empirical=np.stack((allspells_beg,allspells_timeb,allspells_len,allspells_end,allspells_nspells,allspells_isunid,allspells_isunidend),axis=1)   
-    is_coh=((spells_empirical[:,0]==3) & (spells_empirical[:,5]==spells_empirical[:,6]))   
-    spells_empirical=spells_empirical[is_coh,1:6]   
-       
+# -*- coding: utf-8 -*-     
+"""     
+Created on Thu Nov 14 10:26:49 2019     
       
-         
-         
-    #Now divide spells by relationship nature    
-    all_spells=dict()    
-    for ist,sname in enumerate(state_codes):    
-    
-        is_state= (spells[:,0]==ist)    
-        all_spells[sname]=spells[is_state,:]      
-        is_state= (all_spells[sname][:,1]!=0)    
-        all_spells[sname]=all_spells[sname][is_state,:]    
-            
-            
-    ############################################    
-    #Construct sample of first relationships    
-    ############################################    
+This file comupte simulated moments + optionally     
+plots some graphs     
+      
+@author: Fabio     
+"""     
+      
+import numpy as np     
+import matplotlib.pyplot as plt     
+import matplotlib.backends.backend_pdf    
    
-        
-    #Now define variables    
-    rel_end = -1*np.ones((N,99),dtype=np.int16)    
-    rel_age= -1*np.ones((N,99),dtype=np.int16)    
-    rel_unid= -1*np.ones((N,99),dtype=np.int16)    
-    rel_number= -1*np.ones((N,99),dtype=np.int16)   
-    rel_sex=-1*np.ones((N,99),dtype=np.int16)   
-    isrel = np.zeros((N,),dtype=np.int8)    
-        
-    for t in range(2,mdl.setup.pars['Tret']-int(6/mdl.setup.pars['py'])):    
-            
-        irchange = ((state[:,t-1] != state[:,t]) & ((state[:,t-1]==0) | (state[:,t-1]==1)))    
-            
-        if not np.any(irchange): continue    
-        
-        rel_end[irchange,isrel[irchange]]=state[irchange,t]    
-        rel_age[irchange,isrel[irchange]]=t    
-        rel_unid[irchange,isrel[irchange]]=changep[irchange,t]    
-        rel_number[irchange,isrel[irchange]]=isrel[irchange]+1    
-        rel_sex[irchange,isrel[irchange]]=female[irchange,0]  
-            
-        isrel[irchange] = isrel[irchange]+1    
-        
-    #Get the final Variables    
-    allrel_end=rel_end[(rel_end!=-1)]    
-    allrel_age=rel_age[(rel_age!=-1)]    
-    allrel_uni=rel_unid[(rel_unid!=-1)]  
-    allrel_sex=rel_sex[(rel_unid!=-1)]  
-    allrel_number=rel_number[(rel_number!=-1)]    
-        
-    #Get whetehr marraige    
-    allrel_mar=np.zeros((allrel_end.shape))    
-    allrel_mar[(allrel_end==2)]=1    
-        
-    #Create a Pandas Dataframe    
-    data_rel=np.array(np.stack((allrel_mar,allrel_age,allrel_uni,allrel_number,allrel_sex),axis=0).T,dtype=np.float64)    
-    data_rel_panda=pd.DataFrame(data=data_rel,columns=['mar','age','uni','rnumber','sex'])    
-                       
+#Avoid error for having too many figures  
+plt.rcParams.update({'figure.max_open_warning': 0})  
+from statutils import strata_sample  
+from welfare_comp import welf_dec  
+   
+#For nice graphs with matplotlib do the following   
+matplotlib.use("pgf")   
+matplotlib.rcParams.update({   
+    "pgf.texsystem": "pdflatex",   
+    'font.family': 'serif',   
+    'font.size' : 11,   
+    'text.usetex': True,   
+    'pgf.rcfonts': False,   
+})   
+   
+   
+import pickle     
+import pandas as pd     
+import statsmodels.api as sm     
+import statsmodels.formula.api as smf     
     
-        
-    #Regression    
-    if np.var(data_rel_panda['uni'])>0.0001: 
-        try:    
-            FE_ols = smf.ols(formula='mar ~ uni+C(age)+C(sex)', data = data_rel_panda.dropna()).fit()    
-            beta_unid_s=FE_ols.params['uni']    
-        except:    
-            print('No data for unilateral divorce regression...')    
-            beta_unid_s=0.0  
-    else: 
-        beta_unid_s=0.0  
-         
-        
-        
-    moments['beta unid']=beta_unid_s     
-       
-    ###################################################   
-    # Second regression for the length of cohabitation   
-    ###################################################   
-    if draw:
-        data_coh_panda=pd.DataFrame(data=spells_empirical,columns=['age','duration','end','rel','uni'])    
-           
-        if np.var(data_rel_panda['uni'])>0.0001: 
-            #Regression    
-            try:    
-            #FE_ols = smf.ols(formula='duration ~ uni+C(age)', data = data_coh_panda.dropna()).fit()    
-            #beta_dur_s=FE_ols.params['uni']    
-               
-                from lifelines import CoxPHFitter   
-                cph = CoxPHFitter()   
-                data_coh_panda['age2']=data_coh_panda['age']**2   
-                data_coh_panda['age3']=data_coh_panda['age']**3   
-                data_coh_panda['rel2']=data_coh_panda['rel']**2   
-                data_coh_panda['rel3']=data_coh_panda['rel']**3   
-                #data_coh_panda=pd.get_dummies(data_coh_panda, columns=['age'])   
-                   
-                #Standard Cox   
-                data_coh_panda['endd']=1.0   
-                data_coh_panda.loc[data_coh_panda['end']==3.0,'endd']=0.0   
-                data_coh_panda1=data_coh_panda.drop(['end'], axis=1)   
-                cox_join=cph.fit(data_coh_panda1, duration_col='duration', event_col='endd')   
-                haz_join=cox_join.hazard_ratios_['uni']   
-                   
-                #Cox where risk is marriage   
-                data_coh_panda['endd']=0.0   
-                data_coh_panda.loc[data_coh_panda['end']==2.0,'endd']=1.0   
-                data_coh_panda2=data_coh_panda.drop(['end'], axis=1)   
-                cox_mar=cph.fit(data_coh_panda2, duration_col='duration', event_col='endd')   
-                haz_mar=cox_mar.hazard_ratios_['uni']   
-                   
-                #Cox where risk is separatio   
-                data_coh_panda['endd']=0.0   
-                data_coh_panda.loc[data_coh_panda['end']==0.0,'endd']=1.0   
-                data_coh_panda3=data_coh_panda.drop(['end'], axis=1)   
-                cox_sep=cph.fit(data_coh_panda3, duration_col='duration', event_col='endd')   
-                haz_sep=cox_sep.hazard_ratios_['uni']   
-                   
-            except:    
-                print('No data for unilateral divorce regression...')    
-                haz_sep=1.0  
-                haz_join=1.0  
-                haz_mar=1.0  
-        else: 
-            print('No data for unilateral divorce regression...')    
-            haz_sep=1.0  
-            haz_join=1.0  
-            haz_mar=1.0  
-             
-    ##################################    
-    # Construct the Hazard functions    
-    #################################    
-             
-    #Hazard of Divorce    
-    hazd=list()    
-    lgh=len(all_spells['Couple, M'][:,0])    
-    for t in range(mdl.setup.pars['T']):    
-             
-        cond=all_spells['Couple, M'][:,1]==t+1    
-        temp=all_spells['Couple, M'][cond,2]    
-        cond1=temp!=2    
-        temp1=temp[cond1]    
-        if lgh>0:    
-            haz1=len(temp1)/lgh    
-            lgh=lgh-len(temp)    
-        else:    
-            haz1=0.0    
-        hazd=[haz1]+hazd    
-             
-    hazd.reverse()    
-    hazd=np.array(hazd).T    
-         
-    #Hazard of Separation    
-    hazs=list()    
-    lgh=len(all_spells['Couple, C'][:,0])    
-    for t in range(mdl.setup.pars['T']):    
-             
-        cond=all_spells['Couple, C'][:,1]==t+1    
-        temp=all_spells['Couple, C'][cond,2]    
-        cond1=(temp>=0) & (temp<=1) 
-        temp1=temp[cond1]    
-        if lgh>0:    
-            haz1=len(temp1)/lgh    
-            lgh=lgh-len(temp)    
-        else:    
-            haz1=0.0    
-        hazs=[haz1]+hazs    
-             
-    hazs.reverse()    
-    hazs=np.array(hazs).T    
-         
-    #Hazard of Marriage (Cohabitation spells)    
-    hazm=list()    
-    lgh=len(all_spells['Couple, C'][:,0])    
-    for t in range(mdl.setup.pars['T']):    
-             
-        cond=all_spells['Couple, C'][:,1]==t+1    
-        temp=all_spells['Couple, C'][cond,2]    
-        cond1=temp==2    
-        temp1=temp[cond1]    
-        if lgh>0:    
-            haz1=len(temp1)/lgh    
-            lgh=lgh-len(temp)    
-        else:    
-            haz1=0.0    
-        hazm=[haz1]+hazm    
-             
-    hazm.reverse()    
-    hazm=np.array(hazm).T    
-         
-    #Transform hazards pooling moments 
-    mdl.setup.pars['ty']=2 
-    if mdl.setup.pars['ty']>1: 
-        #Divorce 
-        hazdp=list() 
-        pop=1 
-        for i in range(int(mdl.setup.pars['T']/(mdl.setup.pars['ty']))): 
-            haz1=hazd[mdl.setup.pars['ty']*i]*pop 
-            haz2=hazd[mdl.setup.pars['ty']*i+1]*(pop-haz1) 
-            hazdp=[(haz1+haz2)/pop]+hazdp  
-            pop=pop-(haz1+haz2) 
-        hazdp.reverse()    
-        hazdp=np.array(hazdp).T  
-        hazd=hazdp 
-             
-        #Separation and Marriage 
-        hazsp=list() 
-        hazmp=list() 
-        pop=1 
-        for i in range(int(mdl.setup.pars['T']/(mdl.setup.pars['ty']))): 
-            hazs1=hazs[mdl.setup.pars['ty']*i]*pop 
-            hazm1=hazm[mdl.setup.pars['ty']*i]*pop 
-             
-            hazs2=hazs[mdl.setup.pars['ty']*i+1]*(pop-hazs1-hazm1) 
-            hazm2=hazm[mdl.setup.pars['ty']*i+1]*(pop-hazs1-hazm1) 
-            hazsp=[(hazs1+hazs2)/pop]+hazsp 
-            hazmp=[(hazm1+hazm2)/pop]+hazmp 
-            pop=max(pop-(hazs1+hazs2+hazm1+hazm2),0.000001) 
-             
-        hazsp.reverse()    
-        hazsp=np.array(hazsp).T  
-        hazs=hazsp 
-         
-        hazmp.reverse()    
-        hazmp=np.array(hazmp).T  
-        hazm=hazmp 
-         
-    moments['hazard sep'] = hazs    
-    moments['hazard div'] = hazd    
-    moments['hazard mar'] = hazm    
-        
-    
-     
-         
-    #Singles: Marriage vs. cohabitation transition    
-    #spells_s=np.append(spells_Femalesingle,spells_Malesingle,axis=0)    
-    spells_s =all_spells['Female, single']    
-    cond=spells_s[:,2]>1    
-    spells_sc=spells_s[cond,2]    
-    condm=spells_sc==2    
-    sharem=len(spells_sc[condm])/max(len(spells_sc),0.0001)    
-       
-       
-    #Cut the first two periods give new 'length'    
-    lenn=mdl.setup.pars['T']-mdl.setup.pars['Tbef']    
-    assets_t=assets_t[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']]    
-    iexo=iexo[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']]    
-    state=state[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']]    
-    theta_t=theta_t[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']]    
-         
-    ###########################################    
-    #Moments: FLS   
-    ###########################################    
-         
-         
-    flsm=np.ones(mdl.setup.pars['Tret'])    
-    flsc=np.ones(mdl.setup.pars['Tret'])    
-         
-         
-    for t in range(mdl.setup.pars['Tret']):    
-             
-        pick = agents.state[:,t]==2           
-        if pick.any(): flsm[t] = np.array(setup.ls_levels)[agents.ils_i[pick,t]].mean()    
-        pick = agents.state[:,t]==3    
-        if pick.any(): flsc[t] = np.array(setup.ls_levels)[agents.ils_i[pick,t]].mean()    
-             
-         
-             
-    moments['flsm'] = flsm    
-    moments['flsc'] = flsc    
-     
-    ################## 
-    #Sample Selection# 
-    ################# 
-     
-    #Import the distribution from the data 
-    with open('freq_psid_tot.pkl', 'rb') as file:    
-        freq_psid_tot_data=pickle.load(file)   
-         
-    #Import Get when in a couple and reshape accordingly 
-    resha=len(change_psid[0,:])*len(change_psid[:,0]) 
-    state_totl=np.reshape(state_psid,resha) 
-    incouple= (state_totl==2) | (state_totl==3) 
-    incoupler=np.reshape(incouple,resha) 
-     
-    #Define main variables 
-    ctemp=change_psid.copy() 
-    change_psid2=np.reshape(ctemp,resha) 
-    agetemp=np.linspace(1,len(change_psid[0,:]),len(change_psid[0,:])) 
-    agegridtemp=np.reshape(np.repeat(agetemp,len(change_psid[:,0])),(len(change_psid[:,0]),len(agetemp)),order='F') 
-    agegrid=np.reshape(agegridtemp,resha) 
-     
-    #Keep all those guys only if the are men and in a relatioinship 
-    #TODO 
-     
-    #Make data compatible with current age. 
-    freq_psid_tot_data['age']=freq_psid_tot_data['age']-18.0 
-    freq_psid_tot_data.loc[freq_psid_tot_data['age']<0.0,'age']=0.0 
-     
-    #Drop if no change in law! 
-    if np.all(changep==0): 
-        #freq_psid_tot_data.loc[freq_psid_tot_data['age']<1910.0,'age']=1000 
-        freq_psid_tot_data['unid']=0 
-    
-         
-    freq_psid_tot_data2=freq_psid_tot_data.groupby(['age','unid'])['age'].count() 
-     
-    #Create a Dataframe with simulated data to perform the draw 
-    inde=np.linspace(1,resha,resha,dtype=np.int32) 
-     
-    ddd2=np.stack((inde[incoupler],agegrid[incoupler],change_psid2[incoupler]),axis=0).T 
-    df_psidt=pd.DataFrame(data=ddd2,columns=["Index","age","unid"],index=ddd2[:,0]) 
-    df_psidt['age']=df_psidt['age'].astype(np.float) 
-     
-    if 1>2:#try:#if (len(df_psidt)>0) & (setup.pars['py']==1) & (max(df_psidt['unid'])>0.9) & (min(df_psidt['unid'])<0.9): 
-        sampletemp=strata_sample(["'age'", "'unid'"],freq_psid_tot_data2,frac=0.1,tsample=df_psidt,distr=True) 
-        final2t=df_psidt.merge(sampletemp,how='left',on='Index',indicator=True) 
-         
-        keep3=[False]*len(df_psidt) 
-        keep3=(np.array(final2t['_merge'])=='both') 
-         
-        #TODO assign labor according to stuff above 
-        #Keep again for all relevant variables 
-     
-         
-        #Initial distribution 
-        prima_psid_tot=freq_psid_tot_data2/np.sum(freq_psid_tot_data2) 
-         
-        #Final distribution 
-        final3=df_psidt[keep3] 
-        final4=final3.groupby(['age','unid'])['age'].count() 
-        dopo_psid_tot=final4/np.sum(final4) 
-         
-         
-        print('The average deviation from actual to final psid_tot ditribution is {:0.2f}%'.format(np.mean(abs(prima_psid_tot-dopo_psid_tot))*100)) 
+      
+def moment(mdl_list,agents,agents_male,draw=True,validation=False):     
+#This function compute moments coming from the simulation     
+#Optionally it can also plot graphs about them. It is feeded with     
+#matrixes coming from simulations     
+      
+  
+  
+    mdl=mdl_list[0]  
+  
           
-    else:#except:#else: 
-        keep3=[True]*len(df_psidt) 
-    ############ 
-    #Average FLS 
-    ############ 
-     
-    state_totl=state_totl[incoupler][keep3] 
-    labor_totl=np.reshape(labor_psid,resha) 
-    labor_totl=labor_totl[incoupler][keep3] 
-    mean_fls=0.0  
-    pick=((state_totl[:]==2)  | (state_totl[:]==3))  
-    if pick.any():mean_fls=np.array(setup.ls_levels)[labor_totl[pick]].mean()  
+    #Import simulated values    
+    state=agents.state   
+    assets_t=mdl.setup.agrid_c[agents.iassets]  
+    assets_t[agents.state<=1]=mdl.setup.agrid_s[agents.iassets[agents.state<=1]]  
+    iexo=agents.iexo       
+    theta_t=mdl.setup.thetagrid_fine[agents.itheta]     
+    setup = mdl.setup    
+    female=agents.is_female  
+    cons=agents.c  
+    consx=agents.x  
+    labor=agents.ils_i  
+    shks = agents.shocks_single_iexo   
+    psi_check=np.zeros(state.shape)  
+    shift_check=np.array((state==2),dtype=np.float32)  
+    single=np.array((state==0),dtype=bool)  
+    betag=mdl.setup.pars['beta_t'][0]**(np.linspace(1,len(state[0,:]),len(state[0,:]))-1)  
+    betam=np.reshape(np.repeat(betag,len(state[:,0])),(len(state[:,0]),len(betag)),order='F')  
+    #agegrid=np.reshape(agegridtemp,resha)  
       
-    moments['mean_fls'] = mean_fls  
-     
-    ###########################################    
-    #Moments: wage   Ratio 
-    ###########################################    
-    iexo_totl=np.reshape(iexo_psid,resha) 
-    iexo_totl=iexo_totl[incoupler][keep3] 
-    age_w=np.array(agegrid[incoupler][keep3],dtype=np.int16)-1 
-    wagem1=np.array(setup.pars['m_wage_trend'])[age_w][...,None]+np.array(setup.exogrid.zm_t)[age_w] 
-    index=np.reshape(np.repeat(setup.all_indices(0,iexo_totl)[2],setup.pars['n_zm_t'][0]),(len(iexo_totl),setup.pars['n_zm_t'][0]),order='C') 
-    maskp=np.reshape(np.repeat(np.linspace(0,setup.pars['n_zm_t'][0]-1,setup.pars['n_zm_t'][0]),len(index)), 
-                      (index.shape),order='F') 
-    wagem=wagem1[maskp==index] 
-     
-    moments['wage_ratio']=np.mean(wagem[state_totl==2])-np.mean(wagem[state_totl==3]) 
-     
-     
-    ################### 
-    #Sample Selection 
-    ################### 
-     
-    #Import the distribution from the data 
-    with open('freq_psid_par.pkl', 'rb') as file:    
-        freq_psid_par_data=pickle.load(file)   
-         
-    #Import Get when in a couple and reshape accordingly 
-    resha=len(change_psid[0,:])*len(change_psid[:,0]) 
-    state_par=np.reshape(state_psid,resha) 
-    incouplep= (state_par==2) | (state_par==3) 
-    incouplepm= np.zeros(incouplep.shape) 
-    incouplepm[np.where(state_par[incouplep]==2)[0]]=1 
-    incouplerp=np.reshape(incouplep,resha) 
-    incouplepm2=np.reshape(incouplepm,resha) 
-     
+    #Fill psi and ushift here  
+    for i in range(len(state[0,:])):  
+        psi_check[:,i]=((setup.exogrid.psi_t[i][(setup.all_indices(i,iexo[:,i]))[3]]))   
+      
+      
+    psi_check[single]=0.0  
+    state_psid=agents_male.state  
+    labor_psid=agents_male.ils_i  
+    iexo_psid=agents_male.iexo  
+    change_psid=agents_male.policy_ind  
+      
+    if draw:  
+        #Import values for female labor supply (simulated men only)  
  
-     
-    #Define main variables 
-    ctemp=change_psid.copy() 
-    change_psid3=np.reshape(ctemp,resha) 
-     
-    #Keep all those guys only if the are men and in a relatioinship 
-    #TODO 
-     
-    #Make data compatible with current age. 
-    freq_psid_par_data['age']=freq_psid_par_data['age']-18.0 
-    freq_psid_par_data.loc[freq_psid_par_data['age']<0.0,'age']=0.0 
-     
-    #Drop if no change in law! 
-    if np.all(changep==0): 
-        #freq_psid_par_data.loc[freq_psid_par_data['age']<1910.0,'age']=1000 
-        freq_psid_par_data['unid']=0 
-         
+        iexo_w=agents.iexo   
+        labor_w=agents.ils_i  
+        female_w=agents.is_female  
+        divorces_w=agents.divorces  
+        state_w=agents.state   
+        theta_w=mdl.setup.thetagrid_fine[agents.itheta]   
+        assets_w=mdl.setup.agrid_c[agents.iassets]  
+        assets_w[agents.state<=1]=mdl.setup.agrid_s[agents.iassets[agents.state<=1]]  
+        assetss_w=mdl.setup.agrid_c[agents.iassetss]  
+        assetss_w[agents.state<=1]=mdl.setup.agrid_s[agents.iassetss[agents.state<=1]]  
+        changep_w=agents.policy_ind   
   
+    moments=dict()  
+          
+    ##########################################  
+    #WELFARE DECOMPOSITION HERE  
+    #########################################  
+    if draw: 
+        if len(mdl_list) > 1:  
+            welf_dec(mdl_list,agents)  
+          
+    ##########################################     
+    #START COMPUTATION OF SIMULATED MOMENTS     
+    #########################################     
+        
+          
+    #Create a file with the age of the change foreach person     
+    changep=agents.policy_ind    
          
-    freq_psid_par_data2=freq_psid_par_data.groupby(['age','unid','mar'])['age'].count() 
- 
+          
+    #Get states codes     
+    state_codes = {name: i for i, name in enumerate(mdl.setup.state_names)}     
+        
+     ###########################################     
+    #Sample selection     
+    ###########################################     
+         
+    #Sample Selection to replicate the fact that     
+    #in NSFH wave two cohabitning couples were     
+    #excluded.     
+    #Birth cohorts: 45-55     
+    #Second wave of NLSFH:1992-1994.     
+    #     
+    #Assume that people are interviewd in 1993 and that age is uniformly     
+    #distributed. Clearly we can adjust this later on.     
+         
+         
+         
+    #First cut the first two periods give new 'length'     
+    assets_t=assets_t[:,:mdl.setup.pars['T']]     
+    iexo=iexo[:,:mdl.setup.pars['T']]     
+    state=state[:,:mdl.setup.pars['T']]     
+    theta_t=theta_t[:,:mdl.setup.pars['T']]     
+    female=female[:,:mdl.setup.pars['T']]     
+    labor_psid=labor_psid[:,:mdl.setup.pars['T']]  
+    iexo_psid=iexo_psid[:,:mdl.setup.pars['T']]  
+      
+    if draw:  
+        iexo_w=iexo_w[:,:mdl.setup.pars['T']]  
+        labor_w=labor_w[:,:mdl.setup.pars['T']]  
+        change_psid=change_psid[:,:mdl.setup.pars['T']]  
+        state_psid=state_psid[:,:mdl.setup.pars['T']]  
+        female_w=female_w[:,:mdl.setup.pars['T']]  
+        state_w=state_w[:,:mdl.setup.pars['T']]  
+        assets_w=assets_w[:,:mdl.setup.pars['T']]  
+        assetss_w=assetss_w[:,:mdl.setup.pars['T']]  
+        theta_w=theta_w[:,:mdl.setup.pars['T']]  
+        changep_w=changep_w[:,:mdl.setup.pars['T']]  
+        divorces_w=divorces_w[:,:mdl.setup.pars['T']]  
+        
+         
+    ####################################################################     
+    #Now drop observation to mimic the actual data gathering process     
+    ####################################################################     
+         
+    #Get distribution of age conditional on cohabiting on the second wave     
+    with open('age_sw.pkl', 'rb') as file:     
+        age_sw=pickle.load(file)     
+             
+    keep=(assets_t[:,0]>-1)     
+        
      
-    ddd3=np.stack((inde[incouplerp],agegrid[incouplerp],change_psid3[incouplerp],incouplepm2[incouplerp]),axis=0).T 
+    summa=0.0     
+    summa1=0.0     
+    for i in age_sw:     
+        summa+=age_sw[i]     
+        keep[int(summa1*len(state[:,0])/sum(age_sw.values())):int(summa*len(state[:,0])/sum(age_sw.values()))]=(state[int(summa1*len(state[:,0])/sum(age_sw.values())):int(summa*len(state[:,0])/sum(age_sw.values())),int((i-20)/mdl.setup.pars['py'])]!=3)     
+           
+        summa1+=age_sw[i]     
+     
+      
+    state=state[keep,]      
+    changep=changep[keep,]   
+    female=female[keep,]   
+    iexo=iexo[keep,]  
+    assets_t=assets_t[keep,]  
+    labor=labor[keep,]  
+      
+        
+      
+    ###################################################################  
+    # Draw from simulated agents to match NSFH distribution  
+    # according to the following stratas:  
+    # 1) Age at unilateral divorce  
+    # 2) Gender  
+    #   
+    ###################################################################  
+     
+ 
+      
+    #Import the distribution from the data  
+    with open('freq_nsfh.pkl', 'rb') as file:     
+        freq_nsfh_data=pickle.load(file)    
+      
+    #value=mdl.V[0]['Female, single']['V'][0,iexo_w[:,0]]  
+    #Make data compatible with current age  
+    freq_nsfh_data['age_unid']=freq_nsfh_data['age_unid']-18.0  
+    freq_nsfh_data.loc[freq_nsfh_data['age_unid']<=0.0,'age_unid']=0.0  
+    freq_nsfh_data.loc[freq_nsfh_data['age_unid']>=900.0,'age_unid']=1000  
+      
+    #Drop if no change in law!  
+    if np.all(changep==0):  
+        freq_nsfh_data.loc[freq_nsfh_data['age_unid']<1910.0,'age_unid']=1000  
+     
+   
+          
+    freq_nsfh=freq_nsfh_data.groupby(['M2DP01','age_unid'])['SAMWT'].count()  
+    #Create a Dataframe with simulated data to perform the draw  
+    age_unid=np.argmax(changep,axis=1)  
+    never=(changep[:,0]==0) & (age_unid[:]==0)  
+    age_unid[never]=1000  
+    age_unid[changep[:,-1]==0]=1000  
+      
+    fem=np.array(['FEMALE']*len(female))  
+    fem[female[:,0]==0]='MALE'  
+      
+    inde=np.linspace(1,len(fem),len(fem),dtype=np.int32)  
+      
+    ddd=np.stack((inde,age_unid,fem),axis=0).T  
+    df=pd.DataFrame(data=ddd,columns=["Index","age","sex"],index=ddd[:,0])  
+    df['age']=df['age'].astype(np.float)  
+    try:#if (len(df)>0) &  (setup.pars['py']==1):    
+        sampletemp=strata_sample(["'sex'", "'age'"],freq_nsfh,frac=0.2,tsample=df,distr=True)  
+        final2=df.merge(sampletemp,how='left',on='Index',indicator=True)  
+          
+        keep2=[False]*len(df)  
+        keep2=(np.array(final2['_merge'])=='both')  
+    except:#else:  
+        keep2=[True]*len(df)  
+      
+    #Keep again for all relevant variables     
+    state=state[keep2,]       
+    changep=changep[keep2,]   
+    female=female[keep2,]  
+    iexo=iexo[keep2,]  
+    assets_t=assets_t[keep2,]  
+    labor=labor[keep2,]  
     
-    df_psidp=pd.DataFrame(data=ddd3,columns=["Index","age","unid","mar"],index=ddd3[:,0]) 
-    df_psidp['age']=df_psidp['age'].astype(np.float) 
+      
+    #Initial distribution  
+    prima=freq_nsfh/np.sum(freq_nsfh)  
+      
+    #Final distribution  
+    final3=df[keep2]  
+    final4=final3.groupby(['sex','age'])['sex'].count()  
+    dopo=final4/np.sum(final4)  
+      
+    try:  
+        print('The average deviation from actual to final ditribution is {:0.2f}%'.format(np.mean(abs(prima-dopo))*100))  
+    except:  
+        print('No stratified sampling')  
+         
+      ###########################################     
+    #Sample selection - get age at censoring    
+    ##########################################   
+    #Build the event matrix  
+    eage_unid_e=np.argmax(changep,axis=1)  
+    enever_e=(changep[:,0]==0) & (eage_unid_e[:]==0)  
+    eage_unid_e[enever_e]=1000  
+    eage_unid_e[changep[:,-1]==0]=1000  
+    eage_unid_e[~enever_e]=eage_unid_e[~enever_e]+18 
+    eu=np.repeat(np.expand_dims(eage_unid_e,axis=1),len(changep[0,:]),axis=1) 
      
+    with open('freqj.pkl', 'rb') as file:      
+        freq_rawt=pickle.load(file)      
+              
+    freq_raw=freq_rawt[0] 
+    femk=freq_rawt[1] 
+    agek=freq_rawt[2] 
+    aged=np.ones((state[:,0].shape))     
+         
+      
+    #Get the right category 
+    for ii in range(len(freq_raw[:,0])): 
+        for j in range(len(freq_raw[0,:])): 
+             
+            freq=freq_raw[ii,j] 
+            se=femk[ii,j] 
+            ag=agek[ii,j] 
+            summa=0.0     
+            summa1=0.0     
+            if np.any(np.any(np.where((female==se) & (eu==ag))[0])): 
+                start=np.min(np.where((female==se) & (eu==ag))[0]) 
+               
+                for i in freq:     
+                    summa+=freq[int(i)]    
+                    #print(round((i-18)/mdl.setup.pars['py'],0) ,int(summa1*len(aged[(female==0) & (educ=='e')])/sum(freq.values())),int(summa*len(aged[(female==0) & (educ=='e')])/sum(freq.values()))) 
+                    aged[start+int(summa1*len(aged[(female[:,0]==se) & (eu[:,0]==ag)])/sum(freq.values())):start+int(summa*len(aged[(female[:,0]==se) & (eu[:,0]==ag)])/sum(freq.values()))]=round((i-18)/mdl.setup.pars['py'],0)     
+                    
+                    summa1+=freq[int(i)]     
+         
+   
+    aged=np.array(aged,dtype=np.int16)   
+    aged=np.reshape(np.repeat(aged,len(state[0,:])),state.shape) 
+    #Get if censored 
+    agei=np.cumsum(np.ones(aged.shape,dtype=np.int16),axis=1)-1    
+    censored=aged>agei 
+     
+   
+ 
+    ###################################################################    
+    #Get age we stop observing spells: this matters for hazards  
+    ###################################################################    
+    with open('age_sint.pkl', 'rb') as file:     
+        age_sint=pickle.load(file)     
+             
+    aged=np.ones((state.shape))    
+        
+     
+    summa=0.0    
+    summa1=0.0    
+    for i in age_sint:    
+        summa+=age_sint[int(i)]    
+        aged[int(summa1*len(aged[:])/sum(age_sint.values())):int(summa*len(aged[:])/sum(age_sint.values()))]=round((i-20)/mdl.setup.pars['py'],0)    
+        summa1+=age_sint[int(i)]    
+        
+    aged=np.array(aged,dtype=np.int16)    
+    ###########################################     
+    #Moments: Construction of Spells     
+    ###########################################     
+    nspells = (state[:,1:]!=state[:,:-1]).astype(np.int).sum(axis=1).max() + 1    
+    index=np.array(np.linspace(1,len(state[:,0]),len(state[:,0]))-1,dtype=np.int16)    
+    N=len(iexo[:,0])    
+    state_beg = -1*np.ones((N,nspells),dtype=np.int8)     
+    time_beg = -1*np.ones((N,nspells),dtype=np.bool)     
+    did_end = np.zeros((N,nspells),dtype=np.bool)     
+    state_end = -1*np.ones((N,nspells),dtype=np.int8)     
+    time_end = -1*np.ones((N,nspells),dtype=np.bool)     
+    sp_length = -1*np.ones((N,nspells),dtype=np.int16)     
+    sp_person = -1*np.ones((N,nspells),dtype=np.int16)     
+    is_unid = -1*np.ones((N,nspells),dtype=np.int16)     
+    is_unid_end = -1*np.ones((N,nspells),dtype=np.int16)     
+    is_unid_lim = -1*np.ones((N,nspells),dtype=np.int16)     
+    n_spell = -1*np.ones((N,nspells),dtype=np.int16)     
+    is_spell = np.zeros((N,nspells),dtype=np.bool)     
+    
+        
+          
+    state_beg[:,0] = 0 # THIS ASSUMES EVERYONE STARTS AS SINGLE   #TODO consistent with men stuff?  
+    time_beg[:,0] = 0     
+    sp_length[:,0] = 1     
+    is_spell[:,0] = True     
+    ispell = np.zeros((N,),dtype=np.int8)     
+          
+    for t in range(1,mdl.setup.pars['T']):     
+        # ichange = ((state[:,t-1] != state[:,t]))     
+        # sp_length[((~ichange)),ispell[((~ichange))]] += 1     
   
-
-    keep4=[True]*len(df_psidp) 
+         
+        ichange = ((state[:,t-1] != state[:,t])) & (censored[:,t]==True) 
+        ifinish=((~ichange) & (censored[:,t]==False) & (censored[:,t-1]==True)) 
+        sp_length[((~ichange) & (censored[:,t]==True)),ispell[((~ichange) & (censored[:,t]==True))]] += 1     
+         
+              
+        if not np.any(ichange): continue     
+              
+        did_end[ichange,ispell[ichange]] = True     
+              
+        is_spell[ichange,ispell[ichange]+1] = True     
+        sp_length[ichange,ispell[ichange]+1] = 1 # if change then 1 year right     
+        state_end[ichange,ispell[ichange]] = state[ichange,t]     
+        sp_person[ichange,ispell[ichange]] = index[ichange]    
+        time_end[ichange,ispell[ichange]] = t-1     
+        state_beg[ichange,ispell[ichange]+1] = state[ichange,t]      
+        time_beg[ichange,ispell[ichange]+1] = t     
+        n_spell[ichange,ispell[ichange]+1]=ispell[ichange]+1    
+        is_unid[ichange,ispell[ichange]+1]=changep[ichange,t]    
+        is_unid_lim[ichange,ispell[ichange]+1]=changep[ichange,aged[ichange,0]]    
+        is_unid_end[ichange,ispell[ichange]]=changep[ichange,t-1]    
+            
+              
+        ispell[ichange] = ispell[ichange]+1     
+              
+              
+    allspells_beg = state_beg[is_spell]     
+    allspells_len = sp_length[is_spell]     
+    allspells_end = state_end[is_spell] # may be -1 if not ended     
+    allspells_timeb = time_beg[is_spell]    
+    allspells_isunid=is_unid[is_spell]    
+    allspells_isunidend=is_unid_end[is_spell]    
+    allspells_isunidlim=is_unid_lim[is_spell]    
+    allspells_person=sp_person[is_spell]    
+    allspells_nspells=n_spell[is_spell]    
+        
+        
+          
+    # If the spell did not end mark it as ended with the state at its start     
+    allspells_end[allspells_end==-1] = allspells_beg[allspells_end==-1]     
+    allspells_isunidend[allspells_isunidend==-1] = allspells_isunidlim[allspells_isunidend==-1]    
+    allspells_nspells[allspells_nspells==-1]=0    
+    allspells_nspells=allspells_nspells+1    
+         
+    #Use this to construct hazards    
+    spells = np.stack((allspells_beg,allspells_len,allspells_end),axis=1)     
+        
+    #Use this for empirical analysis    
+    spells_empirical=np.stack((allspells_beg,allspells_timeb,allspells_len,allspells_end,allspells_nspells,allspells_isunid,allspells_isunidend),axis=1)    
+    is_coh=((spells_empirical[:,0]==3) & (spells_empirical[:,5]==spells_empirical[:,6]))    
+    spells_empirical=spells_empirical[is_coh,1:6]    
+        
+       
+          
+          
+    #Now divide spells by relationship nature     
+    all_spells=dict()     
+    for ist,sname in enumerate(state_codes):     
+     
+        is_state= (spells[:,0]==ist)     
+        all_spells[sname]=spells[is_state,:]       
+        is_state= (all_spells[sname][:,1]!=0)     
+        all_spells[sname]=all_spells[sname][is_state,:]     
+             
+             
+    ############################################     
+    #Construct sample of first relationships     
+    ############################################     
+    
+         
+    #Now define variables     
+    rel_end = -1*np.ones((N,99),dtype=np.int16)     
+    rel_age= -1*np.ones((N,99),dtype=np.int16)     
+    rel_unid= -1*np.ones((N,99),dtype=np.int16)     
+    rel_number= -1*np.ones((N,99),dtype=np.int16)    
+    rel_sex=-1*np.ones((N,99),dtype=np.int16)    
+    isrel = np.zeros((N,),dtype=np.int8)     
+         
+    for t in range(2,mdl.setup.pars['Tret']-int(6/mdl.setup.pars['py'])):     
+             
+        irchange = ((state[:,t-1] != state[:,t]) & ((state[:,t-1]==0) | (state[:,t-1]==1)))     
+             
+        if not np.any(irchange): continue     
+         
+        rel_end[irchange,isrel[irchange]]=state[irchange,t]     
+        rel_age[irchange,isrel[irchange]]=t     
+        rel_unid[irchange,isrel[irchange]]=changep[irchange,t]     
+        rel_number[irchange,isrel[irchange]]=isrel[irchange]+1     
+        rel_sex[irchange,isrel[irchange]]=female[irchange,0]   
+             
+        isrel[irchange] = isrel[irchange]+1     
+         
+    #Get the final Variables     
+    allrel_end=rel_end[(rel_end!=-1)]     
+    allrel_age=rel_age[(rel_age!=-1)]     
+    allrel_uni=rel_unid[(rel_unid!=-1)]   
+    allrel_sex=rel_sex[(rel_unid!=-1)]   
+    allrel_number=rel_number[(rel_number!=-1)]     
+         
+    #Get whetehr marraige     
+    allrel_mar=np.zeros((allrel_end.shape))     
+    allrel_mar[(allrel_end==2)]=1     
+         
+    #Create a Pandas Dataframe     
+    data_rel=np.array(np.stack((allrel_mar,allrel_age,allrel_uni,allrel_number,allrel_sex),axis=0).T,dtype=np.float64)     
+    data_rel_panda=pd.DataFrame(data=data_rel,columns=['mar','age','uni','rnumber','sex'])     
+                        
+     
+         
+    #Regression     
+    if np.var(data_rel_panda['uni'])>0.0001:  
+        try:     
+            FE_ols = smf.ols(formula='mar ~ uni+C(age)+C(sex)', data = data_rel_panda.dropna()).fit()     
+            beta_unid_s=FE_ols.params['uni']     
+        except:     
+            print('No data for unilateral divorce regression...')     
+            beta_unid_s=0.0   
+    else:  
+        beta_unid_s=0.0   
+          
+         
+         
+    moments['beta unid']=beta_unid_s      
+        
+    ###################################################    
+    # Second regression for the length of cohabitation    
+    ###################################################    
+    if draw: 
+        data_coh_panda=pd.DataFrame(data=spells_empirical,columns=['age','duration','end','rel','uni'])     
+            
+        if np.var(data_rel_panda['uni'])>0.0001:  
+            #Regression     
+            try:     
+            #FE_ols = smf.ols(formula='duration ~ uni+C(age)', data = data_coh_panda.dropna()).fit()     
+            #beta_dur_s=FE_ols.params['uni']     
+                
+                from lifelines import CoxPHFitter    
+                cph = CoxPHFitter()    
+                data_coh_panda['age2']=data_coh_panda['age']**2    
+                data_coh_panda['age3']=data_coh_panda['age']**3    
+                data_coh_panda['rel2']=data_coh_panda['rel']**2    
+                data_coh_panda['rel3']=data_coh_panda['rel']**3    
+                #data_coh_panda=pd.get_dummies(data_coh_panda, columns=['age'])    
+                    
+                #Standard Cox    
+                data_coh_panda['endd']=1.0    
+                data_coh_panda.loc[data_coh_panda['end']==3.0,'endd']=0.0    
+                data_coh_panda1=data_coh_panda.drop(['end'], axis=1)    
+                cox_join=cph.fit(data_coh_panda1, duration_col='duration', event_col='endd')    
+                haz_join=cox_join.hazard_ratios_['uni']    
+                    
+                #Cox where risk is marriage    
+                data_coh_panda['endd']=0.0    
+                data_coh_panda.loc[data_coh_panda['end']==2.0,'endd']=1.0    
+                data_coh_panda2=data_coh_panda.drop(['end'], axis=1)    
+                cox_mar=cph.fit(data_coh_panda2, duration_col='duration', event_col='endd')    
+                haz_mar=cox_mar.hazard_ratios_['uni']    
+                    
+                #Cox where risk is separatio    
+                data_coh_panda['endd']=0.0    
+                data_coh_panda.loc[data_coh_panda['end']==0.0,'endd']=1.0    
+                data_coh_panda3=data_coh_panda.drop(['end'], axis=1)    
+                cox_sep=cph.fit(data_coh_panda3, duration_col='duration', event_col='endd')    
+                haz_sep=cox_sep.hazard_ratios_['uni']    
+                    
+            except:     
+                print('No data for unilateral divorce regression...')     
+                haz_sep=1.0   
+                haz_join=1.0   
+                haz_mar=1.0   
+        else:  
+            print('No data for unilateral divorce regression...')     
+            haz_sep=1.0   
+            haz_join=1.0   
+            haz_mar=1.0   
+              
+    ##################################     
+    # Construct the Hazard functions     
+    #################################     
+              
+    #Hazard of Divorce     
+    hazd=list()     
+    lgh=len(all_spells['Couple, M'][:,0])     
+    for t in range(mdl.setup.pars['T']):     
+              
+        cond=all_spells['Couple, M'][:,1]==t+1     
+        temp=all_spells['Couple, M'][cond,2]     
+        cond1=temp!=2     
+        temp1=temp[cond1]     
+        if lgh>0:     
+            haz1=len(temp1)/lgh     
+            lgh=lgh-len(temp)     
+        else:     
+            haz1=0.0     
+        hazd=[haz1]+hazd     
+              
+    hazd.reverse()     
+    hazd=np.array(hazd).T     
+          
+    #Hazard of Separation     
+    hazs=list()     
+    lgh=len(all_spells['Couple, C'][:,0])     
+    for t in range(mdl.setup.pars['T']):     
+              
+        cond=all_spells['Couple, C'][:,1]==t+1     
+        temp=all_spells['Couple, C'][cond,2]     
+        cond1=(temp>=0) & (temp<=1)  
+        temp1=temp[cond1]     
+        if lgh>0:     
+            haz1=len(temp1)/lgh     
+            lgh=lgh-len(temp)     
+        else:     
+            haz1=0.0     
+        hazs=[haz1]+hazs     
+              
+    hazs.reverse()     
+    hazs=np.array(hazs).T     
+          
+    #Hazard of Marriage (Cohabitation spells)     
+    hazm=list()     
+    lgh=len(all_spells['Couple, C'][:,0])     
+    for t in range(mdl.setup.pars['T']):     
+              
+        cond=all_spells['Couple, C'][:,1]==t+1     
+        temp=all_spells['Couple, C'][cond,2]     
+        cond1=temp==2     
+        temp1=temp[cond1]     
+        if lgh>0:     
+            haz1=len(temp1)/lgh     
+            lgh=lgh-len(temp)     
+        else:     
+            haz1=0.0     
+        hazm=[haz1]+hazm     
+              
+    hazm.reverse()     
+    hazm=np.array(hazm).T     
+          
+    #Transform hazards pooling moments  
+    mdl.setup.pars['ty']=2  
+    if mdl.setup.pars['ty']>1:  
+        #Divorce  
+        hazdp=list()  
+        pop=1  
+        for i in range(int(mdl.setup.pars['T']/(mdl.setup.pars['ty']))):  
+            haz1=hazd[mdl.setup.pars['ty']*i]*pop  
+            haz2=hazd[mdl.setup.pars['ty']*i+1]*(pop-haz1)  
+            hazdp=[(haz1+haz2)/pop]+hazdp   
+            pop=pop-(haz1+haz2)  
+        hazdp.reverse()     
+        hazdp=np.array(hazdp).T   
+        hazd=hazdp  
+              
+        #Separation and Marriage  
+        hazsp=list()  
+        hazmp=list()  
+        pop=1  
+        for i in range(int(mdl.setup.pars['T']/(mdl.setup.pars['ty']))):  
+            hazs1=hazs[mdl.setup.pars['ty']*i]*pop  
+            hazm1=hazm[mdl.setup.pars['ty']*i]*pop  
+              
+            hazs2=hazs[mdl.setup.pars['ty']*i+1]*(pop-hazs1-hazm1)  
+            hazm2=hazm[mdl.setup.pars['ty']*i+1]*(pop-hazs1-hazm1)  
+            hazsp=[(hazs1+hazs2)/pop]+hazsp  
+            hazmp=[(hazm1+hazm2)/pop]+hazmp  
+            pop=max(pop-(hazs1+hazs2+hazm1+hazm2),0.000001)  
+              
+        hazsp.reverse()     
+        hazsp=np.array(hazsp).T   
+        hazs=hazsp  
+          
+        hazmp.reverse()     
+        hazmp=np.array(hazmp).T   
+        hazm=hazmp  
+          
+    moments['hazard sep'] = hazs     
+    moments['hazard div'] = hazd     
+    moments['hazard mar'] = hazm     
+         
+     
+      
+          
+    #Singles: Marriage vs. cohabitation transition     
+    #spells_s=np.append(spells_Femalesingle,spells_Malesingle,axis=0)     
+    spells_s =all_spells['Female, single']     
+    cond=spells_s[:,2]>1     
+    spells_sc=spells_s[cond,2]     
+    condm=spells_sc==2     
+    sharem=len(spells_sc[condm])/max(len(spells_sc),0.0001)     
+        
+        
+    #Cut the first two periods give new 'length'     
+    lenn=mdl.setup.pars['T']-mdl.setup.pars['Tbef']     
+    assets_t=assets_t[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']]     
+    iexo=iexo[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']]     
+    state=state[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']]     
+    theta_t=theta_t[:,mdl.setup.pars['Tbef']:mdl.setup.pars['T']]     
+          
+    ###########################################     
+    #Moments: FLS    
+    ###########################################     
+          
+          
+    flsm=np.ones(mdl.setup.pars['Tret'])     
+    flsc=np.ones(mdl.setup.pars['Tret'])     
+          
+          
+    for t in range(mdl.setup.pars['Tret']):     
+              
+        pick = agents.state[:,t]==2            
+        if pick.any(): flsm[t] = np.array(setup.ls_levels)[agents.ils_i[pick,t]].mean()     
+        pick = agents.state[:,t]==3     
+        if pick.any(): flsc[t] = np.array(setup.ls_levels)[agents.ils_i[pick,t]].mean()     
+              
+          
+              
+    moments['flsm'] = flsm     
+    moments['flsc'] = flsc     
+      
+    ##################  
+    #Sample Selection#  
+    #################  
+      
+    #Import the distribution from the data  
+    with open('freq_psid_tot.pkl', 'rb') as file:     
+        freq_psid_tot_data=pickle.load(file)    
+          
+    #Import Get when in a couple and reshape accordingly  
+    resha=len(change_psid[0,:])*len(change_psid[:,0])  
+    state_totl=np.reshape(state_psid,resha)  
+    incouple= (state_totl==2) | (state_totl==3)  
+    incoupler=np.reshape(incouple,resha)  
+      
+    #Define main variables  
+    ctemp=change_psid.copy()  
+    change_psid2=np.reshape(ctemp,resha)  
+    agetemp=np.linspace(1,len(change_psid[0,:]),len(change_psid[0,:]))  
+    agegridtemp=np.reshape(np.repeat(agetemp,len(change_psid[:,0])),(len(change_psid[:,0]),len(agetemp)),order='F')  
+    agegrid=np.reshape(agegridtemp,resha)  
+      
+    #Keep all those guys only if the are men and in a relatioinship  
+    #TODO  
+      
+    #Make data compatible with current age.  
+    freq_psid_tot_data['age']=freq_psid_tot_data['age']-18.0  
+    freq_psid_tot_data.loc[freq_psid_tot_data['age']<0.0,'age']=0.0  
+      
+    #Drop if no change in law!  
+    if np.all(changep==0):  
+        #freq_psid_tot_data.loc[freq_psid_tot_data['age']<1910.0,'age']=1000  
+        freq_psid_tot_data['unid']=0  
+     
+          
+    freq_psid_tot_data2=freq_psid_tot_data.groupby(['age','unid'])['age'].count()  
+      
+    #Create a Dataframe with simulated data to perform the draw  
+    inde=np.linspace(1,resha,resha,dtype=np.int32)  
+      
+    ddd2=np.stack((inde[incoupler],agegrid[incoupler],change_psid2[incoupler]),axis=0).T  
+    df_psidt=pd.DataFrame(data=ddd2,columns=["Index","age","unid"],index=ddd2[:,0])  
+    df_psidt['age']=df_psidt['age'].astype(np.float)  
+      
+    if 1>2:#try:#if (len(df_psidt)>0) & (setup.pars['py']==1) & (max(df_psidt['unid'])>0.9) & (min(df_psidt['unid'])<0.9):  
+        sampletemp=strata_sample(["'age'", "'unid'"],freq_psid_tot_data2,frac=0.1,tsample=df_psidt,distr=True)  
+        final2t=df_psidt.merge(sampletemp,how='left',on='Index',indicator=True)  
+          
+        keep3=[False]*len(df_psidt)  
+        keep3=(np.array(final2t['_merge'])=='both')  
+          
+        #TODO assign labor according to stuff above  
+        #Keep again for all relevant variables  
+      
+          
+        #Initial distribution  
+        prima_psid_tot=freq_psid_tot_data2/np.sum(freq_psid_tot_data2)  
+          
+        #Final distribution  
+        final3=df_psidt[keep3]  
+        final4=final3.groupby(['age','unid'])['age'].count()  
+        dopo_psid_tot=final4/np.sum(final4)  
+          
+          
+        print('The average deviation from actual to final psid_tot ditribution is {:0.2f}%'.format(np.mean(abs(prima_psid_tot-dopo_psid_tot))*100))  
+           
+    else:#except:#else:  
+        keep3=[True]*len(df_psidt)  
+    ############  
+    #Average FLS  
+    ############  
+      
+    state_totl=state_totl[incoupler][keep3]  
+    labor_totl=np.reshape(labor_psid,resha)  
+    labor_totl=labor_totl[incoupler][keep3]  
+    mean_fls=0.0   
+    pick=((state_totl[:]==2)  | (state_totl[:]==3))   
+    if pick.any():mean_fls=np.array(setup.ls_levels)[labor_totl[pick]].mean()   
+       
+    moments['mean_fls'] = mean_fls   
+      
+    ###########################################     
+    #Moments: wage   Ratio  
+    ###########################################     
+    iexo_totl=np.reshape(iexo_psid,resha)  
+    iexo_totl=iexo_totl[incoupler][keep3]  
+    age_w=np.array(agegrid[incoupler][keep3],dtype=np.int16)-1  
+    wagem1=np.array(setup.pars['m_wage_trend'])[age_w][...,None]+np.array(setup.exogrid.zm_t)[age_w]  
+    index=np.reshape(np.repeat(setup.all_indices(0,iexo_totl)[2],setup.pars['n_zm_t'][0]),(len(iexo_totl),setup.pars['n_zm_t'][0]),order='C')  
+    maskp=np.reshape(np.repeat(np.linspace(0,setup.pars['n_zm_t'][0]-1,setup.pars['n_zm_t'][0]),len(index)),  
+                      (index.shape),order='F')  
+    wagem=wagem1[maskp==index]  
+      
+    moments['wage_ratio']=np.mean(wagem[state_totl==2])-np.mean(wagem[state_totl==3])  
+      
+      
+    ###################  
+    #Sample Selection  
+    ###################  
+      
+    #Import the distribution from the data  
+    with open('freq_psid_par.pkl', 'rb') as file:     
+        freq_psid_par_data=pickle.load(file)    
+          
+    #Import Get when in a couple and reshape accordingly  
+    resha=len(change_psid[0,:])*len(change_psid[:,0])  
+    state_par=np.reshape(state_psid,resha)  
+    incouplep= (state_par==2) | (state_par==3)  
+    incouplepm= np.zeros(incouplep.shape)  
+    incouplepm[np.where(state_par[incouplep]==2)[0]]=1  
+    incouplerp=np.reshape(incouplep,resha)  
+    incouplepm2=np.reshape(incouplepm,resha)  
+      
+  
+      
+    #Define main variables  
+    ctemp=change_psid.copy()  
+    change_psid3=np.reshape(ctemp,resha)  
+      
+    #Keep all those guys only if the are men and in a relatioinship  
+    #TODO  
+      
+    #Make data compatible with current age.  
+    freq_psid_par_data['age']=freq_psid_par_data['age']-18.0  
+    freq_psid_par_data.loc[freq_psid_par_data['age']<0.0,'age']=0.0  
+      
+    #Drop if no change in law!  
+    if np.all(changep==0):  
+        #freq_psid_par_data.loc[freq_psid_par_data['age']<1910.0,'age']=1000  
+        freq_psid_par_data['unid']=0  
+          
+   
+          
+    freq_psid_par_data2=freq_psid_par_data.groupby(['age','unid','mar'])['age'].count()  
+  
+      
+    ddd3=np.stack((inde[incouplerp],agegrid[incouplerp],change_psid3[incouplerp],incouplepm2[incouplerp]),axis=0).T  
+     
+    df_psidp=pd.DataFrame(data=ddd3,columns=["Index","age","unid","mar"],index=ddd3[:,0])  
+    df_psidp['age']=df_psidp['age'].astype(np.float)  
+      
+    try:#if (len(df_psidp)>0) &  (setup.pars['py']==1) & (max(df_psidp['unid'])>0.9) & (min(df_psidp['unid'])<0.9):    
+        sampletempp=strata_sample(["'age'", "'unid'", "'mar'"],freq_psid_par_data2,frac=0.02,tsample=df_psidp,distr=True)  
+        final2p=df_psidp.merge(sampletempp,how='left',on='Index',indicator=True)  
+          
+        keep4=[False]*len(df_psidp)  
+        keep4=(np.array(final2p['_merge'])=='both')  
+          
+        #TODO assign labor according to stuff above  
+        #Keep again for all relevant variables  
+      
+          
+        #Initial distribution  
+        prima_psid_par=freq_psid_par_data2/np.sum(freq_psid_par_data2)  
+          
+        #Final distribution  
+        final3p=df_psidp[keep4]  
+        final4p=final3p.groupby(['age','unid','mar'])['age'].count()  
+        dopo_psid_par=final4p/np.sum(final4p)  
+          
+          
+        print('The average deviation from actual to final psid_tot ditribution is {:0.2f}%'.format(np.mean(abs(prima_psid_par-dopo_psid_par))*100))  
+           
+    except:#else:  
+        keep4=[True]*len(df_psidp)  
+           
          
     ################ 
     #Ratio of fls  

@@ -35,11 +35,11 @@ class ModelSetup(object):
         p['Tbef'] = Tbef
         p['sig_zf_0']  = 0.5449176#0.4096**(0.5)
         p['sig_zf']    = .0272437**(0.5)#0.0399528**(0.5)
-        p['sig_zm_0']  =  0.5449176#0.54896510#.405769**(0.5)
-        p['sig_zm']    = .0272437**(0.5)#025014**(0.5)#0.0417483**(0.5)
-        p['n_zf_t']      = [3]*Tret + [3]*(T-Tret)
+        p['sig_zm_0']  = 0.54896510#.405769**(0.5)
+        p['sig_zm']    = .025014**(0.5)#0.0417483**(0.5)
+        p['n_zf_t']      = [6]*Tret + [6]*(T-Tret)
         p['n_zm_t']      = [3]*Tret + [3]*(T-Tret)
-        p['n_zf_correct']=0
+        p['n_zf_correct']=3
         p['sigma_psi_mult'] = 0.28
         p['sigma_psi']   = 0.11
         p['n_psi_t']     = [11]*T
@@ -52,10 +52,10 @@ class ModelSetup(object):
         p['sig_partner_z'] = 1.2#1.0#0.4 #This is crazy powerful for the diff in diff estimate
         p['sig_partner_mult'] = 1.0
         p['dump_factor_z'] = 0.85#0.82
-        p['mean_partner_z_female'] = 0.0#0.02#+0.03
-        p['mean_partner_z_male'] =  0.0#-0.02#-0.03
-        p['mean_partner_a_female'] = 0.0#0.5#0.1
-        p['mean_partner_a_male'] = 0.0#-0.5#-0.1
+        p['mean_partner_z_female'] = 0.02#+0.03
+        p['mean_partner_z_male'] =  -0.02#-0.03
+        p['mean_partner_a_female'] = 0.5#0.1
+        p['mean_partner_a_male'] = -0.5#-0.1
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
         
@@ -70,14 +70,14 @@ class ModelSetup(object):
         
         
         p['u_shift_mar'] = 0.0
-        p['u_shift_coh'] = 0.00
+        p['u_shift_coh'] = -0.00
         
          
         #Wages over time
         p['f_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-.74491918 +.04258303*t -.0016542*t**2+.00001775*t**3) for t in range(T)]
         p['f_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.6805060 +.04629912*t -.00160467*t**2+.00001626*t**3) for t in range(T)]
-        p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-.74491918 +.04258303*t -.0016542*t**2+.00001775*t**3) for t in range(T)]
-        p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.6805060 +.04629912*t -.00160467*t**2+.00001626*t**3) for t in range(T)]
+        p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-0.5620125  +0.06767721*t -0.00192571*t**2+ 0.00001573*t**3) for t in range(T)]
+        p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.5960803  +.05829568*t -.00169143*t**2+ .00001446*t**3) for t in range(T)]
    
 
 #        p['f_wage_trend'] = [(-0.5620125  +0.06767721*t -0.00192571*t**2+ 0.00001573*t**3) for t in range(T)]
@@ -224,11 +224,11 @@ class ModelSetup(object):
 
                     
                     
-            # #Drift the grids
-            # for t in range(Tret):
-            #     exogrid['zf_t'][t]=exogrid['zf_t'][t]
-            # for t in range(Tret-2):
-            #     exogrid['zm_t'][t]=exogrid['zm_t'][t]
+            #Drift the grids
+            for t in range(Tret):
+                exogrid['zf_t'][t]=exogrid['zf_t'][t]
+            for t in range(Tret-2):
+                exogrid['zm_t'][t]=exogrid['zm_t'][t]
                     
                     
             
@@ -292,11 +292,11 @@ class ModelSetup(object):
             exogrid['psi_t_mat'][Tret+1] = np.diag(np.ones(len(exogrid['psi_t_mat'][Tret-1])))
             
    
-            # #Here I impose no change in psi from retirement till the end of time 
-            # for t in range(Tret,T-1):
+            #Here I impose no change in psi from retirement till the end of time 
+            for t in range(Tret,T-1):
                
-            #     exogrid['psi_t'][t] = exogrid['psi_t'][Tret-1]#np.array([np.log(p['wret'])])             
-            #     exogrid['psi_t_mat'][t] = np.diag(np.ones(len(exogrid['psi_t'][t])))#p.atleast_2d(1.0)
+                exogrid['psi_t'][t] = exogrid['psi_t'][Tret-1]#np.array([np.log(p['wret'])])             
+                exogrid['psi_t_mat'][t] = np.diag(np.ones(len(exogrid['psi_t'][t])))#p.atleast_2d(1.0)
 
             zfzm, zfzmmat = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], exogrid['zf_t_mat'], exogrid['zm_t_mat'],trim=self.trim)
 
@@ -315,41 +315,41 @@ class ModelSetup(object):
             
             zfzm2, zfzmmat2 = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], zf_t_mat_down, exogrid['zm_t_mat'],trim=self.trim)
             
-            # if p['rho_s']>0:
-            #     for t in range(p['Tret']-1):
-            #         for j in range(p['n_zm_t'][t]):
-            #             for ym in range(p['n_zm_t'][t]):
+            if p['rho_s']>0:
+                for t in range(p['Tret']-1):
+                    for j in range(p['n_zm_t'][t]):
+                        for ym in range(p['n_zm_t'][t]):
                         
                             
-            #                 rhom=(1.0-p['rho_s']**2)**0.5
-            #                 prec=exogrid['zm_t'][t][j] if t>0 else 0.0
-            #                 drif=p['rho_s']*p['sig_zf']/p['sig_zm']*(exogrid['zm_t'][t+1][ym]-prec)
-            #                 mat1=tauchen_drift(exogrid['zf_t'][t].copy(), exogrid['zf_t'][t+1].copy(), 1.0, rhom*p['sig_zf'], drif, exogrid['zf_t_mat'][t])
-            #                 mat2=tauchen_drift(exogrid['zf_t'][t].copy(), exogrid['zf_t'][t+1].copy(), 1.0, rhom*p['sig_zf'], drif+p['z_drift'], exogrid['zf_t_mat'][t])
-            #                 for i in range(p['n_zf_t'][t]): 
+                            rhom=(1.0-p['rho_s']**2)**0.5
+                            prec=exogrid['zm_t'][t][j] if t>0 else 0.0
+                            drif=p['rho_s']*p['sig_zf']/p['sig_zm']*(exogrid['zm_t'][t+1][ym]-prec)
+                            mat1=tauchen_drift(exogrid['zf_t'][t].copy(), exogrid['zf_t'][t+1].copy(), 1.0, rhom*p['sig_zf'], drif, exogrid['zf_t_mat'][t])
+                            mat2=tauchen_drift(exogrid['zf_t'][t].copy(), exogrid['zf_t'][t+1].copy(), 1.0, rhom*p['sig_zf'], drif+p['z_drift'], exogrid['zf_t_mat'][t])
+                            for i in range(p['n_zf_t'][t]): 
                         
-            #                     #Modify the grid for women
-            #                     exogrid['zf_t_mat2'][t][i,:]= mat1[i,:]
+                                #Modify the grid for women
+                                exogrid['zf_t_mat2'][t][i,:]= mat1[i,:]
 
-            #                     exogrid['zf_t_mat2d'][t][i,:]=mat2[i,:]
+                                exogrid['zf_t_mat2d'][t][i,:]=mat2[i,:]
                                 
-            #                     ##Update the big Matrix
-            #                     for yf in range(p['n_zf_t'][t]):
+                                ##Update the big Matrix
+                                for yf in range(p['n_zf_t'][t]):
                                 
                                     
-            #                         zfzmmat[t][i*(p['n_zm_t'][t]-1)+j+i,yf*(p['n_zm_t'][t]-1)+ym+yf]=exogrid['zf_t_mat2'][t][i,yf]*exogrid['zm_t_mat'][t][j,ym]
-            #                         zfzmmat2[t][i*(p['n_zm_t'][t]-1)+j+i,yf*(p['n_zm_t'][t]-1)+ym+yf]=exogrid['zf_t_mat2d'][t][i,yf]*exogrid['zm_t_mat'][t][j,ym]
+                                    zfzmmat[t][i*(p['n_zm_t'][t]-1)+j+i,yf*(p['n_zm_t'][t]-1)+ym+yf]=exogrid['zf_t_mat2'][t][i,yf]*exogrid['zm_t_mat'][t][j,ym]
+                                    zfzmmat2[t][i*(p['n_zm_t'][t]-1)+j+i,yf*(p['n_zm_t'][t]-1)+ym+yf]=exogrid['zf_t_mat2d'][t][i,yf]*exogrid['zm_t_mat'][t][j,ym]
            
             
-            # #Adjust retirement as in Heatcote et al.
-            # for t in range(p['Tret'],p['T']):
-            #     for j in range(len(zfzm[t])):
-            #         pref=max(np.exp(zfzm[t][j][0])+np.exp(zfzm[t][j][1]),1.5*max(np.exp(zfzm[t][j][0]),np.exp(zfzm[t][j][1])))
-            #         zfzm[t][j][0]=-20.0
-            #         zfzm[t][j][1]=np.log(pref)
-            #         pref=max(np.exp(zfzm2[t][j][0])+np.exp(zfzm2[t][j][1]),1.5*max(np.exp(zfzm2[t][j][0]),np.exp(zfzm2[t][j][1])))
-            #         zfzm2[t][j][0]=-20.0
-            #         zfzm2[t][j][1]=np.log(pref)
+            #Adjust retirement as in Heatcote et al.
+            for t in range(p['Tret'],p['T']):
+                for j in range(len(zfzm[t])):
+                    pref=max(np.exp(zfzm[t][j][0])+np.exp(zfzm[t][j][1]),1.5*max(np.exp(zfzm[t][j][0]),np.exp(zfzm[t][j][1])))
+                    zfzm[t][j][0]=-20.0
+                    zfzm[t][j][1]=np.log(pref)
+                    pref=max(np.exp(zfzm2[t][j][0])+np.exp(zfzm2[t][j][1]),1.5*max(np.exp(zfzm2[t][j][0]),np.exp(zfzm2[t][j][1])))
+                    zfzm2[t][j][0]=-20.0
+                    zfzm2[t][j][1]=np.log(pref)
             
             
             #Put everything together
@@ -362,11 +362,11 @@ class ModelSetup(object):
 
             
             all_t_mat_by_l = [ [(1-p)*m + p*md if m is not None else None 
-                                for m , md in zip(all_t_mat,all_t_mat)]
+                                for m , md in zip(all_t_mat,all_t_mat_down)]
                                for p in self.ls_pdown ]
             
             all_t_mat_by_l_spt = [ [(1-p)*m + p*md if m is not None else None
-                                    for m, md in zip(all_t_mat_sparse_T,all_t_mat_sparse_T)]
+                                    for m, md in zip(all_t_mat_sparse_T,all_t_mat_down_sparse_T)]
                                for p in self.ls_pdown ]
             
             
@@ -389,8 +389,8 @@ class ModelSetup(object):
         #Grid Couple
         self.na = 50#40
         self.amin = 0
-        self.amax = 80#80
-        self.amax1 = 80#180
+        self.amax = 80
+        self.amax1 = 180
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
         tune=80
         #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune

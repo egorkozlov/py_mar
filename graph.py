@@ -170,10 +170,10 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     thetac_R[ithetac_R==-1] = None 
      
      
-    Vm, Vmm, Vfm, cm, sm, flsm = [v_reshape(setup,'Couple, M',f,Packed,T) 
-                                    for f in ['V','VM','VF','c','s','fls']] 
-    Vc, Vmc, Vfc, cc, sc, flsc = [v_reshape(setup,'Couple, C',f,Packed,T) 
-                                    for f in ['V','VM','VF','c','s','fls']] 
+    Vm, Vmm, Vfm, cm, sm, flsm,xm = [v_reshape(setup,'Couple, M',f,Packed,T) 
+                                    for f in ['V','VM','VF','c','s','fls','x']] 
+    Vc, Vmc, Vfc, cc, sc, flsc ,xc= [v_reshape(setup,'Couple, C',f,Packed,T) 
+                                    for f in ['V','VM','VF','c','s','fls','x']] 
      
      
  
@@ -382,11 +382,11 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     ##########################################  
     fig = plt.figure() 
     f9=fig.add_subplot(2,1,1) 
-    plt.plot(agrid, cm[0:len(agrid),zfi,zmi,psii,thi,ti],'k',markevery=1, label='Marriage') 
-    plt.plot(agrid, cc[0:len(agrid),zfi,zmi,psii,thi,ti],'r',linestyle='--',markevery=1, label='Cohabitation') 
+    plt.plot(agrid[:-1], cm[0:len(agrid)-1,zfi,zmi,psii,thi,ti],'k',markevery=1, label='Marriage') 
+    plt.plot(agrid[:-1], cc[0:len(agrid)-1,zfi,zmi,psii,thi,ti],'r',linestyle='--',markevery=1, label='Cohabitation') 
     #plt.plot(agrid, sc[0:len(agrid),zfi,zmi,psii,thi,ti],'k',linewidth=2.0,linestyle='--', label='Cohabitation') 
-    #plt.plot(agrids, cms[0:len(agrids),zmi,ti],'b',linewidth=2.0,label='Men, Single') 
-    #plt.plot(agrids, cfs[0:len(agrids),zfi,ti],'r',linewidth=2.0,linestyle='--', label='Women, Single') 
+    plt.plot(agrids, cms[0:len(agrids),zmi,ti],'b',linewidth=2.0,label='Men, Single') 
+    plt.plot(agrids, cfs[0:len(agrids),zfi,ti],'r',linewidth=2.0,linestyle='--', label='Women, Single') 
     #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral') 
     plt.ylabel('Consumption') 
     plt.xlabel('Assets') 
@@ -394,14 +394,30 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3), 
                   fancybox=True, shadow=True, ncol=2, fontsize='x-small') 
      
-     
+      ########################################## 
+    # Consumption and Assets 
+    ##########################################  
+    fig = plt.figure() 
+    f9=fig.add_subplot(2,1,1) 
+    plt.plot(agrid[:-1], xm[0:len(agrid)-1,zfi,zmi,psii,thi,ti],'k',markevery=1, label='Marriage') 
+    plt.plot(agrid[:-1], xc[0:len(agrid)-1,zfi,zmi,psii,thi,ti],'r',linestyle='--',markevery=1, label='Cohabitation') 
+    #plt.plot(agrid, sc[0:len(agrid),zfi,zmi,psii,thi,ti],'k',linewidth=2.0,linestyle='--', label='Cohabitation') 
+    #plt.plot(agrids, cms[0:len(agrids),zmi,ti],'b',linewidth=2.0,label='Men, Single') 
+    #lt.plot(agrids, cfs[0:len(agrids),zfi,ti],'r',linewidth=2.0,linestyle='--', label='Women, Single') 
+    #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral') 
+    plt.ylabel('Consumptionx') 
+    plt.xlabel('Assets') 
+    #plt.title('Utility  Divorce costs: men=0.5, women=0.5') 
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3), 
+                  fancybox=True, shadow=True, ncol=2, fontsize='x-small') 
+    
     ########################################## 
     # Savings and Assets 
     ##########################################  
     fig = plt.figure() 
     f10=fig.add_subplot(2,1,1) 
-    plt.plot(agrid, sm[0:len(agrid),zfi,zmi,psii,thi,ti],'ko',markersize=6,markevery=1, label='Marriage') 
-    plt.plot(agrid, sc[0:len(agrid),zfi,zmi,psii,thi,ti],'r*',markersize=6,markevery=1, label='Cohabitation') 
+    plt.plot(agrid[:-1], (sm[0:len(agrid),zfi,zmi,psii,thi,ti])[:-1],'ko',markersize=6,markevery=1, label='Marriage') 
+    plt.plot(agrid[:-1], (sc[0:len(agrid),zfi,zmi,psii,thi,ti])[:-1],'r*',markersize=6,markevery=1, label='Cohabitation') 
     #plt.plot(agrid, agrid,'k',linewidth=1.0,linestyle='--') 
     #plt.plot(agrids, sms[0:len(agrids),zmi,ti],'b',linewidth=2.0,label='Men, Single') 
     #plt.plot(agrids, sfs[0:len(agrids),zfi,ti],'r',linewidth=2.0,linestyle='--', label='Women, Single') 

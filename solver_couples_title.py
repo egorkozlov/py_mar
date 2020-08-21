@@ -243,7 +243,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,dec,desc,draw=True,nbatch=nbatch_def,v
    
  
     dec['assdev']=Vexp_max
-    print('The mean asset share is {},conditional on diovrce, conditional on div is {}'.format(np.mean(setup.ashare[Vexp_max]),np.mean(setup.ashare[Vexp_max[1:30,:,:]][dec['thetas'][1:30,:,:]==-1])))
+    #print('The mean asset share is {},conditional on diovrce, conditional on div is {}'.format(np.mean(setup.ashare[Vexp_max]),np.mean(setup.ashare[Vexp_max[1:30,:,:]][dec['thetas'][1:30,:,:]==-1])))
 
 
     if draw:

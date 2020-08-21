@@ -46,7 +46,7 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True,draw=False):
     ###########################################################
     
     
-    if len(out['Values'][1].shape)>3:
+    if len(out['Decision'].shape)>3:
         
         tk = lambda x : x[:,:,setup.theta_orig_on_fine,:]
         

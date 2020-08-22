@@ -18,9 +18,9 @@ def calibration_params(xin=None,xfix=None):
     # just in case...
     
     params = OrderedDict(
-              akept=(0.6, 0.9, 0.1),
-              sigma_psi=(0.5, 1.2, 0.01),#sigma_psi=(0.005, 0.8, 0.01),
-              sigma_psi_mult=(1.40, 4.12, 0.2),#sigma_psi_mult=(0.5, 5.0, 0.02),
+              akept=(0.65, 0.9, 0.1),
+              sigma_psi=(0.45, 1.0, 0.01),#sigma_psi=(0.005, 0.8, 0.01),
+              sigma_psi_mult=(1.60, 3.5, 0.2),#sigma_psi_mult=(0.5, 5.0, 0.02),
               pmeet=(0.33, 0.64, 0.01),#pmeet=(0.1, 1.0, 0.7),
               util_alp=(0.8504, 1.36, 0.01),#util_alp=(0.01, 0.4, 0.25),
               u_shift_mar = (0.0212377, 0.212379, 0.001),

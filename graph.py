@@ -24,6 +24,9 @@ def v_reshape(setup,desc,field,V_by_t,Tmax):
     if desc == "Couple, C" or desc == "Couple, M": 
          
         v0 = V_by_t[0][desc][field] 
+        
+        if len(v0.shape)>3:
+            v0=np.take_along_axis(v0,V_by_t[0][desc]['assdev'][:,:,setup.igridcoarse,None],axis=-1).squeeze(axis=-1)
         shp_v0 = v0.shape 
          
         tht_shape = (v0.ndim>2)*(shp_v0[-1],) # can be empty if no theta dimension 
@@ -32,9 +35,11 @@ def v_reshape(setup,desc,field,V_by_t,Tmax):
         out = np.empty(shape,v0.dtype)         
         for t in range(Tmax): 
             vin = V_by_t[t][desc][field] 
+            if len(vin.shape)>3:
+                vin=np.take_along_axis(vin,V_by_t[t][desc]['assdev'][:,:,setup.igridcoarse,None],axis=-1).squeeze(axis=-1)
             out[...,t] = vin.reshape(shape[:-1]) 
     else: 
-        shape = V_by_t[0][desc][field].shape + (Tmax,) 
+        shape = V_by_t[0][desc][field].shape + (Tmax,) if len(V_by_t[0][desc][field].shape)<=3 else V_by_t[0][desc][field].shape[:-1] + (Tmax,)
         out = np.empty(shape,V_by_t[0][desc][field].dtype) 
         for t in range(Tmax): 
             vin = V_by_t[t][desc][field] 

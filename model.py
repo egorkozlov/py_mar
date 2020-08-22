@@ -134,17 +134,17 @@ class Model(object):
                 #Choose the solver according to division of assets
                 title = setup.div_costs.eq_split if desc == 'Couple, M' else setup.sep_costs.eq_split 
                 if (title>0.5) | (not setup.pars['can divorce'][t]):
-                    V, VF, VM, c, x, s, fls= v_iter_couple(setup,t,EV,ushift)   
+                    V, VF, VM, c, x, s, fls, V_all_l= v_iter_couple(setup,t,EV,ushift)   
                 else:
-                    V, VF, VM, c, x, s, fls,dec = v_iter_couple_title(setup,t,EV,ushift,dec,desc,draw)
+                    V, VF, VM, c, x, s, fls, V_all_l,dec = v_iter_couple_title(setup,t,EV,ushift,dec,desc,draw)
                     
-                    return ({desc: {'V':V,'VF':VF,'VM':VM,'c':c,'x':x,'s':s,'fls':fls}},dec)
+                    return ({desc: {'V':V,'VF':VF,'VM':VM,'c':c,'x':x,'s':s,'fls':fls,'V_all_l':V_all_l}},dec)
           
 
                       
                 if self.display_v: print('at t = {} for {} mean V[0,:,:] is {}'.format(t,desc,V[0,:,:].mean()))
                         
-                return {desc: {'V':V,'VF':VF,'VM':VM,'c':c,'x':x,'s':s,'fls':fls}}
+                return {desc: {'V':V,'VF':VF,'VM':VM,'c':c,'x':x,'s':s,'fls':fls,'V_all_l':V_all_l}}
           
             
         # and the integrator   
@@ -212,22 +212,22 @@ class Model(object):
         v = vout[desc]
         if desc == 'Couple, M' or desc == 'Couple, C':
             
-            dec.update({'s':v['s'],'c':v['c'],'x':v['x'],'fls':v['fls']})
-            del v
+            #dec.update({'s':v['s'],'c':v['c'],'x':v['x'],'fls':v['fls']})
+            #del v
             
-        #     #cint = self.setup.v_thetagrid_fine.apply(v['c'],axis=2)
-        #     sint = self.setup.v_thetagrid_fine.apply(v['s'],axis=2).astype(self.dtype)
-        #     cint = self.setup.v_thetagrid_fine.apply(v['c'],axis=2).astype(self.dtype)
-        #     xint = self.setup.v_thetagrid_fine.apply(v['x'],axis=2).astype(self.dtype)
+            #cint = self.setup.v_thetagrid_fine.apply(v['c'],axis=2)
+            sint = self.setup.v_thetagrid_fine.apply(v['s'],axis=2).astype(self.dtype)
+            cint = self.setup.v_thetagrid_fine.apply(v['c'],axis=2).astype(self.dtype)
+            xint = self.setup.v_thetagrid_fine.apply(v['x'],axis=2).astype(self.dtype)
             
-        #     Vint = self.setup.v_thetagrid_fine.apply(v['V_all_l'],axis=2).astype(self.dtype)
+            Vint = self.setup.v_thetagrid_fine.apply(v['V_all_l'],axis=2).astype(self.dtype)
             
-        #     if Vint.ndim < 4: Vint = Vint[:,:,:,None]
+            #if Vint.ndim < 4: Vint = Vint[:,:,:,None]
             
-        #     fls = Vint.argmax(axis=3).astype(np.int8)
+            fls = Vint.argmax(axis=3).astype(np.int8)
             
-        #     dec.update({'s':sint,'fls':fls,'c':cint,'x':xint})
-        #     del sint,fls
+            dec.update({'s':sint,'fls':fls,'c':cint,'x':xint})
+            del sint,fls
         else:
             dec.update({'s':v['s'],'c':v['c'],'x':v['x']})
             del v

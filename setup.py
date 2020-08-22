@@ -37,12 +37,12 @@ class ModelSetup(object):
         p['sig_zf']    = .0272437**(0.5)#0.0399528**(0.5)
         p['sig_zm_0']  = 0.54896510#.405769**(0.5)
         p['sig_zm']    = .025014**(0.5)#0.0417483**(0.5)
-        p['n_zf_t']      = [6]*Tret + [6]*(T-Tret)
+        p['n_zf_t']      = [4]*Tret + [4]*(T-Tret)
         p['n_zm_t']      = [3]*Tret + [3]*(T-Tret)
-        p['n_zf_correct']=3
+        p['n_zf_correct']=1
         p['sigma_psi_mult'] = 0.28
         p['sigma_psi']   = 0.11
-        p['n_psi_t']     = [11]*T
+        p['n_psi_t']     = [15]*T
         p['R_t'] = [1.02**period_year]*T
         p['beta_t'] = [0.98**period_year]*T
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
@@ -199,9 +199,9 @@ class ModelSetup(object):
                     dist0=zft[t][0]-p['n_zf_correct']*h
                     
                     #Copy transition matrix
-                    exogrid['zf_t']=exogrid['zf_t']+[np.concatenate((np.array([dist0,dist1,dist2]),zft[t]))]
+                    #exogrid['zf_t']=exogrid['zf_t']+[np.concatenate((np.array([dist0,dist1,dist2]),zft[t]))]
                     #exogrid['zf_t']=exogrid['zf_t']+[np.concatenate((np.array([dist0,dist1]),zft[t]))]
-                    #exogrid['zf_t']=exogrid['zf_t']+[np.concatenate((np.array([dist1]),zft[t]))]
+                    exogrid['zf_t']=exogrid['zf_t']+[np.concatenate((np.array([dist2]),zft[t]))]
                     exogrid['zf_t_mat']=exogrid['zf_t_mat']+[np.zeros((p['n_zf_t'][t],p['n_zf_t'][t]))]
                     exogrid['zf_t_mat'][t][p['n_zf_correct']:,p['n_zf_correct']:]=zftmat[t]
                     
@@ -209,8 +209,8 @@ class ModelSetup(object):
                     if t<p['T']-1:
                         
                         exogrid['zf_t_mat'][t][0,:-p['n_zf_correct']]=zftmat[t][0,:]
-                        exogrid['zf_t_mat'][t][1,:-p['n_zf_correct']]=zftmat[t][1,:]
-                        exogrid['zf_t_mat'][t][2,:-p['n_zf_correct']]=zftmat[t][2,:]
+                        #exogrid['zf_t_mat'][t][1,:-p['n_zf_correct']]=zftmat[t][1,:]
+                        #exogrid['zf_t_mat'][t][2,:-p['n_zf_correct']]=zftmat[t][2,:]
                        
                             
                     else:
@@ -390,7 +390,7 @@ class ModelSetup(object):
         self.na = 40#40
         self.amin = 0
         self.amax = 60
-        self.amax1 = 120
+        self.amax1 = 130
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
         tune=30.5
         #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
@@ -420,13 +420,13 @@ class ModelSetup(object):
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)
         
         # grid for theta
-        self.ntheta = 11
-        self.thetamin = 0.02
-        self.thetamax = 0.98
+        self.ntheta = 13
+        self.thetamin = 0.1
+        self.thetamax = 0.9
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta,dtype=self.dtype)
         
         #Grid for the share in assets
-        self.ashare = np.linspace(0.1,0.9,3,dtype=self.dtype)
+        self.ashare = np.linspace(0.25,0.75,3,dtype=self.dtype)
         
         
         
@@ -434,7 +434,7 @@ class ModelSetup(object):
         
         
         # construct finer grid for bargaining
-        ntheta_fine = 1*self.ntheta # actual number may be a bit bigger
+        ntheta_fine = 2*self.ntheta # actual number may be a bit bigger
         self.thetagrid_fine = np.unique(np.concatenate( (self.thetagrid,np.linspace(self.thetamin,self.thetamax,ntheta_fine,dtype=self.dtype)) ))
         self.ntheta_fine = self.thetagrid_fine.size
         

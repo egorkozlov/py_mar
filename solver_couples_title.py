@@ -21,6 +21,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,dec,desc,draw=True,nbatch=nbatch_def,v
     
     if verbose: start = default_timer()
     
+    
     agrid = setup.agrid_c
     sgrid = setup.sgrid_c
     
@@ -141,48 +142,48 @@ def v_iter_couple(setup,t,EV_tuple,ushift,dec,desc,draw=True,nbatch=nbatch_def,v
     #Now choose the bet division of assets
     Vexp_max=np.argmax(Vexp,axis=-1)#np.argmax(Vexp,axis=-1)#
    
-    dime=Vexp.shape[-1]
+    # dime=Vexp.shape[-1]
     
-    Vexp_max_a=np.max(Vexp,axis=-1)
-    #Vexp_max=np.full(Vexp_max.shape,int((len(setup.ashare)-1)/2))
-    Vexp_max_b=np.reshape(np.repeat(Vexp_max_a,dime),Vexp.shape)
+    # Vexp_max_a=np.max(Vexp,axis=-1)
+    # #Vexp_max=np.full(Vexp_max.shape,int((len(setup.ashare)-1)/2))
+    # Vexp_max_b=np.reshape(np.repeat(Vexp_max_a,dime),Vexp.shape)
    
-    #Correct for symmetries
-    temp1=np.cumsum(np.ones(Vexp.shape,dtype=np.int32),axis=1)-1 
-    index1=setup.all_indices(t,temp1)[0]
-    izf=setup.all_indices(t,temp1)[1]
-    izm=setup.all_indices(t,temp1)[2]
-    psia=setup.all_indices(t,temp1)[3]
-    index2=setup.all_indices(t,(izm,izf,psia))[0]
-    Vexp2t=Vexp[:,index2[0,:,0,0],:,:]
-    indt=np.linspace(setup.ntheta_fine,1,setup.ntheta_fine,dtype=np.int16)-1
-    Vexptt=Vexp2t[:,:,indt,:]
-    indt2=np.linspace(len(setup.ashare),1,len(setup.ashare),dtype=np.int16)-1
-    Vexp2=Vexptt[:,:,:,indt2]
+    # #Correct for symmetries
+    # temp1=np.cumsum(np.ones(Vexp.shape,dtype=np.int32),axis=1)-1 
+    # index1=setup.all_indices(t,temp1)[0]
+    # izf=setup.all_indices(t,temp1)[1]
+    # izm=setup.all_indices(t,temp1)[2]
+    # psia=setup.all_indices(t,temp1)[3]
+    # index2=setup.all_indices(t,(izm,izf,psia))[0]
+    # Vexp2t=Vexp[:,index2[0,:,0,0],:,:]
+    # indt=np.linspace(setup.ntheta_fine,1,setup.ntheta_fine,dtype=np.int16)-1
+    # Vexptt=Vexp2t[:,:,indt,:]
+    # indt2=np.linspace(len(setup.ashare),1,len(setup.ashare),dtype=np.int16)-1
+    # Vexp2=Vexptt[:,:,:,indt2]
     
-    Vexp3=Vexp[:,index2[0,:,0,0],:,:]
-    
-    
-    Vexp_max2=np.argmax(Vexp2,axis=-1)
-    Vexp_max2_a=np.max(Vexp2,axis=-1)
-    Vexp_max2_b=np.reshape(np.repeat(Vexp_max2_a,dime),Vexp.shape)
-    doppio=(abs(Vexp2-Vexp_max2_b)<1e-08)
-    doppio2=np.array(np.cumsum(doppio,axis=-1),dtype=np.int16)[:,:,:,-1]!=1
-    #Vexp_max2[doppio2]=np.full(Vexp_max2.shape,int((len(setup.ashare)-1)/2))[doppio2]
-    
-    Vexp_max3=np.argmax(Vexptt,axis=-1)#np.argmax(Vexp3,axis=-1)
+    # Vexp3=Vexp[:,index2[0,:,0,0],:,:]
     
     
-    wha=(izf==izm)[:,:,:,0]
-    whb=Vexp_max!=Vexp_max2
+    # Vexp_max2=np.argmax(Vexp2,axis=-1)
+    # Vexp_max2_a=np.max(Vexp2,axis=-1)
+    # Vexp_max2_b=np.reshape(np.repeat(Vexp_max2_a,dime),Vexp.shape)
+    # doppio=(abs(Vexp2-Vexp_max2_b)<1e-08)
+    # doppio2=np.array(np.cumsum(doppio,axis=-1),dtype=np.int16)[:,:,:,-1]!=1
+    # #Vexp_max2[doppio2]=np.full(Vexp_max2.shape,int((len(setup.ashare)-1)/2))[doppio2]
     
-    whc=(abs(Vexp_max+Vexp_max3-len(setup.ashare)+1)>1e-12)
+    # Vexp_max3=np.argmax(Vexptt,axis=-1)#np.argmax(Vexp3,axis=-1)
     
-    wh=np.full(whb.shape,False,dtype=bool)# (whb) | (whc)  | (wha) #
     
-    Vexp_max[wh]=np.full(Vexp_max2.shape,int((len(setup.ashare)-1)/2))[wh]
-    Vexp_max2[wh]=np.full(Vexp_max2.shape,int((len(setup.ashare)-1)/2))[wh]
-    Vexp_max3[wh]=np.full(Vexp_max2.shape,int((len(setup.ashare)-1)/2))[wh]
+    # wha=(izf==izm)[:,:,:,0]
+    # whb=Vexp_max!=Vexp_max2
+    
+    # whc=(abs(Vexp_max+Vexp_max3-len(setup.ashare)+1)>1e-12)
+    
+    # wh=np.full(whb.shape,False,dtype=bool)# (whb) | (whc)  | (wha) #
+    
+    # Vexp_max[wh]=np.full(Vexp_max2.shape,int((len(setup.ashare)-1)/2))[wh]
+    # Vexp_max2[wh]=np.full(Vexp_max2.shape,int((len(setup.ashare)-1)/2))[wh]
+    # Vexp_max3[wh]=np.full(Vexp_max2.shape,int((len(setup.ashare)-1)/2))[wh]
                   
  
    
@@ -192,7 +193,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,dec,desc,draw=True,nbatch=nbatch_def,v
     #Take right age using a mask
     #columns=np.linspace(1,len(Vexp[0,:]),len(Vexp[0,:]),dtype=np.int16)
     
-    col=np.reshape(np.repeat(Vexp_max,dime),Vexp.shape,order='C')
+    col=np.reshape(np.repeat(Vexp_max,sharea),Vexp.shape,order='C')
     mask=(col-temp==0)
 
   
@@ -234,12 +235,13 @@ def v_iter_couple(setup,t,EV_tuple,ushift,dec,desc,draw=True,nbatch=nbatch_def,v
     
     ################################################
     #ADJUST DECISION ACCORDING TO DIVISION OF ASSETS
-    ################################################         
-    dec['Decision']=np.reshape(dec['Decision'][mask],Vexp_max.shape)
-    dec['thetas']=np.reshape(dec['thetas'][mask],Vexp_max.shape)
+    # ################################################   
+    # tk = lambda x : x[:,:,setup.theta_orig_on_fine,:]      
+    # dec['Decision']=np.reshape(tk(dec['Decision'])[mask],Vexp_max.shape)
+    # dec['thetas']=np.reshape(tk(dec['thetas'])[mask],Vexp_max.shape)
      
-    if desc=='Couple, C':
-        dec['Cohabitation preferred to Marriage']=np.reshape(dec['Cohabitation preferred to Marriage'][mask],Vexp_max.shape)
+    # if desc=='Couple, C':
+    #     dec['Cohabitation preferred to Marriage']=np.reshape(tk(dec['Cohabitation preferred to Marriage'])[mask],Vexp_max.shape)
    
  
     dec['assdev']=Vexp_max
@@ -249,13 +251,13 @@ def v_iter_couple(setup,t,EV_tuple,ushift,dec,desc,draw=True,nbatch=nbatch_def,v
     if draw:
         mask=np.full(mask.shape,False)
         mask[:,:,:,int((len(setup.ashare)-1)/2)]=True
- 
-        dec['Values']=(np.reshape(dec['Values'][0][mask],Vexp_max.shape),
-                       np.reshape(dec['Values'][1][mask],Vexp_max.shape),
-                       np.reshape(dec['Values'][2][mask],Vexp_max.shape),
-                       np.reshape(dec['Values'][3][mask],Vexp_max.shape))
+        tk = lambda x : x[:,:,setup.theta_orig_on_fine,:]      
+        dec['Values']=(np.reshape(tk(dec['Values'][0])[mask],Vexp_max.shape),
+                       np.reshape(tk(dec['Values'][1])[mask],Vexp_max.shape),
+                       np.reshape(tk(dec['Values'][2])[mask],Vexp_max.shape),
+                       np.reshape(tk(dec['Values'][3])[mask],Vexp_max.shape))
    # return r(V_all), r(V_fem), r(V_mal), r(c_opt), r(x_opt), r(s_opt), il_opt, r(V_all_l), r(EVc_all), dec
-    return r(V_all), r(V_fem), r(V_mal), r(c_opt), r(x_opt), r(s_opt), il_opt, dec
+    return r(V_all), r(V_fem), r(V_mal), r(c_opt), r(x_opt), r(s_opt), il_opt, r(V_all_l), dec
 
 
 

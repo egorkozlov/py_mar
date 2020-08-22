@@ -119,7 +119,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False,
   
     
   
-    assert np.all(c_opt > 0)
+#    assert np.all(c_opt > 0)
    
     
     psi_r = psi[None,:,None].astype(setup.dtype,copy=False)
@@ -158,7 +158,7 @@ def v_iter_couple(setup,t,EV_tuple,ushift,nbatch=nbatch_def,verbose=False,
         
         pass
     
-    return r(V_all), r(V_fem), r(V_mal), r(c_opt), r(x_opt), r(s_opt), il_opt#, r(V_all_l), r(EVc_all)
+    return r(V_all), r(V_fem), r(V_mal), r(c_opt), r(x_opt), r(s_opt), il_opt, r(V_all_l)#, r(EVc_all)
 
 
 

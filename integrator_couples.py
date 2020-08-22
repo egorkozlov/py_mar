@@ -81,7 +81,9 @@ def ev_couple_m_c(setup,Vpostren,t,marriage,use_sparse=True,draw=False):
     assert EVr.dtype == setup.dtype
     dec = out.copy()
     
-    return (EVr, EVc, EVf, EVm), dec#(tk(EVr), tk(EVc), tk(EVf), tk(EVm)), dec
+    tk = lambda x : x[:,:,setup.theta_orig_on_fine,:,:]
+    
+    return (tk(EVr), tk(EVc), tk(EVf), tk(EVm)), dec#(EVr, EVc, EVf, EVm), dec#
 
 
 def ev_couple_exo(setup,Vren,t,use_sparse=True,down=False):

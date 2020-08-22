@@ -328,6 +328,8 @@ class Agents:
                     #TODO having iexo in t inconsistent with couple ones, which lool t+1
                     iznow = self.iexo[ind,t]
                     
+                    
+                    
                     pmat = matches['p'][ia,iznow,:]
                     pmat_cum = pmat.cumsum(axis=1)
                     
@@ -391,6 +393,7 @@ class Agents:
                         tg = self.Mlist[ipol].setup.v_thetagrid_fine                    
                         fls_policy = self.Mlist[ipol].decisions[t+1]['Couple, M']['fls']
                         
+                       
                         self.ils_i[ind[i_agree_mar],t+1] = \
                             fls_policy[self.iassets[ind[i_agree_mar],t+1],self.iexo[ind[i_agree_mar],t+1],self.itheta[ind[i_agree_mar],t+1]]
                         
@@ -426,7 +429,7 @@ class Agents:
                     
                     ss = self.single_state
                     
-                    decision = self.Mlist[ipol].decisions[t][sname]
+                    decision = self.Mlist[ipol].decisions[t-1][sname]
     
                     
                     # by default keep the same theta and weights
@@ -447,14 +450,23 @@ class Agents:
                     agrids =  self.Mlist[ipol].setup.agrid_s
                     sc = agrid[isc] # needed only for dividing asssets               
                     
-                    thts_all = decision['thetas']
+                    
+                    if len(decision['thetas'].shape)>3:
+                        thts_all = np.take_along_axis(decision['thetas'],decision['assdev'][:,:,self.setup.igridcoarse,None],axis=-1).squeeze(axis=-1)
+                    else:
+                        thts_all = decision['thetas']
                     thts_orig_all = np.broadcast_to(np.arange(nt)[None,None,:],thts_all.shape)
                     
                     
                     thts = thts_all[isc,iall,itht]
                     thts_orig = thts_orig_all[isc,iall,itht]#this line below takes 43% of the time in coupls
                     
-                    dec = decision['Decision']
+                    
+                    if len(decision['thetas'].shape)>3:
+                        dec = np.take_along_axis(decision['Decision'],decision['assdev'][:,:,self.setup.igridcoarse,None],axis=-1).squeeze(axis=-1)
+                    else:
+                        dec=decision['Decision']
+                        
                     #this guy below account for 24% of the time in couple
                     i_stay = dec[isc,iall] if dec.ndim==2 else dec[isc,iall,itht]#i_stay = dec[isc,iall,itht] 
                     
@@ -573,7 +585,11 @@ class Agents:
                             ipick = (self.iassets[ind[i_ren],t+1],self.iexo[ind[i_ren],t+1],self.itheta[ind[i_ren],t+1])
                             self.ils_i[ind[i_ren],t+1] = self.Mlist[ipol].decisions[t+1][sname]['fls'][ipick]
                         else:
-                            i_coh = decision['Cohabitation preferred to Marriage'][isc,iall,thts]
+                            
+                            if len(decision['thetas'].shape)>3:
+                                i_coh = np.take_along_axis(decision['Cohabitation preferred to Marriage'],decision['assdev'][:,:,self.setup.igridcoarse,None],axis=-1).squeeze(axis=-1)[isc,iall,thts]
+                            else:
+                                i_coh =decision['Cohabitation preferred to Marriage'][isc,iall,thts]
                             i_coh1=i_coh[i_ren]
                             
                             ipick = (self.iassets[ind[i_ren],t+1],self.iexo[ind[i_ren],t+1],self.itheta[ind[i_ren],t+1])
@@ -597,7 +613,12 @@ class Agents:
                             ipick = (self.iassets[ind[i_sq],t+1],self.iexo[ind[i_sq],t+1],self.itheta[ind[i_sq],t+1])
                             self.ils_i[ind[i_sq],t+1] = self.Mlist[ipol].decisions[t+1][sname]['fls'][ipick]
                         else:
-                            i_coh = decision['Cohabitation preferred to Marriage'][isc,iall,thts]
+                            
+                            if len(decision['thetas'].shape)>3:
+                                i_coh = np.take_along_axis(decision['Cohabitation preferred to Marriage'],decision['assdev'][:,:,self.setup.igridcoarse,None],axis=-1).squeeze(axis=-1)[isc,iall,thts]
+                            else:
+                                i_coh =decision['Cohabitation preferred to Marriage'][isc,iall,thts]
+                                
                             i_coh1=i_coh[i_sq]
                             self.state[ind[i_sq],t+1] = i_coh1*self.state_codes["Couple, C"]+(1-i_coh1)*self.state_codes["Couple, M"]
                             

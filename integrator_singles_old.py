@@ -151,17 +151,7 @@ def ev_single_meet(setup,V,sown,female,t,skip_mar=False,trim_lvl=0.000001,dec_c=
         # morc[:,:,iconv[:,i]] = i_mar[:,None,:]
             
             
-        if t<45:
-           # i_coh=((vmoutc+vfoutc>vmoutm+vfoutm) & (nprc>0))
-            
-            aaa=V.copy()
-            #print('he m {},c {}'. format(np.mean(i_mar),np.mean(((vmoutc+vfoutc>vmoutm+vfoutm) & (nprc>0)))))
-            #print('he m {},c {}'. format(np.mean(aaa['Couple, C']['V'][:,:,10]<aaa['Couple, M']['V'][:,:,10]),np.mean(aaa['Couple, C']['V'][:,:,10]>aaa['Couple, M']['V'][:,:,10])))
-            #print('mean imar {}'.format(np.mean(i_mar)))
-            
-        assert vout.dtype == setup.dtype
-        
- 
+      
 
             
         V_next[:,inds] = vout

@@ -42,7 +42,7 @@ class ModelSetup(object):
         p['n_zf_correct']=3
         p['sigma_psi_mult'] = 0.28
         p['sigma_psi']   = 0.11
-        p['n_psi_t']     = [11]*T
+        p['n_psi_t']     = [31]*T
         p['R_t'] = [1.02**period_year]*T
         p['beta_t'] = [0.98**period_year]*T
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
@@ -292,11 +292,11 @@ class ModelSetup(object):
             exogrid['psi_t_mat'][Tret+1] = np.diag(np.ones(len(exogrid['psi_t_mat'][Tret-1])))
             
    
-            #Here I impose no change in psi from retirement till the end of time 
-            for t in range(Tret,T-1):
+            # #Here I impose no change in psi from retirement till the end of time 
+            # for t in range(Tret,T-1):
                
-                exogrid['psi_t'][t] = exogrid['psi_t'][Tret-1]#np.array([np.log(p['wret'])])             
-                exogrid['psi_t_mat'][t] = np.diag(np.ones(len(exogrid['psi_t'][t])))#p.atleast_2d(1.0)
+            #     exogrid['psi_t'][t] = exogrid['psi_t'][Tret-1]#np.array([np.log(p['wret'])])             
+            #     exogrid['psi_t_mat'][t] = np.diag(np.ones(len(exogrid['psi_t'][t])))#p.atleast_2d(1.0)
 
             zfzm, zfzmmat = combine_matrices_two_lists(exogrid['zf_t'], exogrid['zm_t'], exogrid['zf_t_mat'], exogrid['zm_t_mat'],trim=self.trim)
 
@@ -386,21 +386,20 @@ class ModelSetup(object):
             
             
             
-        #Grid Couple
+       #Grid Couple
         self.na = 40#40
         self.amin = 0
-        self.amax = 120
-        self.amax1 = 120
+        self.amax = 80
+        self.amax1 = 180
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
-        tune=0.04#80
+        tune=2.5
         self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
-        self.agrid_c[0]=0.0
-        #self.agrid_c[-1]=self.amax1
-        #self.agrid_c[-2]=85#120
+        self.agrid_c[-1]=self.amax1
+        self.agrid_c[-2]=120
         # this builds finer grid for potential savings
-        s_between = 1#15 # default numer of points between poitns on agrid
+        s_between = 7 # default numer of points between poitns on agrid
         s_da_min = 0.1 # minimal step (does not create more points)
-        s_da_max = 0.4 # maximal step (creates more if not enough)
+        s_da_max = 1.0 # maximal step (creates more if not enough)
         
         self.sgrid_c = build_s_grid(self.agrid_c,s_between,s_da_min,s_da_max)
         self.vsgrid_c = VecOnGrid(self.agrid_c,self.sgrid_c)
@@ -408,27 +407,23 @@ class ModelSetup(object):
         
          
         #Grid Single
-        scale = 2.0
-        self.scale=scale
+        scale = 1.1
         self.amin_s = 0
         self.amax_s = self.amax/scale
         self.agrid_s = np.linspace(self.amin_s,self.amax_s,self.na,dtype=self.dtype)
         #self.agrid_s[self.na-1]=18#180
-        tune_s=25
-        self.agrid_s = np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
+        tune_s=2.5
+        self.agrid_s = self.agrid_c/2#np.geomspace(self.amin_s+tune_s,self.amax_s+tune_s,num=self.na)-tune_s
         #self.agrid_s[-1]=self.amax1/scale
-        #self.agrid_c[-2]=85/scale
-        self.agrid_s=self.agrid_c/self.scale
+        #self.agrid_c[-2]=120/scale
         self.sgrid_s = build_s_grid(self.agrid_s,s_between,s_da_min,s_da_max)
-        
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)
         
         # grid for theta
         self.ntheta = 11
-        self.thetamin = 0.05
-        self.thetamax = 0.95
+        self.thetamin = 0.02
+        self.thetamax = 0.98
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta,dtype=self.dtype)
-        
         
         #Grid for the share in assets
         self.ashare = np.linspace(0.1,0.9,3,dtype=self.dtype)
@@ -510,8 +505,8 @@ class ModelSetup(object):
         mmax = ezfmax + ezmmax + np.max(self.pars['R_t'])*self.amax1
         mint = (ezfmax + ezmmax) # poin where more dense grid begins
         
-        ndense = 2000
-        nm = 85000
+        ndense = 6000
+        nm = 15000
         
         gsparse = np.linspace(mint,mmax,nm-ndense)
         gdense = np.linspace(mmin,mint,ndense+1) # +1 as there is a common pt
@@ -522,7 +517,7 @@ class ModelSetup(object):
         self.mgrid = np.zeros(nm,dtype=self.dtype)
         self.mgrid[ndense:] = gsparse
         self.mgrid[:(ndense+1)] = gdense
-        self.mgrid = np.geomspace(mmin+tune,mmax+tune,num=nm)-tune#build_s_grid(self.sgrid_c,10,s_da_min*0.1,s_da_max*0.01)+mmin#
+        #self.mgrid = np.geomspace(mmin+tune,mmax+tune,num=nm)-tune#build_s_grid(self.sgrid_c,10,s_da_min*0.1,s_da_max*0.01)+mmin#
         
         assert np.all(np.diff(self.mgrid)>0)
         

@@ -86,11 +86,14 @@ class ModelSetup(object):
 #        p['m_wage_trend_single'] = [(-.5960803  +.05829568*t -.00169143*t**2+ .00001446*t**3) for t in range(T)]
            
   
-        p['util_lam'] = 0.19#0.4
-        p['util_alp'] = 0.5
+        p['util_lam'] = 0.189#0.4
+        p['util_alp_temp'] = 0.5
         p['util_xi'] = 1.07
-        p['util_kap'] = (1-0.21)/(0.21)
+        p['util_kap_temp']=0.206
         p['rprice_durables'] = 1.0#
+        
+        
+
         
 
         
@@ -98,6 +101,12 @@ class ModelSetup(object):
             assert (key in p), 'wrong name?'
             p[key] = value
             
+            
+        p['util_kap'] = (1-p['util_kap_temp'])/(p['util_kap_temp'])
+        
+        #Adjust aplpha do be like in greenoood
+        p['util_alp']=p['util_alp_temp']*(p['util_kap_temp'])**((1-p['util_xi'])/p['util_lam'])
+        
         #Adjust kappa and alpha to make sense of relative prices
         p['util_alp_m']=p['util_alp']*(1.0/(p['rprice_durables'])**(1.0-p['util_xi']))
         p['util_kap_m']=p['util_kap']*p['rprice_durables']**p['util_lam']
@@ -395,7 +404,7 @@ class ModelSetup(object):
         self.amax1 = 130
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
         tune=30.5
-        #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
+        self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         self.agrid_c[-1]=self.amax1
         self.agrid_c[-2]=80
         # this builds finer grid for potential savings

@@ -159,21 +159,21 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     keep=(assets_t[:,0]>-1)     
         
      
-    # summa=0.0     
-    # summa1=0.0     
-    # for i in age_sw:     
-    #     summa+=age_sw[i]     
-    #     keep[int(summa1*len(state[:,0])/sum(age_sw.values())):int(summa*len(state[:,0])/sum(age_sw.values()))]=(state[int(summa1*len(state[:,0])/sum(age_sw.values())):int(summa*len(state[:,0])/sum(age_sw.values())),int((i-20)/mdl.setup.pars['py'])]!=3)     
+    summa=0.0     
+    summa1=0.0     
+    for i in age_sw:     
+        summa+=age_sw[i]     
+        keep[int(summa1*len(state[:,0])/sum(age_sw.values())):int(summa*len(state[:,0])/sum(age_sw.values()))]=(state[int(summa1*len(state[:,0])/sum(age_sw.values())):int(summa*len(state[:,0])/sum(age_sw.values())),int((i-20)/mdl.setup.pars['py'])]!=3)     
            
-    #     summa1+=age_sw[i]     
+        summa1+=age_sw[i]     
      
       
-    # state=state[keep,]      
-    # changep=changep[keep,]   
-    # female=female[keep,]   
-    # iexo=iexo[keep,]  
-    # assets_t=assets_t[keep,]  
-    # labor=labor[keep,]  
+    state=state[keep,]      
+    changep=changep[keep,]   
+    female=female[keep,]   
+    iexo=iexo[keep,]  
+    assets_t=assets_t[keep,]  
+    labor=labor[keep,]  
       
         
       
@@ -218,14 +218,14 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     ddd=np.stack((inde,age_unid,fem),axis=0).T  
     df=pd.DataFrame(data=ddd,columns=["Index","age","sex"],index=ddd[:,0])  
     df['age']=df['age'].astype(np.float)  
-    # try:#if (len(df)>0) &  (setup.pars['py']==1):    
-    #     sampletemp=strata_sample(["'sex'", "'age'"],freq_nsfh,frac=0.2,tsample=df,distr=True)  
-    #     final2=df.merge(sampletemp,how='left',on='Index',indicator=True)  
+    try:#if (len(df)>0) &  (setup.pars['py']==1):    
+        sampletemp=strata_sample(["'sex'", "'age'"],freq_nsfh,frac=0.2,tsample=df,distr=True)  
+        final2=df.merge(sampletemp,how='left',on='Index',indicator=True)  
           
-    #     keep2=[False]*len(df)  
-    #     keep2=(np.array(final2['_merge'])=='both')  
-    # except:#else:  
-    keep2=[True]*len(df)  
+        keep2=[False]*len(df)  
+        keep2=(np.array(final2['_merge'])=='both')  
+    except:#else:  
+        keep2=[True]*len(df)  
    
       
     #Keep again for all relevant variables     
@@ -707,32 +707,32 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     df_psidt=pd.DataFrame(data=ddd2,columns=["Index","age","unid"],index=ddd2[:,0])  
     df_psidt['age']=df_psidt['age'].astype(np.float)  
       
-    # try:#if (len(df_psidt)>0) & (setup.pars['py']==1) & (max(df_psidt['unid'])>0.9) & (min(df_psidt['unid'])<0.9):  
-    #     sampletemp=strata_sample(["'age'", "'unid'"],freq_psid_tot_data2,frac=0.1,tsample=df_psidt,distr=True)  
-    #     final2t=df_psidt.merge(sampletemp,how='left',on='Index',indicator=True)  
+    try:#if (len(df_psidt)>0) & (setup.pars['py']==1) & (max(df_psidt['unid'])>0.9) & (min(df_psidt['unid'])<0.9):  
+        sampletemp=strata_sample(["'age'", "'unid'"],freq_psid_tot_data2,frac=0.1,tsample=df_psidt,distr=True)  
+        final2t=df_psidt.merge(sampletemp,how='left',on='Index',indicator=True)  
           
-    #     keep3=[False]*len(df_psidt)  
-    #     keep3=(np.array(final2t['_merge'])=='both')  
+        keep3=[False]*len(df_psidt)  
+        keep3=(np.array(final2t['_merge'])=='both')  
           
-    #     #TODO assign labor according to stuff above  
-    #     #Keep again for all relevant variables  
+        #TODO assign labor according to stuff above  
+        #Keep again for all relevant variables  
       
           
-    #     #Initial distribution  
-    #     prima_psid_tot=freq_psid_tot_data2/np.sum(freq_psid_tot_data2)  
+        #Initial distribution  
+        prima_psid_tot=freq_psid_tot_data2/np.sum(freq_psid_tot_data2)  
           
-    #     #Final distribution  
-    #     final3=df_psidt[keep3]  
-    #     final4=final3.groupby(['age','unid'])['age'].count()  
-    #     dopo_psid_tot=final4/np.sum(final4)  
+        #Final distribution  
+        final3=df_psidt[keep3]  
+        final4=final3.groupby(['age','unid'])['age'].count()  
+        dopo_psid_tot=final4/np.sum(final4)  
           
           
-    #     print('The average deviation from actual to final psid_tot ditribution is {:0.2f}%'.format(np.mean(abs(prima_psid_tot-dopo_psid_tot))*100))  
+        print('The average deviation from actual to final psid_tot ditribution is {:0.2f}%'.format(np.mean(abs(prima_psid_tot-dopo_psid_tot))*100))  
            
-    # except:#else:
+    except:#else:
         
-    keep3=np.array([[True]*len(df_psidt)])[0,:]
-    keep3[agegrid[incoupler]>=46]=[False]
+        keep3=np.array([[True]*len(df_psidt)])[0,:]
+        keep3[agegrid[incoupler]>=46]=[False]
     ############  
     #Average FLS  
     ############  
@@ -806,31 +806,31 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     df_psidp=pd.DataFrame(data=ddd3,columns=["Index","age","unid","mar"],index=ddd3[:,0])  
     df_psidp['age']=df_psidp['age'].astype(np.float)  
       
-    # try:#if (len(df_psidp)>0) &  (setup.pars['py']==1) & (max(df_psidp['unid'])>0.9) & (min(df_psidp['unid'])<0.9):    
-    #     sampletempp=strata_sample(["'age'", "'unid'", "'mar'"],freq_psid_par_data2,frac=0.02,tsample=df_psidp,distr=True)  
-    #     final2p=df_psidp.merge(sampletempp,how='left',on='Index',indicator=True)  
+    try:#if (len(df_psidp)>0) &  (setup.pars['py']==1) & (max(df_psidp['unid'])>0.9) & (min(df_psidp['unid'])<0.9):    
+        sampletempp=strata_sample(["'age'", "'unid'", "'mar'"],freq_psid_par_data2,frac=0.02,tsample=df_psidp,distr=True)  
+        final2p=df_psidp.merge(sampletempp,how='left',on='Index',indicator=True)  
           
-    #     keep4=[False]*len(df_psidp)  
-    #     keep4=(np.array(final2p['_merge'])=='both')  
+        keep4=[False]*len(df_psidp)  
+        keep4=(np.array(final2p['_merge'])=='both')  
           
-    #     #TODO assign labor according to stuff above  
-    #     #Keep again for all relevant variables  
+        #TODO assign labor according to stuff above  
+        #Keep again for all relevant variables  
       
           
-    #     #Initial distribution  
-    #     prima_psid_par=freq_psid_par_data2/np.sum(freq_psid_par_data2)  
+        #Initial distribution  
+        prima_psid_par=freq_psid_par_data2/np.sum(freq_psid_par_data2)  
           
-    #     #Final distribution  
-    #     final3p=df_psidp[keep4]  
-    #     final4p=final3p.groupby(['age','unid','mar'])['age'].count()  
-    #     dopo_psid_par=final4p/np.sum(final4p)  
+        #Final distribution  
+        final3p=df_psidp[keep4]  
+        final4p=final3p.groupby(['age','unid','mar'])['age'].count()  
+        dopo_psid_par=final4p/np.sum(final4p)  
           
           
-    #     print('The average deviation from actual to final psid_tot ditribution is {:0.2f}%'.format(np.mean(abs(prima_psid_par-dopo_psid_par))*100))  
+        print('The average deviation from actual to final psid_tot ditribution is {:0.2f}%'.format(np.mean(abs(prima_psid_par-dopo_psid_par))*100))  
            
-    # except:#else:  
-    keep4=np.array([[True]*len(df_psidp)])[0,:]
-    keep4[agegrid[incouplerp]>=46]=[False]
+    except:#else:  
+        keep4=np.array([[True]*len(df_psidp)])[0,:]
+        keep4[agegrid[incouplerp]>=46]=[False]
            
          
     ################ 
@@ -957,31 +957,31 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     df_psidd=pd.DataFrame(data=ddd4,columns=["Index","age","unid"],index=ddd4[:,0]) 
     df_psidd['age']=df_psidd['age'].astype(np.float) 
      
-    # try:#if (len(df_psidd)>0) & (setup.pars['py']==1)   & (max(df_psidd['unid'])>0.9) & (min(df_psidd['unid'])<0.9):   
-    #     sampletemp=strata_sample(["'age'", "'unid'"],freq_psid_div_data2,frac=0.1,tsample=df_psidd,distr=True) 
-    #     final2d=df_psidd.merge(sampletemp,how='left',on='Index',indicator=True) 
+    try:#if (len(df_psidd)>0) & (setup.pars['py']==1)   & (max(df_psidd['unid'])>0.9) & (min(df_psidd['unid'])<0.9):   
+        sampletemp=strata_sample(["'age'", "'unid'"],freq_psid_div_data2,frac=0.1,tsample=df_psidd,distr=True) 
+        final2d=df_psidd.merge(sampletemp,how='left',on='Index',indicator=True) 
          
-    #     keep5=[False]*len(df_psidd) 
-    #     keep5=(np.array(final2d['_merge'])=='both') 
+        keep5=[False]*len(df_psidd) 
+        keep5=(np.array(final2d['_merge'])=='both') 
          
-    #     #TODO assign labor according to stuff above 
-    #     #Keep again for all relevant variables 
+        #TODO assign labor according to stuff above 
+        #Keep again for all relevant variables 
      
          
-    #     #Initial distribution 
-    #     prima_psid_div=freq_psid_div_data2/np.sum(freq_psid_div_data2) 
+        #Initial distribution 
+        prima_psid_div=freq_psid_div_data2/np.sum(freq_psid_div_data2) 
          
-    #     #Final distribution 
-    #     final3=df_psidd[keep5] 
-    #     final4=final3.groupby(['age','unid'])['age'].count() 
-    #     dopo_psid_div=final4/np.sum(final4) 
+        #Final distribution 
+        final3=df_psidd[keep5] 
+        final4=final3.groupby(['age','unid'])['age'].count() 
+        dopo_psid_div=final4/np.sum(final4) 
          
          
-    #     print('The average deviation from actual to final psid_div ditribution is {:0.2f}%'.format(np.mean(abs(prima_psid_div-dopo_psid_div))*100)) 
+        print('The average deviation from actual to final psid_div ditribution is {:0.2f}%'.format(np.mean(abs(prima_psid_div-dopo_psid_div))*100)) 
           
-    # except:#else: 
-    keep5=np.array([[True]*len(df_psidd)])[0,:]
-    keep5[agegrid>=46]=False
+    except:#else: 
+        keep5=np.array([[True]*len(df_psidd)])[0,:]
+        keep5[agegrid>=46]=False
          
  
  

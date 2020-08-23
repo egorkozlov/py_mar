@@ -73,7 +73,7 @@ if __name__ == '__main__':
    
     x0 = np.array([0.818755,0.9599,2.45588,0.495801,1.0809,0.132117,-0.126979,1.20594])
     x0=np.array([0.781802,0.58197,1.50627,0.428613,1.3097,0.156035,-0.0717019,1.19911])
-    x0=np.array([0.781802,0.58197,1.50627,0.428613,1.207606374413224,0.106035,-0.1517019,1.001])
+    x0=np.array([0.781802,0.58197,1.50627,0.428613,1.007606374413224,0.106035,-0.1317019,1.19])
   
     #Name and location of files
     if system() == 'Windows':   
@@ -83,7 +83,7 @@ if __name__ == '__main__':
     
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','models','agents','scaled residuals'],
                                       #load_from=['mdl_save_bil.pkl'],#'mdl_save_uni.pkl'],
-                                      solve_transition=False,                                    
+                                      solve_transition=True,                                    
                                       #save_to=['mdl_save_bil.pkl'],#'mdl_save_uni.pkl'],
                                       store_path=path,
                                       verbose=True,calibration_report=False,draw=graphs,graphs=graphs,

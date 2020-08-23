@@ -564,7 +564,7 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
 #Actual moments computation + weighting matrix   
 ################################################   
    
-def dat_moments(sampling_number=5,weighting=False,covariances=False,relative=False,period=3,transform=1):   
+def dat_moments(sampling_number=5,weighting=True,covariances=False,relative=False,period=3,transform=1):   
        
        
        

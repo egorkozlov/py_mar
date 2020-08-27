@@ -7,7 +7,7 @@ Decomposition of Welfare Effects
 import numpy as np
 from gridvec import VecOnGrid
 import matplotlib.backends.backend_pdf   
-
+from interp_np import interp,interp_np
 
  
 #For nice graphs with matplotlib do the following 
@@ -35,24 +35,30 @@ def welf_dec(mdl,agents):
     Vm_uni=mdl[1].V[0]['Male, single']['V'][0,shocks[ismale]]
  
     
-    
+   
     
     #Compute additional wealth to make them indifferent-Women
-    for i in range(len(mdl[0].setup.agrid_c)):
-        Vf_uni_comp=np.mean(mdl[1].V[0]['Female, single']['V'][i,shocks[isfemale]])
+    assets=np.linspace(mdl[0].setup.agrid_s[0],mdl[0].setup.agrid_s[-1],100000)
+    for i in range(len(assets)):
+        sv_f,wf = interp_np(mdl[0].setup.agrid_s,assets[i])
+        
+        Vf_uni_comp=np.mean(mdl[1].V[0]['Female, single']['V'][sv_f,shocks[isfemale]]*(1-wf)+wf*mdl[1].V[0]['Female, single']['V'][sv_f+1,shocks[isfemale]])
         
         if(Vf_uni_comp>np.mean(Vf_bil)):
-            wf=(-abs(np.mean(Vf_bil))+abs(np.mean(mdl[1].V[0]['Female, single']['V'][i-1,shocks[isfemale]])))/abs(np.mean(mdl[1].V[0]['Female, single']['V'][i-1,shocks[isfemale]]))
-            acomf=((1-wf)*mdl[0].setup.agrid_c[i-1]+(wf)*mdl[0].setup.agrid_c[i])*28331.93
+            print(i)
+            #wf=(-abs(np.mean(Vf_bil))+abs(np.mean(mdl[1].V[0]['Female, single']['V'][i-1,shocks[isfemale]])))/abs(np.mean(mdl[1].V[0]['Female, single']['V'][i-1,shocks[isfemale]]))
+            acomf=assets[i]*28331.93#((1-wf)*mdl[0].setup.agrid_s[i-1]+(wf)*mdl[0].setup.agrid_s[i])*28331.93
             break
         
     #Compute additional wealth to make them indifferent-Women
-    for i in range(len(mdl[0].setup.agrid_c)):
-        Vm_uni_comp=np.mean(mdl[1].V[0]['Male, single']['V'][i,shocks[ismale]])
+    for i in range(len(assets)):
+        
+        sv_m,wm = interp_np(mdl[0].setup.agrid_s,assets[i])
+        Vm_uni_comp=np.mean(mdl[1].V[0]['Male, single']['V'][sv_m,shocks[ismale]]*(1-wm)+wm*mdl[1].V[0]['Male, single']['V'][sv_m+1,shocks[ismale]])
         
         if(Vm_uni_comp>np.mean(Vm_bil)):
-            wf=(-abs(np.mean(Vm_bil))+abs(np.mean(mdl[1].V[0]['Male, single']['V'][i-1,shocks[ismale]])))/abs(np.mean(mdl[1].V[0]['Male, single']['V'][i-1,shocks[ismale]]))
-            acomm=((1-wf)*mdl[0].setup.agrid_c[i-1]+(wf)*mdl[0].setup.agrid_c[i])*28331.93
+            #wf=(-abs(np.mean(Vm_bil))+abs(np.mean(mdl[1].V[0]['Male, single']['V'][i-1,shocks[ismale]])))/abs(np.mean(mdl[1].V[0]['Male, single']['V'][i-1,shocks[ismale]]))
+            acomm=assets[i]*28331.93#((1-wf)*mdl[0].setup.agrid_s[i-1]+(wf)*mdl[0].setup.agrid_s[i])*28331.93
             break
         
     #Get worse Value and set it to standard

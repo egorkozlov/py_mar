@@ -1234,7 +1234,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
              
         #Log Income over time 
         for t in range(lenn): 
-            ipart=(labor_w[:,t]>0.1) & (ifemale2) #& (state_w[:,t]>1) 
+            ipart=(labor_w[:,t]>0.0) & (ifemale2) #& (state_w[:,t]>1) 
             ipartm=(state_w[:,t]==1) & (imale2) 
             log_inc_rel[0,t]=np.mean(np.log(wage_f2[ipart,t])) 
             log_inc_rel[1,t]=np.mean(np.log(wage_m2[imale2,t])) 

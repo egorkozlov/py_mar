@@ -37,9 +37,9 @@ class ModelSetup(object):
         p['sig_zf']    = .0272437**(0.5)#0.0399528**(0.5)
         p['sig_zm_0']  = 0.54896510#.405769**(0.5)
         p['sig_zm']    = .025014**(0.5)#0.0417483**(0.5)
-        p['n_zf_t']      = [6]*Tret + [6]*(T-Tret)
+        p['n_zf_t']      = [4]*Tret + [4]*(T-Tret)
         p['n_zm_t']      = [3]*Tret + [3]*(T-Tret)
-        p['n_zf_correct']=3
+        p['n_zf_correct']=1
         p['sigma_psi_mult'] = 0.28
         p['sigma_psi']   = 0.11
         p['n_psi_t']     = [13]*T
@@ -207,9 +207,9 @@ class ModelSetup(object):
                     dist0=zft[t][0]-p['n_zf_correct']*h
                     
                     #Copy transition matrix
-                    exogrid['zf_t']=exogrid['zf_t']+[np.concatenate((np.array([dist0,dist1,dist2]),zft[t]))]
+                    #exogrid['zf_t']=exogrid['zf_t']+[np.concatenate((np.array([dist0,dist1,dist2]),zft[t]))]
                     #exogrid['zf_t']=exogrid['zf_t']+[np.concatenate((np.array([dist0,dist1]),zft[t]))]
-                    #exogrid['zf_t']=exogrid['zf_t']+[np.concatenate((np.array([dist1]),zft[t]))]
+                    exogrid['zf_t']=exogrid['zf_t']+[np.concatenate((np.array([dist0]),zft[t]))]
                     exogrid['zf_t_mat']=exogrid['zf_t_mat']+[np.zeros((p['n_zf_t'][t],p['n_zf_t'][t]))]
                     exogrid['zf_t_mat'][t][p['n_zf_correct']:,p['n_zf_correct']:]=zftmat[t]
                     
@@ -217,8 +217,8 @@ class ModelSetup(object):
                     if t<p['T']-1:
                         
                         exogrid['zf_t_mat'][t][0,:-p['n_zf_correct']]=zftmat[t][0,:]
-                        exogrid['zf_t_mat'][t][1,:-p['n_zf_correct']]=zftmat[t][1,:]
-                        exogrid['zf_t_mat'][t][2,:-p['n_zf_correct']]=zftmat[t][2,:]
+                        #exogrid['zf_t_mat'][t][1,:-p['n_zf_correct']]=zftmat[t][1,:]
+                        #exogrid['zf_t_mat'][t][2,:-p['n_zf_correct']]=zftmat[t][2,:]
                        
                             
                     else:

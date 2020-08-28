@@ -51,11 +51,11 @@ class ModelSetup(object):
         p['sig_partner_a'] = 0.1#0.5
         p['sig_partner_z'] = 1.2#1.0#0.4 #This is crazy powerful for the diff in diff estimate
         p['sig_partner_mult'] = 1.0
-        p['dump_factor_z'] = 0.85#0.82
-        p['mean_partner_z_female'] = 0.02#+0.03
-        p['mean_partner_z_male'] =  -0.02#-0.03
-        p['mean_partner_a_female'] = 0.5#0.1
-        p['mean_partner_a_male'] = -0.5#-0.1
+        p['dump_factor_z'] = 0.6#0.82
+        p['mean_partner_z_female'] = 0.05#+0.03
+        p['mean_partner_z_male'] =  -0.05#-0.03
+        p['mean_partner_a_female'] = 0.05#0.5
+        p['mean_partner_a_male'] = -0.05#-0.5
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
         
@@ -74,8 +74,8 @@ class ModelSetup(object):
         
          
         #Wages over time
-        p['f_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-.74491918 +.04258303*t -.0016542*t**2+.00001775*t**3) for t in range(T)]
-        p['f_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.6805060 +.04629912*t -.00160467*t**2+.00001626*t**3) for t in range(T)]
+        p['f_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-.74491918 +.04258303*(t-2) -.0016542*(t-2)**2+.00001775*(t-2)**3) for t in range(T)]
+        p['f_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.6805060 +.04629912*(t-2) -.00160467*(t-2)**2+.00001626*(t-2)**3) for t in range(T)]
         p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-0.5620125  +0.06767721*t -0.00192571*t**2+ 0.00001573*t**3) for t in range(T)]
         p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.5960803  +.05829568*t -.00169143*t**2+ .00001446*t**3) for t in range(T)]
    
@@ -399,18 +399,19 @@ class ModelSetup(object):
             
        #Grid Couple
         self.na = 40#40
+        self.scala=0.8
         self.amin = 0
-        self.amax = 60
-        self.amax1 = 130
+        self.amax = 60*self.scala
+        self.amax1 = 130*self.scala
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
         tune=30.5
         self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         self.agrid_c[-1]=self.amax1
-        self.agrid_c[-2]=80
+        self.agrid_c[-2]=80*self.scala
         # this builds finer grid for potential savings
         s_between = 7 # default numer of points between poitns on agrid
-        s_da_min = 0.001 # minimal step (does not create more points)
-        s_da_max = 5.0 # maximal step (creates more if not enough)
+        s_da_min = 0.001*self.scala # minimal step (does not create more points)
+        s_da_max = 5.0*self.scala # maximal step (creates more if not enough)
         
         self.sgrid_c = build_s_grid(self.agrid_c,s_between,s_da_min,s_da_max)
         self.vsgrid_c = VecOnGrid(self.agrid_c,self.sgrid_c)

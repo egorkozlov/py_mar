@@ -85,7 +85,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         theta_w=mdl.setup.thetagrid_fine[agents.itheta]   
         assets_w=mdl.setup.agrid_c[agents.iassets]  
         assets_w[agents.state<=1]=mdl.setup.agrid_s[agents.iassets[agents.state<=1]]  
-        assetss_w=mdl.setup.agrid_c[agents.iassetss]  
+        assetss_w=mdl.setup.agrid_s[agents.iassetss]  
         assetss_w[agents.state<=1]=mdl.setup.agrid_s[agents.iassetss[agents.state<=1]]  
         changep_w=agents.policy_ind   
   
@@ -1369,8 +1369,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
             if np.any(matchc):event_thetac[i]=np.mean(theta_w[matchc]) 
             if np.any(matchm):event_psim[i]=np.mean(psis[matchm]) 
             if np.any(matchc):event_psic[i]=np.mean(psis[matchc]) 
-            if np.any((state_w==2)  & (female_w==1) & (event==e) ):event_laborm[i]=np.mean(labor_w[(state_w==2) & (female_w==1) & (event==e)  ]) 
-            if np.any((state_w==3) & (female_w==1)  & (event==e) ):event_laborc[i]=np.mean(labor_w[(state_w==3) & (female_w==1)  & (event==e) ]) 
+            if np.any((state_w==2)  & (female_w==1) & (event==e) ):event_laborm[i]=np.mean(labor_w[(state_w==2) & (female_w==1) & (event==e)  & (changem)]) 
+            if np.any((state_w==3) & (female_w==1)  & (event==e) ):event_laborc[i]=np.mean(labor_w[(state_w==3) & (female_w==1)  & (event==e)  & (changec) ]) 
             if np.any((state_w>1) & (female_w==1)  & (event==e) ):event_labor[i]=np.mean(labor_w[(state_w>1) & (female_w==1)  & (event==e) ]) 
             i+=1 
              
@@ -1403,11 +1403,11 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         idp=np.cumsum(idp,axis=0)
         
 
-        labort=labor_w[(female_w==1)]
-        eventt=event[(female_w==1)]
-        aget=age[(female_w==1)]
-        idpt=idp[ (female_w==1)]
-        statet=state_w[(female_w==1)]
+        labort=labor_w[(female_w==1) ]
+        eventt=event[(female_w==1) ]
+        aget=age[(female_w==1) ]
+        idpt=idp[ (female_w==1) ]
+        statet=state_w[(female_w==1) ]
         
         data_ev1=np.array(np.stack((labort,eventt,aget,idpt,statet),axis=0).T,dtype=np.float64)    
         data_ev1_panda=pd.DataFrame(data=data_ev1,columns=['labor','event','age','id','state'])   

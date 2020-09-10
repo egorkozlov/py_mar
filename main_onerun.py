@@ -47,13 +47,15 @@ if __name__ == '__main__':
     #For graphs later
     graphs=True
     #Build  data moments and pickle them
-    #dat_moments(period=1,sampling_number=100,weighting=True,transform=2)
+    dat_moments(period=1,sampling_number=4,weighting=True,transform=2)
     
          
     #Initialize the file with parameters
     x0 = np.array([0.882993967791,0.873782221571,1.80145051864,0.367018181976,1.08466672563,0.173521741744,-0.0602557796554,1.28728416983])
     x0 = np.array([0.882993967791,0.873782221571,1.80145051864,0.367018181976,0.8466672563,0.173521741744,-0.0602557796554,1.28728416983])
-   
+    x0 = np.array([0.870537,0.454929,3.40098,0.598726,0.870482,0.123924,-0.0423595,1.04416])
+    x0 = np.array([0.870537,0.454929,3.40098,0.598726,1.170482,0.123924,-0.0823595,1.04416])
+       
     
     #Name and location of files
     if system() == 'Windows':   
@@ -64,7 +66,7 @@ if __name__ == '__main__':
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','models','agents','scaled residuals'],
                                       #load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       solve_transition=True,                                    
-                                      #save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
+                                      save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       store_path=path,
                                       verbose=True,calibration_report=False,draw=graphs,graphs=graphs,
                                       welf=False) #Switch to true for decomposition of welfare analysis

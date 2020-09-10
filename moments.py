@@ -742,7 +742,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     labor_totl=labor_totl[incoupler][keep3]  
     mean_fls=0.0   
     pick=((state_totl[:]==2)  | (state_totl[:]==3))   
-    if pick.any():mean_fls=np.array(setup.ls_levels)[labor_totl[pick]].mean()   
+    if pick.any():mean_fls=np.mean([labor_totl[pick]])*2000
        
     moments['mean_fls'] = mean_fls   
       
@@ -886,7 +886,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
                  
              
             #Arrays for preparation    
-            is_state = (np.any(state[:,:t+1]==ist,1))           
+            is_state =(np.any(female[:,:t+1]==0) & (np.any(state[:,:t+1]==ist,1))) | (np.any(female[:,:t+1]==1) & (np.any(state[:,:min(t+3,lenn)]==ist,1)))         
             is_state1 = (state[:,t]==ist)    
             
             if not (np.any(is_state) or np.any(is_state1)): continue    
@@ -900,8 +900,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     #Now, before saving the moments, take interval of 5 years    
     # if (mdl.setup.pars['Tret']>=mdl.setup.pars['Tret']):            
     reltt=relt[:,:mdl.setup.pars['Tret']-mdl.setup.pars['Tbef']+1]    
-    years=np.linspace(20,50,7)    
-    years_model=np.linspace(20,50,int(30/mdl.setup.pars['py']))    
+    years=np.linspace(21,39,7)  #years=np.linspace(20,50,7)    
+    years_model=np.linspace(21,39,int(19/mdl.setup.pars['py']))    
         
     #Find the right entries for creating moments    
     pos=list()    
@@ -912,7 +912,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     if len(pos)<7:    
         for i in range(7-len(pos)):    
             pos=pos+[pos[-1]]    
-    pos=np.array(pos)    
+    pos=np.array(pos)+1
         
         
         
@@ -1715,6 +1715,40 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
        
         plt.savefig('datasimwage.pgf', bbox_inches = 'tight',pad_inches = 0) 
          
+        
+        ########################
+        #Income and Data
+        ############################
+        fig = plt.figure()    
+        f3=fig.add_subplot(1.5,1,1)    
+         
+
+               
+        inc_men = pd.read_csv("income_men.csv")     
+        lend=len(inc_men['earn_age']) 
+        agea=np.array(range(lend))+20 
+        plt.scatter(agea[:-4], inc_men['earn_age'][:-4], marker='o',color='b',s=60, facecolors='none',  label='Data') 
+        plt.plot(agea[:-4], log_inc_rel[1,:lend-4],'r',markersize=6, label='Simulations')
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
+                  fancybox=True, shadow=True, ncol=2, fontsize=14)    
+        plt.xlabel('Age', fontsize=16)    
+        plt.ylabel('Average log wage', fontsize=16)
+        plt.ylim(ymax=0.5,ymin=-1.0) 
+        plt.savefig('em.pgf', bbox_inches = 'tight',pad_inches = 0)  
+        
+        
+        fig = plt.figure()    
+        f3=fig.add_subplot(1.5,1,1)    
+
+        inc_women = pd.read_csv("income_women.csv")   
+        plt.scatter(agea[:-4], inc_women['earn_age'][:-4], marker='o',color='b',s=60, facecolors='none', label='Data') 
+        plt.plot(agea[:-4], log_inc_rel[0,:lend-4],'r',markersize=6, label='Simulations')
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
+                  fancybox=True, shadow=True, ncol=2, fontsize=14)    
+        plt.xlabel('Age', fontsize=16)    
+        plt.ylabel('Average log wage', fontsize=16)
+        plt.ylim(ymax=0.5,ymin=-1.0) 
+        plt.savefig('ef.pgf', bbox_inches = 'tight',pad_inches = 0)  
         ##########################################    
         # More on Income 
         ##########################################  
@@ -1726,14 +1760,14 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         lend=len(wage_fs) 
         agea=np.array(range(lend))+20 
                
-        plt.plot(agea[5:60], wage_fm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],color='b',markersize=3, label='Women (main person)') 
-        plt.plot(agea[5:60], wage_mm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],color='k',markersize=3, label='Men (main person)') 
-        plt.plot(agea[5:60], wage_fpm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],linestyle='--',color='r',markersize=3, label='Women (met person)') 
-        plt.plot(agea[5:60], wage_mpm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],linestyle='--',color='m',markersize=3, label='Men (met person)') 
+        plt.plot(agea[5:40], wage_fm[5-mdl.setup.pars['Tbef']:40-mdl.setup.pars['Tbef']],color='b',markersize=3, label='Women (main person)') 
+        plt.plot(agea[5:40], wage_mm[5-mdl.setup.pars['Tbef']:40-mdl.setup.pars['Tbef']],color='k',markersize=3, label='Men (main person)') 
+        plt.plot(agea[5:40], wage_fpm[5-mdl.setup.pars['Tbef']:40-mdl.setup.pars['Tbef']],linestyle='--',color='r',markersize=3, label='Women (met person)') 
+        plt.plot(agea[5:40], wage_mpm[5-mdl.setup.pars['Tbef']:40-mdl.setup.pars['Tbef']],linestyle='--',color='m',markersize=3, label='Men (met person)') 
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
                   fancybox=True, shadow=True, ncol=2, fontsize=14)    
         plt.xlabel('Age', fontsize=16)    
-        plt.ylabel('Average Log Wage', fontsize=16)
+        plt.ylabel('Potential log wages---mean', fontsize=16)
         plt.savefig('sy_minc.pgf', bbox_inches = 'tight',pad_inches = 0)  
          
         ##########################################    
@@ -1745,14 +1779,14 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         lend=len(wage_fs) 
         agea=np.array(range(lend))+20 
         
-        plt.plot(agea[5:60], var_wage_fm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],color='b',markersize=3, label='Women (main person)') 
-        plt.plot(agea[5:60], var_wage_mm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],color='k',markersize=3, label='Men (main person)') 
-        plt.plot(agea[5:60], var_wage_fpm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],linestyle='--',color='r',markersize=3, label='Women (met person)') 
-        plt.plot(agea[5:60], var_wage_mpm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],linestyle='--',color='m',markersize=3, label='Men (met person)') 
+        plt.plot(agea[5:40], var_wage_fm[5-mdl.setup.pars['Tbef']:40-mdl.setup.pars['Tbef']],color='b',markersize=3, label='Women (main person)') 
+        plt.plot(agea[5:40], var_wage_mm[5-mdl.setup.pars['Tbef']:40-mdl.setup.pars['Tbef']],color='k',markersize=3, label='Men (main person)') 
+        plt.plot(agea[5:40], var_wage_fpm[5-mdl.setup.pars['Tbef']:40-mdl.setup.pars['Tbef']],linestyle='--',color='r',markersize=3, label='Women (met person)') 
+        plt.plot(agea[5:40], var_wage_mpm[5-mdl.setup.pars['Tbef']:40-mdl.setup.pars['Tbef']],linestyle='--',color='m',markersize=3, label='Men (met person)') 
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
                   fancybox=True, shadow=True, ncol=2, fontsize=14)    
         plt.xlabel('Age', fontsize=16)    
-        plt.ylabel('Log Wage Variance', fontsize=16)  
+        plt.ylabel('Potential log wage---variance', fontsize=16)  
         plt.savefig('sy_vinc.pgf', bbox_inches = 'tight',pad_inches = 0)
          
         ##########################################    
@@ -1764,14 +1798,14 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         lend=len(wage_fs) 
         agea=np.array(range(lend))+20 
         
-        plt.plot(agea[5:60], assets_fm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],color='b',markersize=3, label='Women (main person)') 
-        plt.plot(agea[5:60], assets_mm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],color='k',markersize=3, label='Men (main person)') 
-        plt.plot(agea[5:60], assets_fpm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],linestyle='--',color='r',markersize=3, label='Women (met person)') 
-        plt.plot(agea[5:60], assets_mpm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],linestyle='--',color='m',markersize=3, label='Men (met person)') 
+        plt.plot(agea[5:40], assets_fm[5-mdl.setup.pars['Tbef']:40-mdl.setup.pars['Tbef']],color='b',markersize=3, label='Women (main person)') 
+        plt.plot(agea[5:40], assets_mm[5-mdl.setup.pars['Tbef']:40-mdl.setup.pars['Tbef']],color='k',markersize=3, label='Men (main person)') 
+        plt.plot(agea[5:40], assets_fpm[5-mdl.setup.pars['Tbef']:40-mdl.setup.pars['Tbef']],linestyle='--',color='r',markersize=3, label='Women (met person)') 
+        plt.plot(agea[5:40], assets_mpm[5-mdl.setup.pars['Tbef']:40-mdl.setup.pars['Tbef']],linestyle='--',color='m',markersize=3, label='Men (met person)') 
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
                   fancybox=True, shadow=True, ncol=2, fontsize=14)    
         plt.xlabel('Age', fontsize=16)    
-        plt.ylabel('Average Assets', fontsize=16)  
+        plt.ylabel('Assets at meeting---mean', fontsize=16)  
         plt.savefig('sy_mass.pgf', bbox_inches = 'tight',pad_inches = 0)
          
         ##########################################    
@@ -1783,14 +1817,14 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         lend=len(wage_fs) 
         agea=np.array(range(lend))+20 
         
-        plt.plot(agea[5:60], var_assets_fm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],color='b',markersize=3, label='Women (main person)') 
-        plt.plot(agea[5:60], var_assets_mm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],color='k',markersize=3, label='Men (main person)') 
-        plt.plot(agea[5:60], var_assets_fpm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],linestyle='--',color='r',markersize=3, label='Women (met person)') 
-        plt.plot(agea[5:60], var_assets_mpm[5-mdl.setup.pars['Tbef']:60-mdl.setup.pars['Tbef']],linestyle='--',color='m',markersize=3, label='Men (met person)') 
+        plt.plot(agea[5:40], var_assets_fm[5-mdl.setup.pars['Tbef']:40-mdl.setup.pars['Tbef']],color='b',markersize=3, label='Women (main person)') 
+        plt.plot(agea[5:40], var_assets_mm[5-mdl.setup.pars['Tbef']:40-mdl.setup.pars['Tbef']],color='k',markersize=3, label='Men (main person)') 
+        plt.plot(agea[5:40], var_assets_fpm[5-mdl.setup.pars['Tbef']:40-mdl.setup.pars['Tbef']],linestyle='--',color='r',markersize=3, label='Women (met person)') 
+        plt.plot(agea[5:40], var_assets_mpm[5-mdl.setup.pars['Tbef']:40-mdl.setup.pars['Tbef']],linestyle='--',color='m',markersize=3, label='Men (met person)') 
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
                   fancybox=True, shadow=True, ncol=2, fontsize=14)    
         plt.xlabel('Age')    
-        plt.ylabel('Asset Variance first meeting')  
+        plt.ylabel('Asset at meeting---variance')  
         plt.savefig('sy_vass.pgf', bbox_inches = 'tight',pad_inches = 0)
          
         ##########################################    
@@ -1856,13 +1890,13 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         fig = plt.figure()    
         f4=fig.add_subplot(2,1,1)    
         lg=min(len(mar_d),len(relt[1,:]))    
-        xa=(5*np.array(range(lg))+20)   
-        plt.plot(xa, mar_d[0:lg],'g',linewidth=1.5, label='Married - D')    
-        plt.fill_between(xa, mar_i[0,0:lg], mar_i[1,0:lg],alpha=0.2,facecolor='g')    
-        plt.plot(xa, reltt[2,0:lg]/N,'g',linestyle='--',linewidth=1.5, label='Married - S')    
-        plt.plot(xa, coh_d[0:lg],'r',linewidth=1.5, label='Cohabiting - D')    
-        plt.fill_between(xa, coh_i[0,0:lg], coh_i[1,0:lg],alpha=0.2,facecolor='r')    
-        plt.plot(xa, reltt[3,0:lg]/N,'r',linestyle='--',linewidth=1.5, label='Cohabiting - S')    
+        xa=(3*np.array(range(lg))+21)   
+        plt.plot(xa[0:lg], mar_d[0:lg],'g',linewidth=1.5, label='Married - D')    
+        plt.fill_between(xa[0:lg], mar_i[0,0:lg], mar_i[1,0:lg],alpha=0.2,facecolor='g')    
+        plt.plot(xa[0:lg], reltt[2,0:lg]/N,'g',linestyle='--',linewidth=1.5, label='Married - S')    
+        plt.plot(xa[0:lg], coh_d[0:lg],'r',linewidth=1.5, label='Cohabiting - D')    
+        plt.fill_between(xa[0:lg], coh_i[0,0:lg], coh_i[1,0:lg],alpha=0.2,facecolor='r')    
+        plt.plot(xa[0:lg], reltt[3,0:lg]/N,'r',linestyle='--',linewidth=1.5, label='Cohabiting - S')    
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
                   fancybox=True, shadow=True, ncol=2, fontsize='x-small')    
         plt.ylim(ymax=1.0)    
@@ -2148,7 +2182,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
              
             
         # create plot    
-        x=np.array([0.25,0.75])   
+        x=np.array([0.500,0.1500])   
         y=np.array([mean_fls_d,mean_fls])    
         yerr=np.array([(mean_fls_i[1]-mean_fls_i[0])/2.0,0.0])    
         plt.errorbar(x, y, yerr=yerr, fmt='o', elinewidth=0.03)    

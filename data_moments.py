@@ -207,14 +207,14 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
      #   hi=hi[(np.isfinite(hi['BEGDAT0'+str(i+1)])) & (hi['BEGDAT0'+str(i+1)]<3999)]   
            
     #Get date in time at which the guy is 20,25...,50 (9)   
-    for j in range(7):   
-        hi['time_'+str(20+(j)*5)]=hi['DOBY']*12+hi['DOBM']+(20+(j)*5)*12   
+    for j in range(30):   
+        hi['time_'+str(20+(j))]=hi['DOBY']*12+hi['DOBM']+(20+(j))*12   
            
     #Get the status   
-    for j in range(7):   
+    for j in range(30):   
            
         #Create the variable of Status   
-        hi['status_'+str(20+(j)*5)]='single'   
+        hi['status_'+str(20+(j))]='single'   
            
    
            
@@ -222,50 +222,50 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
             if(np.any(hi['HOWBEG0'+str(i+1)])!=None):  
                
                 #Get if in couple   
-                hi.loc[(hi['time_'+str(20+(j)*5)]>=hi['BEGDAT0'+str(i+1)]) & (hi['BEGDAT0'+str(i+1)]<3999) &   
-                       (((hi['time_'+str(20+(j)*5)]<=hi['ENDDAT0'+str(i+1)]) & (hi['ENDDAT0'+str(i+1)]>0))  |   
+                hi.loc[(hi['time_'+str(20+(j))]>=hi['BEGDAT0'+str(i+1)]) & (hi['BEGDAT0'+str(i+1)]<3999) &   
+                       (((hi['time_'+str(20+(j))]<=hi['ENDDAT0'+str(i+1)]) & (hi['ENDDAT0'+str(i+1)]>0))  |   
                         (hi['ENDDAT0'+str(i+1)]==0) | (hi['WIDDAT0'+str(i+1)]>0) )  
-                       ,'status_'+str(20+(j)*5)]='mar'   
+                       ,'status_'+str(20+(j))]='mar'   
                           
             if(np.any(hi['HOWBEG0'+str(i+1)])=='coh'):             
                 #Substitute if actually cohabitation    
-                hi.loc[(hi['time_'+str(20+(j)*5)]>=hi['BEGDAT0'+str(i+1)]) & (hi['BEGDAT0'+str(i+1)]<3999) &   
-                       (((hi['time_'+str(20+(j)*5)]<=hi['ENDDAT0'+str(i+1)]) & (hi['ENDDAT0'+str(i+1)]>0))  |    
+                hi.loc[(hi['time_'+str(20+(j))]>=hi['BEGDAT0'+str(i+1)]) & (hi['BEGDAT0'+str(i+1)]<3999) &   
+                       (((hi['time_'+str(20+(j))]<=hi['ENDDAT0'+str(i+1)]) & (hi['ENDDAT0'+str(i+1)]>0))  |    
                         (hi['ENDDAT0'+str(i+1)]==0) | (hi['WIDDAT0'+str(i+1)]>0) ) &    
-                        (hi['status_'+str(20+(j)*5)]=='mar') &    
+                        (hi['status_'+str(20+(j))]=='mar') &    
                        (hi['HOWBEG0'+str(i+1)]=='coh')    &    
-                       ((hi['MARDAT0'+str(i+1)]==0) | (hi['MARDAT0'+str(i+1)]>hi['time_'+str(20+(j)*5)]))        
-                       ,'status_'+str(20+(j)*5)]='coh'    
+                       ((hi['MARDAT0'+str(i+1)]==0) | (hi['MARDAT0'+str(i+1)]>hi['time_'+str(20+(j))]))        
+                       ,'status_'+str(20+(j))]='coh'    
                       
     #Create the variables ever cohabited and ever married   
-    for j in range(7):   
+    for j in range(30):   
            
         #Create the variable of ever married or cohabit   
-        hi['everm_'+str(20+(j)*5)]=0.0   
-        hi['everc_'+str(20+(j)*5)]=0.0   
+        hi['everm_'+str(20+(j))]=0.0   
+        hi['everc_'+str(20+(j))]=0.0   
            
         for i in range(9):   
               
             #if(np.any(hi['HOWBEG0'+str(i+1)])=='coh'):  
                 #Get if ever cohabited    
-                #hi.loc[((hi['everc_'+str(20+(max(j-1,0))*5)]>=0.1) | ((hi['HOWBEG0'+str(i+1)]=='coh') & (hi['time_'+str(20+(j)*5)]>=hi['BEGDAT0'+str(i+1)]))),'everc_'+str(20+(j)*5)]=1.0   
-            hi.loc[(hi['everc_'+str(20+(max(j-1,0))*5)]>=0.1),'everc_'+str(20+(j)*5)]=1.0  
+                #hi.loc[((hi['everc_'+str(20+(max(j-1,0)))]>=0.1) | ((hi['HOWBEG0'+str(i+1)]=='coh') & (hi['time_'+str(20+(j))]>=hi['BEGDAT0'+str(i+1)]))),'everc_'+str(20+(j))]=1.0   
+            hi.loc[(hi['everc_'+str(20+(max(j-1,0)))]>=0.1),'everc_'+str(20+(j))]=1.0  
             try: 
-                hi.loc[((hi['HOWBEG0'+str(i+1)]=='coh') & (hi['time_'+str(20+(j)*5)]>=hi['BEGDAT0'+str(i+1)])),'everc_'+str(20+(j)*5)]=1.0   
+                hi.loc[((hi['HOWBEG0'+str(i+1)]=='coh') & (hi['time_'+str(20+(j))]>=hi['BEGDAT0'+str(i+1)])),'everc_'+str(20+(j))]=1.0   
             except: 
                 pass 
                   
                 #Get if ever married   
-            hi.loc[((hi['everm_'+str(20+(max(j-1,0))*5)]>=0.1) |  (hi['time_'+str(20+(j)*5)]>=hi['MARDAT0'+str(i+1)])),'everm_'+str(20+(j)*5)]=1.0   
+            hi.loc[((hi['everm_'+str(20+(max(j-1,0)))]>=0.1) |  (hi['time_'+str(20+(j))]>=hi['MARDAT0'+str(i+1)])),'everm_'+str(20+(j))]=1.0   
                    
-    ######################################   
-    #Build employment by status in 1986   
-    ######################################   
-    empl=hi[(hi['M2DP01']=='FEMALE') & (hi['weeks']<99)].copy()   
-    empl['stat']='single'   
-    empl['dist']=99999   
-    for j in range(7):   
-        empl.loc[np.abs(empl['time_'+str(20+(j)*5)]-86*12)<empl['dist'],'stat']=hi['status_'+str(20+(j)*5)]   
+    # ######################################   
+    # #Build employment by status in 1986   
+    # ######################################   
+    # empl=hi[(hi['M2DP01']=='FEMALE') & (hi['weeks']<99)].copy()   
+    # empl['stat']='single'   
+    # empl['dist']=99999   
+    # for j in range(7):   
+    #     empl.loc[np.abs(empl['time_'+str(20+(j)*5)]-86*12)<empl['dist'],'stat']=hi['status_'+str(20+(j)*5)]   
                
     ##########################   
     #BUILD HAZARD RATES   
@@ -323,16 +323,16 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
     ########################################   
     #Construct share of each relationship   
     #######################################   
-    mar=np.zeros(6)   
-    coh=np.zeros(6)   
-    emar=np.zeros(6)   
-    ecoh=np.zeros(6)   
+    mar=np.zeros(7)   
+    coh=np.zeros(7)   
+    emar=np.zeros(7)   
+    ecoh=np.zeros(7)   
        
-    for j in range(6):   
-        mar[j]=np.average(hi['status_'+str(20+(j)*5)]=='mar', weights=np.array(hi['SAMWT']))   
-        coh[j]=np.average(hi['status_'+str(20+(j)*5)]=='coh', weights=np.array(hi['SAMWT']))   
-        emar[j]=np.average(hi['everm_'+str(20+(j)*5)], weights=np.array(hi['SAMWT']))   
-        ecoh[j]=np.average(hi['everc_'+str(20+(j)*5)], weights=np.array(hi['SAMWT']))   
+    for j in range(7):   
+        mar[j]=np.average(hi['status_'+str(21+(j)*3)]=='mar', weights=np.array(hi['SAMWT']))   
+        coh[j]=np.average(hi['status_'+str(21+(j)*3)]=='coh', weights=np.array(hi['SAMWT']))   
+        emar[j]=np.average(hi['everm_'+str(21+(j)*3)], weights=np.array(hi['SAMWT']))   
+        ecoh[j]=np.average(hi['everc_'+str(21+(j)*3)], weights=np.array(hi['SAMWT']))   
            
            
 
@@ -438,7 +438,7 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
     d_hrs.loc[(d_hrs['mls']>1) & (d_hrs['mls']<100),'mar']=0.0 
      
     #Get mean labor supply 
-    mean_fls=np.average(d_hrs.loc[(d_hrs['age']>=20) & (d_hrs['age']<=60),'wls'])/2000 
+    mean_fls=np.average(d_hrs.loc[(d_hrs['age']>=20) & (d_hrs['age']<=60),'wls'])
        
     #New dataset  
     d_hrs2=d_hrs[(d_hrs['mar']>=0) & (d_hrs['year']>=1977)] 
@@ -826,8 +826,8 @@ if __name__ == '__main__':
        
         for i in age:   
             try:   
-                marr_age_s[int(i-21)]=np.average(sample.loc[((abs(sample['age1'])-i)<=0.1),'married_1'],weights=sample.loc[((abs(sample['age1'])-i)<=0.1),'wpfinwgt'])   
-                coh_age_s[int(i-21)]=np.average(sample.loc[((abs(sample['age1'])-i)<=0.1),'cohab_1'],weights=sample.loc[((abs(sample['age1'])-i)<=0.1),'wpfinwgt'])*2.0   
+                marr_age_s[int(i-20)]=np.average(sample.loc[((abs(sample['age1'])-i)<=0.1),'married_1'],weights=sample.loc[((abs(sample['age1'])-i)<=0.1),'wpfinwgt'])   
+                coh_age_s[int(i-20)]=np.average(sample.loc[((abs(sample['age1'])-i)<=0.1),'cohab_1'],weights=sample.loc[((abs(sample['age1'])-i)<=0.1),'wpfinwgt'])*2.0   
             except:   
                 pass   
         return marr_age_s,coh_age_s   

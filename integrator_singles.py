@@ -15,7 +15,11 @@ from marriage import v_mar_igrid ,v_no_mar
 
 
 def ev_single(setup,V,sown,female,t,trim_lvl=0.001,decc=None):
-    # expected value of single person meeting a partner with a chance pmeet
+    
+    # # expected value of single person meeting a partner with a chance pmeet
+    # if (female==False) & (t<2):
+    #     pmeet = 0  #For consistency with the age gap between spouses men show up in mm 2 years later
+    # else:
     pmeet = setup.dtype( setup.pars['pmeet_t'][t] )
     
     skip_mar = (pmeet < 1e-5)

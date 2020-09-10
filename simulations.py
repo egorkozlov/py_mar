@@ -316,7 +316,7 @@ class Agents:
                     
                     # meet a partner
                     
-                    pmeet = self.Mlist[ipol].setup.pars['pmeet_t'][t] # TODO: check timing
+                    pmeet = self.Mlist[ipol].setup.pars['pmeet_t'][t]#0.0 if (self.female==False) & (t<2) else  self.Mlist[ipol].setup.pars['pmeet_t'][t]
                     
                     
                     matches = self.Mlist[ipol].decisions[t][ss]

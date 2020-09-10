@@ -23,10 +23,10 @@ class ModelSetup(object):
         period_year=1#this can be 1,2,3 or 6
         transform=2#this tells how many periods to pull together for duration moments
         T = int(62/period_year)
-        Tret = int(47/period_year) # first period when the agent is retired
-        Tbef=int(2/period_year)
-        Tren  = int(47/period_year)#int(42/period_year) # period starting which people do not renegotiate/divroce
-        Tmeet = int(47/period_year)#int(42/period_year) # period starting which you do not meet anyone
+        Tret = int(42/period_year) # first period when the agent is retired
+        Tbef=int(0/period_year)
+        Tren  = int(42/period_year)#int(42/period_year) # period starting which people do not renegotiate/divroce
+        Tmeet = int(42/period_year)#int(42/period_year) # period starting which you do not meet anyone
         p['py']=period_year
         p['ty']=transform
         p['T'] = T
@@ -34,16 +34,16 @@ class ModelSetup(object):
         p['Tren'] = Tren
         p['Tbef'] = Tbef
         p['sig_zf_0']  = 0.5449176#0.4096**(0.5)
-        p['sig_zf']    = .0272437**(0.5)#0.0399528**(0.5)
-        p['sig_zm_0']  = 0.54896510#.405769**(0.5)
+        p['sig_zf']    = .0277534**(0.5)#0.0399528**(0.5)
+        p['sig_zm_0']  = .4435924#.405769**(0.5)
         p['sig_zm']    = .025014**(0.5)#0.0417483**(0.5)
         p['n_zf_t']      = [4]*Tret + [4]*(T-Tret)
         p['n_zm_t']      = [3]*Tret + [3]*(T-Tret)
         p['n_zf_correct']=1
         p['sigma_psi_mult'] = 0.28
         p['sigma_psi']   = 0.11
-        p['n_psi_t']     = [13]*T
-        p['R_t'] = [1.02**period_year]*T
+        p['n_psi_t']     = [15]*T
+        p['R_t'] = [1.015**period_year]*T
         p['beta_t'] = [0.98**period_year]*T
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
@@ -51,7 +51,7 @@ class ModelSetup(object):
         p['sig_partner_a'] = 0.1#0.5
         p['sig_partner_z'] = 1.2#1.0#0.4 #This is crazy powerful for the diff in diff estimate
         p['sig_partner_mult'] = 1.0
-        p['dump_factor_z'] = 0.6#0.82
+        p['dump_factor_z'] = 0.65#0.82
         p['mean_partner_z_female'] = 0.05#+0.03
         p['mean_partner_z_male'] =  -0.05#-0.03
         p['mean_partner_a_female'] = 0.05#0.5
@@ -79,11 +79,11 @@ class ModelSetup(object):
         p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-0.5620125  +0.06767721*t -0.00192571*t**2+ 0.00001573*t**3) for t in range(T)]
         p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.5960803  +.05829568*t -.00169143*t**2+ .00001446*t**3) for t in range(T)]
    
-
-#        p['f_wage_trend'] = [(-0.5620125  +0.06767721*t -0.00192571*t**2+ 0.00001573*t**3) for t in range(T)]
-#        p['f_wage_trend_single'] =  [(-.5960803  +.05829568*t -.00169143*t**2+ .00001446*t**3) for t in range(T)]
-#        p['m_wage_trend'] = [(-0.5620125  +0.06767721*t -0.00192571*t**2+ 0.00001573*t**3) for t in range(T)]
-#        p['m_wage_trend_single'] = [(-.5960803  +.05829568*t -.00169143*t**2+ .00001446*t**3) for t in range(T)]
+              
+        p['f_wage_trend'] = [0.0*(t>=Tret+2)+(t<Tret+2)*(-.77138877  +.05915875*t -.00232914*t**2+ .00002484*t**3) for t in range(T)]
+        p['f_wage_trend_single'] =  [0.0*(t>=Tret+2)+(t<Tret+2)*(-.67980802  +.04603417*t -.00158584*t**2+ .00001594*t**3) for t in range(T)]
+        p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-.434235  +.06016318*t -.00183131*t**2+ .00001573*t**3) for t in range(T)]
+        p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.486139  +.05170349*t -.00160466*t**2+ .00001446*t**3) for t in range(T)]
            
   
         p['util_lam'] = 0.189#0.4
@@ -137,8 +137,8 @@ class ModelSetup(object):
         self.state_names = ['Female, single','Male, single','Couple, M', 'Couple, C']
         
         # female labor supply
-        self.ls_levels = np.array([0.0,0.8],dtype=self.dtype)
-        self.mlevel=0.8
+        self.ls_levels = np.array([0.0,0.811],dtype=self.dtype)
+        self.mlevel=0.811
         #self.ls_utilities = np.array([p['uls'],0.0],dtype=self.dtype)
         self.ls_pdown = np.array([p['pls'],0.0],dtype=self.dtype)
         self.nls = len(self.ls_levels)
@@ -266,33 +266,37 @@ class ModelSetup(object):
                 
               
             
-            for t in range(Tret,T):
-                exogrid['zf_t'][t] = np.array([np.log(p['wret'])])
-                exogrid['zm_t'][t] = np.array([np.log(p['wret'])])
-                exogrid['zf_t_mat'][t] = np.atleast_2d(1.0)
-                exogrid['zm_t_mat'][t] = np.atleast_2d(1.0)
+            # for t in range(Tret,T):
+            #     exogrid['zf_t'][t] = np.array([np.log(p['wret'])])
+            #     exogrid['zm_t'][t] = np.array([np.log(p['wret'])])
+            #     exogrid['zf_t_mat'][t] = np.atleast_2d(1.0)
+            #     exogrid['zm_t_mat'][t] = np.atleast_2d(1.0)
                 
                 
-            # fix transition from non-retired to retired    
-            exogrid['zf_t_mat'][Tret-1] = np.ones((p['n_zf_t'][Tret-1],1))
-            exogrid['zm_t_mat'][Tret-1] = np.ones((p['n_zm_t'][Tret-1],1))
+            # # fix transition from non-retired to retired    
+            # exogrid['zf_t_mat'][Tret-1] = np.ones((p['n_zf_t'][Tret-1],1))
+            # exogrid['zm_t_mat'][Tret-1] = np.ones((p['n_zm_t'][Tret-1],1))
             
-            #Tax system as in Wu and Kruger
-            for t in range(0,Tret):
-                exogrid['zf_t'][t] = exogrid['zf_t'][t]#*(1-0.1327)+np.log(1-0.1575)
-                exogrid['zm_t'][t] = exogrid['zm_t'][t]#*(1-0.1327)+np.log(1-0.1575)  
+            # #Tax system as in Wu and Kruger
+            # for t in range(0,Tret):
+            #     exogrid['zf_t'][t] = exogrid['zf_t'][t]#*(1-0.1327)+np.log(1-0.1575)
+            #     exogrid['zm_t'][t] = exogrid['zm_t'][t]#*(1-0.1327)+np.log(1-0.1575)  
             
             #Comment out the following if you dont want retirment based on income
-            for t in range(Tret,T):
-                #exogrid['zf_t'][t] = np.log(p['wret']*np.exp(p['f_wage_trend'][Tret-1]+exogrid['zf_t'][Tret-1]))#np.array([np.log(p['wret'])])
-                #exogrid['zm_t'][t] = np.log(p['wret']*np.exp(p['m_wage_trend'][Tret-1]+exogrid['zm_t'][Tret-1]))
-                exogrid['zf_t'][t] = np.log(pens(np.exp(p['f_wage_trend'][Tret-1]+exogrid['zf_t'][Tret-1])))#np.array([np.log(p['wret'])])
-                exogrid['zm_t'][t] = np.log(pens(np.exp(p['m_wage_trend'][Tret-1]+exogrid['zm_t'][Tret-1])))               
+            for t in range(Tret+2,T):
+                exogrid['zf_t'][t] = np.log(pens(np.exp(p['f_wage_trend'][Tret+1]+exogrid['zf_t'][Tret+1])))#np.array([np.log(p['wret'])])
+                             
                 exogrid['zf_t_mat'][t] = np.diag(np.ones(len(exogrid['zf_t'][t])))#p.atleast_2d(1.0)
-                exogrid['zm_t_mat'][t] = np.diag(np.ones(len(exogrid['zm_t'][t])))
                 
+                
+            for t in range(Tret,T):    
+                exogrid['zm_t'][t] = np.log(pens(np.exp(p['m_wage_trend'][Tret-1]+exogrid['zm_t'][Tret-1])))  
+                exogrid['zm_t_mat'][t] = np.diag(np.ones(len(exogrid['zm_t'][t])))
+        
+                
+            
             # fix transition from non-retired to retired    
-            exogrid['zf_t_mat'][Tret-1] = np.diag(np.ones(len(exogrid['zf_t'][Tret-1])))
+            exogrid['zf_t_mat'][Tret+1] = np.diag(np.ones(len(exogrid['zf_t'][Tret+1])))
             exogrid['zm_t_mat'][Tret-1] = np.diag(np.ones(len(exogrid['zm_t'][Tret-1])))
 
 
@@ -353,7 +357,17 @@ class ModelSetup(object):
            
             
             #Adjust retirement as in Heatcote et al.
-            for t in range(p['Tret'],p['T']):
+            for t in range(p['Tret'],p['Tret']+2):
+                for j in range(len(zfzm[t])):
+                    pref=np.exp(zfzm[t][j][0])+np.exp(zfzm[t][j][1])
+                    zfzm[t][j][0]=-20.0
+                    zfzm[t][j][1]=np.log(pref)
+                    pref=np.exp(zfzm2[t][j][0])+np.exp(zfzm2[t][j][1])
+                    zfzm2[t][j][0]=-20.0
+                    zfzm2[t][j][1]=np.log(pref)
+                    
+                    
+            for t in range(p['Tret']+2,p['T']):
                 for j in range(len(zfzm[t])):
                     pref=max(np.exp(zfzm[t][j][0])+np.exp(zfzm[t][j][1]),1.5*max(np.exp(zfzm[t][j][0]),np.exp(zfzm[t][j][1])))
                     zfzm[t][j][0]=-20.0
@@ -399,7 +413,7 @@ class ModelSetup(object):
             
        #Grid Couple
         self.na = 40#40
-        self.scala=0.8
+        self.scala=1.0
         self.amin = 0
         self.amax = 60*self.scala
         self.amax1 = 130*self.scala
@@ -438,7 +452,7 @@ class ModelSetup(object):
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta,dtype=self.dtype)
         
         #Grid for the share in assets
-        self.ashare = np.linspace(0.25,0.75,3,dtype=self.dtype)
+        self.ashare = np.linspace(0.25,0.75,7,dtype=self.dtype)
         
         
         

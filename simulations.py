@@ -510,10 +510,11 @@ class Agents:
 
                       
                         try:
-                            share_f=self.setup.ashare[decision['assdev']][isc,iall,itht][i_div]
-                            share_m=1-self.setup.ashare[decision['assdev']][isc,iall,itht][i_div]
+                            share_f=  self.setup.ashare[decision['assdev']][isc,iall,self.Mlist[ipol].setup.igridcoarse[itht]][i_div]
+                            share_m=1-self.setup.ashare[decision['assdev']][isc,iall,self.Mlist[ipol].setup.igridcoarse[itht]][i_div]
                         except:
                             #Uncomment bnelowe if ren_theta
+                            #print(sname)
                             share_f1 ,share_m1= costs.shares_if_split_theta(self.setup,self.setup.thetagrid[self.setup.v_thetagrid_fine.i[itht]],costs)
                             share_f,share_m=share_f1[i_div],share_m1[i_div]
                             
@@ -532,8 +533,8 @@ class Agents:
 
                         # if bribing happens we overwrite this
                         self.iassets[ind[i_div],t+1] = VecOnGrid(self.Mlist[ipol].setup.agrid_s,s).roll(shocks=shks)
-                        if sname == "Couple, C":self.share_s[t]=np.mean(sf)/(np.mean(sf)+np.mean(sm))
-                        if sname == "Couple, M":self.share_m[t]=np.mean(sf)/(np.mean(sf)+np.mean(sm))
+                        if sname == "Couple, C":self.share_s[t]=np.mean(sf/(sf+sm))
+                        if sname == "Couple, M":self.share_m[t]=np.mean(sf/(sf+sm))
                         #if sname == "Couple, C":print(np.mean(share_f),np.mean(share_m),np.mean(self.setup.thetagrid[self.setup.v_thetagrid_fine.i[itht]][i_div]))
                         
                         if bil_bribing:

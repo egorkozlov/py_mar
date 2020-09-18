@@ -47,7 +47,7 @@ if __name__ == '__main__':
     #For graphs later
     graphs=True
     #Build  data moments and pickle them
-    dat_moments(period=1,sampling_number=4,weighting=True,transform=2)
+    #dat_moments(period=1,sampling_number=100,weighting=True,transform=2)
     
          
     #Initialize the file with parameters
@@ -57,6 +57,26 @@ if __name__ == '__main__':
     x0 = np.array([0.870537,0.454929,3.40098,0.598726,1.170482,0.123924,-0.0823595,1.04416])
        
     
+    x0 = np.array([0.754453125, 0.49631347656249997, 2.281884765625,0.33953613281250006,1.042724609375, 0.1762547800292969, -0.043862304687500006,  1.1399267578124999])
+    #x0 = np.array([ 0.84626953,  0.67436523,  2.03974609,  0.38600586,  1.25532227,  0.15834363, -0.07493164,  1.20098633])
+    x0 = np.array([0.87737305, 0.51726074, 1.83100586,0.3410498,1.27399902,-0.09919137,-0.1061377,1.27565918])
+    x0 = np.array([0.78242188,  0.61855469,  1.99375,     0.51035156,  1.11347656, -0.09506434, -0.04082031,  1.05640625])
+    
+    
+    #Almost ok with -0.05-global+local
+    x0 = np.array([0.753853,0.388988,2.20607,0.513084,1.01583,-0.0991461,-0.0432463,1.18378])
+    #x0 = np.array([1.0,0.388988,2.20607,0.513084,1.01583,0.0,-0.0432463,1.18378])
+    
+    
+    #-0.2-global only
+    #x0 = np.array([0.785987,0.45995,2.02769,0.365523,1.18527,-0.133188,-0.0867234,1.38449])
+    #x0 = np.array([0.779856,0.285281,1.47748,0.278688,1.20608,-0.167525,-0.0878848,1.30855])
+    #x0 = np.array([0.699238,0.280692,2.25914,0.30872,1.19259,-0.133752,-0.0596778,1.16098])
+    #x0 = np.array([0.65769,0.2245,1.91147,0.262793,0.999988,-0.1321,-0.0657886,1.40649])
+    #x0 = np.array([0.885987,0.45995,2.02769,0.365523,1.18527,-0.133188,-0.0867234,1.38449])
+
+
+    
     #Name and location of files
     if system() == 'Windows':   
         path='D:/blasutto/store_model'
@@ -65,8 +85,8 @@ if __name__ == '__main__':
     
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','models','agents','scaled residuals'],
                                       #load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
-                                      solve_transition=True,                                    
-                                      save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
+                                      solve_transition=False,                                    
+                                      #save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       store_path=path,
                                       verbose=True,calibration_report=False,draw=graphs,graphs=graphs,
                                       welf=False) #Switch to true for decomposition of welfare analysis

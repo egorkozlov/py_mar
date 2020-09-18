@@ -1165,15 +1165,15 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
             if np.any(macmp):mshare_ass_sepm[i]=np.mean(1-assets_w[macmp,i]/(mdl.setup.div_costs.assets_kept*assetss_w[macmp,i])) 
             #print(np.mean(assets_w[marm,i])) 
             #Assets Marriage 
-            if np.any(marf):assets_fm[i]=np.mean(assetss_w[marf,i]) 
-            if np.any(marm):assets_mm[i]=np.mean(assetss_w[marm,i]) 
-            if np.any(marm):assets_fpm[i]=np.mean(assets_w[marm,i]-assetss_w[marm,i]) 
-            if np.any(marf):assets_mpm[i]=np.mean(assets_w[marf,i]-assetss_w[marf,i]) 
+            if np.any(marf):assets_fm[i]=np.mean(assetss_w[marf,max(i,0)]) 
+            if np.any(marm):assets_mm[i]=np.mean(assetss_w[marm,max(i,0)]) 
+            if np.any(marm):assets_fpm[i]=np.mean(assets_w[marm,i]-assetss_w[marm,max(i,0)]) 
+            if np.any(marf):assets_mpm[i]=np.mean(assets_w[marf,i]-assetss_w[marf,max(i,0)]) 
              
-            if np.any(marf):var_assets_fm[i]=np.var(assetss_w[marf,i]) 
-            if np.any(marm):var_assets_mm[i]=np.var(assetss_w[marm,i]) 
-            if np.any(marm):var_assets_fpm[i]=np.var(assets_w[marm,i]-assetss_w[marm,i]) 
-            if np.any(marf):var_assets_mpm[i]=np.var(assets_w[marf,i]-assetss_w[marf,i]) 
+            if np.any(marf):var_assets_fm[i]=np.var(assetss_w[marf,max(i,0)]) 
+            if np.any(marm):var_assets_mm[i]=np.var(assetss_w[marm,max(i,0)]) 
+            if np.any(marm):var_assets_fpm[i]=np.var(assets_w[marm,i]-assetss_w[marm,max(i,0)]) 
+            if np.any(marf):var_assets_mpm[i]=np.var(assets_w[marf,i]-assetss_w[marf,max(i,0)]) 
              
             #Assets Cohabitaiton 
             if np.any(cohf):assets_fc[i]=np.mean(assetss_w[cohf,i]) 
@@ -1234,8 +1234,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
              
         #Log Income over time 
         for t in range(lenn): 
-            ipart=(labor_w[:,t]>0.0) & (ifemale2) #& (state_w[:,t]>1) 
-            ipartm=(state_w[:,t]==1) & (imale2) 
+            ipart=(labor_w[:,t]>0.0) & (ifemale2) & (state_w[:,t]<2) 
+            ipartm=(state_w[:,t]==1) & (imale2)  & (state_w[:,t]<2)
             log_inc_rel[0,t]=np.mean(np.log(wage_f2[ipart,t])) 
             log_inc_rel[1,t]=np.mean(np.log(wage_m2[imale2,t])) 
                  
@@ -1383,6 +1383,12 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         data_ev_panda.loc[data_ev_panda['vmar']==3,'vmar']=0 
         data_ev_panda.loc[data_ev_panda['vmar']==2,'vmar']=1 
         data_ev_panda.dropna(subset=['event'])  
+        
+        #Mean at event=-1
+        theta_mar=np.mean(data_ev_panda['theta'][(data_ev_panda['vmar']==1) & (data_ev_panda['event']==-1)])
+        theta_coh=np.mean(data_ev_panda['theta'][(data_ev_panda['vmar']==0) & (data_ev_panda['event']==-1)])
+        psi_mar=np.mean(data_ev_panda['vpsi'][(data_ev_panda['vmar']==1) & (data_ev_panda['event']==-1)])
+        psi_coh=np.mean(data_ev_panda['vpsi'][(data_ev_panda['vmar']==0) & (data_ev_panda['event']==-1)])
          
         #Regressions  
         try:    
@@ -1466,15 +1472,21 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         pevent_lt[4]=0
         pevent_lm[4]=0
         pevent_lc[4]=0
-                 
+        
+        #Add mean value at event==-1
+        pevent_theta_mar=pevent_theta_mar+theta_mar
+        pevent_theta_coh=pevent_theta_coh+theta_coh
+        pevent_psi_mar=pevent_psi_mar+theta_mar
+        pevent_psi_coh=pevent_psi_coh+psi_coh
+        
         #Check correlations 
         assets_ww=assets_w[:,:60]
         ifemale1=(female_w==1) 
         imale1=(female_w==0) 
-        nsinglefc1=(ifemale1[:,:60]) & (state_w[:,:60]==3) & (labor_w[:,:60]>0.1) 
-        nsinglefm1=(ifemale1[:,:60]) & (state_w[:,:60]==2) & (labor_w[:,:60]>0.1) 
-        nsinglefc2=(imale1[:,:60]) & (state_w[:,:60]==3) & (labor_w[:,:60]>0.1) 
-        nsinglefm2=(imale1[:,:60]) & (state_w[:,:60]==2) & (labor_w[:,:60]>0.1) 
+        nsinglefc1=(ifemale1[:,:60]) & (state_w[:,:60]==3) #& (labor_w[:,:60]>0.1) 
+        nsinglefm1=(ifemale1[:,:60]) & (state_w[:,:60]==2) #& (labor_w[:,:60]>0.1) 
+        nsinglefc2=(imale1[:,:60]) & (state_w[:,:60]==3) #& (labor_w[:,:60]>0.1) 
+        nsinglefm2=(imale1[:,:60]) & (state_w[:,:60]==2) #& (labor_w[:,:60]>0.1) 
         wage_ft=wage_f[:,:60] 
         wage_mpt=wage_mp[:,:60] 
         wage_mt=wage_m[:,:60] 
@@ -1511,11 +1523,10 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         corr1=np.corrcoef(np.log(wage_ft[nsinglefm1]*setup.ls_levels[-1]),np.log(wage_mpt[nsinglefm1])) 
         corrm=np.corrcoef(np.log(wage_mt[nsinglefc2]),np.log(wage_fpt[nsinglefc2]*setup.ls_levels[-1])) 
         corrm1=np.corrcoef(np.log(wage_mt[nsinglefm2]),np.log(wage_fpt[nsinglefm2]*setup.ls_levels[-1])) 
-        share_fcm=np.mean(wage_ft[nsinglefc1]*setup.ls_levels[-1]/(wage_mpt[nsinglefc1]+wage_ft[nsinglefc1]*setup.ls_levels[-1])) 
-        share_fmm=np.mean(wage_ft_mod[nsinglefm1_mod1]*labor_w_mod[nsinglefm1_mod1]*setup.ls_levels[-1]/
-                         (wage_mpt_mod[nsinglefm1_mod1]*0.8+wage_ft_mod[nsinglefm1_mod1]*labor_w_mod[nsinglefm1_mod1]*setup.ls_levels[-1])) 
-        share_mcm=np.mean(wage_fpt[nsinglefc2]*setup.ls_levels[-1]/(wage_mt[nsinglefc2]+wage_fpt[nsinglefc2]*setup.ls_levels[-1])) 
-        share_mmm=np.mean(wage_fpt[nsinglefm2]*setup.ls_levels[-1]/(wage_mt[nsinglefm2]+wage_fpt[nsinglefm2]*setup.ls_levels[-1])) 
+        share_fcm=np.mean(wage_ft[nsinglefc1]*setup.ls_levels[-1]/(wage_mpt[nsinglefc1]*setup.ls_levels[-1]+wage_ft[nsinglefc1]*setup.ls_levels[-1])) 
+        share_fmm=np.mean(wage_ft[nsinglefc1]*setup.ls_levels[-1]/(wage_mpt[nsinglefc1]*setup.ls_levels[-1]+wage_ft[nsinglefc1]*setup.ls_levels[-1])) 
+        share_mcm=np.mean(wage_fpt[nsinglefc2]*setup.ls_levels[-1]/(wage_mt[nsinglefc2]*setup.ls_levels[-1]+wage_fpt[nsinglefc2]*setup.ls_levels[-1])) 
+        share_mmm=np.mean(wage_fpt[nsinglefm2]*setup.ls_levels[-1]/(wage_mt[nsinglefm2]*setup.ls_levels[-1]+wage_fpt[nsinglefm2]*setup.ls_levels[-1])) 
         
         #Correlation hh earnings and assets
         medassetsc1=np.median(assets_w_mod[nsinglefc1_mod1])
@@ -1541,7 +1552,10 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         print('MM share wealthy if incom>median for coh is {}, for marriage only is {}'.format(sh_m_c,sh_m_m) )  
         print('FM median networth age 50-60 for cohabitaiton is {}, for marriage only is {}'.format(net_f_c,net_f_m) )   
         print('MM median networth age 50-60 for cohabitaiton is {}, for marriage only is {}'.format(net_m_c,net_m_m) )  
-             
+        print('Share of people ever cohabited by 39 is {}'.format(reltt[-1,-1]/N) )  
+        print('Share of people ever married by 39 is {}'.format(reltt[-2,-1]/N) )    
+        print('Years spent cohabiting 20-35 is  {}'.format(np.mean(state[:,:35]==3)*35))    
+        print('Years spent married 20-35 is  {}'.format(np.mean(state[:,:35]==2)*35))         
         
         #Get useful package for denisty plots 
         import seaborn as sns 
@@ -1612,7 +1626,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
                   fancybox=True, shadow=True, ncol=2, fontsize=14)    
         plt.ylim(ymin=0)    
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')    
-        plt.xlabel('Duration - Years', fontsize=16)    
+        plt.xlabel('Duration - years', fontsize=16)    
         plt.ylabel('Hazard', fontsize=16)    
         plt.xticks(np.arange(6), ('1-2', '3-4', '5-6', '7-8', '9-10','11-12'))
         plt.savefig('hazd.pgf', bbox_inches = 'tight',pad_inches = 0)  
@@ -1630,7 +1644,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
                   fancybox=True, shadow=True, ncol=2, fontsize=14)    
         plt.ylim(ymin=0)    
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')    
-        plt.xlabel('Duration - Years', fontsize=16)    
+        plt.xlabel('Duration - years', fontsize=16)    
         plt.ylabel('Hazard', fontsize=16)    
         plt.xticks(np.arange(3), ('1-2', '3-4', '5-6'))
         plt.savefig('hazs.pgf', bbox_inches = 'tight',pad_inches = 0)  
@@ -1650,7 +1664,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
                   fancybox=True, shadow=True, ncol=2, fontsize=14)    
         plt.ylim(ymin=0)    
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')    
-        plt.xlabel('Duration - Years', fontsize=16)    
+        plt.xlabel('Duration - years', fontsize=16)    
         plt.ylabel('Hazard', fontsize=16)    
         plt.xticks(np.arange(3), ('1-2', '3-4', '5-6'))
         plt.savefig('hazm.pgf', bbox_inches = 'tight',pad_inches = 0)  
@@ -1704,10 +1718,10 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         lend=len(inc_men['earn_age']) 
         agea=np.array(range(lend))+20 
         
-        plt.plot(agea, inc_men['earn_age'],color='b',markersize=6, label='Men Data') 
-        plt.plot(agea, inc_women['earn_age'],color='k',markersize=6, label='Women Data') 
-        plt.plot(agea, log_inc_rel[0,mdl.setup.pars['Tbef']:lend+mdl.setup.pars['Tbef']],linestyle='--',color='m',markersize=6, label='Women Simulation') 
-        plt.plot(agea, log_inc_rel[1,mdl.setup.pars['Tbef']:lend+mdl.setup.pars['Tbef']],linestyle='--',color='r',markersize=6, label='Men Simulation') 
+        plt.plot(agea, inc_men['earn_age'],color='b',markersize=6, label='Men data') 
+        plt.plot(agea, inc_women['earn_age'],color='k',markersize=6, label='Women data') 
+        plt.plot(agea, log_inc_rel[0,mdl.setup.pars['Tbef']:lend+mdl.setup.pars['Tbef']],linestyle='--',color='m',markersize=6, label='Women simulation') 
+        plt.plot(agea, log_inc_rel[1,mdl.setup.pars['Tbef']:lend+mdl.setup.pars['Tbef']],linestyle='--',color='r',markersize=6, label='Men simulation') 
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.30),    
                   fancybox=True, shadow=True, ncol=2, fontsize='x-small')    
         plt.xlabel('Age')    
@@ -1863,7 +1877,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
         plt.xlabel('Age')    
-        plt.ylabel('Female Share assets at breack up')  
+        plt.ylabel('Women Share of assets at breack up')  
          
          
                      
@@ -1982,7 +1996,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.plot(basec[:-1], cumulativec/max(cumulativec), c='red',label = 'Bilateral') 
         plt.plot(basem[:-1], cumulativem/max(cumulativem), c='blue',label = 'Unilateral') 
         plt.legend(loc='upper center', ncol=2, fontsize='x-small')    
-        plt.xlabel('Love Shock $\psi$')    
+        plt.xlabel('Love shock $\psi$')    
         plt.ylabel('Probability')  
         plt.savefig('psipol.pgf', bbox_inches = 'tight',pad_inches = 0)  
          
@@ -1995,11 +2009,11 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
          
         sns.kdeplot(theta_w[state_w==3], shade=True,shade_lowest=False,linewidth=0.01, color="r", bw=.05,label = 'Cohabitaition') 
         sns.kdeplot(theta_w[state_w==2], shade=True,shade_lowest=False,linewidth=0.01, color="b", bw=.05,label = 'Marriage') 
-        sns.kdeplot(theta_w[changec], color="r", bw=.05,label = 'Cohabitaition at Meeting') 
-        sns.kdeplot(theta_w[changem], color="b", bw=.05,label = 'Marriage at Meeting')  
+        sns.kdeplot(theta_w[changec], color="r", bw=.05,label = 'Cohabitaition at meeting') 
+        sns.kdeplot(theta_w[changem], color="b", bw=.05,label = 'Marriage at meeting')  
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),    
                   fancybox=True, shadow=True, ncol=2, fontsize='x-small')    
-        plt.xlabel('Female Pareto Weight')    
+        plt.xlabel('Pareto weight of Women')    
         plt.ylabel('Denisty')  
         plt.savefig('thtdist.pgf', bbox_inches = 'tight',pad_inches = 0) 
          
@@ -2015,7 +2029,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
         plt.xlabel('Event time (Model Years)')    
-        plt.ylabel('Love Shock $\psi$')  
+        plt.ylabel('Love shock $\psi$')  
         plt.savefig('psiuni.pgf', bbox_inches = 'tight',pad_inches = 0)  
          
         fig = plt.figure()    
@@ -2025,8 +2039,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.plot(eventgrid2, pevent_psi_mar,color='b',linestyle='--', marker='x', label='Marriage') 
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize=16)    
-        plt.xlabel('Event time (Model Years)', fontsize=16)    
-        plt.ylabel('$\psi$---Variation from Baseline', fontsize=16) 
+        plt.xlabel('Event time (model years)', fontsize=16)    
+        plt.ylabel('$\psi$---variation from baseline', fontsize=16) 
         plt.savefig('e_psi.pgf', bbox_inches = 'tight',pad_inches = 0)  
          
         ##########################################    
@@ -2039,7 +2053,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.plot(eventgrid, event_thetam,color='b',linestyle='--', marker='x', label='Marriage') 
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
-        plt.xlabel('Time Event Unilateral Divorce')    
+        plt.xlabel('Time event unilateral divorce')    
         plt.ylabel(r'$\theta$ ')  
         plt.savefig('weight.pgf', bbox_inches = 'tight',pad_inches = 0)  
          
@@ -2050,8 +2064,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.plot(eventgrid2, pevent_theta_mar,color='b',linestyle='--', marker='x', label='Marriage') 
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize=16)    
-        plt.xlabel('Event time (Model Years)', fontsize=16)    
-        plt.ylabel(r'$\theta$---Variation from Baseline', fontsize=16)  
+        plt.xlabel('Event time (model years)', fontsize=16)    
+        plt.ylabel(r'$\theta$---variation from baseline', fontsize=16)  
         plt.savefig('e_theta.pgf', bbox_inches = 'tight',pad_inches = 0)  
         
         ##########################################    
@@ -2062,11 +2076,11 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
          
         plt.plot(eventgrid, event_laborc,color='r',linestyle='-',  marker='+',label='Cohabitation') 
         plt.plot(eventgrid, event_laborm,color='b',linestyle='--', marker='x', label='Marriage') 
-        plt.plot(eventgrid, event_labor,color='k',linestyle=':', marker='1', label='Marriage+Cohabitation') 
+        plt.plot(eventgrid, event_labor,color='k',linestyle=':', marker='1', label='Marriage+cohabitation') 
 
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')    
-        plt.xlabel('Event Time (Model Years)')    
+        plt.xlabel('Event time (model years)')    
         plt.ylabel('FLP')  
         plt.savefig('fls.pgf', bbox_inches = 'tight',pad_inches = 0) 
         
@@ -2075,11 +2089,11 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
          
         plt.plot(eventgrid2[:-2], pevent_lc[:-2],color='r',linestyle='-',  marker='+',label='Cohabitation') 
         plt.plot(eventgrid2[:-2], pevent_lm[:-2],color='b',linestyle='--', marker='x', label='Marriage') 
-        plt.plot(eventgrid2[:-2], pevent_lt[:-2],color='k',linestyle=':', marker='1', label='Marriage+Cohabitation') 
+        plt.plot(eventgrid2[:-2], pevent_lt[:-2],color='k',linestyle=':', marker='1', label='Marriage+cohabitation') 
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),    
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize=16)    
-        plt.xlabel('Time Event (Model Years)', fontsize=16)    
-        plt.ylabel('FLP---Variation from Baseline', fontsize=16)  
+        plt.xlabel('Time Event (model years)', fontsize=16)    
+        plt.ylabel('FLP---variation from baseline', fontsize=16)  
         plt.savefig('e_flp.pgf', bbox_inches = 'tight',pad_inches = 0)  
         
       
@@ -2097,7 +2111,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         yerr=np.array([(beta_unid_i[1]-beta_unid_i[0])/2.0,0.0])    
         plt.axhline(linewidth=0.1, color='r')    
         plt.errorbar(x, y, yerr=yerr, fmt='o', elinewidth=0.03)    
-        plt.ylabel('OLS Coefficient - UniD')    
+        plt.ylabel('OLS coefficient - UniD')    
         plt.xticks(x, ["Data","Simulation"] )   
         plt.ylim(ymax=0.1)    
         plt.xlim(xmax=1.0,xmin=0.0)    

@@ -22,11 +22,11 @@ class ModelSetup(object):
         p = dict()       
         period_year=1#this can be 1,2,3 or 6
         transform=2#this tells how many periods to pull together for duration moments
-        T = int(62/period_year)
-        Tret = int(42/period_year) # first period when the agent is retired
+        T = int(50/period_year)#int(62/period_year)
+        Tret = int(38/period_year)#int(42/period_year) # first period when the agent is retired
         Tbef=int(0/period_year)
-        Tren  = int(42/period_year)#int(42/period_year) # period starting which people do not renegotiate/divroce
-        Tmeet = int(42/period_year)#int(42/period_year) # period starting which you do not meet anyone
+        Tren  = int(38/period_year)#int(42/period_year)#int(42/period_year) # period starting which people do not renegotiate/divroce
+        Tmeet = int(38/period_year)#int(42/period_year)#int(42/period_year) # period starting which you do not meet anyone
         p['py']=period_year
         p['ty']=transform
         p['T'] = T
@@ -48,14 +48,15 @@ class ModelSetup(object):
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.0 
-        p['sig_partner_a'] = 0.1#0.5
+        p['sig_partner_a'] = 0.05
         p['sig_partner_z'] = 1.2#1.0#0.4 #This is crazy powerful for the diff in diff estimate
         p['sig_partner_mult'] = 1.0
         p['dump_factor_z'] = 0.65#0.82
-        p['mean_partner_z_female'] = 0.05#+0.03
-        p['mean_partner_z_male'] =  -0.05#-0.03
-        p['mean_partner_a_female'] = 0.05#0.5
-        p['mean_partner_a_male'] = -0.05#-0.5
+        p['dump_factor_a'] = 0.8#0.65
+        p['mean_partner_z_female'] = 0.02#0.05
+        p['mean_partner_z_male'] =  -0.02#-0.05
+        p['mean_partner_a_female'] = 0.32
+        p['mean_partner_a_male'] = -0.32
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
         
@@ -70,7 +71,7 @@ class ModelSetup(object):
         
         
         p['u_shift_mar'] = 0.0
-        p['u_shift_coh'] = -0.00
+        p['u_shift_coh'] = 0.0#-0.17625478002929690
         
          
         #Wages over time
@@ -80,12 +81,18 @@ class ModelSetup(object):
         p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.5960803  +.05829568*t -.00169143*t**2+ .00001446*t**3) for t in range(T)]
    
               
-        p['f_wage_trend'] = [0.0*(t>=Tret+2)+(t<Tret+2)*(-.77138877  +.05915875*t -.00232914*t**2+ .00002484*t**3) for t in range(T)]
-        p['f_wage_trend_single'] =  [0.0*(t>=Tret+2)+(t<Tret+2)*(-.67980802  +.04603417*t -.00158584*t**2+ .00001594*t**3) for t in range(T)]
+        p['f_wage_trend'] = [0.0*(t>=Tret+2)+(t<Tret+2)*(0.0+-.77138877  +.05915875*t -.00232914*t**2+ .00002484*t**3) for t in range(T)]
+        p['f_wage_trend_single'] =  [0.0*(t>=Tret+2)+(t<Tret+2)*(0.0+-.67980802  +.04603417*t -.00158584*t**2+ .00001594*t**3) for t in range(T)]
         p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-.434235  +.06016318*t -.00183131*t**2+ .00001573*t**3) for t in range(T)]
         p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.486139  +.05170349*t -.00160466*t**2+ .00001446*t**3) for t in range(T)]
            
   
+        #Build trend for single assets
+        p['ass_ratio']=[max(0,9.813475 -1.353955*t+ 0.0655805*t**2- 0.0007908*t**3)  for t in range(T)]
+        p['ass_f']=p['ass_ratio']*np.exp(p['f_wage_trend_single'])
+        p['ass_m']=p['ass_ratio']*np.exp(p['m_wage_trend_single'])
+        
+        
         p['util_lam'] = 0.189#0.4
         p['util_alp_temp'] = 0.5
         p['util_xi'] = 1.07
@@ -418,7 +425,7 @@ class ModelSetup(object):
         self.amax = 60*self.scala
         self.amax1 = 130*self.scala
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
-        tune=30.5
+        tune=10#30.5
         self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         self.agrid_c[-1]=self.amax1
         self.agrid_c[-2]=80*self.scala
@@ -452,7 +459,7 @@ class ModelSetup(object):
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta,dtype=self.dtype)
         
         #Grid for the share in assets
-        self.ashare = np.linspace(0.25,0.75,7,dtype=self.dtype)
+        self.ashare = np.linspace(0.15,0.85,3,dtype=self.dtype)
         
         
         
@@ -460,7 +467,7 @@ class ModelSetup(object):
         
         
         # construct finer grid for bargaining
-        ntheta_fine = 2*self.ntheta # actual number may be a bit bigger
+        ntheta_fine = 1*self.ntheta # actual number may be a bit bigger
         self.thetagrid_fine = np.unique(np.concatenate( (self.thetagrid,np.linspace(self.thetamin,self.thetamax,ntheta_fine,dtype=self.dtype)) ))
         self.ntheta_fine = self.thetagrid_fine.size
         
@@ -590,6 +597,11 @@ class ModelSetup(object):
                 else:
                     mean=self.pars['mean_partner_a_male']
                 p_a = int_prob(lagrid_t,mu=mean,sig=s_a_partner,n_points=npoints)
+                
+                p_a  = int_prob(lagrid_t, mu=self.pars['dump_factor_a']*mean
+                                  ,sig=(1-self.pars['dump_factor_a'])**
+                                  0.5*s_a_partner*self.pars['sig_partner_mult'],n_points=npoints)
+                 
                 i_pa = (-p_a).argsort()[:npoints] # this is more robust then nonzero
                 p_pa = p_a[i_pa]
                 prob_a_mat[ia,:] = p_pa

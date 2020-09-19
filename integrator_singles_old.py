@@ -65,7 +65,7 @@ def ev_single_meet(setup,V,sown,female,t,skip_mar=False,trim_lvl=0.000001,dec_c=
     
     EV = setup.dtype(0.0)
     
-    i_assets_c, p_assets_c = setup.i_a_mat[female], setup.prob_a_mat[female]
+    i_assets_c, p_assets_c = setup.i_a_mat[female][t,0,:,:], setup.prob_a_mat[female][t,0,:,:]
     
     npart = i_assets_c.shape[1]
     

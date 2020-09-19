@@ -12,7 +12,7 @@ from scipy.stats import norm
 from scipy import optimize
 from collections import namedtuple
 from gridvec import VecOnGrid
-
+import pickle
 from scipy import sparse
 
 
@@ -22,11 +22,11 @@ class ModelSetup(object):
         p = dict()       
         period_year=1#this can be 1,2,3 or 6
         transform=2#this tells how many periods to pull together for duration moments
-        T = int(50/period_year)#int(62/period_year)
-        Tret = int(38/period_year)#int(42/period_year) # first period when the agent is retired
+        T = int(62/period_year)#int(62/period_year)
+        Tret = int(42/period_year)#int(42/period_year) # first period when the agent is retired
         Tbef=int(0/period_year)
-        Tren  = int(38/period_year)#int(42/period_year)#int(42/period_year) # period starting which people do not renegotiate/divroce
-        Tmeet = int(38/period_year)#int(42/period_year)#int(42/period_year) # period starting which you do not meet anyone
+        Tren  = int(42/period_year)#int(42/period_year)#int(42/period_year) # period starting which people do not renegotiate/divroce
+        Tmeet = int(42/period_year)#int(42/period_year)#int(42/period_year) # period starting which you do not meet anyone
         p['py']=period_year
         p['ty']=transform
         p['T'] = T
@@ -48,15 +48,15 @@ class ModelSetup(object):
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.0 
-        p['sig_partner_a'] = 0.05
+        p['sig_partner_a'] = 0.4#0.5
         p['sig_partner_z'] = 1.2#1.0#0.4 #This is crazy powerful for the diff in diff estimate
         p['sig_partner_mult'] = 1.0
         p['dump_factor_z'] = 0.65#0.82
         p['dump_factor_a'] = 0.8#0.65
         p['mean_partner_z_female'] = 0.02#0.05
         p['mean_partner_z_male'] =  -0.02#-0.05
-        p['mean_partner_a_female'] = 0.32
-        p['mean_partner_a_male'] = -0.32
+        p['mean_partner_a_female'] = 0.3#0.32#
+        p['mean_partner_a_male'] = -0.3#-0.32#
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
         
@@ -70,7 +70,7 @@ class ModelSetup(object):
         
         
         
-        p['u_shift_mar'] = 0.0
+        p['u_shift_mar'] = -100.0
         p['u_shift_coh'] = 0.0#-0.17625478002929690
         
          
@@ -98,6 +98,12 @@ class ModelSetup(object):
         p['util_xi'] = 1.07
         p['util_kap_temp']=0.206
         p['rprice_durables'] = 1.0#
+        
+        with open('assets.pkl', 'rb') as file:assets=pickle.load(file)
+        p['av_a_m']=assets['av_a_m']
+        p['va_a_m']=assets['va_a_m']
+        p['av_a_f']=assets['av_a_f']
+        p['va_a_f']=assets['va_a_f']
         
         
 
@@ -557,7 +563,7 @@ class ModelSetup(object):
         self.u_precompute()
         
         
-    def mar_mats_assets(self,npoints=4,abar=0.1):
+    def mar_mats_assets(self,npoints=4,abar=0.001):
         # for each grid point on single's grid it returns npoints positions
         # on (potential) couple's grid's and assets of potential partner 
         # (that can be off grid) and correpsonding probabilities. 
@@ -572,40 +578,60 @@ class ModelSetup(object):
         
         s_a_partner = self.pars['sig_partner_a']
         
+
+                                
         for female in [True,False]:
-            prob_a_mat = np.zeros((na,npoints),dtype=self.dtype)
-            i_a_mat = np.zeros((na,npoints),dtype=np.int16)
+            
+            lenz=len(self.exogrid[0][0]) if female else len(self.exogrid[2][0])
+            
+            prob_a_mat = np.zeros((self.pars['T'],lenz,na,npoints),dtype=self.dtype)
+            i_a_mat = np.zeros((self.pars['T'],lenz,na,npoints),dtype=np.int16)
             
             
             
             for ia, a in enumerate(agrid_s):
-                lagrid_t = np.zeros_like(agrid_c)
                 
-                i_neg = (agrid_c <= max(abar,a) - 1e-6)
-                
-                # if a is zero this works a bit weird but does the job
-                
-                lagrid_t[~i_neg] = np.log(2e-6 + (agrid_c[~i_neg] - a)/max(abar,a))
+                #Get the grid
+                lagrid_t = np.zeros_like(agrid_c)                
+                i_neg = (agrid_c <= max(abar,a) - 1e-6)      
+                  
+                # if a is zero this works a bit weird but does the job              
+                lagrid_t[~i_neg] = 2e-6 + agrid_c[~i_neg] 
                 lmin = lagrid_t[~i_neg].min()
+                
                 # just fill with very negative values so this is never chosen
                 lagrid_t[i_neg] = lmin - s_a_partner*10 - \
                     s_a_partner*np.flip(np.arange(i_neg.sum())) 
-                
-                # TODO: this needs to be checked
-                if female:
-                    mean=self.pars['mean_partner_a_female']
-                else:
-                    mean=self.pars['mean_partner_a_male']
-                p_a = int_prob(lagrid_t,mu=mean,sig=s_a_partner,n_points=npoints)
-                
-                p_a  = int_prob(lagrid_t, mu=self.pars['dump_factor_a']*mean
-                                  ,sig=(1-self.pars['dump_factor_a'])**
-                                  0.5*s_a_partner*self.pars['sig_partner_mult'],n_points=npoints)
+            
+            
+                for t in range(self.pars['T']):
+                    
+                    if not female:
+                        for iz in range(len(self.exogrid[0][0])-1):
+                                                       
+                            ass=self.pars['av_a_f'][t,iz+1]
+                            vass=self.pars['av_a_f'][t,iz+1]
+                            p_a = int_prob(lagrid_t,mu=ass+a,sig=vass+0.0001,n_points=npoints)
+                            
+                            i_pa = (-p_a).argsort()[:npoints] # this is more robust then nonzero
+                            p_pa = p_a[i_pa]
+                            prob_a_mat[t,iz,ia,:] = p_pa
+                            i_a_mat[ia,:] = i_pa
+                                             
+                    else:
+                        
+                        for iz in range(len(self.exogrid[2][0])):                                                       
+                            ass=self.pars['av_a_m'][t,iz]
+                            vass=self.pars['av_a_m'][t,iz]
+                            p_a = int_prob(lagrid_t,mu=ass+a,sig=vass+0.0001,n_points=npoints)
+                            
+                            
+                            i_pa = (-p_a).argsort()[:npoints] # this is more robust then nonzero
+                            p_pa = p_a[i_pa]
+                            prob_a_mat[t,iz,ia,:] = p_pa
+                            i_a_mat[t,iz,ia,:] = i_pa
                  
-                i_pa = (-p_a).argsort()[:npoints] # this is more robust then nonzero
-                p_pa = p_a[i_pa]
-                prob_a_mat[ia,:] = p_pa
-                i_a_mat[ia,:] = i_pa
+
             
             
             self.prob_a_mat[female] = prob_a_mat
@@ -701,8 +727,7 @@ class ModelSetup(object):
         for female in [True,False]:
             desc = 'Female, single' if female else 'Male, single'
             
-            pmat_a = self.prob_a_mat[female]
-            imat_a = self.i_a_mat[female]
+
             
             pmats = self.part_mats[desc] 
             
@@ -719,7 +744,7 @@ class ModelSetup(object):
                 inds = np.where( np.any(pmat_iexo>0,axis=0) )[0]
                 
                 npos_iexo = inds.size
-                npos_a = pmat_a.shape[1]
+                npos_a = self.prob_a_mat[female].shape[-1]
                 npos = npos_iexo*npos_a
                 pmatch = np.zeros((self.na,nz,npos),dtype=self.dtype)
                 iamatch = np.zeros((self.na,nz,npos),dtype=np.int32)
@@ -734,6 +759,9 @@ class ModelSetup(object):
                 for iz in range(nz):
                     probs = pmat_iexo[iz,inds]
                     
+                    pmat_a = self.prob_a_mat[female][t,iz,:,:]
+                    imat_a = self.i_a_mat[female][t,iz,:,:]
+                    
                     for ia in range(npos_a):
                         
                         pmatch[:,iz,(npos_iexo*ia):(npos_iexo*(ia+1))] = \
@@ -744,7 +772,7 @@ class ModelSetup(object):
                             inds[None,:]
                             
                         
-                assert np.allclose(np.sum(pmatch,axis=2),1.0)
+                #assert np.allclose(np.sum(pmatch,axis=2),1.0)
                 match_matrix.append({'p':pmatch,'ia':iamatch,'iexo':iexomatch,'iconv':i_conv})
                     
             self.matches[desc] = match_matrix

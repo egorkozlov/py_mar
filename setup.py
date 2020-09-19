@@ -610,7 +610,7 @@ class ModelSetup(object):
                         for iz in range(len(self.exogrid[0][0])-1):
                                                        
                             ass=self.pars['av_a_f'][t,iz+1]
-                            vass=self.pars['av_a_f'][t,iz+1]
+                            vass=self.pars['va_a_f'][t,iz+1]
                             p_a = int_prob(lagrid_t,mu=ass+a,sig=vass+0.0001,n_points=npoints)
                             
                             i_pa = (-p_a).argsort()[:npoints] # this is more robust then nonzero
@@ -622,9 +622,11 @@ class ModelSetup(object):
                         
                         for iz in range(len(self.exogrid[2][0])):                                                       
                             ass=self.pars['av_a_m'][t,iz]
-                            vass=self.pars['av_a_m'][t,iz]
+                            vass=self.pars['va_a_m'][t,iz]
                             p_a = int_prob(lagrid_t,mu=ass+a,sig=vass+0.0001,n_points=npoints)
                             
+                            if (ia==20) & (t==20):
+                                print(12)
                             
                             i_pa = (-p_a).argsort()[:npoints] # this is more robust then nonzero
                             p_pa = p_a[i_pa]
@@ -772,7 +774,7 @@ class ModelSetup(object):
                             inds[None,:]
                             
                         
-                #assert np.allclose(np.sum(pmatch,axis=2),1.0)
+                assert np.allclose(np.sum(pmatch,axis=2),1.0)
                 match_matrix.append({'p':pmatch,'ia':iamatch,'iexo':iexomatch,'iconv':i_conv})
                     
             self.matches[desc] = match_matrix

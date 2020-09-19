@@ -37,9 +37,9 @@ class ModelSetup(object):
         p['sig_zf']    = .0277534**(0.5)#0.0399528**(0.5)
         p['sig_zm_0']  = .4435924#.405769**(0.5)
         p['sig_zm']    = .025014**(0.5)#0.0417483**(0.5)
-        p['n_zf_t']      = [4]*Tret + [4]*(T-Tret)
+        p['n_zf_t']      = [3]*Tret + [3]*(T-Tret)
         p['n_zm_t']      = [3]*Tret + [3]*(T-Tret)
-        p['n_zf_correct']=1
+        p['n_zf_correct']=0
         p['sigma_psi_mult'] = 0.28
         p['sigma_psi']   = 0.11
         p['n_psi_t']     = [15]*T
@@ -48,7 +48,7 @@ class ModelSetup(object):
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.0 
-        p['sig_partner_a'] = 0.4#0.5
+        p['sig_partner_a'] = 0.0001#0.4#0.5
         p['sig_partner_z'] = 1.2#1.0#0.4 #This is crazy powerful for the diff in diff estimate
         p['sig_partner_mult'] = 1.0
         p['dump_factor_z'] = 0.65#0.82
@@ -70,7 +70,7 @@ class ModelSetup(object):
         
         
         
-        p['u_shift_mar'] = -100.0
+        p['u_shift_mar'] = -0.0
         p['u_shift_coh'] = 0.0#-0.17625478002929690
         
          
@@ -428,13 +428,13 @@ class ModelSetup(object):
         self.na = 40#40
         self.scala=1.0
         self.amin = 0
-        self.amax = 60*self.scala
-        self.amax1 = 130*self.scala
+        self.amax = 20*self.scala
+        self.amax1 = 30*self.scala
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
         tune=10#30.5
         self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         self.agrid_c[-1]=self.amax1
-        self.agrid_c[-2]=80*self.scala
+        self.agrid_c[-2]=25*self.scala
         # this builds finer grid for potential savings
         s_between = 7 # default numer of points between poitns on agrid
         s_da_min = 0.001*self.scala # minimal step (does not create more points)
@@ -582,7 +582,7 @@ class ModelSetup(object):
                                 
         for female in [True,False]:
             
-            lenz=len(self.exogrid[0][0]) if female else len(self.exogrid[2][0])
+            lenz=len(self.exogrid[2][0])# if female else len(self.exogrid[2][0])
             
             prob_a_mat = np.zeros((self.pars['T'],lenz,na,npoints),dtype=self.dtype)
             i_a_mat = np.zeros((self.pars['T'],lenz,na,npoints),dtype=np.int16)
@@ -607,26 +607,56 @@ class ModelSetup(object):
                 for t in range(self.pars['T']):
                     
                     if not female:
-                        for iz in range(len(self.exogrid[0][0])-1):
+                        for iz in range(len(self.exogrid[2][0])):
                                                        
-                            ass=self.pars['av_a_f'][t,iz+1]
-                            vass=self.pars['va_a_f'][t,iz+1]
+                            ass=self.pars['av_a_m'][t,iz]#/500.0
+                            vass=self.pars['va_a_m'][t,iz]/500.0
+                            
+                            lagrid_t = np.zeros_like(agrid_c)
+                
+                            i_neg = (agrid_c <= max(abar,a) - 1e-6)
+                
+                            # if a is zero this works a bit weird but does the job
+                            
+                            lagrid_t[~i_neg] = 2e-6 + agrid_c[~i_neg]#np.log(2e-6 + (agrid_c[~i_neg] - ass)/max(abar,ass))
+                            lmin = lagrid_t[~i_neg].min()
+                            # just fill with very negative values so this is never chosen
+                            lagrid_t[i_neg] = lmin  - s_a_partner*10 - \
+                                s_a_partner*np.flip(np.arange(i_neg.sum())) 
+                                
                             p_a = int_prob(lagrid_t,mu=ass+a,sig=vass+0.0001,n_points=npoints)
+                            #p_a = int_prob(lagrid_t,mu=0.0,sig=vass+0.0001,n_points=npoints)
+
                             
                             i_pa = (-p_a).argsort()[:npoints] # this is more robust then nonzero
                             p_pa = p_a[i_pa]
                             prob_a_mat[t,iz,ia,:] = p_pa
-                            i_a_mat[ia,:] = i_pa
+                            i_a_mat[t,iz,ia,:] = i_pa
                                              
                     else:
                         
                         for iz in range(len(self.exogrid[2][0])):                                                       
-                            ass=self.pars['av_a_m'][t,iz]
-                            vass=self.pars['va_a_m'][t,iz]
-                            p_a = int_prob(lagrid_t,mu=ass+a,sig=vass+0.0001,n_points=npoints)
+                            ass=self.pars['av_a_f'][t,iz]#/500.0
+                            vass=self.pars['va_a_f'][t,iz]/500.0
                             
-                            if (ia==20) & (t==20):
-                                print(12)
+                            lagrid_t = np.zeros_like(agrid_c)
+                
+                            i_neg = (agrid_c <= max(abar,a) - 1e-6) #| (agridc[-1])
+                
+                            # if a is zero this works a bit weird but does the job
+                            
+                            lagrid_t[~i_neg] = 2e-6 + agrid_c[~i_neg]#np.log(2e-6 + (agrid_c[~i_neg] - ass)/max(abar,ass))
+                            lmin = lagrid_t[~i_neg].min()
+                            
+                            # just fill with very negative values so this is never chosen
+                            lagrid_t[i_neg] = lmin  - s_a_partner*10 - \
+                                s_a_partner*np.flip(np.arange(i_neg.sum())) 
+                                
+                            p_a = int_prob(lagrid_t,mu=ass+a,sig=vass+0.0001,n_points=npoints)
+                            #p_a = int_prob(lagrid_t,mu=0.0,sig=vass+0.0001,n_points=npoints)
+                            
+                            if (t==20) & (ia==20) & (iz==1):
+                                print(123)
                             
                             i_pa = (-p_a).argsort()[:npoints] # this is more robust then nonzero
                             p_pa = p_a[i_pa]
@@ -726,7 +756,7 @@ class ModelSetup(object):
         
         self.matches = dict()
         
-        for female in [True,False]:
+        for female in [False,True]:
             desc = 'Female, single' if female else 'Male, single'
             
 

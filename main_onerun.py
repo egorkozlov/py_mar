@@ -65,7 +65,7 @@ if __name__ == '__main__':
     
     #Almost ok with -0.05-global+local
     x0 = np.array([0.753853,0.388988,2.20607,0.513084,1.01583,-0.0991461,-0.0432463,1.18378])
-    x0 = np.array([0.753853,0.388988,2.20607,0.513084,1.01583,-0.0991461,-0.0432463,1.18378])
+    x0 = np.array([0.753853,0.388988,2.20607,0.513084,1.01583,-0.0991461,-0.0932463,1.18378])
     
     
     #-0.2-global only
@@ -73,7 +73,7 @@ if __name__ == '__main__':
     #x0 = np.array([0.779856,0.285281,1.47748,0.278688,1.20608,-0.167525,-0.0878848,1.30855])
     #x0 = np.array([0.699238,0.280692,2.25914,0.30872,1.19259,-0.133752,-0.0596778,1.16098])
     #x0 = np.array([0.65769,0.2245,1.91147,0.262793,0.999988,-0.1321,-0.0657886,1.40649])
-    #x0 = np.array([0.885987,0.45995,2.02769,0.365523,1.18527,-0.133188,-0.0867234,1.38449])
+    x0 = np.array([0.885987,0.45995,2.02769,0.365523,1.18527,-0.133188,-0.0867234,1.38449])
 
 
     
@@ -85,7 +85,7 @@ if __name__ == '__main__':
     
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','models','agents','scaled residuals'],
                                       #load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
-                                      solve_transition=False,                                    
+                                      solve_transition=True,                                    
                                       #save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       store_path=path,
                                       verbose=True,calibration_report=False,draw=graphs,graphs=graphs,

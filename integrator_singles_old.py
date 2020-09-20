@@ -65,9 +65,9 @@ def ev_single_meet(setup,V,sown,female,t,skip_mar=False,trim_lvl=0.000001,dec_c=
     
     EV = setup.dtype(0.0)
     
-    i_assets_c, p_assets_c = setup.i_a_mat[female][t,1,:,:], setup.prob_a_mat[female][t,1,:,:]
+    i_assets_c, p_assets_c = setup.i_a_mat[female][t,:,:,:], setup.prob_a_mat[female][t,:,:,:]
     
-    npart = i_assets_c.shape[1]
+    npart = p_assets_c.shape[-1]
     
     
     matches = setup.matches['Female, single'][t] if female else setup.matches['Male, single'][t]
@@ -87,19 +87,19 @@ def ev_single_meet(setup,V,sown,female,t,skip_mar=False,trim_lvl=0.000001,dec_c=
     for i in range(npart):
         if not skip_mar:
             # try marriage
-            res_m = v_mar_igrid(setup,t,V,i_assets_c[:,i],inds,
+            res_m = v_mar_igrid(setup,t,V,i_assets_c[:,:,i],inds,
                                       female=female,marriage=True)
             
             
-            res_c = v_mar_igrid(setup,t,V,i_assets_c[:,i],inds,
+            res_c = v_mar_igrid(setup,t,V,i_assets_c[:,:,i],inds,
                                       female=female,marriage=False)
         else:
             # try marriage
-            res_m = v_no_mar(setup,t,V,i_assets_c[:,i],inds,
+            res_m = v_no_mar(setup,t,V,i_assets_c[:,:,i],inds,
                                       female=female,marriage=True)
             
             
-            res_c = v_no_mar(setup,t,V,i_assets_c[:,i],inds,
+            res_c = v_no_mar(setup,t,V,i_assets_c[:,:,i],inds,
                                       female=female,marriage=False)
     
     
@@ -156,7 +156,7 @@ def ev_single_meet(setup,V,sown,female,t,skip_mar=False,trim_lvl=0.000001,dec_c=
             
         V_next[:,inds] = vout
         
-        EV += (p_assets_c[:,i][:,None])*np.dot(V_next,p_mat)
+        EV += (p_assets_c[:,:,i].T)*np.dot(V_next,p_mat)
     
     assert EV.dtype == setup.dtype
     
@@ -165,7 +165,7 @@ def ev_single_meet(setup,V,sown,female,t,skip_mar=False,trim_lvl=0.000001,dec_c=
     mout['M or C'] = morc
     mout['theta'] = tht
     
-  
+    
     
     return EV, mout
 

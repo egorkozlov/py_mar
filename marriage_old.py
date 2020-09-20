@@ -40,13 +40,24 @@ def v_mar_igrid(setup,t,V,icouple,ind_or_inds,*,female,marriage,interpolate=True
     gamma = setup.pars['m_bargaining_weight']   
     
     
-    VMval_single, VFval_single = V['Male, single']['V'], V['Female, single']['V']
-    VMval_postren, VFval_postren = V[coup]['VM'][icouple,...], V[coup]['VF'][icouple,...]
-    
+
     
     
     # substantial part
     ind, izf, izm, ipsi = setup.all_indices(t,ind_or_inds)
+    
+    
+    
+    VMval_single, VFval_single = V['Male, single']['V'], V['Female, single']['V']
+    
+    VMval_postren, VFval_postren = V[coup]['VM'][icouple[0,:],...], V[coup]['VF'][icouple[0,:],...]
+    
+    for iz in range(icouple.shape[0]):
+        whf=iz==setup.all_indices(t)[1]
+        whm=iz==setup.all_indices(t)[2]
+        VMval_postren[:,izm,:]=V[coup]['VM'][icouple[0,iz],izm,:]
+        VFval_postren[:,izf,:]=V[coup]['VF'][icouple[0,iz],izf,:]
+        
     
     
     # using trim = True implicitly trims things on top
@@ -57,18 +68,29 @@ def v_mar_igrid(setup,t,V,icouple,ind_or_inds,*,female,marriage,interpolate=True
     
     
     # this implicitly trims negative or too large values
-    s_partner_v = VecOnGrid(agrid_s,s_partner,trim=True) 
+    nume=s_partner.shape[0]
+    s_partner_v=[iz for iz in range(nume)]
+    
+    for iz in range(nume):
+        s_partner_v[iz] = VecOnGrid(agrid_s,s_partner[iz,:],trim=True)
     
     
     # this applies them
     
     if female:
         Vfs = VFval_single[:,izf]
-        Vms = VMval_single[:,izm]#s_partner_v.apply(VMval_single,axis=0,take=(1,izm))
+        Vms=Vfs.copy()
+        for iz in range(nume):
+            wh=izm==iz
+            s_partner_v1=s_partner_v[iz]
+            Vms[:,wh] = s_partner_v1.apply(VMval_single,axis=0,take=(1,izm[wh]))#VMval_single[:,izm]
     else:
         Vms = VMval_single[:,izm]
-        Vfs = VFval_single[:,izf]#s_partner_v.apply(VFval_single,axis=0,take=(1,izf))
-        
+        Vfs = Vms.copy()
+        for iz in range(nume):
+            wh=izf==iz
+            s_partner_v1=s_partner_v[iz]
+            Vfs[:,wh] = s_partner_v1.apply(VFval_single,axis=0,take=(1,izf[wh]))#VMval_single[:,izm]        
         
         
     
@@ -275,7 +297,7 @@ def mar_loop2(vfy,vmy,vfn,vmn,which):
     
     return vfout, vmout, nbsout, agree, ithetaout, whichout
             
-#@njit
+@njit
 def mar_loop(vfy,vmy,vfn,vmn):
 
     shp=vfy.shape

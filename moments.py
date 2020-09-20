@@ -92,32 +92,32 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     moments=dict()  
     
     
-    # #############################################################
-    # #To get average and variance of assets  by income and time
-    # #############################################################
-    # av_a_m=np.zeros((setup.pars['T'],len(setup.exogrid.zm_t[0])))
-    # va_a_m=np.zeros((setup.pars['T'],len(setup.exogrid.zm_t[0])))
-    # av_a_f=np.zeros((setup.pars['T'],len(setup.exogrid.zf_t[0])))
-    # va_a_f=np.zeros((setup.pars['T'],len(setup.exogrid.zf_t[0])))
+    #############################################################
+    #To get average and variance of assets  by income and time
+    #############################################################
+    av_a_m=np.zeros((setup.pars['T'],len(setup.exogrid.zm_t[0])))
+    va_a_m=np.zeros((setup.pars['T'],len(setup.exogrid.zm_t[0])))
+    av_a_f=np.zeros((setup.pars['T'],len(setup.exogrid.zf_t[0])))
+    va_a_f=np.zeros((setup.pars['T'],len(setup.exogrid.zf_t[0])))
     
-    # fem=female[:,0]
-    # for t in range(setup.pars['T']):
-    #     for iz in range(len(setup.exogrid.zm_t[0])):
-    #         asse=assets_t[:,t]
-    #         av_a_m[t,iz]=np.mean(asse[(female[:,t]==0) & (iexo[:,t]==iz)])
-    #         va_a_m[t,iz]=np.std(asse[(female[:,t]==0) & (iexo[:,t]==iz)])
+    fem=female[:,0]
+    for t in range(setup.pars['T']):
+        for iz in range(len(setup.exogrid.zm_t[0])):
+            asse=assets_t[:,t]
+            av_a_m[t,iz]=np.mean(asse[(female[:,t]==0) & (iexo[:,t]==iz)])
+            va_a_m[t,iz]=np.std(asse[(female[:,t]==0) & (iexo[:,t]==iz)])
             
             
-    # for t in range(setup.pars['T']):
-    #     for iz in range(len(setup.exogrid.zf_t[0])):
-    #         asse=assets_t[:,t]
-    #         av_a_f[t,iz]=np.mean(asse[(female[:,t]==1) & (iexo[:,t]==iz)])
-    #         va_a_f[t,iz]=np.std(asse[(female[:,t]==1) & (iexo[:,t]==iz)])
+    for t in range(setup.pars['T']):
+        for iz in range(len(setup.exogrid.zf_t[0])):
+            asse=assets_t[:,t]
+            av_a_f[t,iz]=np.mean(asse[(female[:,t]==1) & (iexo[:,t]==iz)])
+            va_a_f[t,iz]=np.std(asse[(female[:,t]==1) & (iexo[:,t]==iz)])
 
 
-    # saveme={'av_a_m':av_a_m,'va_a_m':va_a_m,'av_a_f':av_a_f,'va_a_f':va_a_f}
-    # #Save it!
-    # with open('assets.pkl', 'wb+') as file:pickle.dump(saveme,file) 
+    saveme={'av_a_m':av_a_m,'va_a_m':va_a_m,'av_a_f':av_a_f,'va_a_f':va_a_f}
+    #Save it!
+    with open('assets.pkl', 'wb+') as file:pickle.dump(saveme,file) 
          
     ##########################################  
     #WELFARE DECOMPOSITION HERE  

@@ -486,7 +486,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     #Regression     
     if np.var(data_rel_panda['uni'])>0.0001:  
         try:     
-            FE_ols = smf.ols(formula='mar ~ uni+C(age)+C(sex)', data = data_rel_panda.dropna()).fit()     
+            FE_ols = smf.ols(formula='mar ~ uni+C(age)+C(rnumber)',
+                data = data_rel_panda[((data_rel_panda['sex']==1)  | ((data_rel_panda['sex']==0) & (data_rel_panda['age']>=2)) & (data_rel_panda['rnumber']<=2))]).fit()     
             beta_unid_s=FE_ols.params['uni']     
         except:     
             print('No data for unilateral divorce regression...')     

@@ -76,6 +76,8 @@ if __name__ == '__main__':
     x0 = np.array([0.885987,0.45995,2.02769,0.365523,1.18527,-0.133188,-0.0867234,1.38449])
 
 
+    x0 = np.array([0.70636,0.136945,1.45891,0.220723,0.998456,-0.0700914,-0.0952637,1.44288])
+
     
     #Name and location of files
     if system() == 'Windows':   
@@ -85,8 +87,8 @@ if __name__ == '__main__':
     
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','models','agents','scaled residuals'],
                                       #load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
-                                      solve_transition=True,                                    
-                                      #save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
+                                      solve_transition=False,                                    
+                                      save_to=['mdl_save_bil.pkl'],#'mdl_save_uni.pkl'],
                                       store_path=path,
                                       verbose=True,calibration_report=False,draw=graphs,graphs=graphs,
                                       welf=False) #Switch to true for decomposition of welfare analysis

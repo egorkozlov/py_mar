@@ -48,7 +48,7 @@ class ModelSetup(object):
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.0 
-        p['sig_partner_a'] = 0.2#1.2#0.4#0.5
+        p['sig_partner_a'] = 0.5#1.2#0.4#0.5
         p['sig_partner_z'] = 1.2#1.0#0.4 #This is crazy powerful for the diff in diff estimate
         p['sig_partner_mult'] = 1.0
         p['dump_factor_z'] = 0.65#0.82
@@ -81,7 +81,7 @@ class ModelSetup(object):
         p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.5960803  +.05829568*t -.00169143*t**2+ .00001446*t**3) for t in range(T)]
    
               
-        p['f_wage_trend'] = [0.0*(t>=Tret+2)+(t<Tret+2)*(-0.0+-.77138877  +.05915875*(t-2) -.00232914*(t-2)**2+ .00002484*(t-2)**3) for t in range(T)]
+        p['f_wage_trend'] = [0.0*(t>=Tret+2)+(t<Tret+2)*(0.0+-.77138877  +.05915875*(t-2) -.00232914*(t-2)**2+ .00002484*(t-2)**3) for t in range(T)]
         p['f_wage_trend_single'] =  [0.0*(t>=Tret+2)+(t<Tret+2)*(-0.0+-.67980802  +.04603417*(t-2) -.00158584*(t-2)**2+ .00001594*(t-2)**3) for t in range(T)]
         p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-.434235  +.06016318*t -.00183131*t**2+ .00001573*t**3) for t in range(T)]
         p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.486139  +.05170349*t -.00160466*t**2+ .00001446*t**3) for t in range(T)]
@@ -562,7 +562,8 @@ class ModelSetup(object):
         
         self.u_precompute()
         
-        
+
+    
     def mar_mats_assets(self,npoints=8,abar=0.1):
         # for each grid point on single's grid it returns npoints positions
         # on (potential) couple's grid's and assets of potential partner 
@@ -659,6 +660,8 @@ class ModelSetup(object):
                             #p_a = int_prob(lagrid_t,mu=ass+a,sig=vass+0.0001,n_points=npoints)
                             p_a = int_prob(lagrid_t,mu=mean,sig=vass+0.0001,n_points=npoints)
                             
+                            if (t==20) & (ia==20):
+                                print(123)
                           
                             
                             i_pa = (-p_a).argsort()[:npoints] # this is more robust then nonzero
@@ -666,25 +669,20 @@ class ModelSetup(object):
                             prob_a_mat[t,iz,ia,:] = p_pa
                             i_a_mat[t,iz,ia,:] = i_pa
                  
-
-            prob_a_mat2=np.zeros(prob_a_mat.shape)#prob_a_mat.copy()#
-            
-            
             jj=1 if female else 2
-            for t in range(self.pars['T']):
-                for iz in range(len(self.exogrid[2][0])):
-                    for ia in range(len(agrid_s)):
-                        for izo in range(len(self.exogrid[2][0])):
-                       
-                            prob_a_mat2[t,iz,ia,:]=prob_a_mat2[t,iz,ia,:]+prob_a_mat[t,iz,ia,:]*self.mar_mats_iexo(t-1,female=female)[jj][iz,izo]
-                
+            mate=np.zeros((self.pars['T'],len(self.exogrid[2][0]),len(self.exogrid[2][0])))
+            for i in range(self.pars['T']): mate[i,:,:]=self.mar_mats_iexo(i-1,female=female)[jj]
+            
+            prob_a_mat2=msum(prob_a_mat,self.pars['T'],len(self.exogrid[2][0]),len(agrid_s),mate)
+           
                 
             self.prob_a_mat[female] = prob_a_mat2
             self.i_a_mat[female] = i_a_mat
             
 
         
-    
+
+        
     def mar_mats_iexo(self,t,female=True):
         # TODO: check timing
         # this returns transition matrix for single agents into possible couples
@@ -1085,3 +1083,16 @@ def build_s_grid(agrid,n_between,da_min,da_max):
         sgrid = sgrid[1:]
         
     return sgrid
+
+
+def msum(prob,ranget,rangeiz,rangeia,matt):
+    
+    prob2=np.zeros(prob.shape)
+    for t in range(ranget):
+        for iz in range(rangeiz):
+            for ia in range(rangeia):
+                for izo in range(rangeiz):
+                
+                    prob2[t,iz,ia,:]=prob2[t,iz,ia,:]+prob[t,izo,ia,:]*matt[t,iz,izo]
+    
+    return prob2

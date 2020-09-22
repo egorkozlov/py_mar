@@ -191,11 +191,43 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
     #Keep if no error for duration   
     mare=mare[(mare['dur']>0) & (mare['dur']<2000)]   
        
-    #Transform Duration in Years   
-    mare['dury'] = pd.cut(x=mare['dur'], bins=bins_d,labels=bins_d_label)    
+    # #Transform Duration in Years   
+    # mare['dury'] = pd.cut(x=mare['dur'], bins=bins_d,labels=bins_d_label)    
        
-    mare['dury']=mare['dury'].astype(float)    
-       
+    # mare['dury']=mare['dury'].astype(float)    
+    
+    
+    # #Transform data to be year-
+    # mare['begy']=mare['beg']/12+1900
+    # mare=mare.round({'begy': 0})
+    
+    # #Drop if marriage started after the change in the law
+    # mare=mare[mare['unil']>0]
+    # mare=mare[(mare['begy']<=mare['unil'])]
+    # mare['IDN1']=mare['IDN']*1000+mare['rel']
+    
+    # mare1=mare[['dury','fine','IDN1','IDN','begy','state','unil','birth','rel']]
+    # mare2=mare1.loc[mare1.index.repeat(mare1.dury)] 
+    
+    # #Beginning year
+    # mare2['t'] = mare2.groupby(['IDN1']).cumcount()+1
+    # mare2['t2']=mare2['t']**2
+    # mare2['t3']=mare2['t']**3
+    # mare2['year']=mare2['begy']+mare2['t']-1
+    
+    
+    # #dependent variables
+   
+    # mare2['max'] = mare2.groupby(['IDN1'])['t'].transform('max')
+    # mare2['div']=0
+    # mare2.loc[(mare2['max']==mare2['t']) & (mare2['fine']=='div'),'div']=1
+    
+    # #Unlateral divorce
+    # mare2['unid']=0
+    # mare2.loc[mare2['unil']<=mare2['year'],'unid']=1
+    # #regression
+    # FE_ols = smf.ols(formula='div~ unid+C(state)+C(year)+t', data = mare2[mare2['rel']<=2]).fit()   
+    
     del mar   
        
     #############################   
@@ -346,7 +378,7 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
        
     #List of variables to keep   
     keep_var=list()   
-    keep_var=keep_var+['numerl']+['state']+['SAMWT']   
+    keep_var=keep_var+['numerl']+['state']+['SAMWT']+['IDN']+['unil']
        
     for i in range(9):   
            
@@ -400,9 +432,41 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
     hi3.dropna(subset=['imar','unid'])   
        
     #Regression   
-    FE_ols = smf.wls(formula='imar ~ unid+C(iage)+C(state)+C(year)',weights=hi3['SAMWT'], data = hi3.dropna()).fit()   
-    #FE_ols = smf.ols(formula='imar ~ unid+C(iage)+C(state)+C(year)', data = hi3.dropna()).fit()   
-    beta_unid=FE_ols.params['unid']   
+    #FE_ols = smf.wls(formula='imar ~ unid+C(iage)+C(state)+C(year)+C(order)',weights=hi3['SAMWT'], data = hi3.dropna()).fit()   
+    FE_ols = smf.ols(formula='imar ~ unid+C(iage)+C(state)+C(year)+C(order)', data = hi3[(hi3['order']<=2) & (hi3['iage']>=20) & (hi3['iage']<60)]).fit() 
+    #FE_ols = smf.wls(formula='imar ~ unid+C(iage)+C(state)+C(year)+C(order)',weights=hi3[(hi3['order']<=3) & (hi3['iage']>=20) & (hi3['iage']<60)]['SAMWT'], data = hi3[(hi3['order']<=3) & (hi3['iage']>=20) & (hi3['iage']<60)]).fit()   
+    beta_unid=FE_ols.params['unid']  
+    
+    
+    ####################################à
+    #RISK OF SINGLENESS
+    #####################################
+    # hi3['exy']=hi3['iage']-17
+    # hi3=hi3[(hi3['exy']>0) & (hi3['iage']<70)]
+    # hi3=hi3[hi3['order']==1].copy()
+    # hiw=hi3.loc[hi3.index.repeat(hi3.exy)] 
+    
+    # #Beginning year
+    # hiw['t'] = hiw.groupby(['IDN']).cumcount()+1
+    # hiw['t2']=hiw['t']**2
+    # hiw['t3']=hiw['t']**3
+    # hiw['max'] = hiw.groupby(['IDN'])['t'].transform('max')
+    # hiw['year2']=hiw['year']-(hiw['max']-hiw['t'])
+    
+    
+    
+    # #dependent variables
+    
+    
+    # hiw['rel']=0
+    # hiw.loc[(hiw['max']==hiw['t']),'rel']=1
+    
+    # #Unlateral divorce
+    # hiw['unid']=0
+    # hiw.loc[hiw['unil']<=hiw['year2'],'unid']=1
+    # #regression
+    # FE_ols = smf.ols(formula='rel~ unid+C(state)+C(year2)+t+t2', data = hiw).fit()   
+    
        
     #Get age at which unilateral divorced was introduced   
     hi['age_unid']=0.0   
@@ -579,8 +643,9 @@ def dat_moments(sampling_number=5,weighting=True,covariances=False,relative=Fals
     data_d['wgt']=1.0
     #Subset Data
     data=data[data['eq']<=1].copy()
-    data=data[(data['birth']>=1940) & (data['birth']<1955)].copy()
+    data=data[(data['birth']>=1940) & (data['birth']<=1955)].copy()
     
+    data=data[(data['state']=='Arizona') | (data['state']=='Wisconsin') | (data['state']=='Nevada') | (data['state']=='California') | (data['state']=='Idaho') | (data['state']=='Louisiana') | (data['state']=='Texas') | (data['state']=='Washington state')].copy() 
     
     #Call the routine to compute the moments   
     dic=compute(data.copy(),data_h.copy(),data_d.copy(),period=period,transform=transform)   

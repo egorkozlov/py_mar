@@ -192,9 +192,9 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
     mare=mare[(mare['dur']>0) & (mare['dur']<2000)]   
        
     # #Transform Duration in Years   
-    # mare['dury'] = pd.cut(x=mare['dur'], bins=bins_d,labels=bins_d_label)    
+    mare['dury'] = pd.cut(x=mare['dur'], bins=bins_d,labels=bins_d_label)    
        
-    # mare['dury']=mare['dury'].astype(float)    
+    mare['dury']=mare['dury'].astype(float)    
     
     
     # #Transform data to be year-
@@ -641,6 +641,7 @@ def dat_moments(sampling_number=5,weighting=True,covariances=False,relative=Fals
        
     data_h['wgt']=1.0
     data_d['wgt']=1.0
+    data['SAMWT']=1.0
     #Subset Data
     data=data[data['eq']<=1].copy()
     data=data[(data['birth']>=1940) & (data['birth']<=1955)].copy()

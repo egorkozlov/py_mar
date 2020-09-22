@@ -1505,7 +1505,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         #Add mean value at event==-1
         pevent_theta_mar=pevent_theta_mar+theta_mar
         pevent_theta_coh=pevent_theta_coh+theta_coh
-        pevent_psi_mar=pevent_psi_mar+theta_mar
+        pevent_psi_mar=pevent_psi_mar+psi_mar
         pevent_psi_coh=pevent_psi_coh+psi_coh
         
         #Check correlations 
@@ -1516,6 +1516,10 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         nsinglefm1=(ifemale1[:,:60]) & (state_w[:,:60]==2) #& (labor_w[:,:60]>0.1) 
         nsinglefc2=(imale1[:,:60]) & (state_w[:,:60]==3) #& (labor_w[:,:60]>0.1) 
         nsinglefm2=(imale1[:,:60]) & (state_w[:,:60]==2) #& (labor_w[:,:60]>0.1) 
+        nsinglefc1b=(ifemale1[:,:60]) & (state_w[:,:60]==3) & (labor_w[:,:60]>0.1) 
+        nsinglefm1b=(ifemale1[:,:60]) & (state_w[:,:60]==2) & (labor_w[:,:60]>0.1) 
+        nsinglefc2b=(imale1[:,:60]) & (state_w[:,:60]==3) & (labor_w[:,:60]>0.1) 
+        nsinglefm2b=(imale1[:,:60]) & (state_w[:,:60]==2) & (labor_w[:,:60]>0.1) 
         wage_ft=wage_f[:,:60] 
         wage_mpt=wage_mp[:,:60] 
         wage_mt=wage_m[:,:60] 
@@ -1548,10 +1552,10 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         
         
         #Wages correlations
-        corr=np.corrcoef(np.log(wage_ft[nsinglefc1]*setup.ls_levels[-1]),np.log(wage_mpt[nsinglefc1])) 
-        corr1=np.corrcoef(np.log(wage_ft[nsinglefm1]*setup.ls_levels[-1]),np.log(wage_mpt[nsinglefm1])) 
-        corrm=np.corrcoef(np.log(wage_mt[nsinglefc2]),np.log(wage_fpt[nsinglefc2]*setup.ls_levels[-1])) 
-        corrm1=np.corrcoef(np.log(wage_mt[nsinglefm2]),np.log(wage_fpt[nsinglefm2]*setup.ls_levels[-1])) 
+        corr=np.corrcoef(np.log(wage_ft[nsinglefc1b]),np.log(wage_mpt[nsinglefc1b])) 
+        corr1=np.corrcoef(np.log(wage_ft[nsinglefm1b]),np.log(wage_mpt[nsinglefm1b])) 
+        corrm=np.corrcoef(np.log(wage_mt[nsinglefc2b]),np.log(wage_fpt[nsinglefc2b])) 
+        corrm1=np.corrcoef(np.log(wage_mt[nsinglefm2b]),np.log(wage_fpt[nsinglefm2b])) 
         share_fcm=np.mean(wage_ft[nsinglefc1]*setup.ls_levels[-1]/(wage_mpt[nsinglefc1]*setup.ls_levels[-1]+wage_ft[nsinglefc1]*setup.ls_levels[-1])) 
         share_fmm=np.mean(wage_ft[nsinglefc1]*setup.ls_levels[-1]/(wage_mpt[nsinglefc1]*setup.ls_levels[-1]+wage_ft[nsinglefc1]*setup.ls_levels[-1])) 
         share_mcm=np.mean(wage_fpt[nsinglefc2]*setup.ls_levels[-1]/(wage_mt[nsinglefc2]*setup.ls_levels[-1]+wage_fpt[nsinglefc2]*setup.ls_levels[-1])) 

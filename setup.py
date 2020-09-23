@@ -39,6 +39,7 @@ class ModelSetup(object):
         p['sig_zm']    = .025014**(0.5)#0.0417483**(0.5)
         p['n_zf_t']      = [3]*Tret + [3]*(T-Tret)
         p['n_zm_t']      = [3]*Tret + [3]*(T-Tret)
+        p['eqm']=0.0
         p['n_zf_correct']=0
         p['sigma_psi_mult'] = 0.28
         p['sigma_psi']   = 0.11
@@ -48,13 +49,13 @@ class ModelSetup(object):
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.0 
-        p['sig_partner_a'] = 0.6#1.2#0.4#0.5
-        p['sig_partner_z'] = 3.2#1.0#0.4 #This is crazy powerful for the diff in diff estimate
+        p['sig_partner_a'] = 0.5#0.6#0.4#0.5
+        p['sig_partner_z'] = 2.2#3.2#0.4 #This is crazy powerful for the diff in diff estimate
         p['sig_partner_mult'] = 1.0
-        p['dump_factor_z'] = 0.85#0.65
+        p['dump_factor_z'] = 0.35#0.85
         p['dump_factor_a'] = 0.8#0.65
-        p['mean_partner_z_female'] = 0.02#0.05
-        p['mean_partner_z_male'] =  -0.02#-0.05
+        p['mean_partner_z_female'] = 0.00#0.05
+        p['mean_partner_z_male'] =  -0.04#-0.05
         p['mean_partner_a_female'] = 0.3#0.32#
         p['mean_partner_a_male'] = -0.3#-0.32#
         p['m_bargaining_weight'] = 0.5
@@ -431,7 +432,7 @@ class ModelSetup(object):
         self.amax = 40*self.scala
         self.amax1 = 70*self.scala
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
-        tune=1#30.5
+        tune=30#30.5
         self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         self.agrid_c[-1]=self.amax1
         self.agrid_c[-2]=47*self.scala
@@ -460,12 +461,12 @@ class ModelSetup(object):
         
         # grid for theta
         self.ntheta = 13
-        self.thetamin = 0.1
-        self.thetamax = 0.9
+        self.thetamin = 0.02
+        self.thetamax = 0.98
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta,dtype=self.dtype)
         
         #Grid for the share in assets
-        self.ashare = np.linspace(0.15,0.85,3,dtype=self.dtype)
+        self.ashare = np.linspace(0.35,0.65,3,dtype=self.dtype)
         
         
         

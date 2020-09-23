@@ -128,7 +128,7 @@ def ev_single_meet(setup,V,sown,female,t,skip_mar=False,trim_lvl=0.000001,dec_c=
         
        
         # choice is made based on Nash Surplus value
-        i_mar =(nprm>nprc)#((vmoutm+vfoutm>vmoutc+vfoutc) & (nprm>0))#(nprm>nprc) #((vfoutm>vfoutc) & (vmoutm>vfoutc))#         
+        i_mar =(nprm+1e-08>=nprc)#((vmoutm+vfoutm>vmoutc+vfoutc) & (nprm>0))#(nprm>nprc) #((vfoutm>vfoutc) & (vmoutm>vfoutc))#         
         if female:
             vout = i_mar*vfoutm + (~i_mar)*vfoutc
         else:

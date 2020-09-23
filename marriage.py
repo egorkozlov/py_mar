@@ -32,7 +32,7 @@ def v_mar_igrid(setup,t,V,icouple,ind_or_inds,*,female,marriage,interpolate=True
     #states the couple decides to 
     
     
-    which=V['Couple, M']['V'][icouple,...]-1e-08>= V['Couple, C']['V'][icouple,...]
+    which=V['Couple, M']['V'][icouple,...]>= V['Couple, C']['V'][icouple,...]
     
     
     dtype = setup.dtype

@@ -378,7 +378,7 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
        
     #List of variables to keep   
     keep_var=list()   
-    keep_var=keep_var+['numerl']+['state']+['SAMWT']+['IDN']+['unil']
+    keep_var=keep_var+['numerl']+['state']+['SAMWT']+['IDN']+['unil']+['M2DP01']
        
     for i in range(9):   
            
@@ -434,6 +434,7 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
     #Regression   
     #FE_ols = smf.wls(formula='imar ~ unid+C(iage)+C(state)+C(year)+C(order)',weights=hi3['SAMWT'], data = hi3.dropna()).fit()   
     FE_ols = smf.ols(formula='imar ~ unid+C(iage)+C(state)+C(year)+C(order)', data = hi3[(hi3['order']<=2) & (hi3['iage']>=20) & (hi3['iage']<60)]).fit() 
+    FE_ols = smf.ols(formula='imar ~ unid+C(iage)+C(state)+C(year)+C(order)', data = hi3[(hi3['order']<=5) ]).fit() 
     #FE_ols = smf.wls(formula='imar ~ unid+C(iage)+C(state)+C(year)+C(order)',weights=hi3[(hi3['order']<=3) & (hi3['iage']>=20) & (hi3['iage']<60)]['SAMWT'], data = hi3[(hi3['order']<=3) & (hi3['iage']>=20) & (hi3['iage']<60)]).fit()   
     beta_unid=FE_ols.params['unid']  
     
@@ -738,7 +739,7 @@ def dat_moments(sampling_number=5,weighting=True,covariances=False,relative=Fals
     if weighting:   
            
         #Compute optimal Weighting Matrix   
-        col=np.concatenate((hazmB,hazsB,hazdB,emarB,ecohB,fls_ratioB,wage_ratioB,div_ratioB,beta_unidB,mean_flsB),axis=0)       
+        col=np.concatenate((hazmB,hazsB,hazdB,emarB,ecohB,fls_ratioB,wage_ratioB,beta_unidB,mean_flsB),axis=0)       
         dim=len(col)   
         W_in=np.zeros((dim,dim))   
         for i in range(dim):   
@@ -757,7 +758,7 @@ def dat_moments(sampling_number=5,weighting=True,covariances=False,relative=Fals
     elif relative:  
           
         #Compute optimal Weighting Matrix   
-        col=np.concatenate((hazm,hazs,hazd,emar,ecoh,fls_ratio,wage_ratio*np.ones(1),div_ratio*np.ones(1),beta_unid*np.ones(1),mean_fls*np.ones(1)),axis=0)       
+        col=np.concatenate((hazm,hazs,hazd,emar,ecoh,fls_ratio,wage_ratio*np.ones(1),beta_unid*np.ones(1),mean_fls*np.ones(1)),axis=0)       
         dim=len(col)   
         W=np.zeros((dim,dim))   
         for i in range(dim):   
@@ -766,7 +767,7 @@ def dat_moments(sampling_number=5,weighting=True,covariances=False,relative=Fals
     else:   
            
         #If no weighting, just use sum of squred deviations as the objective function           
-        W=np.diag(np.ones(len(hazm)+len(hazs)+len(fls_ratio)+len(hazd)+len(emar)+len(ecoh)+4))#two is for fls+beta_unid   
+        W=np.diag(np.ones(len(hazm)+len(hazs)+len(fls_ratio)+len(hazd)+len(emar)+len(ecoh)+3))#two is for fls+beta_unid   
            
     listofTuples = [("hazs" , hazs), ("hazm" , hazm),("hazd" , hazd),("emar" , emar),   
                 ("ecoh" , ecoh), ("fls_ratio" , fls_ratio),("wage_ratio" , wage_ratio),

@@ -193,7 +193,7 @@ def ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,vfn_as,vmn_as,aleft_c,ia_f_def_s,ia_m_
                 tht = thtgrid[it]
                 
                 
-                if sf_i >= 0 and sm_i >= 0:
+                if sf_i +1e-08>= 0 and sm_i +1e-08>= 0:
                     yes[ia,ie,it] = True
                     thetaout[ia,ie,it] = tht
                     ithetaout[ia,ie,it] = it

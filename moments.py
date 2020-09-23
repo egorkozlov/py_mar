@@ -1556,6 +1556,10 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         corr1=np.corrcoef(np.log(wage_ft[nsinglefm1b]),np.log(wage_mpt[nsinglefm1b])) 
         corrm=np.corrcoef(np.log(wage_mt[nsinglefc2b]),np.log(wage_fpt[nsinglefc2b])) 
         corrm1=np.corrcoef(np.log(wage_mt[nsinglefm2b]),np.log(wage_fpt[nsinglefm2b])) 
+        acorr=np.corrcoef((wage_ft[nsinglefc1b]),(wage_mpt[nsinglefc1b])) 
+        acorr1=np.corrcoef((wage_ft[nsinglefm1b]),(wage_mpt[nsinglefm1b])) 
+        acorrm=np.corrcoef((wage_mt[nsinglefc2b]),(wage_fpt[nsinglefc2b])) 
+        acorrm1=np.corrcoef((wage_mt[nsinglefm2b]),(wage_fpt[nsinglefm2b])) 
         share_fcm=np.mean(wage_ft[nsinglefc1]*setup.ls_levels[-1]/(wage_mpt[nsinglefc1]*setup.ls_levels[-1]+wage_ft[nsinglefc1]*setup.ls_levels[-1])) 
         share_fmm=np.mean(wage_ft[nsinglefc1]*setup.ls_levels[-1]/(wage_mpt[nsinglefc1]*setup.ls_levels[-1]+wage_ft[nsinglefc1]*setup.ls_levels[-1])) 
         share_mcm=np.mean(wage_fpt[nsinglefc2]*setup.ls_levels[-1]/(wage_mt[nsinglefc2]*setup.ls_levels[-1]+wage_fpt[nsinglefc2]*setup.ls_levels[-1])) 
@@ -1578,7 +1582,9 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         
         #Results
         print('FM Correlation in potential wages for cohabitaiton is {}, for marriage only is {}'.format(corr[0,1],corr1[0,1]) )   
-        print('MM Correlation in potential wages for cohabitaiton is {}, for marriage only is {}'.format(corrm[0,1],corrm1[0,1]) )   
+        print('MM Correlation in potential wages for cohabitaiton is {}, for marriage only is {}'.format(corrm[0,1],corrm1[0,1]) )
+        print('FM Correlation in potential wages for cohabitaiton is {}, for marriage only is {}'.format(acorr[0,1],acorr1[0,1]) )   
+        print('MM Correlation in potential wages for cohabitaiton is {}, for marriage only is {}'.format(acorrm[0,1],acorrm1[0,1]) )
         print('FM Share wages earned by female in cohabitaiton is {}, for marriage only is {}'.format(share_fcm,share_fmm) )   
         print('MM Share wages earned by female in cohabitaiton is {}, for marriage only is {}'.format(share_mcm,share_mmm) )  
         print('FM share wealthy if incom>median for coh is {}, for marriage only is {}'.format(sh_f_c,sh_f_m) )   

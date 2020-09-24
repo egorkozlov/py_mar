@@ -12,7 +12,7 @@ from scipy.stats import norm
 from scipy import optimize
 from collections import namedtuple
 from gridvec import VecOnGrid
-
+import pickle
 from scipy import sparse
 
 
@@ -22,11 +22,11 @@ class ModelSetup(object):
         p = dict()       
         period_year=1#this can be 1,2,3 or 6
         transform=2#this tells how many periods to pull together for duration moments
-        T = int(50/period_year)#int(62/period_year)
-        Tret = int(38/period_year)#int(42/period_year) # first period when the agent is retired
+        T = int(62/period_year)#int(62/period_year)
+        Tret = int(42/period_year)#int(42/period_year) # first period when the agent is retired
         Tbef=int(0/period_year)
-        Tren  = int(38/period_year)#int(42/period_year)#int(42/period_year) # period starting which people do not renegotiate/divroce
-        Tmeet = int(38/period_year)#int(42/period_year)#int(42/period_year) # period starting which you do not meet anyone
+        Tren  = int(42/period_year)#int(42/period_year)#int(42/period_year) # period starting which people do not renegotiate/divroce
+        Tmeet = int(42/period_year)#int(42/period_year)#int(42/period_year) # period starting which you do not meet anyone
         p['py']=period_year
         p['ty']=transform
         p['T'] = T
@@ -43,18 +43,19 @@ class ModelSetup(object):
         p['sigma_psi_mult'] = 0.28
         p['sigma_psi']   = 0.11
         p['n_psi_t']     = [15]*T
-        p['R_t'] = [1.015**period_year]*T
+        p['R_t'] = [1.02**period_year]*T
         p['beta_t'] = [0.98**period_year]*T
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.0 
         p['sig_partner_a'] = 0.05
-        p['sig_partner_z'] = 1.2#1.0#0.4 #This is crazy powerful for the diff in diff estimate
+        p['sig_partner_zf'] = 4.0#1.8#0.4 #This is crazy powerful for the diff in diff estimate
+        p['sig_partner_zm'] = 0.5
         p['sig_partner_mult'] = 1.0
-        p['dump_factor_z'] = 0.65#0.82
+        p['dump_factor_z'] = 0.85#0.65
         p['dump_factor_a'] = 0.8#0.65
-        p['mean_partner_z_female'] = 0.02#0.05
-        p['mean_partner_z_male'] =  -0.02#-0.05
+        p['mean_partner_z_female'] = 0.05#0.02
+        p['mean_partner_z_male'] =  0.01#-0.02
         p['mean_partner_a_female'] = 0.32
         p['mean_partner_a_male'] = -0.32
         p['m_bargaining_weight'] = 0.5
@@ -100,7 +101,10 @@ class ModelSetup(object):
         p['rprice_durables'] = 1.0#
         
         
-
+        with open('assets.pkl', 'rb') as file:assets=pickle.load(file)
+        p['av_a_m']=assets['av_a_m']
+        p['av_a_f']=assets['av_a_f']
+       
         
 
         
@@ -423,7 +427,7 @@ class ModelSetup(object):
         self.scala=1.0
         self.amin = 0
         self.amax = 60*self.scala
-        self.amax1 = 130*self.scala
+        self.amax1 = 100*self.scala
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
         tune=10#30.5
         self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
@@ -638,7 +642,7 @@ class ModelSetup(object):
             zmat_own = setup.exogrid.zf_t_mat[t]
             trend=setup.pars['m_wage_trend_single'][t]
             mean=setup.pars['mean_partner_z_female']-setup.pars['m_wage_trend'][t]+setup.pars['m_wage_trend_single'][t]
-            sig_z_partner=(setup.pars['sig_zm_0']**2+(t+1)*setup.pars['sig_zm']**2)**0.5
+            sig_z_partner=(setup.pars['sig_zm_0']**2+(t+1)*setup.pars['sig_partner_zm']*setup.pars['sig_zm']**2)**0.5
         else:
             nz_single = setup.exogrid.zm_t[t].shape[0]
             p_mat = np.empty((nexo,nz_single))
@@ -648,7 +652,7 @@ class ModelSetup(object):
             zmat_own = setup.exogrid.zm_t_mat[t]    
             trend=setup.pars['f_wage_trend_single'][t]
             mean=setup.pars['mean_partner_z_male']-setup.pars['f_wage_trend'][t]+setup.pars['f_wage_trend_single'][t]
-            sig_z_partner=(setup.pars['sig_zf_0']**2+(t+1)*setup.pars['sig_zf']**2)**0.5
+            sig_z_partner=(setup.pars['sig_zf_0']**2+(t+1)*setup.pars['sig_partner_zf']*setup.pars['sig_zf']**2)**0.5
             
         def ind_conv(a,b,c): return setup.all_indices(t,(a,b,c))[0]
         

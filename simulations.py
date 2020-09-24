@@ -109,8 +109,8 @@ class Agents:
         self.c = np.zeros((N,T),np.float32)
         self.x = np.zeros((N,T),np.float32)
         self.s = np.zeros((N,T),np.float32)
-        self.share_m=np.zeros(T,np.float32)
-        self.share_s=np.zeros(T,np.float32)
+        self.share_m=np.zeros((T,2),np.float32)
+        self.share_s=np.zeros((T,2),np.float32)
 
         
         
@@ -533,8 +533,7 @@ class Agents:
 
                         # if bribing happens we overwrite this
                         self.iassets[ind[i_div],t+1] = VecOnGrid(self.Mlist[ipol].setup.agrid_s,s).roll(shocks=shks)
-                        if sname == "Couple, C":self.share_s[t]=np.mean(sf/(sf+sm))
-                        if sname == "Couple, M":self.share_m[t]=np.mean(sf/(sf+sm))
+
                         #if sname == "Couple, C":print(np.mean(share_f),np.mean(share_m),np.mean(self.setup.thetagrid[self.setup.v_thetagrid_fine.i[itht]][i_div]))
                         
                         if bil_bribing:
@@ -546,6 +545,14 @@ class Agents:
                             do_b = do_bribing[isc[i_div],iall[i_div],itht[i_div]] # True / False if bribing happens
                             assert np.all(iassets_ifdiv[do_b] >= 0)
                             
+                            #For share of assets
+                            if self.female:
+                                sf[do_b]=(self.setup.agrid_s[iassets_ifdiv]/(sc[i_div]*costs.assets_kept))[do_b]
+                                sm[do_b]=((sc[i_div]*costs.assets_kept-self.setup.agrid_s[iassets_ifdiv])/(sc[i_div]*costs.assets_kept))[do_b]
+                            else:
+                                sm[do_b]=(self.setup.agrid_s[iassets_ifdiv]/(sc[i_div]*costs.assets_kept))[do_b]
+                                sf[do_b]=((sc[i_div]*costs.assets_kept-self.setup.agrid_s[iassets_ifdiv])/(sc[i_div]*costs.assets_kept))[do_b]
+                                
                             if np.any(do_b):
                                 n_b = np.sum(do_b)
                                 n_tot = np.sum(i_div)
@@ -561,6 +568,8 @@ class Agents:
                       #          if sname == "Couple, M":print(np.mean(aaa[aaa1]))
                          
                                 
+                        if sname == "Couple, C":self.share_s[t,ipol]=np.mean((sf/(sf+sm))[sc[i_div]>0])
+                        if sname == "Couple, M":self.share_m[t,ipol]=np.mean((sf/(sf+sm))[sc[i_div]>0])
                         
                         self.itheta[ind[i_div],t+1] = -1
                         self.iexo[ind[i_div],t+1] = iz[i_div]

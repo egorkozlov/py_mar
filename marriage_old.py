@@ -275,7 +275,7 @@ def mar_loop2(vfy,vmy,vfn,vmn,which):
     
     return vfout, vmout, nbsout, agree, ithetaout, whichout
             
-#@njit
+@njit
 def mar_loop(vfy,vmy,vfn,vmn):
 
     shp=vfy.shape

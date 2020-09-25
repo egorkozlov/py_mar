@@ -82,8 +82,8 @@ class ModelSetup(object):
         p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.5960803  +.05829568*t -.00169143*t**2+ .00001446*t**3) for t in range(T)]
    
               
-        p['f_wage_trend'] = [0.0*(t>=Tret+2)+(t<Tret+2)*(-0.0+-.77138877  +.05915875*t -.00232914*t**2+ .00002484*t**3) for t in range(T)]
-        p['f_wage_trend_single'] =  [0.0*(t>=Tret+2)+(t<Tret+2)*(-0.0+-.67980802  +.04603417*t -.00158584*t**2+ .00001594*t**3) for t in range(T)]
+        p['f_wage_trend'] = [0.0*(t>=Tret+2)+(t<Tret+2)*(0.00+-.77138877  +.05915875*t -.00232914*t**2+ .00002484*t**3) for t in range(T)]
+        p['f_wage_trend_single'] =  [0.0*(t>=Tret+2)+(t<Tret+2)*(0.00+-.67980802  +.04603417*t -.00158584*t**2+ .00001594*t**3) for t in range(T)]
         p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-.434235  +.06016318*t -.00183131*t**2+ .00001573*t**3) for t in range(T)]
         p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.486139  +.05170349*t -.00160466*t**2+ .00001446*t**3) for t in range(T)]
            
@@ -98,7 +98,7 @@ class ModelSetup(object):
         p['util_alp_temp'] = 0.5
         p['util_xi'] = 1.07
         p['util_kap_temp']=0.206
-        p['rprice_durables'] = 1.3#
+        p['rprice_durables'] = 1.0#
         
         
         with open('assets.pkl', 'rb') as file:assets=pickle.load(file)
@@ -563,7 +563,7 @@ class ModelSetup(object):
         self.u_precompute()
         
         
-    def mar_mats_assets(self,npoints=40,abar=0.1):
+    def mar_mats_assets(self,npoints=12,abar=0.1):
         # for each grid point on single's grid it returns npoints positions
         # on (potential) couple's grid's and assets of potential partner 
         # (that can be off grid) and correpsonding probabilities. 
@@ -592,7 +592,7 @@ class ModelSetup(object):
                     
                     # if a is zero this works a bit weird but does the job
                     
-                    lagrid_t[~i_neg] = agrid_c[~i_neg]#np.log(2e-6 + (agrid_c[~i_neg] - a)/max(abar,a))#
+                    lagrid_t[~i_neg] = np.log(2e-6 + (agrid_c[~i_neg] - a)/max(abar,a))#agrid_c[~i_neg]#
                     
                     
                     lmin = lagrid_t[~i_neg].min()
@@ -603,20 +603,20 @@ class ModelSetup(object):
                     # TODO: this needs to be checked
                     if female:
                         me=self.pars['av_a_m'][t]
-                        mean=a*1.6+me*0.4#self.pars['mean_partner_a_female']#np.log(2e-6 + ( me)/max(abar,a))#
+                        mean=self.pars['mean_partner_a_female']#a*1.6+me*0.4#np.log(2e-6 + ( me)/max(abar,a))#
                         st=2.5*max(np.std((2e-6 + (self.pars['totm'][t]))),0.01)#max(np.std(np.log(2e-6 + (self.pars['totm'][t])/max(abar,a))),0.001)#s_a_partner
                     else:
                         me=self.pars['av_a_f'][t]
-                        mean=(a*1.6*0.95+me*0.4)#self.pars['mean_partner_a_male']#np.log(2e-6 + (me )/max(abar,a))#
+                        mean=self.pars['mean_partner_a_male']#(a*1.6*0.95+me*0.4)#np.log(2e-6 + (me )/max(abar,a))#
                         st=max(np.std((2e-6 + (self.pars['totf'][t]))),0.01)#max(np.std(np.log(2e-6 + (self.pars['totf'][t])/max(abar,a))),0.001)#s_a_partner
                         
                     #p_a = int_prob(lagrid_t,mu=mean,sig=st,n_points=npoints)
                     p_a = int_prob(lagrid_t,mu=mean,sig=st**0.5,n_points=npoints)
                     
                     
-                    # p_a  = int_prob(lagrid_t, mu=self.pars['dump_factor_a']*mean
-                    #                   ,sig=(1-self.pars['dump_factor_a'])**
-                    #                   0.5*s_a_partner*self.pars['sig_partner_mult'],n_points=npoints)
+                    p_a  = int_prob(lagrid_t, mu=self.pars['dump_factor_a']*mean
+                                      ,sig=(1-self.pars['dump_factor_a'])**
+                                      0.5*s_a_partner*self.pars['sig_partner_mult'],n_points=npoints)
                      
                     i_pa = (-p_a).argsort()[:npoints] # this is more robust then nonzero
                     p_pa = p_a[i_pa]

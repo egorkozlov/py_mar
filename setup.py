@@ -82,8 +82,8 @@ class ModelSetup(object):
         p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.5960803  +.05829568*t -.00169143*t**2+ .00001446*t**3) for t in range(T)]
    
               
-        p['f_wage_trend'] = [0.0*(t>=Tret+2)+(t<Tret+2)*(0.0+-.77138877  +.05915875*t -.00232914*t**2+ .00002484*t**3) for t in range(T)]
-        p['f_wage_trend_single'] =  [0.0*(t>=Tret+2)+(t<Tret+2)*(0.0+-.67980802  +.04603417*t -.00158584*t**2+ .00001594*t**3) for t in range(T)]
+        p['f_wage_trend'] = [0.0*(t>=Tret+2)+(t<Tret+2)*(-0.0+-.77138877  +.05915875*t -.00232914*t**2+ .00002484*t**3) for t in range(T)]
+        p['f_wage_trend_single'] =  [0.0*(t>=Tret+2)+(t<Tret+2)*(-0.0+-.67980802  +.04603417*t -.00158584*t**2+ .00001594*t**3) for t in range(T)]
         p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-.434235  +.06016318*t -.00183131*t**2+ .00001573*t**3) for t in range(T)]
         p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.486139  +.05170349*t -.00160466*t**2+ .00001446*t**3) for t in range(T)]
            
@@ -98,12 +98,14 @@ class ModelSetup(object):
         p['util_alp_temp'] = 0.5
         p['util_xi'] = 1.07
         p['util_kap_temp']=0.206
-        p['rprice_durables'] = 1.0#
+        p['rprice_durables'] = 1.3#
         
         
         with open('assets.pkl', 'rb') as file:assets=pickle.load(file)
         p['av_a_m']=assets['av_a_m']
         p['av_a_f']=assets['av_a_f']
+        p['totf']=assets['totf']
+        p['totm']=assets['totm']
        
         
 
@@ -561,7 +563,7 @@ class ModelSetup(object):
         self.u_precompute()
         
         
-    def mar_mats_assets(self,npoints=4,abar=0.1):
+    def mar_mats_assets(self,npoints=40,abar=0.1):
         # for each grid point on single's grid it returns npoints positions
         # on (potential) couple's grid's and assets of potential partner 
         # (that can be off grid) and correpsonding probabilities. 
@@ -577,39 +579,49 @@ class ModelSetup(object):
         s_a_partner = self.pars['sig_partner_a']
         
         for female in [True,False]:
-            prob_a_mat = np.zeros((na,npoints),dtype=self.dtype)
-            i_a_mat = np.zeros((na,npoints),dtype=np.int16)
+            prob_a_mat = np.zeros((self.pars['T'],na,npoints),dtype=self.dtype)
+            i_a_mat = np.zeros((self.pars['T'],na,npoints),dtype=np.int16)
             
             
             
             for ia, a in enumerate(agrid_s):
-                lagrid_t = np.zeros_like(agrid_c)
-                
-                i_neg = (agrid_c <= max(abar,a) - 1e-6)
-                
-                # if a is zero this works a bit weird but does the job
-                
-                lagrid_t[~i_neg] = np.log(2e-6 + (agrid_c[~i_neg] - a)/max(abar,a))
-                lmin = lagrid_t[~i_neg].min()
-                # just fill with very negative values so this is never chosen
-                lagrid_t[i_neg] = lmin - s_a_partner*10 - \
-                    s_a_partner*np.flip(np.arange(i_neg.sum())) 
-                
-                # TODO: this needs to be checked
-                if female:
-                    mean=self.pars['mean_partner_a_female']
-                else:
-                    mean=self.pars['mean_partner_a_male']
-                p_a = int_prob(lagrid_t,mu=mean,sig=s_a_partner,n_points=npoints)
-                
-                p_a  = int_prob(lagrid_t, mu=self.pars['dump_factor_a']*mean
-                                  ,sig=(1-self.pars['dump_factor_a'])**
-                                  0.5*s_a_partner*self.pars['sig_partner_mult'],n_points=npoints)
-                 
-                i_pa = (-p_a).argsort()[:npoints] # this is more robust then nonzero
-                p_pa = p_a[i_pa]
-                prob_a_mat[ia,:] = p_pa
-                i_a_mat[ia,:] = i_pa
+                for t in range(self.pars['T']):
+                    lagrid_t = np.zeros_like(agrid_c)
+                    
+                    i_neg = (agrid_c <= max(abar,a) - 1e-6)
+                    
+                    # if a is zero this works a bit weird but does the job
+                    
+                    lagrid_t[~i_neg] = agrid_c[~i_neg]#np.log(2e-6 + (agrid_c[~i_neg] - a)/max(abar,a))#
+                    
+                    
+                    lmin = lagrid_t[~i_neg].min()
+                    # just fill with very negative values so this is never chosen
+                    lagrid_t[i_neg] = lmin - s_a_partner*10 - \
+                        s_a_partner*np.flip(np.arange(i_neg.sum())) 
+                    
+                    # TODO: this needs to be checked
+                    if female:
+                        me=self.pars['av_a_m'][t]
+                        mean=a*1.6+me*0.4#self.pars['mean_partner_a_female']#np.log(2e-6 + ( me)/max(abar,a))#
+                        st=2.5*max(np.std((2e-6 + (self.pars['totm'][t]))),0.01)#max(np.std(np.log(2e-6 + (self.pars['totm'][t])/max(abar,a))),0.001)#s_a_partner
+                    else:
+                        me=self.pars['av_a_f'][t]
+                        mean=(a*1.6*0.95+me*0.4)#self.pars['mean_partner_a_male']#np.log(2e-6 + (me )/max(abar,a))#
+                        st=max(np.std((2e-6 + (self.pars['totf'][t]))),0.01)#max(np.std(np.log(2e-6 + (self.pars['totf'][t])/max(abar,a))),0.001)#s_a_partner
+                        
+                    #p_a = int_prob(lagrid_t,mu=mean,sig=st,n_points=npoints)
+                    p_a = int_prob(lagrid_t,mu=mean,sig=st**0.5,n_points=npoints)
+                    
+                    
+                    # p_a  = int_prob(lagrid_t, mu=self.pars['dump_factor_a']*mean
+                    #                   ,sig=(1-self.pars['dump_factor_a'])**
+                    #                   0.5*s_a_partner*self.pars['sig_partner_mult'],n_points=npoints)
+                     
+                    i_pa = (-p_a).argsort()[:npoints] # this is more robust then nonzero
+                    p_pa = p_a[i_pa]
+                    prob_a_mat[t,ia,:] = p_pa
+                    i_a_mat[t,ia,:] = i_pa
             
             
             self.prob_a_mat[female] = prob_a_mat
@@ -705,8 +717,7 @@ class ModelSetup(object):
         for female in [True,False]:
             desc = 'Female, single' if female else 'Male, single'
             
-            pmat_a = self.prob_a_mat[female]
-            imat_a = self.i_a_mat[female]
+
             
             pmats = self.part_mats[desc] 
             
@@ -718,6 +729,9 @@ class ModelSetup(object):
                 pmat_iexo = pmats[t] # nz X nexo
                 # note that here we do not use transpose
                 
+                pmat_a = self.prob_a_mat[female][t,:,:]
+                imat_a = self.i_a_mat[female][t,:,:]
+            
                 nz = pmat_iexo.shape[0]
                 
                 inds = np.where( np.any(pmat_iexo>0,axis=0) )[0]

@@ -97,21 +97,23 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     # ############################################################# 
     # av_a_m=np.zeros(setup.pars['T'])
     # av_a_f=np.zeros(setup.pars['T'])
-    
+    # totf=list()
+    # totm=list()
     # fem=female[:,0] 
     # for t in range(setup.pars['T']):
     #         asse=assets_t[:,t] 
-    #         av_a_m[t]=np.mean(asse[(female[:,t]==0)]) 
-           
+    #         av_a_m[t]=np.mean(asse[(female[:,t]==0) & (state[:,t]==1)]) 
+    #         totm=totm+[asse[(female[:,t]==0) & (state[:,t]==1)]]
              
              
     # for t in range(setup.pars['T']): 
     #         asse=assets_t[:,t] 
-    #         av_a_f[t]=np.mean(asse[(female[:,t]==1)]) 
+    #         av_a_f[t]=np.mean(asse[(female[:,t]==1) & (state[:,t]==0)]) 
+    #         totf=totf+[asse[(female[:,t]==1) & (state[:,t]==0)]]
           
  
  
-    # saveme={'av_a_m':av_a_m,'av_a_f':av_a_f} 
+    # saveme={'av_a_m':av_a_m,'av_a_f':av_a_f,'totf':totf,'totm':totm} 
     # #Save it! 
     # with open('assets.pkl', 'wb+') as file:pickle.dump(saveme,file)  
           

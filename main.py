@@ -39,7 +39,7 @@ if __name__ == '__main__':
     
     
     #Build  data moments and pickle them
-    dat_moments(period=1,sampling_number=100,weighting=True,transform=2) # refresh
+    #dat_moments(period=1,sampling_number=100,weighting=True,transform=2) # refresh
     
     
     
@@ -73,7 +73,7 @@ if __name__ == '__main__':
     
     #Now Re do the computation with graphs!
     out, mdl = mdl_resid(param[1],return_format=['distance','model'],calibration_report=False,
-                         verbose=True,draw=True)
+                         verbose=True,draw=True )
     
     
    

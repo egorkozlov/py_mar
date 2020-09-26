@@ -48,16 +48,16 @@ class ModelSetup(object):
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.0 
-        p['sig_partner_a'] = 0.05
+        p['sig_partner_a'] = 0.1#0.05
         p['sig_partner_zf'] = 4.0#1.8#0.4 #This is crazy powerful for the diff in diff estimate
         p['sig_partner_zm'] = 0.5
         p['sig_partner_mult'] = 1.0
-        p['dump_factor_z'] = 0.85#0.65
+        p['dump_factor_z'] = 0.25#0.85
         p['dump_factor_a'] = 0.8#0.65
         p['mean_partner_z_female'] = 0.05#0.02
         p['mean_partner_z_male'] =  0.01#-0.02
-        p['mean_partner_a_female'] = 0.32
-        p['mean_partner_a_male'] = -0.32
+        p['mean_partner_a_female'] = 0.22#0.32
+        p['mean_partner_a_male'] = -0.22#-0.32
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
         

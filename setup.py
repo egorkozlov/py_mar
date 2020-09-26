@@ -49,13 +49,13 @@ class ModelSetup(object):
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.0 
         p['sig_partner_a'] = 0.1#0.05
-        p['sig_partner_zf'] = 4.0#1.8#0.4 #This is crazy powerful for the diff in diff estimate
-        p['sig_partner_zm'] = 0.5
+        p['sig_partner_zf'] = 1.5#4.0#1.8#0.4 #This is crazy powerful for the diff in diff estimate
+        p['sig_partner_zm'] = 0.95#0.5
         p['sig_partner_mult'] = 1.0
         p['dump_factor_z'] = 0.25#0.85
         p['dump_factor_a'] = 0.8#0.65
-        p['mean_partner_z_female'] = 0.05#0.02
-        p['mean_partner_z_male'] =  0.01#-0.02
+        p['mean_partner_z_female'] = 0.01#0.05#0.02
+        p['mean_partner_z_male'] =  -0.03#0.01#-0.02
         p['mean_partner_a_female'] = 0.22#0.32
         p['mean_partner_a_male'] = -0.22#-0.32
         p['m_bargaining_weight'] = 0.5
@@ -465,7 +465,7 @@ class ModelSetup(object):
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta,dtype=self.dtype)
         
         #Grid for the share in assets
-        self.ashare = np.linspace(0.15,0.85,3,dtype=self.dtype)
+        self.ashare = np.linspace(0.05,0.95,3,dtype=self.dtype)#self.ashare = np.linspace(0.15,0.85,3,dtype=self.dtype)
         
         
         

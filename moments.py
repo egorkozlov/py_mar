@@ -21,7 +21,8 @@ from welfare_comp import welf_dec
 matplotlib.use("pgf")    
 matplotlib.rcParams.update({    
     "pgf.texsystem": "pdflatex",    
-    'font.family': 'serif',    
+    #'font.family': 'serif',
+    'font.family':'sans-serif',    
     'font.size' : 11,    
     'text.usetex': True,    
     'pgf.rcfonts': False,    
@@ -2019,6 +2020,33 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.ylabel('Probability')   
         plt.savefig('psidist.pgf', bbox_inches = 'tight',pad_inches = 0)   
           
+        
+        ##########################################    
+        # Distribution of Love - Cumulative 
+        ##########################################   
+        fig = plt.figure()    
+        f1=fig.add_subplot(1.5,1,1) 
+         
+        # evaluate the histogram 
+        valuesc, basec = np.histogram(psi_check[changec], bins=1000) 
+        valuesm, basem = np.histogram(psi_check[changem], bins=1000) 
+        #valuesct, basect = np.histogram(psi_check[state==3], bins=1000) 
+        #valuesmt, basemt = np.histogram(psi_check[state==2], bins=1000) 
+        #evaluate the cumulative 
+        cumulativec = np.cumsum(valuesc) 
+        cumulativem = np.cumsum(valuesm) 
+        #cumulativect = np.cumsum(valuesct) 
+        #cumulativemt = np.cumsum(valuesmt) 
+        # plot the cumulative function 
+        plt.plot(basec[:-1], cumulativec/max(cumulativec), c='red',markersize=6,label = 'Cohabitation') 
+        plt.plot(basem[:-1], cumulativem/max(cumulativem), c='blue',markersize=6,label = 'Marriage') 
+        #plt.plot(basect[:-1], cumulativect/max(cumulativect),linestyle='--', c='red',label = 'Cohabitation-All') 
+        #plt.plot(basemt[:-1], cumulativemt/max(cumulativemt),linestyle='--', c='blue',label = 'Marriage-All') 
+        plt.legend(loc='best', fontsize=16,frameon=False,ncol=1)      
+        plt.xlabel('Match quality at meeting $\psi_1$', fontsize=16)    
+        plt.ylabel('Probability', fontsize=16)  
+        plt.savefig('psidist2.pgf', bbox_inches = 'tight',pad_inches = 0) 
+        
         ############################################################  
         # Distribution of Love - Cumulative - Before and After policy  
         ###################################################################  
@@ -2060,7 +2088,22 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.ylabel('Denisty')   
         plt.savefig('thtdist.pgf', bbox_inches = 'tight',pad_inches = 0)  
           
+        ##########################################     
+        # Distribution of Pareto Weight   
+        ##########################################    
+        fig = plt.figure()     
+        f6=fig.add_subplot(1.5,1,1)  
           
+          
+        sns.kdeplot(theta_w[state_w==3], shade=True,shade_lowest=False,linewidth=0.01, color="r",markersize=6, bw=.05,label = 'Coh.')  
+        sns.kdeplot(theta_w[state_w==2], shade=True,shade_lowest=False,linewidth=0.01, color="b",markersize=6, bw=.05,label = 'Mar.')  
+        sns.kdeplot(theta_w[changec], color="r", linestyle='--',bw=.05,label = 'Coh. at meeting')  
+        sns.kdeplot(theta_w[changem], color="b", linestyle='--', bw=.05,label = 'Mar. at meeting')   
+        plt.legend(loc='best', fontsize=16,frameon=False,ncol=1)     
+        plt.xlabel('Pareto weight of Women',fontsize=16)     
+        plt.ylabel('Denisty',fontsize=16)   
+        plt.savefig('thtdist2.pgf', bbox_inches = 'tight',pad_inches = 0)  
+        
         ##########################################     
         # Event Study Love Shock  
         ##########################################    
@@ -2085,6 +2128,14 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.xlabel('Event time (model years)', fontsize=16)     
         plt.ylabel('$\psi$---variation from baseline', fontsize=16)  
         plt.savefig('e_psi.pgf', bbox_inches = 'tight',pad_inches = 0)   
+        
+        plt.plot(eventgrid2, pevent_psi_coh,color='r',linestyle='-',  marker='+', label='Cohabitation')  
+        plt.plot(eventgrid2, pevent_psi_mar,color='b',linestyle='--', marker='x', label='Marriage')  
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),     
+                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize=18)     
+        plt.xlabel('Event time (model years)', fontsize=18)     
+        plt.ylabel('$\psi$---variation from baseline', fontsize=18)  
+        plt.savefig('e_psi2.pgf', bbox_inches = 'tight',pad_inches = 0)   
           
         ##########################################     
         # Event Study Pareto Weight  
@@ -2110,6 +2161,14 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.xlabel('Event time (model years)', fontsize=16)     
         plt.ylabel(r'$\theta$---variation from baseline', fontsize=16)   
         plt.savefig('e_theta.pgf', bbox_inches = 'tight',pad_inches = 0)   
+        
+        plt.plot(eventgrid2, pevent_theta_coh,color='r',linestyle='-',  marker='+', label='Cohabitation')  
+        plt.plot(eventgrid2, pevent_theta_mar,color='b',linestyle='--', marker='x', label='Marriage')  
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),     
+                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize=18)     
+        plt.xlabel('Event time (model years)', fontsize=18)     
+        plt.ylabel(r'$\theta$---variation from baseline', fontsize=18)   
+        plt.savefig('e_theta2.pgf', bbox_inches = 'tight',pad_inches = 0)  
          
         ##########################################     
         # Event Study flp 

@@ -2129,6 +2129,11 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.ylabel('$\psi$---variation from baseline', fontsize=16)  
         plt.savefig('e_psi.pgf', bbox_inches = 'tight',pad_inches = 0)   
         
+        
+                  
+        fig = plt.figure()     
+        f6=fig.add_subplot(1.5,1,1)  
+        
         plt.plot(eventgrid2, pevent_psi_coh,color='r',linestyle='-',  marker='+', label='Cohabitation')  
         plt.plot(eventgrid2, pevent_psi_mar,color='b',linestyle='--', marker='x', label='Marriage')  
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),     
@@ -2162,6 +2167,10 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.ylabel(r'$\theta$---variation from baseline', fontsize=16)   
         plt.savefig('e_theta.pgf', bbox_inches = 'tight',pad_inches = 0)   
         
+                  
+        fig = plt.figure()     
+        f6=fig.add_subplot(1.5,1,1)  
+        
         plt.plot(eventgrid2, pevent_theta_coh,color='r',linestyle='-',  marker='+', label='Cohabitation')  
         plt.plot(eventgrid2, pevent_theta_mar,color='b',linestyle='--', marker='x', label='Marriage')  
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),     
@@ -2189,6 +2198,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         fig = plt.figure()     
         f6=fig.add_subplot(1.5,1,1)  
           
+        
         plt.plot(eventgrid2[:-2], pevent_lc[:-2],color='r',linestyle='-',  marker='+',label='Cohabitation')  
         plt.plot(eventgrid2[:-2], pevent_lm[:-2],color='b',linestyle='--', marker='x', label='Marriage')  
         plt.plot(eventgrid2[:-2], pevent_lt[:-2],color='k',linestyle=':', marker='1', label='Marriage+cohabitation')  

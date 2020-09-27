@@ -48,9 +48,7 @@ class ModelSetup(object):
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.0 
-        #p['sig_partner_a'] = 0.1#0.05
-        p['sig_partner_am'] = 0.05#0.05
-        p['sig_partner_af'] = 0.05#0.05
+        p['sig_partner_a'] = 0.1#0.05
         p['sig_partner_zf'] = 1.5#4.0#1.8#0.4 #This is crazy powerful for the diff in diff estimate
         p['sig_partner_zm'] = 0.95#0.5
         p['sig_partner_mult'] = 1.0
@@ -58,8 +56,8 @@ class ModelSetup(object):
         p['dump_factor_a'] = 0.8#0.65
         p['mean_partner_z_female'] = 0.01#0.05#0.02
         p['mean_partner_z_male'] =  -0.03#0.01#-0.02
-        p['mean_partner_a_female'] = 0.15#0.22#0.32
-        p['mean_partner_a_male'] = -0.15#-0.22#-0.32
+        p['mean_partner_a_female'] = 0.22#0.32
+        p['mean_partner_a_male'] = -0.22#-0.32
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
         
@@ -578,13 +576,12 @@ class ModelSetup(object):
         agrid_s = self.agrid_s
         agrid_c = self.agrid_c
         
+        s_a_partner = self.pars['sig_partner_a']
         
         for female in [True,False]:
-            s_a_partner = self.pars['sig_partner_am'] if female else self.pars['sig_partner_af']
-            mena=-0.4 if female else 1.0
             prob_a_mat = np.zeros((self.pars['T'],na,npoints),dtype=self.dtype)
             i_a_mat = np.zeros((self.pars['T'],na,npoints),dtype=np.int16)
-            
+            mena=-0.15 if female else 0.15
             
             
             for ia, a in enumerate(agrid_s):
@@ -595,7 +592,7 @@ class ModelSetup(object):
                     
                     # if a is zero this works a bit weird but does the job
                     
-                    lagrid_t[~i_neg] = np.log(2e-6 + (agrid_c[~i_neg] - max(a-mena,0.001))/max(abar,a))#agrid_c[~i_neg]#
+                    lagrid_t[~i_neg] = np.log(2e-6 + (agrid_c[~i_neg] - max((a-mena),0))/max(abar,a))#agrid_c[~i_neg]#
                     
                     
                     lmin = lagrid_t[~i_neg].min()

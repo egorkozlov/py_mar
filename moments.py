@@ -21,8 +21,8 @@ from welfare_comp import welf_dec
 matplotlib.use("pgf")    
 matplotlib.rcParams.update({    
     "pgf.texsystem": "pdflatex",    
-    #'font.family': 'serif',
-    'font.family':'sans-serif',    
+    'font.family': 'serif',
+    #'font.family':'sans-serif',    
     'font.size' : 11,    
     'text.usetex': True,    
     'pgf.rcfonts': False,    
@@ -1262,8 +1262,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
               
         #Log Income over time  
         for t in range(lenn):  
-            ipart=(labor_w[:,t]>0.0) & (ifemale2) & (state_w[:,t]<2)  
-            ipartm=(state_w[:,t]==1) & (imale2)  & (state_w[:,t]<2) 
+            ipart=(labor_w[:,t]>0.0) & (ifemale2) #& (state_w[:,t]<2)  
+            ipartm=(state_w[:,t]==1) & (imale2)  #& (state_w[:,t]<2) 
             log_inc_rel[0,t]=np.mean(np.log(wage_f2[ipart,t]))  
             log_inc_rel[1,t]=np.mean(np.log(wage_m2[imale2,t]))  
                   
@@ -1593,9 +1593,10 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         print('Share of people ever cohabited by 39 is {}'.format(reltt[-1,-1]/N) )   
         print('Share of people ever married by 39 is {}'.format(reltt[-2,-1]/N) )     
         print('Years spent cohabiting 20-35 is  {}'.format(np.mean(state[:,:35]==3)*35))     
-        print('Years spent married 20-35 is  {}'.format(np.mean(state[:,:35]==2)*35))          
+        print('Years spent married 20-35 is  {}'.format(np.mean(state[:,:35]==2)*35))  
+        print('Coh length is  {}'.format(np.mean(all_spells['Couple, C'][:,1])) )         
          
-        #Get useful package for denisty plots  
+        #Get useful package for density plots  
         import seaborn as sns  
           
         #Print something useful for debug and rest     
@@ -1990,7 +1991,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),     
                   fancybox=True, shadow=True, ncol=len(state_codes), fontsize='x-small')     
         plt.xlabel('Love Shock')     
-        plt.ylabel('Denisty')   
+        plt.ylabel('Density')   
         
          
         ##########################################     
@@ -2042,9 +2043,9 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.plot(basem[:-1], cumulativem/max(cumulativem), c='blue',markersize=6,label = 'Marriage') 
         #plt.plot(basect[:-1], cumulativect/max(cumulativect),linestyle='--', c='red',label = 'Cohabitation-All') 
         #plt.plot(basemt[:-1], cumulativemt/max(cumulativemt),linestyle='--', c='blue',label = 'Marriage-All') 
-        plt.legend(loc='best', fontsize=16,frameon=False,ncol=1)      
-        plt.xlabel('Match quality at meeting $\psi_1$', fontsize=16)    
-        plt.ylabel('Probability', fontsize=16)  
+        plt.legend(loc='best', fontsize=17,frameon=False,ncol=1)      
+        plt.xlabel('Match quality at meeting $\psi_1$', fontsize=17)    
+        plt.ylabel('Probability', fontsize=17)  
         plt.savefig('psidist2.pgf', bbox_inches = 'tight',pad_inches = 0) 
         
         ############################################################  
@@ -2085,7 +2086,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3),     
                   fancybox=True, shadow=True, ncol=2, fontsize='x-small')     
         plt.xlabel('Pareto weight of Women')     
-        plt.ylabel('Denisty')   
+        plt.ylabel('Density')   
         plt.savefig('thtdist.pgf', bbox_inches = 'tight',pad_inches = 0)  
           
         ##########################################     
@@ -2097,11 +2098,11 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
           
         sns.kdeplot(theta_w[state_w==3], shade=True,shade_lowest=False,linewidth=0.01, color="r",markersize=6, bw=.05,label = 'Coh.')  
         sns.kdeplot(theta_w[state_w==2], shade=True,shade_lowest=False,linewidth=0.01, color="b",markersize=6, bw=.05,label = 'Mar.')  
-        sns.kdeplot(theta_w[changec], color="r", linestyle='--',bw=.05,label = 'Coh. at meeting')  
-        sns.kdeplot(theta_w[changem], color="b", linestyle='--', bw=.05,label = 'Mar. at meeting')   
-        plt.legend(loc='best', fontsize=16,frameon=False,ncol=1)     
-        plt.xlabel('Pareto weight of Women',fontsize=16)     
-        plt.ylabel('Denisty',fontsize=16)   
+        sns.kdeplot(theta_w[changec], color="r", linestyle='--',bw=.05,label = 'Coh. at meet.')  
+        sns.kdeplot(theta_w[changem], color="b", linestyle='--', bw=.05,label = 'Mar. at meet.')   
+        plt.legend(loc='best', fontsize=17,frameon=False,ncol=1)     
+        plt.xlabel('Pareto weight of Women',fontsize=17)     
+        plt.ylabel('Density',fontsize=17)   
         plt.savefig('thtdist2.pgf', bbox_inches = 'tight',pad_inches = 0)  
         
         ##########################################     
@@ -2136,8 +2137,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         
         plt.plot(eventgrid2, pevent_psi_coh,color='r',linestyle='-',  marker='+', label='Cohabitation')  
         plt.plot(eventgrid2, pevent_psi_mar,color='b',linestyle='--', marker='x', label='Marriage')  
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),     
-                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize=18)     
+        plt.legend(loc='best', fontsize=18,frameon=False,ncol=1)        
         plt.xlabel('Event time (model years)', fontsize=18)     
         plt.ylabel('$\psi$---variation from baseline', fontsize=18)  
         plt.savefig('e_psi2.pgf', bbox_inches = 'tight',pad_inches = 0)   
@@ -2173,8 +2173,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         
         plt.plot(eventgrid2, pevent_theta_coh,color='r',linestyle='-',  marker='+', label='Cohabitation')  
         plt.plot(eventgrid2, pevent_theta_mar,color='b',linestyle='--', marker='x', label='Marriage')  
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),     
-                  fancybox=True, shadow=True, ncol=len(state_codes), fontsize=18)     
+        plt.legend(loc='best', fontsize=18,frameon=False,ncol=1)        
         plt.xlabel('Event time (model years)', fontsize=18)     
         plt.ylabel(r'$\theta$---variation from baseline', fontsize=18)   
         plt.savefig('e_theta2.pgf', bbox_inches = 'tight',pad_inches = 0)  

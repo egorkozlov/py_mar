@@ -31,7 +31,7 @@ if system() == 'Darwin':
 
 import numpy as np
 from residuals import mdl_resid
-from data_moments3 import dat_moments
+from data_moments import dat_moments
 import pickle
  
 print('Hi!')
@@ -48,7 +48,7 @@ if __name__ == '__main__':
     graphs=True
     
     #Get the covariance matrix from data
-    dat_moments(period=1,sampling_number=100,weighting=True,covariances=True,transform=1)
+    dat_moments(period=1,sampling_number=100,weighting=True,covariances=True,transform=2)
     
     #Get Data Moments
     with open('moments.pkl', 'rb') as file:
@@ -57,12 +57,12 @@ if __name__ == '__main__':
     WW=np.linalg.inv(packed_data['W'])
     
     #Build  data moments and pickle them
-    dat_moments(period=1,sampling_number=100,weighting=True,transform=1)
+    dat_moments(period=1,sampling_number=100,weighting=True,transform=2)
     
          
   
-     x0 = np.array([ 0.907796616288,0.66724274788,1.72325126224,0.257165346817,0.674319051376,0.0212082568096,-0.0641441084303,1.08579410058])
-       
+    x0 = np.array([0.797307,0.762312,2.17978,0.377448,1.19598,-0.151496,-0.0789312,1.14015])
+     
    
     #Name and location of files
     if system() == 'Windows':   
@@ -90,8 +90,8 @@ if __name__ == '__main__':
         #Get the new parameter
         xn=x0.copy()
         xn[j]=x0[j]*1.025
-        if j==0:
-            xn[j]=1-(1-x0[j])*1.025
+        #if j==0:
+         #   xn[j]=1-(1-x0[j])*1.025
         
     
         
@@ -104,8 +104,8 @@ if __name__ == '__main__':
                          
         #Store 
         G[:,j]=(res-resn)/abs(xn[j]-x0[j])
-        if j==3:
-            G[:,j]=(res-resn)/abs(x0[1]*xn[j]-x0[1]*x0[j])
+        #if j==3:
+         #   G[:,j]=(res-resn)/abs(x0[1]*xn[j]-x0[1]*x0[j])
 
     
         

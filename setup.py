@@ -82,10 +82,10 @@ class ModelSetup(object):
         p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.5960803  +.05829568*t -.00169143*t**2+ .00001446*t**3) for t in range(T)]
    
               
-        p['f_wage_trend'] = [0.0*(t>=Tret+2)+(t<Tret+2)*(0.00+-.77138877  +.05915875*t -.00232914*t**2+ .00002484*t**3) for t in range(T)]
-        p['f_wage_trend_single'] =  [0.0*(t>=Tret+2)+(t<Tret+2)*(0.00+-.67980802  +.04603417*t -.00158584*t**2+ .00001594*t**3) for t in range(T)]
-        p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-.434235  +.06016318*t -.00183131*t**2+ .00001573*t**3) for t in range(T)]
-        p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-.486139  +.05170349*t -.00160466*t**2+ .00001446*t**3) for t in range(T)]
+        p['f_wage_trend'] = [0.0*(t>=Tret+2)+(t<Tret+2)*(0.0+-.77138877  +.05915875*t -.00232914*t**2+ .00002484*t**3) for t in range(T)]
+        p['f_wage_trend_single'] =  [0.0*(t>=Tret+2)+(t<Tret+2)*(0.0+-.67980802  +.04603417*t -.00158584*t**2+ .00001594*t**3) for t in range(T)]
+        p['m_wage_trend'] = [0.0*(t>=Tret)+(t<Tret)*(-0.0-.434235  +.06016318*t -.00183131*t**2+ .00001573*t**3) for t in range(T)]
+        p['m_wage_trend_single'] = [0.0*(t>=Tret)+(t<Tret)*(-0.0-.486139  +.05170349*t -.00160466*t**2+ .00001446*t**3) for t in range(T)]
            
   
         #Build trend for single assets
@@ -121,8 +121,8 @@ class ModelSetup(object):
         p['util_alp']=p['util_alp_temp']*(p['util_kap_temp'])**((1-p['util_xi'])/p['util_lam'])
         
         #Adjust kappa and alpha to make sense of relative prices
-        p['util_alp_m']=p['util_alp']*(1.0/(p['rprice_durables'])**(1.0-p['util_xi']))
-        p['util_kap_m']=p['util_kap']*p['rprice_durables']**p['util_lam']
+        p['util_alp_m']=p['util_alp']*p['rprice_durables']**((1-p['util_xi'])/p['util_lam'])#*(1.0/(p['rprice_durables'])**(1.0-p['util_xi']))
+        p['util_kap_m']=p['util_kap']*(1/p['rprice_durables'])#**p['util_lam']
             
             
         # no replacements after this pint     
@@ -581,6 +581,7 @@ class ModelSetup(object):
         for female in [True,False]:
             prob_a_mat = np.zeros((self.pars['T'],na,npoints),dtype=self.dtype)
             i_a_mat = np.zeros((self.pars['T'],na,npoints),dtype=np.int16)
+            #mena=-0.25 if female else 0.25
             mena=-0.15 if female else 0.15
             
             

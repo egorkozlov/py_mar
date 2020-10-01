@@ -29,7 +29,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
               solve_transition=True,
               store_path = None,
               verbose=False,calibration_report=False,draw=False,graphs=False,
-              rel_diff=True,welf=False):
+              rel_diff=True,welf=False,se=False):
     
     
     
@@ -281,11 +281,17 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     
     
     
-    
+
     
     
     out_dict = {'distance':dist,'all residuals':resid_all,
                 'scaled residuals':resid_sc,'models':mdl_list,'agents':agents_pooled}
+    
+    
+        #Case for standard errors
+    if se is True:
+        out_dict = {'all residuals':resid_all,'W':W }
+    
     out = [out_dict[key] for key in return_format]
     
     

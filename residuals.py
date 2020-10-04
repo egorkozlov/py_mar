@@ -225,7 +225,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
         
     #Unpack Moments (see data_moments.py to check if changes)
     #(hazm,hazs,hazd,mar,coh,fls_ratio,W)
-    hazm_d=packed_data['hazm']
+    hazm_d=np.ones(1)*packed_data['hazm']
     hazs_d=packed_data['hazs']
     hazd_d=packed_data['hazd']
     mar_d=packed_data['emar']
@@ -241,7 +241,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
 
     #Get Simulated Data
     Tret = mdl.setup.pars['Tret']
-    hazm_s = moments['hazard mar'][0:len(hazm_d)]
+    hazm_s = np.ones(1)*moments['hazard mar']
     hazs_s = moments['hazard sep'][0:len(hazs_d)]
     hazd_s = moments['hazard div'][0:len(hazd_d)]
     mar_s = moments['share mar']
@@ -271,7 +271,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     
     
     
-    resid_sc = resid_all*np.sqrt(np.diag(W)) # all residuals scaled
+    resid_sc = resid_all**2*np.diag(W)#resid_all*np.sqrt(np.diag(W)) # all residuals scaled
     
     dist = np.dot(np.dot(resid_all,W),resid_all)
 

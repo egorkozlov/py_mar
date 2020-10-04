@@ -69,7 +69,7 @@ def fun(x):
         #Standard Way
         def q(pt):
             try:
-                ans = mdl_resid(translator(pt),return_format=['distance'])[0]
+                ans = mdl_resid(translator(pt),return_format=['scaled residuals'])[0]
                
             except:
                 print('During optimization function evaluation failed at {}'.format(pt))
@@ -80,15 +80,15 @@ def fun(x):
             
             
             
-        # res=dfols.solve(q, xc, rhobeg = 0.05, rhoend=1e-4, maxfun=90, bounds=(xl,xu),
-        #                 npt=len(xc)+5,scaling_within_bounds=True, 
-        #                 user_params={'tr_radius.gamma_dec':0.75,'tr_radius.gamma_inc':1.5,
-        #                              'tr_radius.alpha1':0.5,'tr_radius.alpha2':0.75,
-        #                              'regression.momentum_extra_steps':True},
-        #                 objfun_has_noise=False)
+        res=dfols.solve(q, xc, rhobeg = 0.05, rhoend=1e-4, maxfun=90, bounds=(xl,xu),
+                        npt=len(xc)+5,scaling_within_bounds=True, 
+                        user_params={'tr_radius.gamma_dec':0.75,'tr_radius.gamma_inc':1.5,
+                                      'tr_radius.alpha1':0.5,'tr_radius.alpha2':0.75,
+                                      'regression.momentum_extra_steps':True},
+                        objfun_has_noise=False)
          
-        res=pybobyqa.solve(q, xc, rhobeg = 0.05, rhoend=1e-4, maxfun=80, bounds=(xl,xu),
-                        scaling_within_bounds=True,objfun_has_noise=False,print_progress=True)
+        #res=pybobyqa.solve(q, xc, rhobeg = 0.05, rhoend=1e-4, maxfun=80, bounds=(xl,xu),
+         #               scaling_within_bounds=True,objfun_has_noise=False,print_progress=True)
         
       
         print(res)

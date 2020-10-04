@@ -62,6 +62,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     single=np.array((state==0),dtype=bool)   
     betag=mdl.setup.pars['beta_t'][0]**(np.linspace(1,len(state[0,:]),len(state[0,:]))-1)   
     betam=np.reshape(np.repeat(betag,len(state[:,0])),(len(state[:,0]),len(betag)),order='F')   
+    durf=agents.duf
     #agegrid=np.reshape(agegridtemp,resha)   
        
     #Fill psi and ushift here   
@@ -160,6 +161,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     female=female[:,:mdl.setup.pars['T']]      
     labor_psid=labor_psid[:,:mdl.setup.pars['T']]   
     iexo_psid=iexo_psid[:,:mdl.setup.pars['T']]   
+    durf=durf[:,:mdl.setup.pars['T']]   
        
     if draw:   
         iexo_w=iexo_w[:,:mdl.setup.pars['T']]   
@@ -201,6 +203,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     iexo=iexo[keep,]   
     assets_t=assets_t[keep,]   
     labor=labor[keep,]   
+    durf=durf[keep,]
        
          
        
@@ -262,6 +265,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     iexo=iexo[keep2,]   
     assets_t=assets_t[keep2,]   
     labor=labor[keep2,]   
+    durf=durf[keep2,]
      
        
     #Initial distribution   
@@ -356,7 +360,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     sp_length = -1*np.ones((N,nspells),dtype=np.int16)      
     sp_person = -1*np.ones((N,nspells),dtype=np.int16)      
     is_unid = -1*np.ones((N,nspells),dtype=np.int16)      
-    is_unid_end = -1*np.ones((N,nspells),dtype=np.int16)      
+    is_unid_end = -1*np.ones((N,nspells),dtype=np.int16)   
+    sp_dur = -10*np.ones((N,nspells),dtype=np.int16) 
     is_unid_lim = -1*np.ones((N,nspells),dtype=np.int16)      
     n_spell = -1*np.ones((N,nspells),dtype=np.int16)      
     is_spell = np.zeros((N,nspells),dtype=np.bool)      
@@ -377,7 +382,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         ichange = ((state[:,t-1] != state[:,t])) & (censored[:,t]==True)  
         ifinish=((~ichange) & (censored[:,t]==False) & (censored[:,t-1]==True))  
         sp_length[((~ichange) & (censored[:,t]==True)),ispell[((~ichange) & (censored[:,t]==True))]] += 1      
-          
+        sp_dur[ifinish,ispell[ifinish]] = durf[ifinish,t-1] 
                
         if not np.any(ichange): continue      
                
@@ -390,6 +395,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         time_end[ichange,ispell[ichange]] = t-1      
         state_beg[ichange,ispell[ichange]+1] = state[ichange,t]       
         time_beg[ichange,ispell[ichange]+1] = t      
+        sp_dur[ichange,ispell[ichange]] = durf[ichange,t-1]
+        allspells_du=sp_dur[is_spell]
         n_spell[ichange,ispell[ichange]+1]=ispell[ichange]+1     
         is_unid[ichange,ispell[ichange]+1]=changep[ichange,t]     
         is_unid_lim[ichange,ispell[ichange]+1]=changep[ichange,aged[ichange,0]]     
@@ -416,9 +423,10 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     allspells_isunidend[allspells_isunidend==-1] = allspells_isunidlim[allspells_isunidend==-1]     
     allspells_nspells[allspells_nspells==-1]=0     
     allspells_nspells=allspells_nspells+1     
+    allspells_prec=allspells_du+1-allspells_len
           
     #Use this to construct hazards     
-    spells = np.stack((allspells_beg,allspells_len,allspells_end),axis=1)      
+    spells = np.stack((allspells_beg,allspells_len,allspells_end,allspells_prec),axis=1)      
          
     #Use this for empirical analysis     
     spells_empirical=np.stack((allspells_beg,allspells_timeb,allspells_len,allspells_end,allspells_nspells,allspells_isunid,allspells_isunidend),axis=1)     
@@ -556,7 +564,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
                
     #Hazard of Divorce      
     hazd=list()      
-    lgh=len(all_spells['Couple, M'][:,0])      
+    lgh=len(all_spells['Couple, M'][:,0])    
+    haz1=0.0
     for t in range(mdl.setup.pars['T']):      
                
         cond=all_spells['Couple, M'][:,1]==t+1      
@@ -564,90 +573,100 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         cond1=temp!=2      
         temp1=temp[cond1]      
         if lgh>0:      
-            haz1=len(temp1)/lgh      
-            lgh=lgh-len(temp)      
+            haz1=haz1+len(temp1)     
+            #lgh=lgh-len(temp)      
         else:      
             haz1=0.0      
-        hazd=[haz1]+hazd      
+        hazd=[haz1/lgh]+hazd      
                
     hazd.reverse()      
     hazd=np.array(hazd).T      
            
     #Hazard of Separation      
     hazs=list()      
-    lgh=len(all_spells['Couple, C'][:,0])      
+    lgh=len(all_spells['Couple, C'][:,0])   
+    haz1=0.0
     for t in range(mdl.setup.pars['T']):      
                
         cond=all_spells['Couple, C'][:,1]==t+1      
         temp=all_spells['Couple, C'][cond,2]      
-        cond1=(temp>=0) & (temp<=1)   
+        cond1=(temp>=0) & (temp<=2)   
         temp1=temp[cond1]      
         if lgh>0:      
-            haz1=len(temp1)/lgh      
-            lgh=lgh-len(temp)      
+            haz1=haz1+len(temp1)    
+            #lgh=lgh-len(temp)      
         else:      
             haz1=0.0      
-        hazs=[haz1]+hazs      
+        hazs=[haz1/lgh]+hazs      
                
     hazs.reverse()      
     hazs=np.array(hazs).T      
            
-    #Hazard of Marriage (Cohabitation spells)      
-    hazm=list()      
-    lgh=len(all_spells['Couple, C'][:,0])      
-    for t in range(mdl.setup.pars['T']):      
+    # #Hazard of Marriage (Cohabitation spells)      
+    # hazm=list()      
+    # lgh=len(all_spells['Couple, C'][:,0])     
+    # haz1=0.0
+    # for t in range(mdl.setup.pars['T']):      
                
-        cond=all_spells['Couple, C'][:,1]==t+1      
-        temp=all_spells['Couple, C'][cond,2]      
-        cond1=temp==2      
-        temp1=temp[cond1]      
-        if lgh>0:      
-            haz1=len(temp1)/lgh      
-            lgh=lgh-len(temp)      
-        else:      
-            haz1=0.0      
-        hazm=[haz1]+hazm      
+    #     cond=all_spells['Couple, C'][:,1]==t+1      
+    #     temp=all_spells['Couple, C'][cond,2]      
+    #     cond1=temp==2      
+    #     temp1=temp[cond1]      
+    #     if lgh>0:      
+    #         haz1=haz1+len(temp1)      
+    #         #lgh=lgh-len(temp)      
+    #     else:      
+    #         haz1=0.0      
+    #     hazm=[haz1/lgh]+hazm      
                
-    hazm.reverse()      
-    hazm=np.array(hazm).T      
+    # hazm.reverse()      
+    # hazm=np.array(hazm).T      
            
-    #Transform hazards pooling moments   
-    mdl.setup.pars['ty']=2   
-    if mdl.setup.pars['ty']>1:   
-        #Divorce   
-        hazdp=list()   
-        pop=1   
-        for i in range(int(mdl.setup.pars['T']/(mdl.setup.pars['ty']))):   
-            haz1=hazd[mdl.setup.pars['ty']*i]*pop   
-            haz2=hazd[mdl.setup.pars['ty']*i+1]*(pop-haz1)   
-            hazdp=[(haz1+haz2)/pop]+hazdp    
-            pop=pop-(haz1+haz2)   
-        hazdp.reverse()      
-        hazdp=np.array(hazdp).T    
-        hazd=hazdp   
+    hazm=np.mean(all_spells['Couple, M'][:,-1])
+    
+    # #Transform hazards pooling moments   
+    # mdl.setup.pars['ty']=1  
+    # if mdl.setup.pars['ty']>1:   
+    #     #Divorce   
+    #     hazdp=list()   
+    #     pop=1   
+    #     for i in range(int(mdl.setup.pars['T']/(mdl.setup.pars['ty']))):   
+    #         haz1=hazd[mdl.setup.pars['ty']*i]*pop   
+    #         haz2=hazd[mdl.setup.pars['ty']*i+1]*(pop-haz1)   
+    #         hazdp=[(haz1+haz2)/pop]+hazdp    
+    #         pop=pop-(haz1+haz2)   
+    #     hazdp.reverse()      
+    #     hazdp=np.array(hazdp).T    
+    #     hazd=hazdp   
                
-        #Separation and Marriage   
-        hazsp=list()   
-        hazmp=list()   
-        pop=1   
-        for i in range(int(mdl.setup.pars['T']/(mdl.setup.pars['ty']))):   
-            hazs1=hazs[mdl.setup.pars['ty']*i]*pop   
-            hazm1=hazm[mdl.setup.pars['ty']*i]*pop   
+    #     #Separation and Marriage   
+    #     hazsp=list()   
+    #     hazmp=list()   
+    #     pop=1   
+    #     for i in range(int(mdl.setup.pars['T']/(mdl.setup.pars['ty']))):   
+    #         hazs1=hazs[mdl.setup.pars['ty']*i]*pop   
+    #         hazm1=hazm[mdl.setup.pars['ty']*i]*pop   
                
-            hazs2=hazs[mdl.setup.pars['ty']*i+1]*(pop-hazs1-hazm1)   
-            hazm2=hazm[mdl.setup.pars['ty']*i+1]*(pop-hazs1-hazm1)   
-            hazsp=[(hazs1+hazs2)/pop]+hazsp   
-            hazmp=[(hazm1+hazm2)/pop]+hazmp   
-            pop=max(pop-(hazs1+hazs2+hazm1+hazm2),0.000001)   
+    #         hazs2=hazs[mdl.setup.pars['ty']*i+1]*(pop-hazs1-hazm1)   
+    #         hazm2=hazm[mdl.setup.pars['ty']*i+1]*(pop-hazs1-hazm1)   
+    #         hazsp=[(hazs1+hazs2)/pop]+hazsp   
+    #         hazmp=[(hazm1+hazm2)/pop]+hazmp   
+    #         pop=max(pop-(hazs1+hazs2+hazm1+hazm2),0.000001)   
                
-        hazsp.reverse()      
-        hazsp=np.array(hazsp).T    
-        hazs=hazsp   
+    #     hazsp.reverse()      
+    #     hazsp=np.array(hazsp).T    
+    #     hazs=hazsp   
            
-        hazmp.reverse()      
-        hazmp=np.array(hazmp).T    
-        hazm=hazmp   
-           
+    #     hazmp.reverse()      
+    #     hazmp=np.array(hazmp).T    
+    #     hazm=hazmp   
+    transform=2
+    kepd=np.linspace(1,len(hazd),len(hazd),dtype=np.int16)-1 if transform==1 else np.linspace(1,len(hazd)-1,int(len(hazd)/2),dtype=np.int16)
+    keps=np.linspace(1,len(hazs),len(hazs),dtype=np.int16)-1 if transform==1  else np.linspace(1,len(hazs)-1,int(len(hazs)/2),dtype=np.int16)
+    hazd=hazd[kepd]
+    hazs=hazs[keps]
+    
+    
     moments['hazard sep'] = hazs      
     moments['hazard div'] = hazd      
     moments['hazard mar'] = hazm      
@@ -1667,7 +1686,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')     
         plt.xlabel('Duration - years', fontsize=16)     
         plt.ylabel('Hazard', fontsize=16)     
-        plt.xticks(np.arange(6), ('1-2', '3-4', '5-6', '7-8', '9-10','11-12')) 
+        plt.xticks(np.arange(6), ('2', '4', '6', '8', '10','12')) 
         plt.savefig('hazd.pgf', bbox_inches = 'tight',pad_inches = 0)   
               
         #############################################     
@@ -1685,7 +1704,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         #plt.legend(loc='upper left', shadow=True, fontsize='x-small')     
         plt.xlabel('Duration - years', fontsize=16)     
         plt.ylabel('Hazard', fontsize=16)     
-        plt.xticks(np.arange(3), ('1-2', '3-4', '5-6')) 
+        plt.xticks(np.arange(3), ('2', '4', '6')) 
         plt.savefig('hazs.pgf', bbox_inches = 'tight',pad_inches = 0)   
              
               
@@ -1694,19 +1713,19 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         #############################################     
         fig = plt.figure()     
         f1=fig.add_subplot(1.5,1,1)     
-        lg=min(len(hazm_d),len(hazm))   
+        
      
-        plt.plot(np.array(range(lg)), hazm[0:lg],one, linestyle='--',linewidth=1.5, label='Simulation')     
-        plt.plot(np.array(range(lg)), hazm_d[0:lg],two,linewidth=1.5, label='Data')     
-        plt.fill_between(np.array(range(lg)), hazm_i[0,0:lg], hazm_i[1,0:lg],alpha=0.2,facecolor='b')     
-        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),     
-                  fancybox=True, shadow=True, ncol=2, fontsize=14)     
-        plt.ylim(ymin=0)     
-        #plt.legend(loc='upper left', shadow=True, fontsize='x-small')     
-        plt.xlabel('Duration - years', fontsize=16)     
-        plt.ylabel('Hazard', fontsize=16)     
-        plt.xticks(np.arange(3), ('1-2', '3-4', '5-6')) 
-        plt.savefig('hazm.pgf', bbox_inches = 'tight',pad_inches = 0)   
+          # create plot     
+        x=np.array([0.25,0.75])    
+        y=np.array([hazm,hazm_d])     
+        yerr=y*0.0     
+        plt.axhline(y=0.0,linewidth=0.1, color='r')     
+        yerr=np.array([(hazm_i[1]-hazm_i[0])/2.0,0.0])    
+        plt.errorbar(x, y, yerr=yerr, fmt='o', elinewidth=0.03)     
+        plt.ylabel('preceeded by coh')     
+        plt.xticks(x, ["sim","data"] )    
+        #plt.ylim(ymax=1.2,ymin=0.7)     
+        #plt.xlim(xmax=1.0,xmin=0.0)     
              
         ##########################################     
         # Assets Over the Live Cycle     

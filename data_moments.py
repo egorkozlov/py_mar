@@ -17,21 +17,28 @@ def hazards(dataset,event,duration,end,listh,number,wgt):
      #Create hazard given some spells in    
      #dataframe    
         
+
     #Number of unit weights-needed later    
-    lgh=np.sum(dataset[wgt])#len(dataset)    
+    lgh=np.sum(dataset[wgt])#len(dataset)  
+    haz1=0.0
+    
         
     for t in range(number):    
         
         #Get who has the event realized in t+1    
         cond=np.array(dataset[duration])==t+1    
         temp=dataset[[end,wgt]][cond]    
-        cond1=temp[end]==event    
+        if isinstance(event, list): 
+            cond1=(temp[end]==event[0]) | (temp[end]==event[1])
+        else:
+            cond1=temp[end]==event
         temp1=temp[cond1]    
             
         #Compute the hazard    
         if lgh>0:    
-            haz1=np.sum(temp1[wgt])/lgh#len(temp1)/lgh    
-            lgh=lgh-np.sum(temp[wgt])#lgh-len(temp)    
+            haz1=haz1+np.sum(temp1[wgt])#len(temp1)/lgh    
+            
+            #lgh=lgh-np.sum(temp[wgt])#lgh-len(temp)    
         else:    
             haz1=0.0    
             
@@ -44,7 +51,7 @@ def hazards(dataset,event,duration,end,listh,number,wgt):
             haz1=np.random.uniform(0,0.0001)    
                 
         #Add hazard to the list    
-        listh=[haz1]+listh    
+        listh=[haz1/lgh]+listh    
         
     listh.reverse()    
     listh=np.array(listh).T    
@@ -168,18 +175,23 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
     mare['beg']=-1    
     mare['endd']=-1    
     mare['how']=-1    
-    mare['mar']=-1        
+    mare['mar']=-1       
+    mare['cohmar']=-1
     for i in range(9):    
         mare.loc[(i+1==mare['rel']),'beg']=mare.loc[(i+1==mare['rel']),'MARDAT0'+str(i+1)]    
         mare.loc[(i+1==mare['rel']),'endd']=mare.loc[(i+1==mare['rel']),'ENDDAT0'+str(i+1)]    
-        mare.loc[(i+1==mare['rel']),'how']=mare.loc[(i+1==mare['rel']),'HOWEND0'+str(i+1)]    
+        mare.loc[(i+1==mare['rel']),'how']=mare.loc[(i+1==mare['rel']),'HOWEND0'+str(i+1)]  
+        mare.loc[(i+1==mare['rel']),'cohmar']=mare.loc[(i+1==mare['rel']),'COHMAR0'+str(i+1)]  
         
             
     #Get how relationship end    
     mare['fine']='censored'    
     mare.loc[mare['how']=='div','fine']='div'    
         
-        
+    #Was this preceeded by cohabitation
+    mare['cohb']=0
+    mare.loc[mare['cohmar']=='cohab','cohb']=1  
+    
     #Replace censored date if still together    
     mare['end']=-1    
     mare.loc[mare['fine']=='div','end']=mare.loc[mare['fine']=='div','endd']    
@@ -195,6 +207,9 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
     mare['dury'] = pd.cut(x=mare['dur'], bins=bins_d,labels=bins_d_label)     
         
     mare['dury']=mare['dury'].astype(float)     
+    
+    #NUmber of marriages preceeded by cohabitation
+    hazm=np.mean(mare['cohb'])
      
      
     # #Transform data to be year- 
@@ -305,52 +320,57 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
         
     #Hazard of Separation    
     hazs=list()    
-    hazs=hazards(cohe,'sep','dury','fine',hazs,int(6/period),'SAMWT')    
+    log=['sep','mar']
+    hazs=hazards(cohe,log,'dury','fine',hazs,int(6/period),'SAMWT')    
         
     #Hazard of Marriage    
-    hazm=list()    
-    hazm=hazards(cohe,'mar','dury','fine',hazm,int(6/period),'SAMWT')    
+    #hazm=list()    
+    #hazm=hazards(cohe,'mar','dury','fine',hazm,int(6/period),'SAMWT')    
         
     #Hazard of Divorce    
     hazd=list()    
-    hazd=hazards(mare,'div','dury','fine',hazd,int(12/period),'SAMWT')    
-     
-    #Eventually transform Hazards pooling more years together 
-    if transform>1: 
+    hazd=hazards(mare,'div','dury','fine',hazd,int(12/period),'SAMWT')  
+    kepd=np.linspace(1,len(hazd),len(hazd),dtype=np.int16)-1 if transform==1 else np.linspace(1,len(hazd)-1,int(len(hazd)/2),dtype=np.int16)
+    keps=np.linspace(1,len(hazs),len(hazs),dtype=np.int16)-1 if transform==1  else np.linspace(1,len(hazs)-1,int(len(hazs)/2),dtype=np.int16)
+    hazd=hazd[kepd]
+    hazs=hazs[keps]
+    
+    # #Eventually transform Hazards pooling more years together 
+    # if transform>1: 
          
-        #Divorce 
-        hazdp=list() 
-        pop=1 
-        for i in range(int(12/(period*transform))): 
-            haz1=hazd[transform*i]*pop 
-            haz2=hazd[transform*i+1]*(pop-haz1) 
-            hazdp=[(haz1+haz2)/pop]+hazdp  
-            pop=pop-(haz1+haz2) 
-        hazdp.reverse()    
-        hazdp=np.array(hazdp).T  
-        hazd=hazdp 
+    #     #Divorce 
+    #     hazdp=list() 
+    #     pop=1 
+    #     for i in range(int(12/(period*transform))): 
+    #         haz1=hazd[transform*i]*pop 
+    #         haz2=hazd[transform*i+1]*(pop-haz1) 
+    #         hazdp=[(haz1+haz2)/pop]+hazdp  
+    #         pop=pop-(haz1+haz2) 
+    #     hazdp.reverse()    
+    #     hazdp=np.array(hazdp).T  
+    #     hazd=hazdp 
              
-        #Separation and Marriage 
-        hazsp=list() 
-        hazmp=list() 
-        pop=1 
-        for i in range(int(6/(period*transform))): 
-            hazs1=hazs[transform*i]*pop 
-            hazm1=hazm[transform*i]*pop 
+    #     #Separation and Marriage 
+    #     hazsp=list() 
+    #     hazmp=list() 
+    #     pop=1 
+    #     for i in range(int(6/(period*transform))): 
+    #         hazs1=hazs[transform*i]*pop 
+    #         hazm1=hazm[transform*i]*pop 
              
-            hazs2=hazs[transform*i+1]*(pop-hazs1-hazm1) 
-            hazm2=hazm[transform*i+1]*(pop-hazs1-hazm1) 
-            hazsp=[(hazs1+hazs2)/pop]+hazsp 
-            hazmp=[(hazm1+hazm2)/pop]+hazmp 
-            pop=pop-(hazs1+hazs2+hazm1+hazm2) 
+    #         hazs2=hazs[transform*i+1]*(pop-hazs1-hazm1) 
+    #         hazm2=hazm[transform*i+1]*(pop-hazs1-hazm1) 
+    #         hazsp=[(hazs1+hazs2)/pop]+hazsp 
+    #         hazmp=[(hazm1+hazm2)/pop]+hazmp 
+    #         pop=pop-(hazs1+hazs2+hazm1+hazm2) 
              
-        hazsp.reverse()    
-        hazsp=np.array(hazsp).T  
-        hazs=hazsp 
+    #     hazsp.reverse()    
+    #     hazsp=np.array(hazsp).T  
+    #     hazs=hazsp 
          
-        hazmp.reverse()    
-        hazmp=np.array(hazmp).T  
-        hazm=hazmp 
+    #     hazmp.reverse()    
+    #     hazmp=np.array(hazmp).T  
+    #     hazm=hazmp 
         
     ########################################    
     #Construct share of each relationship    
@@ -681,7 +701,7 @@ def dat_moments(sampling_number=5,weighting=True,covariances=False,relative=Fals
     nn_h=n_h*boot  
         
     hazsB=np.zeros((len(hazs),boot))    
-    hazmB=np.zeros((len(hazm),boot))    
+    hazmB=np.zeros((1,boot))    
     hazdB=np.zeros((len(hazd),boot))    
     marB=np.zeros((len(mar),boot))    
     cohB=np.zeros((len(coh),boot))    
@@ -758,7 +778,7 @@ def dat_moments(sampling_number=5,weighting=True,covariances=False,relative=Fals
     elif relative:   
            
         #Compute optimal Weighting Matrix    
-        col=np.concatenate((hazm,hazs,hazd,emar,ecoh,fls_ratio,wage_ratio*np.ones(1),beta_unid*np.ones(1),mean_fls*np.ones(1)),axis=0)        
+        col=np.concatenate((hazm*np.ones(1),hazs,hazd,emar,ecoh,fls_ratio,wage_ratio*np.ones(1),beta_unid*np.ones(1),mean_fls*np.ones(1)),axis=0)        
         dim=len(col)    
         W=np.zeros((dim,dim))    
         for i in range(dim):    

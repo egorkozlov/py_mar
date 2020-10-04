@@ -81,6 +81,9 @@ class Agents:
         self.iassetss = np.zeros((N,T),np.int16)
         self.tempo=VecOnGrid(self.setup.agrid_s,self.iassets[:,0])
         
+        #Length of relationship
+        self.duf=np.zeros((N,T),np.int16) 
+        
         # initialize FLS
         #self.ils=np.ones((N,T),np.float64)
         self.ils_i=np.ones((N,T),np.int8)*(len(self.setup.ls_levels)-1)
@@ -255,6 +258,7 @@ class Agents:
                 
                 if sname == 'Couple, C' or sname == 'Couple, M':
                     
+                    durf=self.duf[ind,t]
                     ls_val = self.ils_i[ind,t] 
                     
                     for ils in range(self.setup.nls):
@@ -276,6 +280,7 @@ class Agents:
                         iexo_next_this_ls = mc_simulate(iexo_now[this_ls],mat,shocks=shks)
                         self.iexo[ind[this_ls],t+1] = iexo_next_this_ls
                         self.iexos[ind[this_ls],t+1] = iexo_next_this_ls
+                        self.duf[ind[this_ls],t+1] = durf[this_ls]+1
                         
                 else:
                     mat = self.Mlist[ipol].setup.exo_mats[sname][t]
@@ -283,6 +288,7 @@ class Agents:
                     iexo_next = mc_simulate(iexo_now,mat,shocks=shks) # import + add shocks     
                     self.iexo[ind,t+1] = iexo_next
                     self.iexos[ind,t+1] = iexo_next
+                    self.duf[ind,t+1]= 0
             
     
     def statenext(self,t):
@@ -679,6 +685,7 @@ class AgentsPooled:
         self.shocks_couple_a=combine([a.shocks_couple_a for a in AgentsList])
         self.shocks_single_a=combine([a.shocks_single_a for a in AgentsList])
         self.policy_ind = combine([a.policy_ind for a in AgentsList])
+        self.duf = combine([a. duf for a in AgentsList])
         self.agents_ind = combine([i*np.ones_like(a.state) for i, a in enumerate(AgentsList)])
         self.is_female = combine([a.female*np.ones_like(a.state) for a in AgentsList])
         self.T = AgentsList[0].T

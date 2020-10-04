@@ -47,7 +47,7 @@ if __name__ == '__main__':
     #For graphs later
     graphs=True
     #Build  data moments and pickle them
-    #dat_moments(period=1,sampling_number=100,weighting=True,transform=2)
+    dat_moments(period=1,sampling_number=100,weighting=True,transform=2)
     
          
     #Initialize the file with parameters
@@ -94,9 +94,12 @@ if __name__ == '__main__':
     
     ##197 also very goo
     #x0 = np.array([0.782733,0.821696,1.98509,0.409283,1.15559,-0.158216,-0.0720787,1.13099])
-
-
+   
     
+    #x0 = np.array([0.683968,0.431445,2.63977,0.52869,1.32266,-0.143289,-0.0918003,1.15784])
+    #x0 = np.array([0.582346,0.418435,2.63389,0.566429,1.25107,-0.138283,-0.0971546,1.27518])
+   
+    x0 = np.array([0.829765625,0.42851562,2.2589843,0.49101562499999996, 1.26796875,-0.09269077503906249, -0.1033203125, 1.1201953125])
     #Name and location of files
     if system() == 'Windows':   
         path='D:/blasutto/store_model'
@@ -104,7 +107,7 @@ if __name__ == '__main__':
         path = None
     
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','models','agents','scaled residuals'],
-                                      load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
+                                      #load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       solve_transition=True,                                    
                                       #save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       store_path=path,

@@ -236,7 +236,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     beta_unid_d=np.ones(1)*packed_data['beta_unid']
     mean_fls_d=np.ones(1)*packed_data['mean_fls']
     W=packed_data['W']
-    dat=np.concatenate((hazm_d,hazs_d,hazd_d,mar_d,coh_d,fls_d,wage_d,beta_unid_d,mean_fls_d),axis=0)
+    dat=np.concatenate((hazm_d,hazs_d,hazd_d,mar_d,coh_d,fls_d,wage_d,mean_fls_d),axis=0)
     
 
     #Get Simulated Data
@@ -251,7 +251,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     fls_s = moments['fls_ratio']
     wage_s = np.ones(1)*moments['wage_ratio']
     div_s = np.ones(1)*moments['div_ratio']
-    sim=np.concatenate((hazm_s,hazs_s,hazd_s,mar_s,coh_s,fls_s,wage_s,beta_unid_s,mean_fls_s),axis=0)
+    sim=np.concatenate((hazm_s,hazs_s,hazd_s,mar_s,coh_s,fls_s,wage_s,mean_fls_s),axis=0)
 
 
 
@@ -271,7 +271,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     
     
     
-    resid_sc = resid_all**2*np.diag(W)#resid_all*np.sqrt(np.diag(W)) # all residuals scaled
+    resid_sc = resid_all*np.sqrt(np.diag(W)) # resid_all**2*np.diag(W)#all residuals scaled
     
     dist = np.dot(np.dot(resid_all,W),resid_all)
 

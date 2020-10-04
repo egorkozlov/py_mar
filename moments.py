@@ -289,7 +289,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     enever_e=(changep[:,0]==0) & (eage_unid_e[:]==0)   
     eage_unid_e[enever_e]=1000   
     eage_unid_e[changep[:,-1]==0]=1000   
-    eage_unid_e[~enever_e]=eage_unid_e[~enever_e]+18  
+    eage_unid_e[~enever_e]=eage_unid_e[~enever_e]#+18  
     eu=np.repeat(np.expand_dims(eage_unid_e,axis=1),len(changep[0,:]),axis=1)  
       
     with open('freqj.pkl', 'rb') as file:       
@@ -325,7 +325,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     aged=np.reshape(np.repeat(aged,len(state[0,:])),state.shape)  
     #Get if censored  
     agei=np.cumsum(np.ones(aged.shape,dtype=np.int16),axis=1)-1     
-    censored=aged>agei  
+    
       
     
   
@@ -345,7 +345,10 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         aged[int(summa1*len(aged[:])/sum(age_sint.values())):int(summa*len(aged[:])/sum(age_sint.values()))]=round((i-20)/mdl.setup.pars['py'],0)     
         summa1+=age_sint[int(i)]     
          
-    aged=np.array(aged,dtype=np.int16)     
+    aged=np.array(aged,dtype=np.int16) 
+    censored=aged>agei  
+    
+    #aged=np.ones((state.shape),dtype=np.int16)*61
     ###########################################      
     #Moments: Construction of Spells      
     ###########################################      
@@ -364,11 +367,14 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     sp_dur = -10*np.ones((N,nspells),dtype=np.int16) 
     is_unid_lim = -1*np.ones((N,nspells),dtype=np.int16)      
     n_spell = -1*np.ones((N,nspells),dtype=np.int16)      
-    is_spell = np.zeros((N,nspells),dtype=np.bool)      
+    is_spell = np.zeros((N,nspells),dtype=np.bool)   
+    is_fem = -1*np.ones((N,nspells),dtype=np.bool) 
      
          
            
-    state_beg[:,0] = 0 # THIS ASSUMES EVERYONE STARTS AS SINGLE   #TODO consistent with men stuff?   
+    is_fem[:,0]=female[:,0]
+    state_beg[:,0] = np.ones(female[:,0].shape)
+    state_beg[:,0][female[:,0]==1] = 0.0# THIS ASSUMES EVERYONE STARTS AS SINGLE   #TODO consistent with men stuff? 
     time_beg[:,0] = 0      
     sp_length[:,0] = 1      
     is_spell[:,0] = True      
@@ -396,7 +402,6 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         state_beg[ichange,ispell[ichange]+1] = state[ichange,t]       
         time_beg[ichange,ispell[ichange]+1] = t      
         sp_dur[ichange,ispell[ichange]] = durf[ichange,t-1]
-        allspells_du=sp_dur[is_spell]
         n_spell[ichange,ispell[ichange]+1]=ispell[ichange]+1     
         is_unid[ichange,ispell[ichange]+1]=changep[ichange,t]     
         is_unid_lim[ichange,ispell[ichange]+1]=changep[ichange,aged[ichange,0]]     
@@ -414,7 +419,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     allspells_isunidend=is_unid_end[is_spell]     
     allspells_isunidlim=is_unid_lim[is_spell]     
     allspells_person=sp_person[is_spell]     
-    allspells_nspells=n_spell[is_spell]     
+    allspells_nspells=n_spell[is_spell]   
+    allspells_du=sp_dur[is_spell]
          
          
            
@@ -602,27 +608,27 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     hazs.reverse()      
     hazs=np.array(hazs).T      
            
-    # #Hazard of Marriage (Cohabitation spells)      
-    # hazm=list()      
-    # lgh=len(all_spells['Couple, C'][:,0])     
-    # haz1=0.0
-    # for t in range(mdl.setup.pars['T']):      
+    #Hazard of Marriage (Cohabitation spells)      
+    hazmm=list()      
+    lgh=len(all_spells['Couple, C'][:,0])     
+    haz1=0.0
+    for t in range(mdl.setup.pars['T']):      
                
-    #     cond=all_spells['Couple, C'][:,1]==t+1      
-    #     temp=all_spells['Couple, C'][cond,2]      
-    #     cond1=temp==2      
-    #     temp1=temp[cond1]      
-    #     if lgh>0:      
-    #         haz1=haz1+len(temp1)      
-    #         #lgh=lgh-len(temp)      
-    #     else:      
-    #         haz1=0.0      
-    #     hazm=[haz1/lgh]+hazm      
+        cond=all_spells['Couple, C'][:,1]==t+1      
+        temp=all_spells['Couple, C'][cond,2]      
+        cond1=temp==2      
+        temp1=temp[cond1]      
+        if lgh>0:      
+            haz1=haz1+len(temp1)      
+            #lgh=lgh-len(temp)      
+        else:      
+            haz1=0.0      
+        hazmm=[haz1/lgh]+hazmm     
                
-    # hazm.reverse()      
-    # hazm=np.array(hazm).T      
+    hazmm.reverse()      
+    hazmm=np.array(hazmm).T      
            
-    hazm=np.mean(all_spells['Couple, M'][:,-1])
+    hazm=np.mean(all_spells['Couple, M'][:,-1]>0)
     
     # #Transform hazards pooling moments   
     # mdl.setup.pars['ty']=1  
@@ -1707,7 +1713,24 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.xticks(np.arange(3), ('2', '4', '6')) 
         plt.savefig('hazs.pgf', bbox_inches = 'tight',pad_inches = 0)   
              
-              
+           #############################################     
+        # Hazard of Separation     
+        #############################################     
+        fig = plt.figure()     
+        f1=fig.add_subplot(1.5,1,1)     
+        lg=len(hazmm)  
+        plt.plot(np.array(range(lg)), hazmm[0:lg],one, linestyle='--',linewidth=1.5, label='Simulation')     
+        #plt.plot(np.array(range(lg)), hazs_d[0:lg],two,linewidth=1.5, label='Data')     
+       # plt.fill_between(np.array(range(lg)), hazs_i[0,0:lg], hazs_i[1,0:lg],alpha=0.2,facecolor='b')     
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),     
+                  fancybox=True, shadow=True, ncol=2, fontsize=14)     
+        plt.ylim(ymin=0)     
+        #plt.legend(loc='upper left', shadow=True, fontsize='x-small')     
+        plt.xlabel('Duration - years', fontsize=16)     
+        plt.ylabel('Hazard of marriage', fontsize=16)     
+        plt.xticks(np.arange(3), ('2', '4', '6')) 
+        plt.savefig('hazm.pgf', bbox_inches = 'tight',pad_inches = 0)   
+        
         #############################################     
         # Hazard of Marriage     
         #############################################     

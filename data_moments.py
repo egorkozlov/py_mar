@@ -177,11 +177,13 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
     mare['how']=-1    
     mare['mar']=-1       
     mare['cohmar']=-1
+    mare['cohmar1']=-1
     for i in range(9):    
         mare.loc[(i+1==mare['rel']),'beg']=mare.loc[(i+1==mare['rel']),'MARDAT0'+str(i+1)]    
         mare.loc[(i+1==mare['rel']),'endd']=mare.loc[(i+1==mare['rel']),'ENDDAT0'+str(i+1)]    
         mare.loc[(i+1==mare['rel']),'how']=mare.loc[(i+1==mare['rel']),'HOWEND0'+str(i+1)]  
         mare.loc[(i+1==mare['rel']),'cohmar']=mare.loc[(i+1==mare['rel']),'COHMAR0'+str(i+1)]  
+        #mare.loc[(i+1==mare['rel']),'cohmar1']=mare.loc[(i+1==mare['rel']),'HOWBEG0'+str(i+1)]  
         
             
     #Get how relationship end    
@@ -190,7 +192,12 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
         
     #Was this preceeded by cohabitation
     mare['cohb']=0
-    mare.loc[mare['cohmar']=='cohab','cohb']=1  
+    mare.loc[(mare['cohmar']=='cohab') | (mare['cohmar']=='Yes') ,'cohb']=1  
+    
+    #mare['cohb1']=0
+    #mare.loc[mare['cohmar1']=='coh','cohb1']=1 
+    
+    
     
     #Replace censored date if still together    
     mare['end']=-1    
@@ -212,37 +219,42 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
     hazm=np.mean(mare['cohb'])
      
      
-    # #Transform data to be year- 
-    # mare['begy']=mare['beg']/12+1900 
-    # mare=mare.round({'begy': 0}) 
+    #Transform data to be year- 
+    mare['begy']=mare['beg']/12+1900 
+    mare=mare.round({'begy': 0}) 
      
-    # #Drop if marriage started after the change in the law 
-    # mare=mare[mare['unil']>0] 
-    # mare=mare[(mare['begy']<=mare['unil'])] 
-    # mare['IDN1']=mare['IDN']*1000+mare['rel'] 
+    #Drop if marriage started after the change in the law 
+    mare=mare[mare['unil']>mare['begy']] 
+    #mare['aft']=0.0
+    #mare.loc[mare['unil']>mare['begy'],'aft']=1.0
+    #mare=mare[(mare['begy']<=mare['unil'])] 
+    mare['IDN1']=mare['IDN']*1000+mare['rel'] 
      
-    # mare1=mare[['dury','fine','IDN1','IDN','begy','state','unil','birth','rel']] 
-    # mare2=mare1.loc[mare1.index.repeat(mare1.dury)]  
-     
-    # #Beginning year 
-    # mare2['t'] = mare2.groupby(['IDN1']).cumcount()+1 
-    # mare2['t2']=mare2['t']**2 
-    # mare2['t3']=mare2['t']**3 
-    # mare2['year']=mare2['begy']+mare2['t']-1 
-     
-     
-    # #dependent variables 
+    mare1=mare[['dury','fine','IDN1','IDN','begy','state','unil','birth','rel']] 
+    mare2=mare1.loc[mare1.index.repeat(mare1.dury)]  
     
-    # mare2['max'] = mare2.groupby(['IDN1'])['t'].transform('max') 
-    # mare2['div']=0 
-    # mare2.loc[(mare2['max']==mare2['t']) & (mare2['fine']=='div'),'div']=1 
+    
+    #Beginning year 
+    mare2['t'] = mare2.groupby(['IDN1']).cumcount()+1 
+    mare2['t2']=mare2['t']**2 
+    mare2['t3']=mare2['t']**3 
+    mare2['year']=mare2['begy']+mare2['t']-1 
      
-    # #Unlateral divorce 
-    # mare2['unid']=0 
-    # mare2.loc[mare2['unil']<=mare2['year'],'unid']=1 
-    # #regression 
-    # FE_ols = smf.ols(formula='div~ unid+C(state)+C(year)+t', data = mare2[mare2['rel']<=2]).fit()    
      
+    #dependent variables 
+    
+    mare2['max'] = mare2.groupby(['IDN1'])['t'].transform('max') 
+    mare2['div']=0 
+    mare2.loc[(mare2['max']==mare2['t']) & (mare2['fine']=='div'),'div']=1 
+     
+    #Unlateral divorce 
+    mare2['unid']=0 
+    mare2.loc[mare2['unil']<=mare2['year'],'unid']=1 
+    #mare2['inte']=mare2['unid']*mare2['aft'] 
+    mare2['age']=mare2['begy']-mare2['birth']
+    #regression 
+    FE_ols = smf.ols(formula='div~ unid+C(state)+C(year)+t', data = mare2[mare2['rel']<=2]).fit()    
+    #FE_ols = smf.ols(formula='div~ unid+C(state)+C(year)+C(age)+t', data = mare2[(mare2['age']>=22) & (mare2['rel']<=2)]).fit().summary()
     del mar    
         
     #############################    
@@ -759,7 +771,7 @@ def dat_moments(sampling_number=5,weighting=True,covariances=False,relative=Fals
     if weighting:    
             
         #Compute optimal Weighting Matrix    
-        col=np.concatenate((hazmB,hazsB,hazdB,emarB,ecohB,fls_ratioB,wage_ratioB,beta_unidB,mean_flsB),axis=0)        
+        col=np.concatenate((hazmB,hazsB,hazdB,emarB,ecohB,fls_ratioB,wage_ratioB,mean_flsB),axis=0)        
         dim=len(col)    
         W_in=np.zeros((dim,dim))    
         for i in range(dim):    
@@ -778,7 +790,7 @@ def dat_moments(sampling_number=5,weighting=True,covariances=False,relative=Fals
     elif relative:   
            
         #Compute optimal Weighting Matrix    
-        col=np.concatenate((hazm*np.ones(1),hazs,hazd,emar,ecoh,fls_ratio,wage_ratio*np.ones(1),beta_unid*np.ones(1),mean_fls*np.ones(1)),axis=0)        
+        col=np.concatenate((hazm*np.ones(1),hazs,hazd,emar,ecoh,fls_ratio,wage_ratio*np.ones(1),mean_fls*np.ones(1)),axis=0)        
         dim=len(col)    
         W=np.zeros((dim,dim))    
         for i in range(dim):    
@@ -787,7 +799,7 @@ def dat_moments(sampling_number=5,weighting=True,covariances=False,relative=Fals
     else:    
             
         #If no weighting, just use sum of squred deviations as the objective function            
-        W=np.diag(np.ones(len(hazm)+len(hazs)+len(fls_ratio)+len(hazd)+len(emar)+len(ecoh)+3))#two is for fls+beta_unid    
+        W=np.diag(np.ones(len(hazm)+len(hazs)+len(fls_ratio)+len(hazd)+len(emar)+len(ecoh)+2))#two is for fls+beta_unid    
             
     listofTuples = [("hazs" , hazs), ("hazm" , hazm),("hazd" , hazd),("emar" , emar),    
                 ("ecoh" , ecoh), ("fls_ratio" , fls_ratio),("wage_ratio" , wage_ratio), 

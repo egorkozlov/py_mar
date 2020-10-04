@@ -80,7 +80,7 @@ def fun(x):
             
             
             
-        res=dfols.solve(q, xc, rhobeg = 0.05, rhoend=1e-4, maxfun=90, bounds=(xl,xu),
+        res=dfols.solve(q, xc, rhobeg = 0.05, rhoend=1e-4, maxfun=1, bounds=(xl,xu),
                         npt=len(xc)+5,scaling_within_bounds=True, 
                         user_params={'tr_radius.gamma_dec':0.75,'tr_radius.gamma_inc':1.5,
                                       'tr_radius.alpha1':0.5,'tr_radius.alpha2':0.75,

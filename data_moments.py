@@ -527,7 +527,7 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
       
     #First keep the right birth cohorts  
     d_hrs['birth']=d_hrs['year']-d_hrs['age']  
-    d_hrs=d_hrs[(d_hrs['birth']>=1940) & (d_hrs['birth']<1955)]  
+    d_hrs=d_hrs[(d_hrs['birth']>=1940) & (d_hrs['birth']<=1955)]  
    
     #Generate variables of interest  
     d_hrs['mar']=-1.0  
@@ -677,7 +677,7 @@ def dat_moments(sampling_number=5,weighting=True,covariances=False,relative=Fals
     data['SAMWT']=1.0 
     #Subset Data 
     data=data[data['eq']<=1].copy() 
-    data=data[(data['birth']>=1940) & (data['birth']<=1955)].copy() 
+    data=data[(data['birth']>=1940) & (data['birth']<1955)].copy() 
      
     data=data[(data['state']=='Arizona') | (data['state']=='Wisconsin') | (data['state']=='Nevada') | (data['state']=='California') | (data['state']=='Idaho') | (data['state']=='Louisiana') | (data['state']=='Texas') | (data['state']=='Washington state')].copy()  
      

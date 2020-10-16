@@ -156,6 +156,8 @@ class Agents:
         else:
             self.policy_ind[:] = 0
             
+
+        
         if not nosim: self.simulate()
         
         
@@ -189,7 +191,7 @@ class Agents:
                 
                 
                 is_state_any_pol = (self.state[:,t]==ist)  
-                is_pol = (self.policy_ind[:,min(t+1,self.T-1)]==ipol)
+                is_pol =  (self.policy_ind[:,min(t+1,self.T-1)]==ipol)
                 
                 is_state = (is_state_any_pol) & (is_pol)
                 
@@ -243,7 +245,7 @@ class Agents:
         for ipol in range(self.npol):
             for ist,sname in enumerate(self.state_names):
                 is_state_any_pol = (self.state[:,t]==ist)
-                is_pol = (self.policy_ind[:,t+1]==ipol)
+                is_pol =(self.policy_ind[:,t+1]==ipol)
                 is_state = (is_state_any_pol) & (is_pol)   
                 
                 nst = np.sum(is_state)

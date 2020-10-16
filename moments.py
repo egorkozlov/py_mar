@@ -21,8 +21,8 @@ from welfare_comp import welf_dec
 matplotlib.use("pgf")    
 matplotlib.rcParams.update({    
     "pgf.texsystem": "pdflatex",    
-    'font.family': 'serif',
-    #'font.family':'sans-serif',    
+    #'font.family': 'serif',
+    'font.family':'sans-serif',    
     'font.size' : 11,    
     'text.usetex': True,    
     'pgf.rcfonts': False,    
@@ -47,7 +47,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
            
     #Import simulated values     
     state=agents.state    
-    assets_t=mdl.setup.agrid_c[agents.iassets]   
+    assets_t=mdl.setup.agrid_c[agents.iassets]  
     assets_t[agents.state<=1]=mdl.setup.agrid_s[agents.iassets[agents.state<=1]]   
     iexo=agents.iexo        
     theta_t=mdl.setup.thetagrid_fine[agents.itheta]      
@@ -90,6 +90,28 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         assetss_w=mdl.setup.agrid_s[agents.iassetss]   
         assetss_w[agents.state<=1]=mdl.setup.agrid_s[agents.iassetss[agents.state<=1]]   
         changep_w=agents.policy_ind    
+        
+        #Wages
+        ifemale0=(female_w[:,0]==1)  
+        imale0=(female_w[:,0]==0)  
+        wage_f0=np.ones(state_w.shape) *[np.nan] 
+        wage_m0=np.ones(state_w.shape) *[np.nan]
+
+        
+        for i in range(len(state_w[0,:])):    
+            
+            singlef0=(ifemale0) & (state_w[:,i]==0)  
+            singlem0=(imale0) & (state_w[:,i]==1)         
+            nsinglef0=(ifemale0) & (state_w[:,i]>=2)  
+            nsinglem0=(imale0) & (state_w[:,i]>=2)  
+        
+            #For income process validation  
+            wage_f0[nsinglef0,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])])[nsinglef0]  
+            wage_m0[nsinglem0,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])])[nsinglem0]  
+            wage_m0[nsinglef0,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][((setup.all_indices(i,iexo_w[:,i]))[2])])[nsinglef0]  
+            wage_f0[nsinglem0,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])])[nsinglem0]  
+            wage_f0[singlef0,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][iexo_w[singlef0,i]])   
+            wage_m0[singlem0,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][iexo_w[singlem0,i]])   
    
     moments=dict()   
      
@@ -133,7 +155,12 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
            
     #Create a file with the age of the change foreach person      
     changep=agents.policy_ind     
-          
+    #changep[:,47:]=1
+    #changep[1:10000,37:]=0
+    #changep[10000:,10:]=1
+    changep[:,0][(changep[:,1]==1)]=1 
+    #changep=np.ones(changep.shape)
+    #changep[:,:10]=0
            
     #Get states codes      
     state_codes = {name: i for i, name in enumerate(mdl.setup.state_names)}      
@@ -154,7 +181,6 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
           
           
     #First cut the first two periods give new 'length'      
-    assets_t=assets_t[:,:mdl.setup.pars['T']]      
     iexo=iexo[:,:mdl.setup.pars['T']]      
     state=state[:,:mdl.setup.pars['T']]      
     theta_t=theta_t[:,:mdl.setup.pars['T']]      
@@ -175,6 +201,10 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         theta_w=theta_w[:,:mdl.setup.pars['T']]   
         changep_w=changep_w[:,:mdl.setup.pars['T']]   
         divorces_w=divorces_w[:,:mdl.setup.pars['T']]   
+        assets_t=assets_t[:,:mdl.setup.pars['T']] 
+        cons=cons[:,:mdl.setup.pars['T']] 
+        wage_f0=wage_f0[:,:mdl.setup.pars['T']]
+        wage_m0=wage_m0[:,:mdl.setup.pars['T']]
          
           
     ####################################################################      
@@ -201,9 +231,14 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     changep=changep[keep,]    
     female=female[keep,]    
     iexo=iexo[keep,]   
-    assets_t=assets_t[keep,]   
+    if draw:assets_t=assets_t[keep,] 
+    if draw:theta_t=theta_t[keep,] 
+    if draw:cons=cons[keep,]
+    if draw:wage_f0=wage_f0[keep,]
+    if draw:wage_m0=wage_m0[keep,]
     labor=labor[keep,]   
     durf=durf[keep,]
+    
        
          
        
@@ -263,11 +298,15 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     changep=changep[keep2,]    
     female=female[keep2,]   
     iexo=iexo[keep2,]   
-    assets_t=assets_t[keep2,]   
+    if draw:assets_t=assets_t[keep2,] 
+    if draw:cons=cons[keep2,] 
+    if draw:wage_f0=wage_f0[keep2,] 
+    if draw:wage_m0=wage_m0[keep2,] 
     labor=labor[keep2,]   
     durf=durf[keep2,]
      
        
+    changep
     #Initial distribution   
     prima=freq_nsfh/np.sum(freq_nsfh)   
        
@@ -346,7 +385,9 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         summa1+=age_sint[int(i)]     
          
     aged=np.array(aged,dtype=np.int16) 
-    censored=aged>agei  
+    #agei=np.zeros(agei.shape)
+    #agei[:,-10:]=10000
+    censored=aged>agei 
     
     #aged=np.ones((state.shape),dtype=np.int16)*61
     ###########################################      
@@ -365,10 +406,21 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     is_unid = -1*np.ones((N,nspells),dtype=np.int16)      
     is_unid_end = -1*np.ones((N,nspells),dtype=np.int16)   
     sp_dur = -10*np.ones((N,nspells),dtype=np.int16) 
-    is_unid_lim = -1*np.ones((N,nspells),dtype=np.int16)      
+    is_unid_lim = -1*np.ones((N,nspells),dtype=np.int16) 
+    is_unid_limo = -1*np.ones((N,nspells),dtype=np.int16)      
     n_spell = -1*np.ones((N,nspells),dtype=np.int16)      
     is_spell = np.zeros((N,nspells),dtype=np.bool)   
     is_fem = -1*np.ones((N,nspells),dtype=np.bool) 
+    inde = -1*np.ones((N,nspells),dtype=np.bool) 
+    
+    #Below assets: attention that it takes time
+    is_asse= -1*np.ones((N,nspells,mdl.setup.pars['T']),dtype=np.float32) 
+    is_th=  -1*np.ones((N,nspells,mdl.setup.pars['T']),dtype=np.float32) 
+    is_cons= -1*np.ones((N,nspells,mdl.setup.pars['T']),dtype=np.float32)
+    is_wagef= -1*np.ones((N,nspells,mdl.setup.pars['T']),dtype=np.float32) 
+    is_wagem= -1*np.ones((N,nspells,mdl.setup.pars['T']),dtype=np.float32)
+    
+    index=np.linspace(1,N,N)
      
          
            
@@ -386,25 +438,67 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
    
           
         ichange = ((state[:,t-1] != state[:,t])) & (censored[:,t]==True)  
+        
         ifinish=((~ichange) & (censored[:,t]==False) & (censored[:,t-1]==True))  
-        sp_length[((~ichange) & (censored[:,t]==True)),ispell[((~ichange) & (censored[:,t]==True))]] += 1      
-        sp_dur[ifinish,ispell[ifinish]] = durf[ifinish,t-1] 
+        iswunid= (((~ifinish) & (~ichange) & (changep[:,t-1]==0) & (changep[:,t]==1)))
+        iswunid1= ( ((changep[:,t]==1)) & (state[:,t-1] != state[:,t]) & (changep[:,t-1]==0))
+        #ifinish2=((((~ichange) & (t==mdl.setup.pars['T']-1))) )
+        sp_length[((~ichange) & (censored[:,t]==True)),ispell[((~ichange) & (censored[:,t]==True))]] += 1 
+        
+        if draw:
+            is_asse[((~ichange)   & (censored[:,t]==True)),ispell[((~ichange) & (censored[:,t]==True))], 
+            sp_length[((~ichange) & (censored[:,t]==True)),ispell[((~ichange) & (censored[:,t]==True))]]-1]=\
+            assets_t[((~ichange)  & (censored[:,t]==True)),t]
+                       
+            is_cons[((~ichange)   & (censored[:,t]==True)),ispell[((~ichange) & (censored[:,t]==True))],
+            sp_length[((~ichange) & (censored[:,t]==True)),ispell[((~ichange) & (censored[:,t]==True))]]-1]=\
+            cons[((~ichange)      & (censored[:,t]==True)),t]
+            
+            is_wagef[((~ichange)  & (censored[:,t]==True)),ispell[((~ichange) & (censored[:,t]==True))],
+            sp_length[((~ichange) & (censored[:,t]==True)),ispell[((~ichange) & (censored[:,t]==True))]]-1]=\
+            wage_f0[((~ichange)   & (censored[:,t]==True)),t]
+            
+            is_wagem[((~ichange)  & (censored[:,t]==True)),ispell[((~ichange) & (censored[:,t]==True))],
+            sp_length[((~ichange) & (censored[:,t]==True)),ispell[((~ichange) & (censored[:,t]==True))]]-1]=\
+            wage_m0[((~ichange)   & (censored[:,t]==True)),t]
+            
+            is_th[((~ichange)   & (censored[:,t]==True)),ispell[((~ichange) & (censored[:,t]==True))], 
+            sp_length[((~ichange) & (censored[:,t]==True)),ispell[((~ichange) & (censored[:,t]==True))]]-1]=\
+            theta_t[((~ichange)  & (censored[:,t]==True)),t]
+            
+            
+                        
+        #is_asse[:,ispell,sp_length[ispell]-1]=assets_t[:,t]
+        sp_dur[ifinish,ispell[ifinish]] = durf[ifinish,t-1] #+1
+        #sp_dur[ifinish2,ispell[ifinish2]] = durf[ifinish2,t-1]+1
                
         if not np.any(ichange): continue      
                
         did_end[ichange,ispell[ichange]] = True      
                
         is_spell[ichange,ispell[ichange]+1] = True      
-        sp_length[ichange,ispell[ichange]+1] = 1 # if change then 1 year right      
+        
+        sp_length[ichange,ispell[ichange]+1] = 1 # if change then 1 year right    
+        if draw: 
+            is_asse[ichange,ispell[ichange]+1,0]=assets_t[ichange,t]
+            is_th  [ichange,ispell[ichange]+1,0]=theta_t[ichange,t]
+            is_cons[ichange,ispell[ichange]+1,0]=cons[ichange,t]
+            is_wagef[ichange,ispell[ichange]+1,0]=wage_f0[ichange,t]
+            is_wagem[ichange,ispell[ichange]+1,0]=wage_m0[ichange,t]
+            
         state_end[ichange,ispell[ichange]] = state[ichange,t]      
         sp_person[ichange,ispell[ichange]] = index[ichange]     
         time_end[ichange,ispell[ichange]] = t-1      
-        state_beg[ichange,ispell[ichange]+1] = state[ichange,t]       
+        state_beg[ichange,ispell[ichange]+1] = state[ichange,t]  
+        inde[ichange,ispell[ichange]+1] = index[ichange]  
         time_beg[ichange,ispell[ichange]+1] = t      
+        is_fem[ichange,ispell[ichange]+1] = female[ichange,ispell[ichange]+1] 
         sp_dur[ichange,ispell[ichange]] = durf[ichange,t-1]
-        n_spell[ichange,ispell[ichange]+1]=ispell[ichange]+1     
+        n_spell[ichange,ispell[ichange]+1]=ispell[ichange]     
         is_unid[ichange,ispell[ichange]+1]=changep[ichange,t]     
-        is_unid_lim[ichange,ispell[ichange]+1]=changep[ichange,aged[ichange,0]]     
+        is_unid_lim[iswunid,ispell[iswunid]]=sp_length[iswunid,ispell[iswunid]]
+        is_unid_lim[iswunid1,ispell[iswunid1]+1]=1
+        is_unid_limo[ichange,ispell[ichange]+1]=changep[ichange,aged[ichange,0]]      
         is_unid_end[ichange,ispell[ichange]]=changep[ichange,t-1]     
              
                
@@ -417,16 +511,31 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     allspells_timeb = time_beg[is_spell]     
     allspells_isunid=is_unid[is_spell]     
     allspells_isunidend=is_unid_end[is_spell]     
-    allspells_isunidlim=is_unid_lim[is_spell]     
+    allspells_isunidlim=is_unid_lim[is_spell]
+    allspells_isunidlimo=is_unid_limo[is_spell]
     allspells_person=sp_person[is_spell]     
     allspells_nspells=n_spell[is_spell]   
     allspells_du=sp_dur[is_spell]
-         
+    allspells_female=is_fem[is_spell]
+    allspells_inde=inde[is_spell]
+    if draw:
+        allspells_asse=is_asse[is_spell]
+        allspells_th=is_th[is_spell]
+        allspells_cons=is_cons[is_spell]
+        allspells_wf=is_wagef[is_spell]
+        allspells_wm=is_wagem[is_spell]
+    
+    #Correct the assets thing
+    allspells_asse[:,0][allspells_asse[:,0]==-1]=0.0
+    atype=np.reshape(np.repeat(allspells_beg,allspells_asse.shape[1]),allspells_asse.shape)
+    
          
            
-    # If the spell did not end mark it as ended with the state at its start      
+    # If the spell did not end mark it as ended with the state at its start 
+    allspells_isunid[allspells_isunidlim==1]=0
+    
     allspells_end[allspells_end==-1] = allspells_beg[allspells_end==-1]      
-    allspells_isunidend[allspells_isunidend==-1] = allspells_isunidlim[allspells_isunidend==-1]     
+    allspells_isunidend[allspells_isunidend==-1] = allspells_isunidlimo[allspells_isunidend==-1]     
     allspells_nspells[allspells_nspells==-1]=0     
     allspells_nspells=allspells_nspells+1     
     allspells_prec=allspells_du+1-allspells_len
@@ -435,8 +544,19 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     spells = np.stack((allspells_beg,allspells_len,allspells_end,allspells_prec),axis=1)      
          
     #Use this for empirical analysis     
-    spells_empirical=np.stack((allspells_beg,allspells_timeb,allspells_len,allspells_end,allspells_nspells,allspells_isunid,allspells_isunidend),axis=1)     
+    spells_empirical=np.stack((allspells_beg,allspells_timeb,allspells_len,
+                               allspells_end,allspells_nspells,
+                               allspells_isunid,allspells_isunidend,
+                               allspells_isunidlim,allspells_female,
+                               allspells_inde,allspells_prec),axis=1)   
+    
     is_coh=((spells_empirical[:,0]==3) & (spells_empirical[:,5]==spells_empirical[:,6]))     
+    #if draw:spells_empiricalm=spells_empirical[((spells_empirical[:,0]==2) & (spells_empirical[:,5]==0)),1:10]
+    if draw:
+        spells_empiricalm=spells_empirical[(spells_empirical[:,0]==2) ,1:11]
+        spells_empiricalc=spells_empirical[(spells_empirical[:,0]==3) ,1:11]
+        spells_empiricals=spells_empirical[(spells_empirical[:,0]<=1) ,1:11]
+        
     spells_empirical=spells_empirical[is_coh,1:6]     
          
         
@@ -516,15 +636,37 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     # Second regression for the length of cohabitation     
     ###################################################     
     if draw:  
-        data_coh_panda=pd.DataFrame(data=spells_empirical,columns=['age','duration','end','rel','uni'])      
-             
+        
+        #Dataset of cohabitation
+        data_coh_panda=pd.DataFrame(data=spells_empirical,columns=['age','duration','end','rel','uni'])    
+        
+        #Dataset of cohabitation 2
+        data_coh_pandac=pd.DataFrame(data=spells_empiricalc,columns=['age','duration','end','rel','uni','unie','unid','fem','id','prec'])
+        
+        #Dataset of marriage
+        data_mar_panda=pd.DataFrame(data=spells_empiricalm,columns=['age','duration','end','rel','uni','unie','unid','fem','id','prec'])  
+                      
+        #Dataset of singleness
+        data_sing_panda=pd.DataFrame(data=spells_empiricals,columns=['age','duration','end','rel','uni','unie','unid','fem','id','prec'])  
+         
+                
+        #Datasets of marriages-already together when reformed kiked in (eventually)
         if np.var(data_rel_panda['uni'])>0.0001:   
-            #Regression      
+            
+        
+                
+                
+                 
             try:      
             #FE_ols = smf.ols(formula='duration ~ uni+C(age)', data = data_coh_panda.dropna()).fit()      
             #beta_dur_s=FE_ols.params['uni']      
                  
-                from lifelines import CoxPHFitter     
+                ###################################
+                #  COHABITATION DURATION
+                #################################
+                
+                from lifelines import CoxPHFitter  
+               
                 cph = CoxPHFitter()     
                 data_coh_panda['age2']=data_coh_panda['age']**2     
                 data_coh_panda['age3']=data_coh_panda['age']**3     
@@ -552,7 +694,200 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
                 data_coh_panda3=data_coh_panda.drop(['end'], axis=1)     
                 cox_sep=cph.fit(data_coh_panda3, duration_col='duration', event_col='endd')     
                 haz_sep=cox_sep.hazard_ratios_['uni']     
-                     
+                
+                
+                ###################################
+                #  Marriage- RISK SHARING and Divorce
+                ##################################à
+                
+                #Analysis of divorce
+                
+                #Reshape dataset
+                data_mar_panda['index1'] = data_mar_panda.index
+                data_mar_panda=data_mar_panda.loc[data_mar_panda.index.repeat(data_mar_panda.duration)]              
+                data_mar_panda['t'] = data_mar_panda.groupby(['index1']).cumcount()+1
+                data_mar_panda.loc[data_mar_panda['unie']==0,'unid']=10000
+                data_mar_panda.loc[data_mar_panda['uni']==1,'unid']=-500
+                data_mar_panda['age']=data_mar_panda['age']+data_mar_panda['t']
+                data_mar_panda['isud']=0.0
+                data_mar_panda.loc[data_mar_panda['unid']<=data_mar_panda['t'],'isud']=1.0
+                data_mar_panda['isud1']=0.0
+                data_mar_panda['isud1']=data_mar_panda['t']-data_mar_panda['unid']
+                data_mar_panda['endd']=0.0 
+                data_mar_panda.loc[(data_mar_panda['end']<=1.0) & (data_mar_panda['duration']==data_mar_panda['t']),'endd']=1.0   
+               
+                #Build evolution of pareto weight over time
+                data_mar_panda.groupby(['index1']).cumcount()+1
+                
+                #Analysis on married couples
+                FE_ols=smf.ols(formula='endd~ isud+C(age)+C(t)', data =data_mar_panda[(data_mar_panda['prec']==0) & (data_mar_panda['uni']==0)]).fit().summary()
+                
+                #Analysis on assets+risk sharing
+                data_mar_panda['assets']=allspells_asse[atype==2][allspells_asse[atype==2]>-1]
+                data_mar_panda['th']=allspells_th[atype==2][allspells_asse[atype==2]>-1]
+                data_mar_panda['cons']=allspells_cons[atype==2][allspells_cons[atype==2]>-1]
+                data_mar_panda['wf']=allspells_wf[atype==2][allspells_wf[atype==2]>-1]
+                data_mar_panda['wm']=allspells_wm[atype==2][allspells_wm[atype==2]>-1]
+                
+                data_mar_panda['t2']=data_mar_panda['t']**2
+                data_mar_panda['t3']=data_mar_panda['t']**3
+                FE_ass=smf.ols(formula='assets~ C(isud1,Treatment(reference=-1))+t+t2+t3+C(age)', data =data_mar_panda[(data_mar_panda['uni']==0) & (data_mar_panda['unie']==1) ]).fit().summary()
+                
+                #Get the evolution of pareto weight per person
+                data_mar_panda['thi']=np.append(0.5,allspells_th[atype==2][allspells_asse[atype==2]>-1][:-1])
+                data_mar_panda['diff']=0.0
+                data_mar_panda.loc[(data_mar_panda['thi']==data_mar_panda['th']),'diff']=1.0
+                
+                thtmove_bil=1.0-np.mean(data_mar_panda.loc[(data_mar_panda['t']>1) &
+                                                        (data_mar_panda['uni']==0) &
+                                                        (data_mar_panda['unie']==0),'diff'])
+                
+                thtmove_uni=1.0-np.mean(data_mar_panda.loc[(data_mar_panda['t']>1) &
+                                                        (data_mar_panda['uni']==1) & 
+                                                        (data_mar_panda['unie']==1),'diff']) 
+                
+                #Analysis of risk Sharing
+                diffe=data_mar_panda.diff(periods=-1)
+                data_mar_panda['dcons']=-diffe['cons']
+                data_mar_panda['dwf']=-diffe['wf']
+                data_mar_panda['dwm']=-diffe['wm']
+                data_mar_panda['age2']=data_mar_panda['age']**2
+                
+                #Risk sharing mutual consent women
+                rsw_mut=smf.ols(formula='dcons~ dwf+age+age2', data =data_mar_panda
+                               [(data_mar_panda['uni']==0) &
+                                (data_mar_panda['fem']==1) & (data_mar_panda['uni']==data_mar_panda['unie'])]).fit()
+                
+                rsw_uni=smf.ols(formula='dcons~ dwf+age+age2', data =data_mar_panda
+                               [(data_mar_panda['uni']==1) &
+                                (data_mar_panda['fem']==1) & (data_mar_panda['uni']==data_mar_panda['unie'])]).fit()
+                
+                rsm_mut=smf.ols(formula='dcons~ dwm+age+age2', data =data_mar_panda
+                               [ (data_mar_panda['uni']==0) &
+                                (data_mar_panda['fem']==0) & (data_mar_panda['uni']==data_mar_panda['unie'])]).fit()
+                
+                rsm_uni=smf.ols(formula='dcons~ dwm+age+age2', data =data_mar_panda
+                               [ (data_mar_panda['uni']==1) &
+                                (data_mar_panda['fem']==0) & (data_mar_panda['uni']==data_mar_panda['unie'])]).fit()
+                
+                rs_npre_uni=smf.ols(formula='dcons~ dwm+age+age2', data =data_mar_panda
+                               [ (data_mar_panda['prec']==0) & (data_mar_panda['uni']==1) &
+                                 (data_mar_panda['uni']==data_mar_panda['unie']) &
+                                (data_mar_panda['fem']==0) ]).fit()
+                
+                rs_pre_uni=smf.ols(formula='dcons~ dwm+age+age2', data =data_mar_panda
+                               [ (data_mar_panda['prec']>0) & (data_mar_panda['uni']==1) &
+                                 (data_mar_panda['uni']==data_mar_panda['unie']) &
+                                (data_mar_panda['fem']==0) ]).fit()
+                
+                rs_npre_mut=smf.ols(formula='dcons~ dwm+age+age2', data =data_mar_panda
+                               [ (data_mar_panda['prec']==0) & (data_mar_panda['uni']==0) &
+                                 (data_mar_panda['uni']==data_mar_panda['unie']) &
+                                (data_mar_panda['fem']==0) ]).fit()
+                
+                rs_pre_mut=smf.ols(formula='dcons~ dwm+age+age2', data =data_mar_panda
+                               [ (data_mar_panda['prec']>0) & (data_mar_panda['uni']==0) &
+                                 (data_mar_panda['uni']==data_mar_panda['unie']) &
+                                (data_mar_panda['fem']==0) ]).fit()
+                
+         
+                print('Coefficients of risk sharing: rsw_mut {},rsw_uni {},rsm_mut {},rsm_uni {}'
+                      .format(rsw_mut.params['dwf'],rsw_uni.params['dwf'],rsm_mut.params['dwm'],rsm_uni.params['dwm']))
+                
+                print('Coefficients of risk sharing-PRE: rs_pre_uni {},rs_npre_uni {},rs_pre_mu {},rs_npre_mut {}'
+                      .format(rs_pre_uni.params['dwm'],rs_npre_uni.params['dwm'],rs_pre_mut.params['dwm'],rs_npre_mut.params['dwm']))
+               
+                ###################################
+                #  COHABITATION - RISK SHARING
+                #################################
+                data_coh_pandac['index1'] = data_coh_pandac.index
+                data_coh_pandac=data_coh_pandac.loc[data_coh_pandac.index.repeat(data_coh_pandac.duration)] 
+                data_coh_pandac['t'] = data_coh_pandac.groupby(['index1']).cumcount()+1
+                data_coh_pandac['age']=data_coh_pandac['age']+data_coh_pandac['t']
+                data_coh_pandac['age2']=data_coh_pandac['age']**2
+                
+                data_coh_pandac['cons']=allspells_cons[atype==3][allspells_cons[atype==3]>-1]
+                data_coh_pandac['th']=allspells_th[atype==3][allspells_cons[atype==3]>-1]
+                data_coh_pandac['wf']=allspells_wf[atype==3][allspells_wf[atype==3]>-1]
+                data_coh_pandac['wm']=allspells_wm[atype==3][allspells_wm[atype==3]>-1]
+                
+                #Get the evolution of pareto weight per person
+                data_coh_pandac['thi']=np.append(0.5,allspells_th[atype==3][allspells_asse[atype==3]>-1][:-1])
+                data_coh_pandac['diff']=0.0
+                data_coh_pandac.loc[(data_coh_pandac['thi']==data_coh_pandac['th']),'diff']=1.0
+                
+                thtmovec=1.0-np.mean(data_coh_pandac.loc[(data_coh_pandac['t']>1) &
+                                                        (data_coh_pandac['uni']==data_coh_pandac['unie']) ,'diff'])
+                
+                diffe=data_coh_pandac.diff(periods=-1)
+                data_coh_pandac['dcons']=-diffe['cons']
+                data_coh_pandac['dwf']=-diffe['wf']
+                data_coh_pandac['dwm']=-diffe['wm']
+                
+                #Risk sharing mutual consent women
+                rscw_f=smf.ols(formula='dcons~ dwf+age+age2', data =data_coh_pandac[(data_coh_pandac['uni']==0) & (data_coh_pandac['uni']==data_coh_pandac['unie']) & (data_coh_pandac['fem']==1)]).fit()
+                rscw_b=smf.ols(formula='dcons~ dwf+age+age2', data =data_coh_pandac[(data_coh_pandac['uni']==0) & (data_coh_pandac['uni']==data_coh_pandac['unie']) & (data_coh_pandac['end']<=1) & (data_coh_pandac['fem']==1)]).fit()
+                rscw_m=smf.ols(formula='dcons~ dwf+age+age2', data =data_coh_pandac[(data_coh_pandac['uni']==0) & (data_coh_pandac['uni']==data_coh_pandac['unie']) & (data_coh_pandac['end']==2) & (data_coh_pandac['fem']==1)]).fit()
+                
+                rscm_f=smf.ols(formula='dcons~ dwm+age+age2', data =data_coh_pandac[(data_coh_pandac['uni']==1) & (data_coh_pandac['uni']==data_coh_pandac['unie']) & (data_coh_pandac['fem']==0)]).fit()
+                rscm_b=smf.ols(formula='dcons~ dwm+age+age2', data =data_coh_pandac[(data_coh_pandac['uni']==1) & (data_coh_pandac['uni']==data_coh_pandac['unie']) & (data_coh_pandac['end']<=1) & (data_coh_pandac['fem']==0)]).fit()
+                rscm_m=smf.ols(formula='dcons~ dwm+age+age2', data =data_coh_pandac[(data_coh_pandac['uni']==1) & (data_coh_pandac['uni']==data_coh_pandac['unie']) & (data_coh_pandac['end']==2) & (data_coh_pandac['fem']==0)]).fit()
+             
+                print('Coefficients of risk sharing CF : rscw_f {},rscw_b {},rscw_m {}'
+                      .format(rscw_f.params['dwf'],rscw_b.params['dwf'],rscw_m.params['dwf']))
+                
+                print('Coefficients of risk sharing CM: rscm_f {},rscm_b {},rscm_m {}'
+                      .format(rscm_f.params['dwm'],rscm_b.params['dwm'],rscm_m.params['dwm']))
+                
+                
+                ##################################à
+                #Consumption smoothing at divorce
+                ###################################
+                data_sing_panda['index1'] = data_sing_panda.index
+                data_sing_panda=data_sing_panda.loc[data_sing_panda.index.repeat(data_sing_panda.duration)] 
+                data_sing_panda['t'] = data_sing_panda.groupby(['index1']).cumcount()+1
+                data_sing_panda['age']=data_sing_panda['age']+data_sing_panda['t']
+                data_sing_panda['age2']=data_sing_panda['age']**2
+                
+                
+                data_sing_panda['assets']=allspells_asse[atype<=1][allspells_asse[atype<=1]>-1]
+                data_sing_panda=data_sing_panda[data_sing_panda['age']>1]
+                data_sing_panda['cons']=allspells_cons[atype<=1][allspells_cons[atype<=1]>-1]
+                
+                #Drop if too young & not first relationshipd
+                data_sing_panda=data_sing_panda[data_sing_panda['age']>1]
+                data_sing_panda=data_sing_panda[data_sing_panda['rel']==1]
+                
+                data_sing_panda.loc[data_sing_panda['unie']==0,'unid']=500
+                data_sing_panda.loc[(data_sing_panda['unie']==1) & (data_sing_panda['unid']==-1),'unid']=-500
+                data_sing_panda['isud']=0.0
+                data_sing_panda.loc[data_sing_panda['unid']<=data_sing_panda['t'],'isud']=1.0
+                
+
+                
+                data_sing_panda['haveass1']=0.0
+                data_sing_panda.loc[(data_sing_panda['assets']>0.0) & (data_sing_panda['age']==2),'haveass1']=1.0
+                
+                data_sing_panda['haveass2']=0.0
+                data_sing_panda.loc[(data_sing_panda['assets']>0.0),'haveass2']=1.0
+                
+                data_sing_panda['haveass']=data_sing_panda.groupby(['index1'], sort=False)['haveass1'].max()
+                
+                data_sing_panda['inter']=data_sing_panda['haveass2']*data_sing_panda['isud']
+                
+                data_sing_panda['mar']=0.0
+                data_sing_panda.loc[(data_sing_panda['end']==2.0) &
+                                    (data_sing_panda['duration']==data_sing_panda['t']),'mar']=1.0
+                
+                data_sing_panda['coh']=0.0
+                data_sing_panda.loc[(data_sing_panda['end']==3.0) &
+                                    (data_sing_panda['duration']==data_sing_panda['t']),'coh']=1.0
+                
+                data_sing_panda['haverel']=data_sing_panda['coh']+data_sing_panda['mar']
+                
+                cohr=smf.ols(formula='coh~ C(age)+haveass2+inter+isud', data=data_sing_panda[data_sing_panda['fem']==0]).fit()
+                marr=smf.ols(formula='mar~ C(age)+haveass2+inter+isud', data=data_sing_panda[data_sing_panda['fem']==0]).fit()
+                print('The ass*uni interaction for coh is {} for marriage {}'.format(cohr.params['inter'],marr.params['inter']))
             except:      
                 print('No data for unilateral divorce regression...')      
                 haz_sep=1.0    
@@ -603,7 +938,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
             #lgh=lgh-len(temp)      
         else:      
             haz1=0.0      
-        hazs=[haz1/lgh]+hazs      
+        hazs=[haz1/max(lgh,0.0001)]+hazs      
                
     hazs.reverse()      
     hazs=np.array(hazs).T      
@@ -613,8 +948,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     lgh=len(all_spells['Couple, C'][:,0])     
     haz1=0.0
     for t in range(mdl.setup.pars['T']):      
-               
         cond=all_spells['Couple, C'][:,1]==t+1      
+               
         temp=all_spells['Couple, C'][cond,2]      
         cond1=temp==2      
         temp1=temp[cond1]      
@@ -623,7 +958,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
             #lgh=lgh-len(temp)      
         else:      
             haz1=0.0      
-        hazmm=[haz1/lgh]+hazmm     
+        hazmm=[haz1/max(lgh,0.0001)]+hazmm     
                
     hazmm.reverse()      
     hazmm=np.array(hazmm).T      
@@ -1283,6 +1618,9 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
             wage_f2[nsinglem2,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][((setup.all_indices(i,iexo_w[:,i]))[1])])[nsinglem2]  
             wage_f2[singlef2,i]=np.exp(setup.pars['f_wage_trend'][i]+setup.exogrid.zf_t[i][iexo_w[singlef2,i]])   
             wage_m2[singlem2,i]=np.exp(setup.pars['m_wage_trend'][i]+setup.exogrid.zm_t[i][iexo_w[singlem2,i]])   
+            
+            
+
              
               
         #Log Income over time  
@@ -1354,7 +1692,170 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         ###################################  
         #"Event Study" with simulated data  
         #################################  
+        agetemp1=np.linspace(1,len(changep_w[0,:]),len(changep_w[0,:]))  
+        agegridtemp1=np.reshape(np.repeat(agetemp,len(changep_w[:,0])),(len(changep_w[:,0]),len(agetemp1)),order='F')   
+       
+    
+        #Divorce Event (1st marriage marriage)
+        married=(state_w==2)  
+        agem=np.argmax(married,axis=1)  
+        neverm=(agem==0)  
+        agem[neverm]=9999  
+        divo1=(state_w<=1) & (agegridtemp1>agem[...,None])  
+        divor=np.argmax(divo1,axis=1)
+        divor[divor==0]=99999
+        divo=np.repeat(np.expand_dims(divor,axis=1),divo1.shape[1],axis=1)
+        event_divo=agegridtemp1-divo-1
+        
+        #Cohabitation(when cohabitatino is 1st realtionship not ending in marriage)
+        cohabit=(state_w==3)   
+        agec=np.argmax(cohabit,axis=1)  
+        neverc=(agec==0)  
+        agec[neverc]=9999  
+        divo2=(state_w<=1) & (agegridtemp1>agec[...,None]) 
+        divo3=(state_w==2) & (agegridtemp1>agec[...,None]) 
+        divor=np.argmax(divo2,axis=1)
+        divorr=np.argmax(divo3,axis=1)
+        divor[divor==0]=99999
+        divor[divor>divorr]=99999
+        divo=np.repeat(np.expand_dims(divor,axis=1),divo2.shape[1],axis=1)
+        event_break=agegridtemp1-divo-1
+        
+        #Here event studies       
+        m_cfm_uni=(female_w==1) & (abs(event_divo)<=3)  & ((np.min(changep_w,axis=1)==1) & ((np.min(changep_w,axis=1)==np.max(changep_w,axis=1))))[...,None]  
+        m_cfc_uni=(female_w==1) & (abs(event_break)<=3) & ((np.min(changep_w,axis=1)==1) & ((np.min(changep_w,axis=1)==np.max(changep_w,axis=1))))[...,None]  
+        m_cfm_bil=(female_w==1) & (abs(event_divo)<=3)  & ((np.min(changep_w,axis=1)==0) & ((np.min(changep_w,axis=1)==np.max(changep_w,axis=1))))[...,None] 
+        m_cfc_bil=(female_w==1) & (abs(event_break)<=3) & ((np.min(changep_w,axis=1)==0) & ((np.min(changep_w,axis=1)==np.max(changep_w,axis=1))))[...,None] 
+        m_cmm_uni=(female_w==0) & (abs(event_divo)<=3)  & ((np.min(changep_w,axis=1)==1) & ((np.min(changep_w,axis=1)==np.max(changep_w,axis=1))))[...,None] 
+        m_cmc_uni=(female_w==0) & (abs(event_break)<=3) & ((np.min(changep_w,axis=1)==1) & ((np.min(changep_w,axis=1)==np.max(changep_w,axis=1))))[...,None]   
+        m_cmm_bil=(female_w==0) & (abs(event_divo)<=3)  & ((np.min(changep_w,axis=1)==0) & ((np.min(changep_w,axis=1)==np.max(changep_w,axis=1))))[...,None]   
+        m_cmc_bil=(female_w==0) & (abs(event_break)<=3) & ((np.min(changep_w,axis=1)==0) & ((np.min(changep_w,axis=1)==np.max(changep_w,axis=1))))[...,None]   
+
+        
+        indexx=np.reshape(np.repeat(np.linspace(1,assets_w.shape[0],assets_w.shape[0]),assets_w.shape[1]),assets_w.shape)
+    
+        #Divorce
+        data_ev=np.array(np.stack((agegridtemp1[female_w!=-1],event_divo[female_w!=-1],event_break[female_w!=-1],assets_w[female_w!=-1],
+                                    state_w[female_w!=-1],agents.c[female_w!=-1],indexx[female_w!=-1],labor_w[female_w!=-1]),axis=0).T,dtype=np.float64)     
+        data_ev_panda=pd.DataFrame(data=data_ev,columns=['age','eventd','eventb','vass','state','cons','index','lb'])  
+        data_ev_panda['lc']=np.log(data_ev_panda['cons'])
+        
+        
+        #Event studines-consumption
+        o_cfm_uni= smf.ols(formula='lc~ C(age)+C(eventd, Treatment(reference=-1))', data = data_ev_panda[m_cfm_uni[female_w!=-1]]  ).fit()  
+        o_cfc_uni= smf.ols(formula='lc~ C(age)+C(eventb, Treatment(reference=-1))', data = data_ev_panda[m_cfc_uni[female_w!=-1]]  ).fit()  
+        o_cfm_bil= smf.ols(formula='lc~ C(age)+C(eventd, Treatment(reference=-1))', data = data_ev_panda[m_cfm_bil[female_w!=-1]]  ).fit()  
+        o_cfc_bil= smf.ols(formula='lc~ C(age)+C(eventb, Treatment(reference=-1))', data = data_ev_panda[m_cfc_bil[female_w!=-1]]  ).fit()  
+        o_cmm_uni= smf.ols(formula='lc~ C(age)+C(eventd, Treatment(reference=-1))', data = data_ev_panda[m_cmm_uni[female_w!=-1]]  ).fit()  
+        o_cmc_uni= smf.ols(formula='lc~ C(age)+C(eventb, Treatment(reference=-1))', data = data_ev_panda[m_cmc_uni[female_w!=-1]]  ).fit()  
+        o_cmm_bil= smf.ols(formula='lc~ C(age)+C(eventd, Treatment(reference=-1))', data = data_ev_panda[m_cmm_bil[female_w!=-1]]  ).fit()  
+        o_cmc_bil= smf.ols(formula='lc~ C(age)+C(eventb, Treatment(reference=-1))', data = data_ev_panda[m_cmc_bil[female_w!=-1]]  ).fit()  
+        
+        #Event studines-assets
+        a_cfm_uni= smf.ols(formula='vass~ C(age)+C(eventd, Treatment(reference=-1))',data = data_ev_panda[m_cfm_uni[female_w!=-1]]  ).fit()  
+        a_cfc_uni= smf.ols(formula='vass~ C(age)+C(eventb, Treatment(reference=-1))', data = data_ev_panda[m_cfc_uni[female_w!=-1]]  ).fit()  
+        a_cfm_bil= smf.ols(formula='vass~ C(age)+C(eventd, Treatment(reference=-1))', data = data_ev_panda[m_cfm_bil[female_w!=-1]]  ).fit()  
+        a_cfc_bil= smf.ols(formula='vass~ C(age)+C(eventb, Treatment(reference=-1))', data = data_ev_panda[m_cfc_bil[female_w!=-1]]  ).fit()  
+        a_cmm_uni= smf.ols(formula='vass~ C(age)+C(eventd, Treatment(reference=-1))', data = data_ev_panda[m_cmm_uni[female_w!=-1]]  ).fit()  
+        a_cmc_uni= smf.ols(formula='vass~ C(age)+C(eventb, Treatment(reference=-1))', data = data_ev_panda[m_cmc_uni[female_w!=-1]]  ).fit()  
+        a_cmm_bil= smf.ols(formula='vass~ C(age)+C(eventd, Treatment(reference=-1))', data = data_ev_panda[m_cmm_bil[female_w!=-1]]  ).fit()  
+        a_cmc_bil= smf.ols(formula='vass~ C(age)+C(eventb, Treatment(reference=-1))', data = data_ev_panda[m_cmc_bil[female_w!=-1]]  ).fit()  
+        
+    
+        
+        
+         #Create an Array for the results  
+        eventgridd2=np.linspace(-3,3,7)
+        p_cfm_uni=np.ones(len(eventgridd2))*np.nan  
+        p_cfc_uni=np.ones(len(eventgridd2))*np.nan  
+        p_cfm_bil=np.ones(len(eventgridd2))*np.nan  
+        p_cfc_bil=np.ones(len(eventgridd2))*np.nan  
+        p_cmm_uni=np.ones(len(eventgridd2))*np.nan  
+        p_cmc_uni=np.ones(len(eventgridd2))*np.nan 
+        p_cmm_bil=np.ones(len(eventgridd2))*np.nan 
+        p_cmc_bil=np.ones(len(eventgridd2))*np.nan 
+        pa_cfm_uni=np.ones(len(eventgridd2))*np.nan  
+        pa_cfc_uni=np.ones(len(eventgridd2))*np.nan  
+        pa_cfm_bil=np.ones(len(eventgridd2))*np.nan  
+        pa_cfc_bil=np.ones(len(eventgridd2))*np.nan  
+        pa_cmm_uni=np.ones(len(eventgridd2))*np.nan  
+        pa_cmc_uni=np.ones(len(eventgridd2))*np.nan 
+        pa_cmm_bil=np.ones(len(eventgridd2))*np.nan 
+        pa_cmc_bil=np.ones(len(eventgridd2))*np.nan 
+          
+        i=0  
+        for e in eventgridd2:  
+              
+            try:  
+                
+                #Consumption
+                p_cfm_uni[i]=o_cfm_uni.params['C(eventd, Treatment(reference=-1))[T.'+str(e)+']']
+                p_cfc_uni[i]=o_cfc_uni.params['C(eventb, Treatment(reference=-1))[T.'+str(e)+']'] 
+                p_cfm_bil[i]=o_cfm_bil.params['C(eventd, Treatment(reference=-1))[T.'+str(e)+']'] 
+                p_cfc_bil[i]=o_cfc_bil.params['C(eventb, Treatment(reference=-1))[T.'+str(e)+']'] 
+                p_cmm_uni[i]=o_cmm_uni.params['C(eventd, Treatment(reference=-1))[T.'+str(e)+']'] 
+                p_cmc_uni[i]=o_cmc_uni.params['C(eventb, Treatment(reference=-1))[T.'+str(e)+']'] 
+                p_cmm_bil[i]=o_cmm_bil.params['C(eventd, Treatment(reference=-1))[T.'+str(e)+']'] 
+                p_cmc_bil[i]=o_cmc_bil.params['C(eventb, Treatment(reference=-1))[T.'+str(e)+']'] 
+                
+                #Assets
+                pa_cfm_uni[i]=a_cfm_uni.params['C(eventd, Treatment(reference=-1))[T.'+str(e)+']']
+                pa_cfc_uni[i]=a_cfc_uni.params['C(eventb, Treatment(reference=-1))[T.'+str(e)+']'] 
+                pa_cfm_bil[i]=a_cfm_bil.params['C(eventd, Treatment(reference=-1))[T.'+str(e)+']'] 
+                pa_cfc_bil[i]=a_cfc_bil.params['C(eventb, Treatment(reference=-1))[T.'+str(e)+']'] 
+                pa_cmm_uni[i]=a_cmm_uni.params['C(eventd, Treatment(reference=-1))[T.'+str(e)+']'] 
+                pa_cmc_uni[i]=a_cmc_uni.params['C(eventb, Treatment(reference=-1))[T.'+str(e)+']'] 
+                pa_cmm_bil[i]=a_cmm_bil.params['C(eventd, Treatment(reference=-1))[T.'+str(e)+']'] 
+                pa_cmc_bil[i]=a_cmc_bil.params['C(eventb, Treatment(reference=-1))[T.'+str(e)+']'] 
+                
+               
+            except:  
+                print('Skip event {}'.format(e))   
+                           
+            i+=1    
+     
+                  
+ 
+        #Adjust for the reference point         
+        p_cfm_uni[2]=0.0
+        p_cfc_uni[2]=0.0 
+        p_cfm_bil[2]=0.0 
+        p_cfc_bil[2]=0.0 
+        p_cmm_uni[2]=0.0 
+        p_cmc_uni[2]=0.0
+        p_cmm_bil[2]=0.0
+        p_cmc_bil[2]=0.0
+        
+        pa_cfm_uni[2]=0.0
+        pa_cfc_uni[2]=0.0 
+        pa_cfm_bil[2]=0.0 
+        pa_cfc_bil[2]=0.0 
+        pa_cmm_uni[2]=0.0 
+        pa_cmc_uni[2]=0.0
+        pa_cmm_bil[2]=0.0
+        pa_cmc_bil[2]=0.0
+        
+        p_cfm_uni=p_cfm_uni+np.mean(np.log(agents.c[(m_cfm_uni) & (event_divo==-1.0)]))
+        p_cfc_uni= p_cfc_uni+np.mean(np.log(agents.c[(m_cfc_uni) & (event_break==-1.0)])) 
+        p_cfm_bil= p_cfm_bil+np.mean(np.log(agents.c[(m_cfm_bil) & (event_divo==-1.0)])) 
+        p_cfc_bil=p_cfc_bil+np.mean(np.log(agents.c[(m_cfc_bil) & (event_break==-1.0)])) 
+        p_cmm_uni=p_cmm_uni+np.mean(np.log(agents.c[(m_cmm_uni) & (event_divo==-1.0)])) 
+        p_cmc_uni=p_cmc_uni+np.mean(np.log(agents.c[(m_cmc_uni) & (event_break==-1.0)]))
+        p_cmm_bil=p_cmm_bil+np.mean(np.log(agents.c[(m_cmm_bil) & (event_divo==-1.0)]))
+        p_cmc_bil=p_cmc_bil+np.mean(np.log(agents.c[(m_cmc_bil) & (event_break==-1.0)]))
+        
+        
+        pa_cfm_uni=pa_cfm_uni+np.mean((assets_w[(m_cfm_uni) & (event_divo==-1.0)]))
+        pa_cfc_uni=pa_cfc_uni+np.mean((assets_w[(m_cfc_uni) & (event_break==-1.0)])) 
+        pa_cfm_bil=pa_cfm_bil+np.mean((assets_w[(m_cfm_bil) & (event_divo==-1.0)])) 
+        pa_cfc_bil=pa_cfc_bil+np.mean((assets_w[(m_cfc_bil) & (event_break==-1.0)])) 
+        pa_cmm_uni=pa_cmm_uni+np.mean((assets_w[(m_cmm_uni) & (event_divo==-1.0)])) 
+        pa_cmc_uni=pa_cmc_uni+np.mean((assets_w[(m_cmc_uni) & (event_break==-1.0)]))
+        pa_cmm_bil=pa_cmm_bil+np.mean((assets_w[(m_cmm_bil) & (event_divo==-1.0)]))
+        pa_cmc_bil=pa_cmc_bil+np.mean((assets_w[(m_cmc_bil) & (event_break==-1.0)]))
          
+        
+        
         #Build the event matrix  
         age_unid_e=np.argmax(changep_w,axis=1)  
         never_e=(changep_w[:,0]==0) & (age_unid_e[:]==0)  
@@ -1481,51 +1982,52 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         except: 
             print('skip ols') 
          
-        #Create an Array for the results  
-        eventgrid2=eventgrid[5:-5] 
-        pevent_theta_mar=np.ones(len(eventgrid2))*np.nan  
-        pevent_theta_coh=np.ones(len(eventgrid2))*np.nan  
-        pevent_psi_mar=np.ones(len(eventgrid2))*np.nan  
-        pevent_psi_coh=np.ones(len(eventgrid2))*np.nan  
-        pevent_mar=np.ones(len(eventgrid2))*np.nan  
-        pevent_lc=np.ones(len(eventgrid2))*np.nan 
-        pevent_lm=np.ones(len(eventgrid2))*np.nan 
-        pevent_lt=np.ones(len(eventgrid2))*np.nan 
-          
-        i=0  
-        for e in eventgrid2:  
-              
-            try:  
-                pevent_mar[i]=ols_mar.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]']  
-                pevent_theta_mar[i]=ols_mar_theta.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]']  
-                pevent_theta_coh[i]=ols_coh_theta.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]']  
-                pevent_psi_mar[i]=ols_mar_psi.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]']  
-                pevent_psi_coh[i]=ols_coh_psi.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]']  
-                 
-            except:  
-                print('Skip event {}'.format(e))   
-                 
-            try:  
-                pevent_lc[i]= olstc.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]'] 
-                pevent_lm[i]= olstm.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]'] 
-                pevent_lt[i]= olstt.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]'] 
-                 
-            except:  
-                print('Skip event {}'.format(e))   
-            i+=1    
-     
-                  
- 
-        #Adjust for the reference point         
-        pevent_mar[4]=0  
-        pevent_theta_mar[4]=0  
-        pevent_theta_coh[4]=0  
-        pevent_psi_mar[4]=0  
-        pevent_psi_coh[4]=0  
-        pevent_lt[4]=0 
-        pevent_lm[4]=0 
-        pevent_lc[4]=0 
+            
          
+         #Create an Array for the results   
+        eventgrid2=eventgrid[5:-5]  
+        pevent_theta_mar=np.ones(len(eventgrid2))*np.nan   
+        pevent_theta_coh=np.ones(len(eventgrid2))*np.nan   
+        pevent_psi_mar=np.ones(len(eventgrid2))*np.nan   
+        pevent_psi_coh=np.ones(len(eventgrid2))*np.nan   
+        pevent_mar=np.ones(len(eventgrid2))*np.nan   
+        pevent_lc=np.ones(len(eventgrid2))*np.nan  
+        pevent_lm=np.ones(len(eventgrid2))*np.nan  
+        pevent_lt=np.ones(len(eventgrid2))*np.nan  
+           
+        i=0   
+        for e in eventgrid2:   
+               
+            try:   
+                pevent_mar[i]=ols_mar.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]']   
+                pevent_theta_mar[i]=ols_mar_theta.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]']   
+                pevent_theta_coh[i]=ols_coh_theta.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]']   
+                pevent_psi_mar[i]=ols_mar_psi.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]']   
+                pevent_psi_coh[i]=ols_coh_psi.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]']   
+                  
+            except:   
+                print('Skip event {}'.format(e))    
+                  
+            try:   
+                pevent_lc[i]= olstc.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]']  
+                pevent_lm[i]= olstm.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]']  
+                pevent_lt[i]= olstt.params['C(event, Treatment(reference=-1))[T.'+str(e)+'.0]']  
+                  
+            except:   
+                print('Skip event {}'.format(e))    
+            i+=1     
+      
+                   
+  
+        #Adjust for the reference point          
+        pevent_mar[4]=0   
+        pevent_theta_mar[4]=0   
+        pevent_theta_coh[4]=0   
+        pevent_psi_mar[4]=0   
+        pevent_psi_coh[4]=0   
+        pevent_lt[4]=0  
+        pevent_lm[4]=0  
+        pevent_lc[4]=0 
         #Add mean value at event==-1 
         pevent_theta_mar=pevent_theta_mar+theta_mar 
         pevent_theta_coh=pevent_theta_coh+theta_coh 
@@ -1750,6 +2252,32 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         #plt.ylim(ymax=1.2,ymin=0.7)     
         #plt.xlim(xmax=1.0,xmin=0.0)     
              
+        
+        ######################################
+        #Graph Bar for changes in theta
+        #######################################à
+        fig = plt.figure()     
+        f2=fig.add_subplot(1.5,1,1)  
+        
+        x=['Marr. (M.C.)','Marr. (U.D.)','Cohab.']
+        y= [thtmove_bil*100,thtmove_uni*100,thtmovec*100]  
+        barlist =plt.bar(x,y)        
+        barlist[0].set_color('k')
+        barlist[1].set_color('b')
+        barlist[2].set_color('r')
+        #plt.title('Bar Graph 1 of Customer Data')
+        
+        for rect in barlist:
+            height = rect.get_height()
+            plt.text(rect.get_x() + rect.get_width()/2.0, height+0.05, '%4.2f' % (height)+' %', ha='center', va='bottom')
+
+        #plt.xlabel('Amount of People')
+        
+        plt.ylabel('%',fontsize=13)
+        plt.ylim(ymax=3.0)  
+        plt.savefig('bartht.pgf',bbox_inches="tight")
+        plt.close()
+        
         ##########################################     
         # Assets Over the Live Cycle     
         ##########################################     
@@ -2250,7 +2778,78 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.savefig('e_flp.pgf', bbox_inches = 'tight',pad_inches = 0)   
          
        
-    
+        
+        ##########################################     
+        # Event Study at divorce 
+        ##########################################  
+        fig = plt.figure()     
+        f6=fig.add_subplot(1.5,1,1)  
+        eve=np.linspace(-3,3,7)
+          
+        plt.axvline(x=0.0,color='k')
+        plt.plot(eve, p_cfm_uni,color='r',  marker='+',label='Marr. (f)')  
+        plt.plot(eve, p_cfc_uni,color='r',linestyle='--',label='Coh. (f)')  
+        plt.plot(eve, p_cmm_uni,color='b',  marker='+',label='Marr. (m)')  
+        plt.plot(eve, p_cmc_uni,color='b',linestyle='--',label='Coh. (m)')  
+        
+ 
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),     
+                  fancybox=True, shadow=True, ncol=2, fontsize=16)     
+        plt.xlabel('Event time (model years)', fontsize=16)     
+        plt.ylabel('Log Consumption', fontsize=16)   
+        plt.savefig('cdivuni.pgf', bbox_inches = 'tight',pad_inches = 0) 
+        
+        fig = plt.figure()     
+        f6=fig.add_subplot(1.5,1,1)  
+        eve=np.linspace(-3,3,7)
+        
+        plt.axvline(x=0.0,color='k')
+        plt.plot(eve, p_cfm_bil,color='r',marker='+',label='Marr. (f)')  
+        plt.plot(eve, p_cfc_bil,color='r',linestyle='--',label='Coh. (f)')  
+        plt.plot(eve, p_cmm_bil,color='b', marker='+',label='Marr. (m)')  
+        plt.plot(eve, p_cmc_bil,color='b',linestyle='--',label='Coh. (m)')  
+        
+ 
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),     
+                  fancybox=True, shadow=True, ncol=2, fontsize=16)     
+        plt.xlabel('Event time (model years)', fontsize=16)     
+        plt.ylabel('Log Consumption', fontsize=16) 
+        plt.savefig('cdivbil.pgf', bbox_inches = 'tight',pad_inches = 0) 
+        
+        
+        fig = plt.figure()     
+        f6=fig.add_subplot(1.5,1,1)  
+     
+          
+        plt.axvline(x=0.0,color='k')
+        plt.plot(eve, pa_cfm_uni,color='r',  marker='+',label='Marr. (f)')  
+        plt.plot(eve, pa_cfc_uni,color='r',linestyle='--',label='Coh. (f)')  
+        plt.plot(eve, pa_cmm_uni,color='b',  marker='+',label='Marr. (m)')  
+        plt.plot(eve, pa_cmc_uni,color='b',linestyle='--',label='Coh. (m)')  
+        
+ 
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),     
+                  fancybox=True, shadow=True, ncol=2, fontsize=16)     
+        plt.xlabel('Event time (model years)', fontsize=16)     
+        plt.ylabel('Log Consumption', fontsize=16)   
+        plt.savefig('adivuni.pgf', bbox_inches = 'tight',pad_inches = 0) 
+        
+        fig = plt.figure()     
+        f6=fig.add_subplot(1.5,1,1)  
+        eve=np.linspace(-3,3,7)
+        
+        plt.axvline(x=0.0,color='k')
+        plt.plot(eve, pa_cfm_bil,color='r',marker='+',label='Marr. (f)')  
+        plt.plot(eve, pa_cfc_bil,color='r',linestyle='--',label='Coh. (f)')  
+        plt.plot(eve, pa_cmm_bil,color='b', marker='+',label='Marr. (m)')  
+        plt.plot(eve, pa_cmc_bil,color='b',linestyle='--',label='Coh. (m)')  
+        
+ 
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),     
+                  fancybox=True, shadow=True, ncol=2, fontsize=16)     
+        plt.xlabel('Event time (model years)', fontsize=16)     
+        plt.ylabel('Log Consumption', fontsize=16) 
+        plt.savefig('adivbil.pgf', bbox_inches = 'tight',pad_inches = 0) 
         ##########################################     
         # DID of unilateral fivorce on part choice     
         ##########################################     

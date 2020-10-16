@@ -56,8 +56,8 @@ class ModelSetup(object):
         p['dump_factor_a'] = 0.8#0.65
         p['mean_partner_z_female'] = 0.01#0.05#0.02
         p['mean_partner_z_male'] =  -0.03#0.01#-0.02
-        p['mean_partner_a_female'] = 0.3#0.32
-        p['mean_partner_a_male'] = -0.3#-0.32
+        p['mean_partner_a_female'] = 0.22#0.3
+        p['mean_partner_a_male'] = -0.22#-0.3
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
         
@@ -581,8 +581,8 @@ class ModelSetup(object):
         for female in [True,False]:
             prob_a_mat = np.zeros((self.pars['T'],na,npoints),dtype=self.dtype)
             i_a_mat = np.zeros((self.pars['T'],na,npoints),dtype=np.int16)
-            mena=-0.29 if female else 0.29
-            #mena=-0.15 if female else 0.15
+            #mena=-0.29 if female else 0.29
+            mena=-0.15 if female else 0.15
             
             
             for ia, a in enumerate(agrid_s):

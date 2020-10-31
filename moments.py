@@ -21,8 +21,8 @@ from welfare_comp import welf_dec
 matplotlib.use("pgf")    
 matplotlib.rcParams.update({    
     "pgf.texsystem": "pdflatex",    
-    #'font.family': 'serif',
-    'font.family':'sans-serif',    
+    'font.family': 'serif',
+    #'font.family':'sans-serif',    
     'font.size' : 11,    
     'text.usetex': True,    
     'pgf.rcfonts': False,    
@@ -202,6 +202,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         changep_w=changep_w[:,:mdl.setup.pars['T']]   
         divorces_w=divorces_w[:,:mdl.setup.pars['T']]   
         assets_t=assets_t[:,:mdl.setup.pars['T']] 
+        csw=agents.csw[:,:mdl.setup.pars['T']] 
         cons=cons[:,:mdl.setup.pars['T']] 
         wage_f0=wage_f0[:,:mdl.setup.pars['T']]
         wage_m0=wage_m0[:,:mdl.setup.pars['T']]
@@ -236,6 +237,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     if draw:cons=cons[keep,]
     if draw:wage_f0=wage_f0[keep,]
     if draw:wage_m0=wage_m0[keep,]
+    if draw:csw=csw[keep,]
     labor=labor[keep,]   
     durf=durf[keep,]
     
@@ -302,6 +304,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     if draw:cons=cons[keep2,] 
     if draw:wage_f0=wage_f0[keep2,] 
     if draw:wage_m0=wage_m0[keep2,] 
+    if draw:csw=csw[keep2,] 
     labor=labor[keep2,]   
     durf=durf[keep2,]
      
@@ -419,6 +422,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     is_cons= -1*np.ones((N,nspells,mdl.setup.pars['T']),dtype=np.float32)
     is_wagef= -1*np.ones((N,nspells,mdl.setup.pars['T']),dtype=np.float32) 
     is_wagem= -1*np.ones((N,nspells,mdl.setup.pars['T']),dtype=np.float32)
+    is_csw= -1*np.ones((N,nspells,mdl.setup.pars['T']),dtype=np.float32)
     
     index=np.linspace(1,N,N)
      
@@ -466,6 +470,10 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
             sp_length[((~ichange) & (censored[:,t]==True)),ispell[((~ichange) & (censored[:,t]==True))]]-1]=\
             theta_t[((~ichange)  & (censored[:,t]==True)),t]
             
+            is_csw[((~ichange)   & (censored[:,t]==True)),ispell[((~ichange) & (censored[:,t]==True))], 
+            sp_length[((~ichange) & (censored[:,t]==True)),ispell[((~ichange) & (censored[:,t]==True))]]-1]=\
+            csw[((~ichange)  & (censored[:,t]==True)),t]
+            
             
                         
         #is_asse[:,ispell,sp_length[ispell]-1]=assets_t[:,t]
@@ -485,6 +493,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
             is_cons[ichange,ispell[ichange]+1,0]=cons[ichange,t]
             is_wagef[ichange,ispell[ichange]+1,0]=wage_f0[ichange,t]
             is_wagem[ichange,ispell[ichange]+1,0]=wage_m0[ichange,t]
+            is_csw[ichange,ispell[ichange]+1,0]=csw[ichange,t]
             
         state_end[ichange,ispell[ichange]] = state[ichange,t]      
         sp_person[ichange,ispell[ichange]] = index[ichange]     
@@ -524,6 +533,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         allspells_cons=is_cons[is_spell]
         allspells_wf=is_wagef[is_spell]
         allspells_wm=is_wagem[is_spell]
+        allspells_csw=is_csw[is_spell]
     
     #Correct the assets thing
     allspells_asse[:,0][allspells_asse[:,0]==-1]=0.0
@@ -696,12 +706,19 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
                 haz_sep=cox_sep.hazard_ratios_['uni']     
                 
                 
+            except:      
+                print('No data for unilateral divorce regression...')      
+                haz_sep=1.0    
+                haz_join=1.0    
+                haz_mar=1.0    
+                
+                
                 ###################################
                 #  Marriage- RISK SHARING and Divorce
                 ##################################à
                 
                 #Analysis of divorce
-                
+            try:
                 #Reshape dataset
                 data_mar_panda['index1'] = data_mar_panda.index
                 data_mar_panda=data_mar_panda.loc[data_mar_panda.index.repeat(data_mar_panda.duration)]              
@@ -725,18 +742,25 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
                 #Analysis on assets+risk sharing
                 data_mar_panda['assets']=allspells_asse[atype==2][allspells_asse[atype==2]>-1]
                 data_mar_panda['th']=allspells_th[atype==2][allspells_asse[atype==2]>-1]
-                data_mar_panda['cons']=allspells_cons[atype==2][allspells_cons[atype==2]>-1]
-                data_mar_panda['wf']=allspells_wf[atype==2][allspells_wf[atype==2]>-1]
-                data_mar_panda['wm']=allspells_wm[atype==2][allspells_wm[atype==2]>-1]
+                data_mar_panda['cons']=np.log(allspells_cons[atype==2][allspells_cons[atype==2]>-1])
+                data_mar_panda['wf']=np.log(allspells_wf[atype==2][allspells_wf[atype==2]>-1])
+                data_mar_panda['wm']=np.log(allspells_wm[atype==2][allspells_wm[atype==2]>-1])
+                data_mar_panda['csw']=allspells_csw[atype==2][allspells_wm[atype==2]>-1]
+                data_mar_panda['mcsw']=data_mar_panda.groupby(['index1'], sort=False)['csw'].max()
                 
-                data_mar_panda['t2']=data_mar_panda['t']**2
-                data_mar_panda['t3']=data_mar_panda['t']**3
-                FE_ass=smf.ols(formula='assets~ C(isud1,Treatment(reference=-1))+t+t2+t3+C(age)', data =data_mar_panda[(data_mar_panda['uni']==0) & (data_mar_panda['unie']==1) ]).fit().summary()
-                
+
+ 
                 #Get the evolution of pareto weight per person
                 data_mar_panda['thi']=np.append(0.5,allspells_th[atype==2][allspells_asse[atype==2]>-1][:-1])
                 data_mar_panda['diff']=0.0
                 data_mar_panda.loc[(data_mar_panda['thi']==data_mar_panda['th']),'diff']=1.0
+                
+                #Keep only first relationship
+                #data_mar_panda=data_mar_panda.loc[((data_mar_panda['rel']==1) | ((data_mar_panda['rel']==2) & data_mar_panda['prec']>0)) &
+                 #                                  (data_mar_panda['mcsw']==0) & (data_mar_panda['duration']!=data_mar_panda['t'])]
+                
+                data_mar_panda=data_mar_panda.loc[(data_mar_panda['rel']==1) & 
+                                                  (data_mar_panda['mcsw']==1) & (data_mar_panda['duration']!=data_mar_panda['t'])]
                 
                 thtmove_bil=1.0-np.mean(data_mar_panda.loc[(data_mar_panda['t']>1) &
                                                         (data_mar_panda['uni']==0) &
@@ -754,49 +778,87 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
                 data_mar_panda['age2']=data_mar_panda['age']**2
                 
                 #Risk sharing mutual consent women
-                rsw_mut=smf.ols(formula='dcons~ dwf+age+age2', data =data_mar_panda
+                rsw_mut=smf.ols(formula='dcons~ dwf+C(age)', data =data_mar_panda
                                [(data_mar_panda['uni']==0) &
                                 (data_mar_panda['fem']==1) & (data_mar_panda['uni']==data_mar_panda['unie'])]).fit()
                 
-                rsw_uni=smf.ols(formula='dcons~ dwf+age+age2', data =data_mar_panda
+                rsw_uni=smf.ols(formula='dcons~ dwf+C(age)', data =data_mar_panda
                                [(data_mar_panda['uni']==1) &
                                 (data_mar_panda['fem']==1) & (data_mar_panda['uni']==data_mar_panda['unie'])]).fit()
                 
-                rsm_mut=smf.ols(formula='dcons~ dwm+age+age2', data =data_mar_panda
+                rsm_mut=smf.ols(formula='dcons~ dwm+C(age)', data =data_mar_panda
                                [ (data_mar_panda['uni']==0) &
                                 (data_mar_panda['fem']==0) & (data_mar_panda['uni']==data_mar_panda['unie'])]).fit()
                 
-                rsm_uni=smf.ols(formula='dcons~ dwm+age+age2', data =data_mar_panda
+                rsm_uni=smf.ols(formula='dcons~ dwm+C(age)', data =data_mar_panda
                                [ (data_mar_panda['uni']==1) &
                                 (data_mar_panda['fem']==0) & (data_mar_panda['uni']==data_mar_panda['unie'])]).fit()
                 
-                rs_npre_uni=smf.ols(formula='dcons~ dwm+age+age2', data =data_mar_panda
+                #Preceeded or not men
+                rs_npre_uni=smf.ols(formula='dcons~ dwm+C(age)', data =data_mar_panda
                                [ (data_mar_panda['prec']==0) & (data_mar_panda['uni']==1) &
                                  (data_mar_panda['uni']==data_mar_panda['unie']) &
                                 (data_mar_panda['fem']==0) ]).fit()
                 
-                rs_pre_uni=smf.ols(formula='dcons~ dwm+age+age2', data =data_mar_panda
+                if np.mean((data_mar_panda['prec']))>0:rs_pre_uni=smf.ols(formula='dcons~ dwm+C(age)', data =data_mar_panda
                                [ (data_mar_panda['prec']>0) & (data_mar_panda['uni']==1) &
                                  (data_mar_panda['uni']==data_mar_panda['unie']) &
                                 (data_mar_panda['fem']==0) ]).fit()
                 
-                rs_npre_mut=smf.ols(formula='dcons~ dwm+age+age2', data =data_mar_panda
+                rs_npre_mut=smf.ols(formula='dcons~ dwm+C(age)', data =data_mar_panda
                                [ (data_mar_panda['prec']==0) & (data_mar_panda['uni']==0) &
                                  (data_mar_panda['uni']==data_mar_panda['unie']) &
                                 (data_mar_panda['fem']==0) ]).fit()
                 
-                rs_pre_mut=smf.ols(formula='dcons~ dwm+age+age2', data =data_mar_panda
+                if np.mean((data_mar_panda['prec']))>0:rs_pre_mut=smf.ols(formula='dcons~ dwm+C(age)', data =data_mar_panda
                                [ (data_mar_panda['prec']>0) & (data_mar_panda['uni']==0) &
                                  (data_mar_panda['uni']==data_mar_panda['unie']) &
                                 (data_mar_panda['fem']==0) ]).fit()
+                
+                
+                #Preceeded or not women
+                rs_npre_unif=smf.ols(formula='dcons~ dwf+C(age)', data =data_mar_panda
+                               [ (data_mar_panda['prec']==0) & (data_mar_panda['uni']==1) &
+                                 (data_mar_panda['uni']==data_mar_panda['unie']) &
+                                (data_mar_panda['fem']==1) ]).fit()
+                
+                if np.mean((data_mar_panda['prec']))>0:rs_pre_unif=smf.ols(formula='dcons~ dwf+C(age)', data =data_mar_panda
+                               [ (data_mar_panda['prec']>0) & (data_mar_panda['uni']==1) &
+                                 (data_mar_panda['uni']==data_mar_panda['unie']) &
+                                (data_mar_panda['fem']==1) ]).fit()
+                
+                rs_npre_mutf=smf.ols(formula='dcons~ dwf+C(age)', data =data_mar_panda
+                               [ (data_mar_panda['prec']==0) & (data_mar_panda['uni']==0) &
+                                 (data_mar_panda['uni']==data_mar_panda['unie']) &
+                                (data_mar_panda['fem']==1) ]).fit()
+                
+                if np.mean((data_mar_panda['prec']))>0:rs_pre_mutf=smf.ols(formula='dcons~ dwf+C(age)', data =data_mar_panda
+                               [ (data_mar_panda['prec']>0) & (data_mar_panda['uni']==0) &
+                                 (data_mar_panda['uni']==data_mar_panda['unie']) &
+                                (data_mar_panda['fem']==1) ]).fit()
+                
+                data_mar_panda['t2']=data_mar_panda['t']**2
+                data_mar_panda['t3']=data_mar_panda['t']**3
+                FE_ass=smf.ols(formula='assets~ C(isud1,Treatment(reference=-1))+t+t2+t3+C(age)', data =data_mar_panda[(data_mar_panda['uni']==0) & (data_mar_panda['unie']==1) ]).fit().summary()
+                
                 
          
                 print('Coefficients of risk sharing: rsw_mut {},rsw_uni {},rsm_mut {},rsm_uni {}'
                       .format(rsw_mut.params['dwf'],rsw_uni.params['dwf'],rsm_mut.params['dwm'],rsm_uni.params['dwm']))
                 
-                print('Coefficients of risk sharing-PRE: rs_pre_uni {},rs_npre_uni {},rs_pre_mu {},rs_npre_mut {}'
+             
+                
+                if np.mean((data_mar_panda['prec']))>0:print('Coefficients of risk sharing-PREm: rs_pre_uni {},rs_npre_uni {},rs_pre_mu {},rs_npre_mut {}'
                       .format(rs_pre_uni.params['dwm'],rs_npre_uni.params['dwm'],rs_pre_mut.params['dwm'],rs_npre_mut.params['dwm']))
                
+                
+                if np.mean((data_mar_panda['prec']))>0:print('Coefficients of risk sharing-PREf: rs_pre_uni {},rs_npre_uni {},rs_pre_mu {},rs_npre_mut {}'
+                      .format(rs_pre_unif.params['dwf'],rs_npre_unif.params['dwf'],rs_pre_mutf.params['dwf'],rs_npre_mutf.params['dwf']))
+               
+            except:
+                print('bau')
+                
+            try:
                 ###################################
                 #  COHABITATION - RISK SHARING
                 #################################
@@ -806,15 +868,23 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
                 data_coh_pandac['age']=data_coh_pandac['age']+data_coh_pandac['t']
                 data_coh_pandac['age2']=data_coh_pandac['age']**2
                 
-                data_coh_pandac['cons']=allspells_cons[atype==3][allspells_cons[atype==3]>-1]
+                data_coh_pandac['cons']=np.log(allspells_cons[atype==3][allspells_cons[atype==3]>-1])
                 data_coh_pandac['th']=allspells_th[atype==3][allspells_cons[atype==3]>-1]
-                data_coh_pandac['wf']=allspells_wf[atype==3][allspells_wf[atype==3]>-1]
-                data_coh_pandac['wm']=allspells_wm[atype==3][allspells_wm[atype==3]>-1]
+                data_coh_pandac['wf']=np.log(allspells_wf[atype==3][allspells_wf[atype==3]>-1])
+                data_coh_pandac['wm']=np.log(allspells_wm[atype==3][allspells_wm[atype==3]>-1])
+                
+                
+               
+                                                   
+                
                 
                 #Get the evolution of pareto weight per person
                 data_coh_pandac['thi']=np.append(0.5,allspells_th[atype==3][allspells_asse[atype==3]>-1][:-1])
                 data_coh_pandac['diff']=0.0
                 data_coh_pandac.loc[(data_coh_pandac['thi']==data_coh_pandac['th']),'diff']=1.0
+                
+                 #Keep only first relationship
+                data_coh_pandac=data_coh_pandac.loc[(data_coh_pandac['rel']==1) & (data_coh_pandac['duration']!=data_coh_pandac['t'])]
                 
                 thtmovec=1.0-np.mean(data_coh_pandac.loc[(data_coh_pandac['t']>1) &
                                                         (data_coh_pandac['uni']==data_coh_pandac['unie']) ,'diff'])
@@ -825,13 +895,13 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
                 data_coh_pandac['dwm']=-diffe['wm']
                 
                 #Risk sharing mutual consent women
-                rscw_f=smf.ols(formula='dcons~ dwf+age+age2', data =data_coh_pandac[(data_coh_pandac['uni']==0) & (data_coh_pandac['uni']==data_coh_pandac['unie']) & (data_coh_pandac['fem']==1)]).fit()
-                rscw_b=smf.ols(formula='dcons~ dwf+age+age2', data =data_coh_pandac[(data_coh_pandac['uni']==0) & (data_coh_pandac['uni']==data_coh_pandac['unie']) & (data_coh_pandac['end']<=1) & (data_coh_pandac['fem']==1)]).fit()
-                rscw_m=smf.ols(formula='dcons~ dwf+age+age2', data =data_coh_pandac[(data_coh_pandac['uni']==0) & (data_coh_pandac['uni']==data_coh_pandac['unie']) & (data_coh_pandac['end']==2) & (data_coh_pandac['fem']==1)]).fit()
+                rscw_f=smf.ols(formula='dcons~ dwf+C(age)', data =data_coh_pandac[(data_coh_pandac['uni']<=1) & (data_coh_pandac['uni']==data_coh_pandac['unie']) & (data_coh_pandac['fem']==1)]).fit()
+                rscw_b=smf.ols(formula='dcons~ dwf+C(age)', data =data_coh_pandac[(data_coh_pandac['uni']<=1) & (data_coh_pandac['uni']==data_coh_pandac['unie']) & (data_coh_pandac['end']<=1) & (data_coh_pandac['fem']==1)]).fit()
+                rscw_m=smf.ols(formula='dcons~ dwf+C(age)', data =data_coh_pandac[(data_coh_pandac['uni']<=1) & (data_coh_pandac['uni']==data_coh_pandac['unie']) & (data_coh_pandac['end']==2) & (data_coh_pandac['fem']==1)]).fit()
                 
-                rscm_f=smf.ols(formula='dcons~ dwm+age+age2', data =data_coh_pandac[(data_coh_pandac['uni']==1) & (data_coh_pandac['uni']==data_coh_pandac['unie']) & (data_coh_pandac['fem']==0)]).fit()
-                rscm_b=smf.ols(formula='dcons~ dwm+age+age2', data =data_coh_pandac[(data_coh_pandac['uni']==1) & (data_coh_pandac['uni']==data_coh_pandac['unie']) & (data_coh_pandac['end']<=1) & (data_coh_pandac['fem']==0)]).fit()
-                rscm_m=smf.ols(formula='dcons~ dwm+age+age2', data =data_coh_pandac[(data_coh_pandac['uni']==1) & (data_coh_pandac['uni']==data_coh_pandac['unie']) & (data_coh_pandac['end']==2) & (data_coh_pandac['fem']==0)]).fit()
+                rscm_f=smf.ols(formula='dcons~ dwm+C(age)', data =data_coh_pandac[(data_coh_pandac['uni']<=1) & (data_coh_pandac['uni']==data_coh_pandac['unie']) & (data_coh_pandac['fem']==0)]).fit()
+                rscm_b=smf.ols(formula='dcons~ dwm+C(age)', data =data_coh_pandac[(data_coh_pandac['uni']<=1) & (data_coh_pandac['uni']==data_coh_pandac['unie']) & (data_coh_pandac['end']<=1) & (data_coh_pandac['fem']==0)]).fit()
+                rscm_m=smf.ols(formula='dcons~ dwm+C(age)', data =data_coh_pandac[(data_coh_pandac['uni']<=1) & (data_coh_pandac['uni']==data_coh_pandac['unie']) & (data_coh_pandac['end']==2) & (data_coh_pandac['fem']==0)]).fit()
              
                 print('Coefficients of risk sharing CF : rscw_f {},rscw_b {},rscw_m {}'
                       .format(rscw_f.params['dwf'],rscw_b.params['dwf'],rscw_m.params['dwf']))
@@ -890,9 +960,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
                 print('The ass*uni interaction for coh is {} for marriage {}'.format(cohr.params['inter'],marr.params['inter']))
             except:      
                 print('No data for unilateral divorce regression...')      
-                haz_sep=1.0    
-                haz_join=1.0    
-                haz_mar=1.0    
+ 
         else:   
             print('No data for unilateral divorce regression...')      
             haz_sep=1.0    
@@ -2259,12 +2327,18 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         fig = plt.figure()     
         f2=fig.add_subplot(1.5,1,1)  
         
-        x=['Marr. (M.C.)','Marr. (U.D.)','Cohab.']
-        y= [thtmove_bil*100,thtmove_uni*100,thtmovec*100]  
+        x=['Marr. (M.C.)','Marr. (U.D.)','Cohab.','Marr.* (U.D.)']
+        y= [thtmove_bil*100,thtmove_uni*100,thtmovec*100,2.52]  
         barlist =plt.bar(x,y)        
         barlist[0].set_color('k')
         barlist[1].set_color('b')
         barlist[2].set_color('r')
+        barlist[3].set_color('white')
+        
+        #Striped third bar
+        rec1=plt.Rectangle((barlist[3].get_x(),0),barlist[3].get_width(),barlist[3].get_height(), facecolor="b", 
+                     edgecolor="r", hatch=r"//")
+        f2.add_patch(rec1)
         #plt.title('Bar Graph 1 of Customer Data')
         
         for rect in barlist:
@@ -2274,7 +2348,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         #plt.xlabel('Amount of People')
         
         plt.ylabel('%',fontsize=13)
-        plt.ylim(ymax=3.0)  
+        plt.ylim(ymax=4.0)  
         plt.savefig('bartht.pgf',bbox_inches="tight")
         plt.close()
         

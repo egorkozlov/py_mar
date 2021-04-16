@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-    
 """    
-Created on Wed Dec 18 12:52:29 2019    
+   
     
 @author: Fabio    
 """    
@@ -86,9 +86,11 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
     #Create number of cohabitations    
     coh['num']=0.0   
     for i in range(9):    
-        if(np.any(coh['HOWBEG0'+str(i+1)])=='coh'):   
+        if(np.any(coh['HOWBEG0'+str(i+1)]=='coh')):   
             coh.loc[coh['HOWBEG0'+str(i+1)]=='coh','num']=coh.loc[coh['HOWBEG0'+str(i+1)]=='coh','num']+1.0    
                 
+    #coh['num']=coh['NUMUNION']-coh['NUMMAR']+coh['NUMCOHMR']
+    
     #Expand the data        
     cohe=coh.loc[coh.index.repeat(np.array(coh.num,dtype=np.int32))]    
         
@@ -98,7 +100,7 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
     cohe['cou']=1    
     cohe['rel']=None    
     for i in range(9):    
-        if(np.any(coh['HOWBEG0'+str(i+1)])=='coh'):   
+        if(np.any(coh['HOWBEG0'+str(i+1)]=='coh')):   
             cohe.loc[(cohe['HOWBEG0'+str(i+1)]=='coh') & (cohe['rell']==cohe['cou']),'rel']=i+1    
             cohe.loc[cohe['HOWBEG0'+str(i+1)]=='coh','cou']= cohe.loc[cohe['HOWBEG0'+str(i+1)]=='coh','cou']+1    
             
@@ -130,7 +132,7 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
     cohe['dur']=cohe['end']-cohe['beg']    
         
     #Keep if no error for duration    
-    cohe=cohe[(cohe['dur']>0) & (cohe['dur']<2000)]    
+    cohe=cohe[(cohe['dur']>0) & (cohe['dur']<2000) ]    
         
     #Transform Duration in Years    
     cohe['dury'] = pd.cut(x=cohe['dur'], bins=bins_d,labels=bins_d_label)     
@@ -251,7 +253,7 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
     
             
         for i in range(9):    
-            if(np.any(hi['HOWBEG0'+str(i+1)])!=None):   
+            if(np.any(hi['HOWBEG0'+str(i+1)]!=None)):   
                 
                 #Get if in couple    
                 hi.loc[(hi['time_'+str(20+(j))]>=hi['BEGDAT0'+str(i+1)]) & (hi['BEGDAT0'+str(i+1)]<3999) &    
@@ -259,7 +261,7 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
                         (hi['ENDDAT0'+str(i+1)]==0) | (hi['WIDDAT0'+str(i+1)]>0) )   
                        ,'status_'+str(20+(j))]='mar'    
                            
-            if(np.any(hi['HOWBEG0'+str(i+1)])=='coh'):              
+            if(np.any(hi['HOWBEG0'+str(i+1)]=='coh')):              
                 #Substitute if actually cohabitation     
                 hi.loc[(hi['time_'+str(20+(j))]>=hi['BEGDAT0'+str(i+1)]) & (hi['BEGDAT0'+str(i+1)]<3999) &    
                        (((hi['time_'+str(20+(j))]<=hi['ENDDAT0'+str(i+1)]) & (hi['ENDDAT0'+str(i+1)]>0))  |     

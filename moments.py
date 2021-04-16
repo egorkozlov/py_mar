@@ -1687,6 +1687,28 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.ylabel('Hazard', fontsize=16)     
         plt.xticks(np.arange(3), ('1-2', '3-4', '5-6')) 
         plt.savefig('hazs.pgf', bbox_inches = 'tight',pad_inches = 0)   
+        
+        #############################################     
+        # Hazard of Separation     
+        #############################################     
+        fig = plt.figure()     
+        f1=fig.add_subplot(1.5,1,1)     
+        lg=min(len(hazs_d),len(hazs))   
+        lg1=min(len(hazd_d),len(hazd))   
+        plt.plot(np.array(range(lg)), hazs[0:lg],'r', linestyle='--',linewidth=1.5, label='Breakup-S')     
+        plt.plot(np.array(range(lg)), hazs_d[0:lg],'r',linewidth=1.5, label='Breakup-D')     
+        plt.fill_between(np.array(range(lg)), hazs_i[0,0:lg], hazs_i[1,0:lg],alpha=0.2,facecolor='r') 
+        plt.plot(np.array(range(lg)), hazd[0:lg1],'b', linestyle='--',linewidth=1.5, label='Divorce-S')     
+        plt.plot(np.array(range(lg)), hazd_d[0:lg1],'b',linewidth=1.5, label='Divorce-D')     
+        plt.fill_between(np.array(range(lg1)), hazd_i[0,0:lg1], hazd_i[1,0:lg1],alpha=0.2,facecolor='b')     
+        plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),     
+                  fancybox=True, shadow=True, ncol=2, fontsize=14)     
+        plt.ylim(ymin=0)     
+        #plt.legend(loc='upper left', shadow=True, fontsize='x-small')     
+        plt.xlabel('Duration - years', fontsize=16)     
+        plt.ylabel('Hazard', fontsize=16)     
+        plt.xticks(np.arange(3), ('1-2', '3-4', '5-6')) 
+        plt.savefig('hazds.pgf', bbox_inches = 'tight',pad_inches = 0)   
              
               
         #############################################     
@@ -2334,7 +2356,9 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.ylabel('Relative Hazard - UniD vs. Bil')     
         plt.xticks(x, ["Overall Risk","Risk of Marriage","Risk of Separation"] )    
         #plt.ylim(ymax=1.2,ymin=0.7)     
-        plt.xlim(xmax=1.0,xmin=0.0)     
+        plt.xlim(xmax=1.0,xmin=0.0)    
+        plt.setp(ax1.get_xticklabels(), fontsize=20)
+        plt.setp(ax1.get_yticklabels(), fontsize=20)
         #plt.xticks(index , ('Unilateral', 'Bilateral'))     
            
       

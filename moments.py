@@ -1698,8 +1698,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.plot(np.array(range(lg)), hazs[0:lg],'r', linestyle='--',linewidth=1.5, label='Breakup-S')     
         plt.plot(np.array(range(lg)), hazs_d[0:lg],'r',linewidth=1.5, label='Breakup-D')     
         plt.fill_between(np.array(range(lg)), hazs_i[0,0:lg], hazs_i[1,0:lg],alpha=0.2,facecolor='r') 
-        plt.plot(np.array(range(lg)), hazd[0:lg1],'b', linestyle='--',linewidth=1.5, label='Divorce-S')     
-        plt.plot(np.array(range(lg)), hazd_d[0:lg1],'b',linewidth=1.5, label='Divorce-D')     
+        plt.plot(np.array(range(lg1)), hazd[0:lg1],'b', linestyle='--',linewidth=1.5, label='Divorce-S')     
+        plt.plot(np.array(range(lg1)), hazd_d[0:lg1],'b',linewidth=1.5, label='Divorce-D')     
         plt.fill_between(np.array(range(lg1)), hazd_i[0,0:lg1], hazd_i[1,0:lg1],alpha=0.2,facecolor='b')     
         plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),     
                   fancybox=True, shadow=True, ncol=2, fontsize=14)     
@@ -2357,8 +2357,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.xticks(x, ["Overall Risk","Risk of Marriage","Risk of Separation"] )    
         #plt.ylim(ymax=1.2,ymin=0.7)     
         plt.xlim(xmax=1.0,xmin=0.0)    
-        plt.setp(ax1.get_xticklabels(), fontsize=20)
-        plt.setp(ax1.get_yticklabels(), fontsize=20)
+        #plt.setp(ax1.get_xticklabels(), fontsize=20)
+        #plt.setp(ax1.get_yticklabels(), fontsize=20)
         #plt.xticks(index , ('Unilateral', 'Bilateral'))     
            
       

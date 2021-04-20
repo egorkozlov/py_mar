@@ -42,24 +42,23 @@ print('Hi!')
 if __name__ == '__main__':
      
      
-    #import warnings
-    #warnings.filterwarnings("error")
-    #For graphs later
-    graphs=True
+   
     
     #Get the covariance matrix from data
-    dat_moments(period=1,sampling_number=100,weighting=True,covariances=True,transform=2)
+    #dat_moments(period=1,sampling_number=100,weighting=True,covariances=True,transform=2)
     
     #Get Data Moments
-    with open('moments.pkl', 'rb') as file:
-        packed_data=pickle.load(file)
+    with open('packed_data.pkl', 'rb') as file:packed_data=pickle.load(file)
+        
+        
+    #with open('packed_data.pkl', 'wb+') as file:pickle.dump(packed_data,file)  
         
     WW=np.linalg.inv(packed_data['W'])
     
     #Build  data moments and pickle them
-    dat_moments(period=1,sampling_number=100,weighting=True,transform=2)
+    #dat_moments(period=1,sampling_number=100,weighting=True,transform=2)
     
-         
+    
   
     x0 = np.array([0.797307,0.762312,2.17978,0.377448,1.19598,-0.151496,-0.0789312,1.14015])
      
@@ -74,7 +73,7 @@ if __name__ == '__main__':
     #First, solve the model for the main parameter
     resn,W = mdl_resid(x0,return_format=['all residuals','W'],
                                       #load_from=['mdl_save_bil_le.pkl'],#'mdl_save_uni.pkl'],
-                                      solve_transition=False,                                    
+                                      solve_transition=True,                                    
                                       #save_to=['mdl_save_bil_le.pkl'],#'mdl_save_uni.pkl'],
                                       store_path=path,
                                       verbose=False,calibration_report=False,
@@ -97,7 +96,7 @@ if __name__ == '__main__':
         
         #Solve
         res,W = mdl_resid(xn,return_format=['all residuals','W'],                                    
-                                      solve_transition=False,                                                           
+                                      solve_transition=True,                                                           
                                       store_path=path,
                                       verbose=False,calibration_report=False,
                                       welf=False,se=True,draw=False,graphs=False )#Switch to true for decomposition of welfare analysis

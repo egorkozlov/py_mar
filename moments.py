@@ -887,6 +887,14 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     mean_fls_c[small]=0.0001*np.ones((2))[small]  
  
     moments['fls_ratio']=[min(mean_fls_m[0]/mean_fls_c[0],2.0),min(mean_fls_m[1]/mean_fls_c[1],2.0)] 
+    
+    data_ev=np.array(np.stack((labor_par,state_par,ages),axis=0).T,dtype=np.float64)     
+    data_ev_panda=pd.DataFrame(data=data_ev,columns=['labor','state','age'])   
+    ols_mar = smf.ols(formula='labor ~ C(age)+C(state)', data = data_ev_panda[data_ev_panda['age']<=15] ).fit()  
+    print('DIFFERENCE IN LABOR IS {:0.2f}%'.format(ols_mar.params['C(state)[T.3.0]']))  
+    
+    #moments['fls_ratio']=[ols_mar.params['C(state)[T.3.0]'],ols_mar.params['C(state)[T.3.0]']]
+         
       
     grid=np.linspace(5,35,31,dtype=np.int16)  
     storem=np.zeros(grid.shape)  
@@ -1418,6 +1426,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         psi_mar=np.mean(data_ev_panda['vpsi'][(data_ev_panda['vmar']==1) & (data_ev_panda['event']==-1)]) 
         psi_coh=np.mean(data_ev_panda['vpsi'][(data_ev_panda['vmar']==0) & (data_ev_panda['event']==-1)]) 
           
+        
+       
         #Regressions   
         try:     
             ols_mar = smf.ols(formula='vmar ~ C(age)+C(sex)+C(event, Treatment(reference=-1))', data = data_ev_panda ).fit()  

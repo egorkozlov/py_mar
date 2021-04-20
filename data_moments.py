@@ -506,6 +506,7 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
       
     #Get mean labor supply  
     mean_fls=np.average(d_hrs.loc[(d_hrs['age']>=20) & (d_hrs['age']<=60),'wls']) 
+    #np.average(d_hrs.loc[(d_hrs['age']>=23) & (d_hrs['mar']==0) & (d_hrs['age']<=50),'wls'])
         
     #New dataset   
     d_hrs2=d_hrs[(d_hrs['mar']>=0) & (d_hrs['year']>=1977)]  

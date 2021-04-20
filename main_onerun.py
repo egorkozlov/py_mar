@@ -47,7 +47,7 @@ if __name__ == '__main__':
     #For graphs later
     graphs=True
     #Build  data moments and pickle them
-    dat_moments(period=1,sampling_number=5,weighting=True,transform=2)
+    #dat_moments(period=1,sampling_number=200,weighting=True,transform=2)
     
          
     #Initialize the file with parameters
@@ -92,6 +92,8 @@ if __name__ == '__main__':
     #(199)-very very good
     x0 = np.array([0.797307,0.762312,2.17978,0.377448,1.19598,-0.151496,-0.0789312,1.14015])
     
+    #x0 = np.array([0.797307,0.762312,2.17978,0.377448,1.19598,-0.151496,-0.0789312,1.05])
+    #x0 = np.array([0.797307,0.762312,2.17978,0.377448,1.19598,-0.151496,-0.0789312,1.5])
     ##197 also very goo
     #x0 = np.array([0.782733,0.821696,1.98509,0.409283,1.15559,-0.158216,-0.0720787,1.13099])
 
@@ -104,7 +106,7 @@ if __name__ == '__main__':
         path = None
     
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','models','agents','scaled residuals'],
-                                      #load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
+                                      #load_from=['mdl_save_uni.pkl','mdl_save_uni.pkl'],
                                       solve_transition=True,                                    
                                       save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       store_path=path,
@@ -123,7 +125,7 @@ if __name__ == '__main__':
         psii=10
         ti=0
         thi=5
-         
+         #
         #Actual Graphs
         mdl[0].graph(ai,zfi,zmi,psii,ti,thi)
         #get_ipython().magic('reset -f')

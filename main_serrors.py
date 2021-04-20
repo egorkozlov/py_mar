@@ -73,7 +73,7 @@ if __name__ == '__main__':
     #First, solve the model for the main parameter
     resn,W = mdl_resid(x0,return_format=['all residuals','W'],
                                       #load_from=['mdl_save_bil_le.pkl'],#'mdl_save_uni.pkl'],
-                                      solve_transition=True,                                    
+                                      solve_transition=False,                                    
                                       #save_to=['mdl_save_bil_le.pkl'],#'mdl_save_uni.pkl'],
                                       store_path=path,
                                       verbose=False,calibration_report=False,
@@ -96,7 +96,7 @@ if __name__ == '__main__':
         
         #Solve
         res,W = mdl_resid(xn,return_format=['all residuals','W'],                                    
-                                      solve_transition=True,                                                           
+                                      solve_transition=False,                                                           
                                       store_path=path,
                                       verbose=False,calibration_report=False,
                                       welf=False,se=True,draw=False,graphs=False )#Switch to true for decomposition of welfare analysis

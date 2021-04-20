@@ -869,31 +869,13 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     labor_par=np.reshape(labor_psid,resha)  
     labor_par=labor_par[incouplerp][keep4]  
       
-    mean_fls_m=0.0   
-    picky=(state_par[:]==2) & (ages<=15)  
-    picko=(state_par[:]==2) & (ages>15)  
-    mean_fls_m=np.zeros((2))  
-    if picky.any():mean_fls_m[0]=np.array(setup.ls_levels)[labor_par[picky]].mean()   
-    if picko.any():mean_fls_m[1]=np.array(setup.ls_levels)[labor_par[picko]].mean()   
-         
-    mean_fls_c=0.0   
-    picky=(state_par[:]==3) & (ages<=15)  
-    picko=(state_par[:]==3) & (ages>15)  
-    mean_fls_c=np.zeros((2))  
-    if picky.any():mean_fls_c[0]=np.array(setup.ls_levels)[labor_par[picky]].mean()   
-    if picko.any():mean_fls_c[1]=np.array(setup.ls_levels)[labor_par[picko]].mean()   
-       
-    small=mean_fls_c<0.0001*np.ones((2))  
-    mean_fls_c[small]=0.0001*np.ones((2))[small]  
- 
-    moments['fls_ratio']=[min(mean_fls_m[0]/mean_fls_c[0],2.0),min(mean_fls_m[1]/mean_fls_c[1],2.0)] 
-    
+     
     data_ev=np.array(np.stack((labor_par,state_par,ages),axis=0).T,dtype=np.float64)     
     data_ev_panda=pd.DataFrame(data=data_ev,columns=['labor','state','age'])   
     ols_mar = smf.ols(formula='labor ~ C(age)+C(state)', data = data_ev_panda[data_ev_panda['age']<=15] ).fit()  
     print('DIFFERENCE IN LABOR IS {:0.2f}%'.format(ols_mar.params['C(state)[T.3.0]']))  
     
-    #moments['fls_ratio']=[ols_mar.params['C(state)[T.3.0]'],ols_mar.params['C(state)[T.3.0]']]
+    moments['fls_ratio']=ols_mar.params['C(state)[T.3.0]']*2000#,ols_mar.params['C(state)[T.3.0]']]
          
       
     grid=np.linspace(5,35,31,dtype=np.int16)  
@@ -1639,7 +1621,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
             hazd_d=packed_data['hazd']     
             mar_d=packed_data['emar']     
             coh_d=packed_data['ecoh']     
-            fls_d=packed_data['fls_ratio']    
+            fls_d=np.ones(1)*packed_data['fls_ratio']    
             wage_d=np.ones(1)*packed_data['wage_ratio']  
             div_d=np.ones(1)*packed_data['div_ratio']  
             mean_fls_d=np.ones(1)*packed_data['mean_fls']    
@@ -1649,7 +1631,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
             hazd_i=packed_data['hazdi']     
             mar_i=packed_data['emari']     
             coh_i=packed_data['ecohi']     
-            fls_i=packed_data['fls_ratioi']    
+            fls_i=np.ones(1)*packed_data['fls_ratioi']    
             wage_i=np.ones(1)*packed_data['wage_ratioi']  
             mean_fls_i=np.ones(1)*packed_data['mean_flsi']   
             beta_unid_i=np.ones(1)*packed_data['beta_unidi']     
@@ -2273,22 +2255,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.ylabel('Share Married')   
      
            
-        ##########################################     
-        # FLS: Marriage vs. cohabitation   
-        ##########################################      
-        fig = plt.figure()     
-        f6=fig.add_subplot(2,1,1)     
-              
-  
-          
-        lg=2  
-        # create plot     
-        plt.plot(np.array(range(lg))+1, moments['fls_ratio'], linestyle='--',linewidth=1.5, label='Simulated')     
-        plt.plot(np.array(range(lg))+1, fls_d,linewidth=1.5, label='Data')     
-        plt.fill_between(np.array(range(lg))+1, fls_i[0,0:lg], fls_i[1,0:lg],alpha=0.2,facecolor='b')     
-        plt.ylabel('Ratio of Female Hrs: Mar/Coh')  
-        plt.legend(loc='best', bbox_to_anchor=(0.5, -0.3),     
-                  fancybox=True, shadow=True, ncol=2, fontsize='x-small')    
+      
          
         #plt.ylim(ymax=0.1)     
         #plt.xlim(xmax=1.0,xmin=0.0)     

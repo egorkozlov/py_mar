@@ -541,14 +541,11 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
     d_hrs2=d_hrs[(d_hrs['mar']>=0) & (d_hrs['year']>=1977)]  
      
     #Get Ratio of Female to Male FLP #23-38-53 
-    fls_ratio=np.zeros((2))    
-    fls_ratio[0]=np.average(d_hrs2.loc[(d_hrs2['mar']==1.0) & (d_hrs['age']>=23) & 
+    fls_ratio=np.average(d_hrs2.loc[(d_hrs2['mar']==1.0) & (d_hrs['age']>=23) & 
                                     (d_hrs['age']<=38),'wls'])/np.average(d_hrs2.loc[(d_hrs2['mar']==0.0) & 
                                     (d_hrs['age']>=23) & (d_hrs['age']<=38),'wls'])    
                  
-    fls_ratio[1]=np.average(d_hrs2.loc[(d_hrs2['mar']==1.0) & (d_hrs['age']>=38) & 
-                                    (d_hrs['age']<=53),'wls'])/np.average(d_hrs2.loc[(d_hrs2['mar']==0.0) & 
-                                    (d_hrs['age']>=38) & (d_hrs['age']<=53),'wls'])    
+     
                      
                      
     #Get difference in male wages in marriage and cohabitation 
@@ -719,7 +716,7 @@ def dat_moments(sampling_number=5,weighting=True,covariances=False,relative=Fals
     cohB=np.zeros((len(coh),boot))    
     emarB=np.zeros((len(emar),boot))    
     ecohB=np.zeros((len(ecoh),boot))    
-    fls_ratioB=np.zeros((len(fls_ratio),boot))  
+    fls_ratioB=np.zeros((1,boot))  
     wage_ratioB=np.zeros((1,boot))  
     div_ratioB=np.zeros((1,boot))  
     mean_flsB=np.zeros((1,boot))   
@@ -790,7 +787,7 @@ def dat_moments(sampling_number=5,weighting=True,covariances=False,relative=Fals
     elif relative:   
            
         #Compute optimal Weighting Matrix    
-        col=np.concatenate((hazm*np.ones(1),hazs,hazd,emar,ecoh,fls_ratio,wage_ratio*np.ones(1),mean_fls*np.ones(1)),axis=0)        
+        col=np.concatenate((hazm*np.ones(1),hazs,hazd,emar,ecoh,np.ones(1)*fls_ratio,wage_ratio*np.ones(1),mean_fls*np.ones(1)),axis=0)        
         dim=len(col)    
         W=np.zeros((dim,dim))    
         for i in range(dim):    
@@ -799,7 +796,7 @@ def dat_moments(sampling_number=5,weighting=True,covariances=False,relative=Fals
     else:    
             
         #If no weighting, just use sum of squred deviations as the objective function            
-        W=np.diag(np.ones(len(hazm)+len(hazs)+len(fls_ratio)+len(hazd)+len(emar)+len(ecoh)+2))#two is for fls+beta_unid    
+        W=np.diag(np.ones(len(hazm)+len(hazs)+len(hazd)+len(emar)+len(ecoh)+3))#two is for fls+beta_unid    
             
     listofTuples = [("hazs" , hazs), ("hazm" , hazm),("hazd" , hazd),("emar" , emar),    
                 ("ecoh" , ecoh), ("fls_ratio" , fls_ratio),("wage_ratio" , wage_ratio), 

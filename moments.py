@@ -534,10 +534,12 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         allspells_wf=is_wagef[is_spell]
         allspells_wm=is_wagem[is_spell]
         allspells_csw=is_csw[is_spell]
+        #Correct the assets thing
+        allspells_asse[:,0][allspells_asse[:,0]==-1]=0.0
+        atype=np.reshape(np.repeat(allspells_beg,allspells_asse.shape[1]),allspells_asse.shape)
     
-    #Correct the assets thing
-    allspells_asse[:,0][allspells_asse[:,0]==-1]=0.0
-    atype=np.reshape(np.repeat(allspells_beg,allspells_asse.shape[1]),allspells_asse.shape)
+    
+    
     
          
            
@@ -1314,7 +1316,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     small=mean_fls_c<0.0001*np.ones((2))  
     mean_fls_c[small]=0.0001*np.ones((2))[small]  
  
-    moments['fls_ratio']=[min(mean_fls_m[0]/mean_fls_c[0],2.0),min(mean_fls_m[1]/mean_fls_c[1],2.0)] 
+    moments['fls_ratio']=[min(mean_fls_m[0]/mean_fls_c[0],2.0)] 
       
     grid=np.linspace(5,35,31,dtype=np.int16)  
     storem=np.zeros(grid.shape)  
@@ -2224,7 +2226,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
             hazd_d=packed_data['hazd']     
             mar_d=packed_data['emar']     
             coh_d=packed_data['ecoh']     
-            fls_d=packed_data['fls_ratio']    
+            fls_d=np.ones(1)*packed_data['fls_ratio']    
             wage_d=np.ones(1)*packed_data['wage_ratio']  
             div_d=np.ones(1)*packed_data['div_ratio']  
             mean_fls_d=np.ones(1)*packed_data['mean_fls']    
@@ -2234,7 +2236,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
             hazd_i=packed_data['hazdi']     
             mar_i=packed_data['emari']     
             coh_i=packed_data['ecohi']     
-            fls_i=packed_data['fls_ratioi']    
+            fls_i=np.ones(1)*packed_data['fls_ratioi']    
             wage_i=np.ones(1)*packed_data['wage_ratioi']  
             mean_fls_i=np.ones(1)*packed_data['mean_flsi']   
             beta_unid_i=np.ones(1)*packed_data['beta_unidi']     
@@ -2956,25 +2958,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         plt.ylabel('Share Married')   
      
            
-        ##########################################     
-        # FLS: Marriage vs. cohabitation   
-        ##########################################      
-        fig = plt.figure()     
-        f6=fig.add_subplot(2,1,1)     
-              
-  
-          
-        lg=2  
-        # create plot     
-        plt.plot(np.array(range(lg))+1, moments['fls_ratio'], linestyle='--',linewidth=1.5, label='Simulated')     
-        plt.plot(np.array(range(lg))+1, fls_d,linewidth=1.5, label='Data')     
-        plt.fill_between(np.array(range(lg))+1, fls_i[0,0:lg], fls_i[1,0:lg],alpha=0.2,facecolor='b')     
-        plt.ylabel('Ratio of Female Hrs: Mar/Coh')  
-        plt.legend(loc='best', bbox_to_anchor=(0.5, -0.3),     
-                  fancybox=True, shadow=True, ncol=2, fontsize='x-small')    
-         
-        #plt.ylim(ymax=0.1)     
-        #plt.xlim(xmax=1.0,xmin=0.0)     
+       
           
         ##########################################     
         # Wage: Marriage vs. cohabitation   

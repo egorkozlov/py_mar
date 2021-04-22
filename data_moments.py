@@ -90,12 +90,12 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
     coh=hi[(hi['NUMUNION']-hi['NUMMAR']>0) |  (hi['NUMCOHMR']>0)].copy()    
         
         
-    #Create number of cohabitations    
-    coh['num']=0.0   
-    for i in range(9):    
-        if(np.any(coh['HOWBEG0'+str(i+1)])=='coh'):   
-            coh.loc[coh['HOWBEG0'+str(i+1)]=='coh','num']=coh.loc[coh['HOWBEG0'+str(i+1)]=='coh','num']+1.0    
-                
+    #Create number of cohabitations     
+    coh['num']=0.0    
+    for i in range(9):     
+        if(np.any(coh['HOWBEG0'+str(i+1)]=='coh')):    
+            coh.loc[coh['HOWBEG0'+str(i+1)]=='coh','num']=coh.loc[coh['HOWBEG0'+str(i+1)]=='coh','num']+1.0     
+                 
     #Expand the data        
     cohe=coh.loc[coh.index.repeat(np.array(coh.num,dtype=np.int32))]    
         
@@ -105,7 +105,7 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
     cohe['cou']=1    
     cohe['rel']=None    
     for i in range(9):    
-        if(np.any(coh['HOWBEG0'+str(i+1)])=='coh'):   
+        if(np.any(coh['HOWBEG0'+str(i+1)]=='coh')):   
             cohe.loc[(cohe['HOWBEG0'+str(i+1)]=='coh') & (cohe['rell']==cohe['cou']),'rel']=i+1    
             cohe.loc[cohe['HOWBEG0'+str(i+1)]=='coh','cou']= cohe.loc[cohe['HOWBEG0'+str(i+1)]=='coh','cou']+1    
             
@@ -278,7 +278,7 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
     
             
         for i in range(9):    
-            if(np.any(hi['HOWBEG0'+str(i+1)])!=None):   
+            if(np.any(hi['HOWBEG0'+str(i+1)]!=None)):   
                 
                 #Get if in couple    
                 hi.loc[(hi['time_'+str(20+(j))]>=hi['BEGDAT0'+str(i+1)]) & (hi['BEGDAT0'+str(i+1)]<3999) &    
@@ -286,7 +286,7 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
                         (hi['ENDDAT0'+str(i+1)]==0) | (hi['WIDDAT0'+str(i+1)]>0) )   
                        ,'status_'+str(20+(j))]='mar'    
                            
-            if(np.any(hi['HOWBEG0'+str(i+1)])=='coh'):              
+            if(np.any(hi['HOWBEG0'+str(i+1)]=='coh')):              
                 #Substitute if actually cohabitation     
                 hi.loc[(hi['time_'+str(20+(j))]>=hi['BEGDAT0'+str(i+1)]) & (hi['BEGDAT0'+str(i+1)]<3999) &    
                        (((hi['time_'+str(20+(j))]<=hi['ENDDAT0'+str(i+1)]) & (hi['ENDDAT0'+str(i+1)]>0))  |     

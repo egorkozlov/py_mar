@@ -22,11 +22,11 @@ class ModelSetup(object):
         p = dict()       
         period_year=1#this can be 1,2,3 or 6
         transform=2#this tells how many periods to pull together for duration moments
-        T = int(62/period_year)#int(62/period_year)
-        Tret = int(42/period_year)#int(42/period_year) # first period when the agent is retired
-        Tbef=int(0/period_year)
-        Tren  = int(42/period_year)#int(42/period_year)#int(42/period_year) # period starting which people do not renegotiate/divroce
-        Tmeet = int(42/period_year)#int(42/period_year)#int(42/period_year) # period starting which you do not meet anyone
+        T = int(63/period_year)#int(62/period_year)
+        Tret = int(43/period_year)#int(42/period_year) # first period when the agent is retired
+        Tbef=int(1/period_year)
+        Tren  = int(43/period_year)#int(42/period_year)#int(42/period_year) # period starting which people do not renegotiate/divroce
+        Tmeet = int(43/period_year)#int(42/period_year)#int(42/period_year) # period starting which you do not meet anyone
         p['py']=period_year
         p['ty']=transform
         p['T'] = T
@@ -42,7 +42,7 @@ class ModelSetup(object):
         p['n_zf_correct']=1
         p['sigma_psi_mult'] = 0.28
         p['sigma_psi']   = 0.11
-        p['n_psi_t']     = [9]*T
+        p['n_psi_t']     = [15]*T
         p['R_t'] = [1.02**period_year]*T
         p['beta_t'] = [0.98**period_year]*T
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
@@ -603,13 +603,13 @@ class ModelSetup(object):
                     
                     # TODO: this needs to be checked
                     if female:
-                        me=self.pars['av_a_m'][t]
+                        me=self.pars['av_a_m'][min(t,61)]
                         mean=self.pars['mean_partner_a_female']#a*1.6+me*0.4#np.log(2e-6 + ( me)/max(abar,a))#
-                        st=2.5*max(np.std((2e-6 + (self.pars['totm'][t]))),0.01)#max(np.std(np.log(2e-6 + (self.pars['totm'][t])/max(abar,a))),0.001)#s_a_partner
+                        st=2.5*max(np.std((2e-6 + (self.pars['totm'][min(t,61)]))),0.01)#max(np.std(np.log(2e-6 + (self.pars['totm'][t])/max(abar,a))),0.001)#s_a_partner
                     else:
-                        me=self.pars['av_a_f'][t]
+                        me=self.pars['av_a_f'][min(t,61)]
                         mean=self.pars['mean_partner_a_male']#(a*1.6*0.95+me*0.4)#np.log(2e-6 + (me )/max(abar,a))#
-                        st=max(np.std((2e-6 + (self.pars['totf'][t]))),0.01)#max(np.std(np.log(2e-6 + (self.pars['totf'][t])/max(abar,a))),0.001)#s_a_partner
+                        st=max(np.std((2e-6 + (self.pars['totf'][min(t,61)]))),0.01)#max(np.std(np.log(2e-6 + (self.pars['totf'][t])/max(abar,a))),0.001)#s_a_partner
                         
                     #p_a = int_prob(lagrid_t,mu=mean,sig=st,n_points=npoints)
                     p_a = int_prob(lagrid_t,mu=mean,sig=st**0.5,n_points=npoints)

@@ -148,20 +148,20 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
             for t in range(T)] 
         
      
-    Vf_div = v_reshape(setup,'Couple, M','Value of Divorce, female',vals,T)[...,0,:] 
-    Vm_div = v_reshape(setup,'Couple, M','Value of Divorce, male',vals,T)[...,0,:] 
+    Vf_div = vals[ti]['Couple, M']['Value of Divorce, female'][:,0] #v_reshape(setup,'Couple, M','Value of Divorce, female',vals,T)[...,0,:] 
+    Vm_div = vals[ti]['Couple, M']['Value of Divorce, male'][:,0]#v_reshape(setup,'Couple, M','Value of Divorce, male',vals,T)[...,0,:] 
      
      
     # I take index 0 as ipsi does not matter for this 
      
     #Single Women 
              
-    Vfs, cfs, sfs = [v_reshape(setup,'Female, single',f,Packed,T) 
-                        for f in ['V','c','s']] 
+    Vfs, cfs, xfs, sfs = [v_reshape(setup,'Female, single',f,Packed,T) 
+                        for f in ['V','c','x','s']] 
      
      
-    Vms, cms, sms = [v_reshape(setup,'Male, single',f,Packed,T) 
-                        for f in ['V','c','s']] 
+    Vms, cms,xms,  sms = [v_reshape(setup,'Male, single',f,Packed,T) 
+                        for f in ['V','c','x','s']] 
                       
     #Couples: Marriage+Cohabitation 
      
@@ -325,10 +325,29 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     ##########################################  
     fig = plt.figure() 
     f6=fig.add_subplot(2,1,1) 
-    plt.plot(agrid, Vmm[0:len(agrid),zfi,zmi,psii,thi,ti],'bo',markersize=6,markevery=5, label='Man, Marriage') 
-    plt.plot(agrid, Vmc[0:len(agrid),zfi,zmi,psii,thi,ti],'b',linewidth=0.4, label='Man, Cohabitation') 
-    plt.plot(agrid, Vfc[0:len(agrid),zfi,zmi,psii,thi,ti],'r',linewidth=0.4, label='Women, Cohabitation') 
-    plt.plot(agrid, Vfm[0:len(agrid),zfi,zmi,psii,thi,ti],'r*',markersize=6,markevery=5,label='Women, Marriage') 
+    plt.plot(agrid, (Vmm[0:len(agrid),zfi,zmi,psii,thi,ti]*(-0.5))**(-2),'bo',markersize=6,markevery=5, label='Man, Marriage') 
+    plt.plot(agrid, (Vmc[0:len(agrid),zfi,zmi,psii,thi,ti]*(-0.5))**(-2),'b',linewidth=0.4, label='Man, Cohabitation') 
+    plt.plot(agrid, (Vfc[0:len(agrid),zfi,zmi,psii,thi,ti]*(-0.5))**(-2),'r',linewidth=0.4, label='Women, Cohabitation') 
+    plt.plot(agrid, (Vfm[0:len(agrid),zfi,zmi,psii,thi,ti]*(-0.5))**(-2),'r*',markersize=6,markevery=5,label='Women, Marriage') 
+    plt.plot(agrid, (Vfs[0:len(agrid),zfi,ti]*(-0.5))**(-2),'r*',markersize=6,markevery=5,label='Women') 
+    plt.plot(agrid, (Vms[0:len(agrid),zmi,ti]*(-0.5))**(-2),'b',markersize=6,markevery=5,label='Man') 
+    #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral') 
+    plt.ylabel('Utility tr') 
+    plt.xlabel('Assets') 
+    #plt.title('Utility  Divorce costs: men=0.5, women=0.5') 
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3), 
+                  fancybox=True, shadow=True, ncol=4, fontsize='x-small') 
+    
+    
+    fig = plt.figure() 
+    f6=fig.add_subplot(2,1,1) 
+
+
+
+    plt.plot(agrid, Vf_div,'r',markersize=6,label='Women div')
+    plt.plot(agrid, Vm_div,'b',markersize=6,label='men div')
+    plt.plot(agrid, Vfs[0:len(agrid),zfi,ti],'r*',markersize=6,markevery=5,label='Women') 
+    plt.plot(agrid, Vms[0:len(agrid),zmi,ti],'b',markersize=6,markevery=5,label='Man') 
     #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral') 
     plt.ylabel('Utility') 
     plt.xlabel('Assets') 
@@ -370,12 +389,12 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     ##########################################  
     fig = plt.figure() 
     f8=fig.add_subplot(2,1,1) 
-    #plt.plot(agrid, Vm[0:len(agrid),zfi,zmi,psii,thi,ti],'bo',markersize=4, label='Before Ren M') 
-    #plt.plot(agrid, Vc[0:len(agrid),zfi,zmi,psii,thi,ti],'r*',markersize=2,label='Before Ren C') 
+    plt.plot(agrid, Vm[0:len(agrid),zfi,zmi,psii,thi,ti],'bo',markersize=4, label='Before Ren M') 
+    plt.plot(agrid, Vc[0:len(agrid),zfi,zmi,psii,thi,ti],'r*',markersize=2,label='Before Ren C') 
     plt.plot(agrid, V_ren_c,'y', markersize=4,label='After Ren C') 
     plt.plot(agrid, V_ren_m,'k', linestyle='--',markersize=4, label='After Ren M') 
     #plt.plot(agrid, Vm_div[0:len(agrid),zfi,zmi,ti],'b',markersize=2, label='Male Divorce')  
-    plt.plot(agrid, setup.thetagrid[thi]*Vf_div[0:len(agrid),zfi,zmi,thi]+(1-setup.thetagrid[thi])*Vm_div[0:len(agrid),zfi,zmi,thi],'r', linestyle='--',markersize=2,label='Female Divorce')  
+    #plt.plot(agrid, setup.thetagrid[thi]*Vf_div[0:len(agrid),zfi,zmi,thi]+(1-setup.thetagrid[thi])*Vm_div[0:len(agrid),zfi,zmi,thi],'r', linestyle='--',markersize=2,label='Female Divorce')  
     plt.ylabel('Utility') 
     plt.xlabel('Assets') 
     #plt.title('Utility  Divorce costs: men=0.5, women=0.5') 
@@ -387,11 +406,32 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     ##########################################  
     fig = plt.figure() 
     f9=fig.add_subplot(2,1,1) 
-    plt.plot(agrid[:-2], cm[0:len(agrid)-2,zfi,zmi,psii,thi,ti],'k',markevery=1, label='Marriage') 
-    plt.plot(agrid[:-2], cc[0:len(agrid)-2,zfi,zmi,psii,thi,ti],'r',linestyle='--',markevery=1, label='Cohabitation') 
+    cashm=np.exp(setup.pars['m_wage_trend'][ti]+setup.exogrid.zm_t[ti])[zmi]+setup.pars['R_t'][ti]*agrids
+    cashf=np.exp(setup.pars['f_wage_trend'][ti]+setup.exogrid.zf_t[ti])[zfi]+setup.pars['R_t'][ti]*agrids
+    plt.plot(agrid[:-2], cm[:len(agrid)-2,zfi,zmi,psii,thi,ti]/(cashm[:-2]+cashf[:-2]),'k',markevery=1, label='Marriage') 
+    #plt.plot(agrid[:-2], cc[0:len(agrid)-2,zfi,zmi,psii,thi,ti],'r',linestyle='--',markevery=1, label='Cohabitation') 
+    plt.plot(agrid[:-2], cc[:len(agrid)-2,zfi,zmi,psii,thi,ti]/(cashm[:-2]+cashf[:-2]),'k',linewidth=2.0,linestyle='--', label='Cohabitation') 
+    plt.plot(agrids[:-2], cms[:len(agrids)-2,zmi,ti]/cashm[:-2],'b',linewidth=1.0,label='Men, Single') 
+    plt.plot(agrids[:-2], cfs[:len(agrids)-2,zfi,ti]/cashf[:-2],'y',linewidth=1.0,linestyle='--', label='Women, Single') 
+    #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral') 
+    plt.ylabel('Consumption/assets') 
+    plt.xlabel('Assets') 
+    #plt.title('Utility  Divorce costs: men=0.5, women=0.5') 
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3), 
+                  fancybox=True, shadow=True, ncol=2, fontsize='x-small') 
+    
+      ########################################## 
+    # Consumption and Assets 
+    ##########################################  
+    fig = plt.figure() 
+    f9=fig.add_subplot(2,1,1) 
+    cashm=np.exp(setup.pars['m_wage_trend'][ti]+setup.exogrid.zm_t[ti])[zmi]+setup.pars['R_t'][ti]*agrids
+    cashf=np.exp(setup.pars['f_wage_trend'][ti]+setup.exogrid.zf_t[ti])[zfi]+setup.pars['R_t'][ti]*agrids
+    #plt.plot(agrid[:-2], cm[0:len(agrid)-2,zfi,zmi,psii,thi,ti],'k',markevery=1, label='Marriage') 
+    #plt.plot(agrid[:-2], cc[0:len(agrid)-2,zfi,zmi,psii,thi,ti],'r',linestyle='--',markevery=1, label='Cohabitation') 
     #plt.plot(agrid, sc[0:len(agrid),zfi,zmi,psii,thi,ti],'k',linewidth=2.0,linestyle='--', label='Cohabitation') 
-    plt.plot(agrids[:-2], cms[0:len(agrids)-2,zmi,ti],'b',linewidth=1.0,label='Men, Single') 
-    plt.plot(agrids[:-2], cfs[0:len(agrids)-2,zfi,ti],'y',linewidth=1.0,linestyle='--', label='Women, Single') 
+    plt.plot(agrids[:-2], cms[:len(agrids)-2,zmi,ti],'b',linewidth=1.0,label='Men, Single') 
+    plt.plot(agrids[:-2], cfs[:len(agrids)-2,zfi,ti],'y',linewidth=1.0,linestyle='--', label='Women, Single') 
     #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral') 
     plt.ylabel('Consumption') 
     plt.xlabel('Assets') 
@@ -405,10 +445,10 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     fig = plt.figure() 
     f9=fig.add_subplot(2,1,1) 
     plt.plot(agrid[:-2], xm[0:len(agrid)-2,zfi,zmi,psii,thi,ti],'k',markevery=1, label='Marriage') 
-    plt.plot(agrid[:-2], xc[0:len(agrid)-2,zfi,zmi,psii,thi,ti],'r',linestyle='--',markevery=1, label='Cohabitation') 
-    #plt.plot(agrid, sc[0:len(agrid),zfi,zmi,psii,thi,ti],'k',linewidth=2.0,linestyle='--', label='Cohabitation') 
-    #plt.plot(agrids, cms[0:len(agrids),zmi,ti],'b',linewidth=2.0,label='Men, Single') 
-    #lt.plot(agrids, cfs[0:len(agrids),zfi,ti],'r',linewidth=2.0,linestyle='--', label='Women, Single') 
+    #plt.plot(agrid[:-2], xc[0:len(agrid)-2,zfi,zmi,psii,thi,ti],'r',linestyle='--',markevery=1, label='Cohabitation') 
+    plt.plot(agrid, xc[0:len(agrid),zfi,zmi,psii,thi,ti],'k',linewidth=2.0,linestyle='--', label='Cohabitation') 
+    plt.plot(agrids, xms[0:len(agrids),zmi,ti],'b',linewidth=2.0,label='Men, Single') 
+    plt.plot(agrids, xfs[0:len(agrids),zfi,ti],'r',linewidth=2.0,linestyle='--', label='Women, Single') 
     #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral') 
     plt.ylabel('Consumptionx') 
     plt.xlabel('Assets') 

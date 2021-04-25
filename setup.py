@@ -26,7 +26,7 @@ class ModelSetup(object):
         Tret = int(43/period_year)#int(42/period_year) # first period when the agent is retired
         Tbef=int(1/period_year)
         Tren  = int(43/period_year)#int(42/period_year)#int(42/period_year) # period starting which people do not renegotiate/divroce
-        Tmeet = int(43/period_year)#int(42/period_year)#int(42/period_year) # period starting which you do not meet anyone
+        Tmeet = int(1/period_year)#int(42/period_year)#int(42/period_year) # period starting which you do not meet anyone
         p['py']=period_year
         p['ty']=transform
         p['T'] = T
@@ -42,8 +42,8 @@ class ModelSetup(object):
         p['n_zf_correct']=1
         p['sigma_psi_mult'] = 0.28
         p['sigma_psi']   = 0.11
-        p['n_psi_t']     = [15]*T
-        p['R_t'] = [1.02**period_year]*T
+        p['n_psi_t']     = [3]*T
+        p['R_t'] = [1.0**period_year]*T
         p['beta_t'] = [0.98**period_year]*T
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
@@ -150,10 +150,10 @@ class ModelSetup(object):
         self.state_names = ['Female, single','Male, single','Couple, M', 'Couple, C']
         
         # female labor supply
-        self.ls_levels = np.array([0.0,0.811],dtype=self.dtype)
-        self.mlevel=0.811
+        self.ls_levels = np.array([1.0,1.0],dtype=self.dtype)
+        self.mlevel=1.0
         #self.ls_utilities = np.array([p['uls'],0.0],dtype=self.dtype)
-        self.ls_pdown = np.array([p['pls'],0.0],dtype=self.dtype)
+        self.ls_pdown = np.array([0.0,0.0],dtype=self.dtype)
         self.nls = len(self.ls_levels)
         
         
@@ -423,24 +423,63 @@ class ModelSetup(object):
             #assert False
             
             
+        tot=0
+        for ti in range(self.pars['Tret']):
+            
+            imi=np.exp(self.pars['m_wage_trend'][ti]+self.exogrid.zm_t[ti][2])
+            ifi=np.exp(self.pars['f_wage_trend'][ti]+self.exogrid.zf_t[ti][3])
+            tot=(tot+imi+ifi)
             
        #Grid Couple
         self.na = 40#40
         self.scala=1.0
         self.amin = 0
-        self.amax = 60*self.scala
-        self.amax1 = 100*self.scala
+        self.amax =80*self.scala
+        self.amax1 = 80*self.scala
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
-        tune=10#30.5
-        self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
-        self.agrid_c[-1]=self.amax1
-        self.agrid_c[-2]=80*self.scala
+        tune=0.0012#0.0000010# good30.5
+        #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
+        #self.agrid_c[-1]=self.amax1
+        #self.agrid_c[-2]=80*self.scala
+        
+        
+        # a function that generates non equi-spaced grid
+        def curvedspace(begin, end, curve, num=100):
+            ans = np.linspace(0., (end - begin)**(1.0/curve), num) ** (curve) + begin
+            ans[-1] = end #so that the last element is exactly end
+            return ans
+
+        
+        
+        #ndense=65
+        #gsparse = np.linspace(20.0,self.amax,self.na-ndense)
+        #tune1=tune*100000
+        #gdense =  curvedspace(0.0, 20.0, 4.0, ndense+1)
+        #np.geomspace(0.0+tune1,20.0+tune1,ndense+1,dtype=self.dtype)-tune1
+        # #np.linspace(0.0,20.0,ndense+1) # +1 as there is a common pt
+        
+    
+        #self.agrid_c[ndense:] = gsparse
+        #self.agrid_c[:(ndense+1)] = gdense
+        
+        self.agrid_cp = curvedspace(0.0, self.amax, 10.0, self.na) 
+       
+        
+        
         # this builds finer grid for potential savings
-        s_between = 7 # default numer of points between poitns on agrid
-        s_da_min = 0.001*self.scala # minimal step (does not create more points)
-        s_da_max = 5.0*self.scala # maximal step (creates more if not enough)
+        s_between = 17 # default numer of points between poitns on agrid
+        s_da_min = 0.005*self.scala # minimal step (does not create more points)
+        s_da_max = 0.1*self.scala # maximal step (creates more if not enough)
         
         self.sgrid_c = build_s_grid(self.agrid_c,s_between,s_da_min,s_da_max)
+        diffe=self.sgrid_c[-1]-self.sgrid_c[-2]
+        add_grid=np.linspace(self.sgrid_c[-1],diffe*100,100)
+        
+        self.sgrid_c = build_s_grid(self.agrid_c,s_between,s_da_min,s_da_max)
+        
+        
+        
+        
         self.vsgrid_c = VecOnGrid(self.agrid_c,self.sgrid_c)
         
         
@@ -459,7 +498,7 @@ class ModelSetup(object):
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)
         
         # grid for theta
-        self.ntheta = 13
+        self.ntheta = 7
         self.thetamin = 0.1
         self.thetamax = 0.9
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta,dtype=self.dtype)
@@ -508,10 +547,10 @@ class ModelSetup(object):
                           'Couple, C':exogrid['all_t_mat_by_l']} # sparse version?
         
         
-        self.utility_shifters = {'Female, single':0.0,
-                                 'Male, single':0.0,
-                                 'Couple, M':p['u_shift_mar'],
-                                 'Couple, C':p['u_shift_coh']}
+        self.utility_shifters = {'Female, single':0.0-0.000000,
+                                 'Male, single':0.0-0.000000,
+                                 'Couple, M':p['u_shift_mar']-0.000000,
+                                 'Couple, C':p['u_shift_coh']-0.000000}
         
         
         # this pre-computes transition matrices for meeting a partner
@@ -544,8 +583,8 @@ class ModelSetup(object):
         mmax = ezfmax + ezmmax + np.max(self.pars['R_t'])*self.amax1
         mint = (ezfmax + ezmmax) # poin where more dense grid begins
         
-        ndense = 1200
-        nm = 3000
+        ndense = 12000
+        nm = 30000
         
         gsparse = np.linspace(mint,mmax,nm-ndense)
         gdense = np.linspace(mmin,mint,ndense+1) # +1 as there is a common pt
@@ -561,7 +600,7 @@ class ModelSetup(object):
         assert np.all(np.diff(self.mgrid)>0)
         
         self.u_precompute()
-        
+    
         
     def mar_mats_assets(self,npoints=12,abar=0.1):
         # for each grid point on single's grid it returns npoints positions
@@ -589,11 +628,11 @@ class ModelSetup(object):
                 for t in range(self.pars['T']):
                     lagrid_t = np.zeros_like(agrid_c)
                     
-                    i_neg = (agrid_c <= max(abar,a-mena) - 1e-6)
+                    i_neg = (agrid_c <= max(abar,a-mena) - 1e-5)
                     
                     # if a is zero this works a bit weird but does the job
                     
-                    lagrid_t[~i_neg] = np.log(2e-6 + (agrid_c[~i_neg] - max((a-mena),0))/max(abar,a))#agrid_c[~i_neg]#
+                    lagrid_t[~i_neg] = np.log(2e-5 + (agrid_c[~i_neg] - max((a-mena),0))/max(abar,a))#agrid_c[~i_neg]#
                     
                     
                     lmin = lagrid_t[~i_neg].min()
@@ -828,7 +867,7 @@ class ModelSetup(object):
     
     
     def u_pub(self,x,l,mt=0.0):
-        alp = self.pars['util_alp_m']
+        alp = 1.0#self.pars['util_alp_m']
         xi = self.pars['util_xi']
         lam = self.pars['util_lam']
         kap = self.pars['util_kap_m']        
@@ -855,7 +894,7 @@ class ModelSetup(object):
     def u_precompute(self):
         from intratemporal import int_sol
         sig = self.pars['crra_power']
-        alp = self.pars['util_alp_m']
+        alp = 1.0#self.pars['util_alp_m']
         xi = self.pars['util_xi']
         lam = self.pars['util_lam']
         kap = self.pars['util_kap_m']

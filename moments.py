@@ -988,7 +988,7 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
             #lgh=lgh-len(temp)      
         else:      
             haz1=0.0      
-        hazd=[haz1/lgh]+hazd      
+        hazd=[haz1/max(lgh,0.0001)]+hazd      
                
     hazd.reverse()      
     hazd=np.array(hazd).T      

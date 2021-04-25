@@ -53,7 +53,11 @@ def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,cint,ls,beta,ushift,
         assert len(EV) == 2
         vsgrid,EVin = EV
         EVin = EVin.astype(dtype,copy=False)
+        #if (np.max(EVin)>0):
+         #   EV_by_l = (vsgrid.apply_preserve_shape((EVin*(-0.5))**(-2)))**(-0.5)/(-0.5)
+        #else:
         EV_by_l = vsgrid.apply_preserve_shape(EVin)
+            
         assert EVin.shape[1:] == EV_by_l.shape[1:]
         assert EVin.dtype == EV_by_l.dtype
 
@@ -128,7 +132,8 @@ def v_optimize_couple(money_in,sgrid,EV,mgrid,utilint,xint,cint,ls,beta,ushift,
     #V_all = V_opt_arr
     
     
-    
+    #print(np.max((money_left-c[:,:,0]-x[:,:,0])/money_left))
+   # print(money_left[0,0],c[0,0,0],x[0,0,0])
     return ret(V), ret(c), ret(x), ret(s), ret(i_opt), ret(i_ls), ret(V_opt_arr)
 
 

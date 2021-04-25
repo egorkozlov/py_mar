@@ -66,8 +66,9 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     
   
     # this is for the default model
+    ulost=0
     dc = DivorceCosts(unilateral_divorce=False,assets_kept =akept,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)
-    sc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=0.00,u_lost_f=0.00,eq_split=0.0)
+    sc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=0.0)
     
     
     
@@ -197,10 +198,17 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     transition_matricesf=get_transition(age_uni['female'],welf)
     transition_matricesm=get_transition(age_uni['male'],welf)
 
-    
-    
+
         
-        
+    ai=0
+    zfi=0
+    zmi=0
+    psii=0
+    ti=2
+    thi=0
+      
+    #Actual Graphs
+    mdl.graph(ai,zfi,zmi,psii,ti,thi)    
    
     #Get Number of simulated agent, malea and female
     N=30000#120000

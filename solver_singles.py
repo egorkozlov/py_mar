@@ -59,12 +59,17 @@ def v_iter_single(setup,t,EV,female,ushift,force_f32=False):
     V_0, c_opt, x_opt, s_opt, i_opt =  \
         (x.squeeze(axis=2) for x in [V_0, c_opt, x_opt, s_opt, i_opt])
         
-#    wf = money_t[1].reshape((1,money_t[1].size))*0.1
-#    wm = money_t[2].reshape((1,money_t[2].size))
-#    asset_income = money_t[0].reshape((money_t[0].size,1))
-#    money = wf + wm + asset_income
-#    aaa=money-c_opt-x_opt-s_opt
+    wf = money_t[1].reshape((1,money_t[1].size))
+    wm = money_t[2].reshape((1,money_t[2].size))
+    asset_income = money_t[0].reshape((money_t[0].size,1))
+    money = wf + wm + asset_income
+    aaa=money-c_opt-x_opt-s_opt
     
+    #if np.max(aaa/money)>0.01:
+     #   print(np.max(aaa/money),np.min(aaa/money))
+    
+    if np.any(abs(c_opt-x_opt)>0.00001):
+        print(abs(c_opt-x_opt)/money)
    
     EVexp = setup.vsgrid_s.apply_preserve_shape(EV)
     V_ret = setup.u_single_pub(c_opt,x_opt,ls) + ushift + beta*np.take_along_axis(EVexp,i_opt,0)

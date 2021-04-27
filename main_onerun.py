@@ -90,7 +90,7 @@ if __name__ == '__main__':
 
 
     #(199)-very very good
-    x0 = np.array([1.0,0.762312,2.17978,0.34,1,-40.151496,-0.0,1.5])
+    x0 = np.array([0.753853,0.762312,2.17978,0.34,1,-0.0,-0.0,1.5])
     #x0 = np.array([0.977307,0.762312,2.17978,0.377448,1.19598,-0.151496,-0.0789312,1.14015])
     
     ##197 also very goo
@@ -106,7 +106,7 @@ if __name__ == '__main__':
     
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','models','agents','scaled residuals'],
                                       #load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
-                                      solve_transition=True,                                    
+                                      solve_transition=False,                                    
                                       #save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       store_path=path,
                                       verbose=True,calibration_report=False,draw=graphs,graphs=graphs,

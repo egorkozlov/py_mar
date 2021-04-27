@@ -268,7 +268,7 @@ def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, ith
         vf_y_ni_0 = vf_y_ni[0]
         vm_y_ni_0 = vm_y_ni[0]
         
-    
+    nochoice=True
     dtype = v_y_ni.dtype
     
         

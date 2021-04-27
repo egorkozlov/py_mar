@@ -67,8 +67,8 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
   
     # this is for the default model
     ulost=0
-    dc = DivorceCosts(unilateral_divorce=False,assets_kept =akept,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)
-    sc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=1.0)
+    dc = DivorceCosts(unilateral_divorce=False,assets_kept =akept,u_lost_m=ulost,u_lost_f=ulost,eq_split=0.0)
+    sc = DivorceCosts(unilateral_divorce=True,assets_kept = 1.0,u_lost_m=ulost,u_lost_f=ulost,eq_split=0.0)
     
     
     
@@ -203,7 +203,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     ai=0
     zfi=0
     zmi=0
-    psii=0
+    psii=1
     ti=2
     thi=0
       

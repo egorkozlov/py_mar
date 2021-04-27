@@ -42,7 +42,7 @@ class ModelSetup(object):
         p['n_zf_correct']=1
         p['sigma_psi_mult'] = 0.28
         p['sigma_psi']   = 0.11
-        p['n_psi_t']     = [3]*T
+        p['n_psi_t']     = [7]*T
         p['R_t'] = [1.0**period_year]*T
         p['beta_t'] = [0.98**period_year]*T
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
@@ -150,10 +150,10 @@ class ModelSetup(object):
         self.state_names = ['Female, single','Male, single','Couple, M', 'Couple, C']
         
         # female labor supply
-        self.ls_levels = np.array([1.0,1.0],dtype=self.dtype)
-        self.mlevel=1.0
+        self.ls_levels = np.array([0.0,0.811],dtype=self.dtype)
+        self.mlevel=.811
         #self.ls_utilities = np.array([p['uls'],0.0],dtype=self.dtype)
-        self.ls_pdown = np.array([0.0,0.0],dtype=self.dtype)
+        self.ls_pdown = np.array([p['pls'],0.0],dtype=self.dtype)
         self.nls = len(self.ls_levels)
         
         
@@ -431,14 +431,14 @@ class ModelSetup(object):
             tot=(tot+imi+ifi)
             
        #Grid Couple
-        self.na = 40#40
+        self.na = 60#40
         self.scala=1.0
         self.amin = 0
         self.amax =80*self.scala
         self.amax1 = 80*self.scala
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
         tune=0.0012#0.0000010# good30.5
-        #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
+        self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         #self.agrid_c[-1]=self.amax1
         #self.agrid_c[-2]=80*self.scala
         
@@ -498,13 +498,13 @@ class ModelSetup(object):
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)
         
         # grid for theta
-        self.ntheta = 7
+        self.ntheta = 11
         self.thetamin = 0.1
         self.thetamax = 0.9
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta,dtype=self.dtype)
         
         #Grid for the share in assets
-        self.ashare = np.linspace(0.05,0.95,3,dtype=self.dtype)#self.ashare = np.linspace(0.15,0.85,3,dtype=self.dtype)
+        self.ashare = np.linspace(0.49999,0.50001,3,dtype=self.dtype)#self.ashare = np.linspace(0.15,0.85,3,dtype=self.dtype)
         
         
         
@@ -512,7 +512,7 @@ class ModelSetup(object):
         
         
         # construct finer grid for bargaining
-        ntheta_fine = 1*self.ntheta # actual number may be a bit bigger
+        ntheta_fine = 3*self.ntheta # actual number may be a bit bigger
         self.thetagrid_fine = np.unique(np.concatenate( (self.thetagrid,np.linspace(self.thetamin,self.thetamax,ntheta_fine,dtype=self.dtype)) ))
         self.ntheta_fine = self.thetagrid_fine.size
         

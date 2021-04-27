@@ -17,13 +17,15 @@ import matplotlib.backends.backend_pdf
 from marriage import v_mar_igrid 
 from renegotiation_vartheta import v_ren_vt as v_ren_uni
 from renegotiation_bilateral import v_ren_bil
+from renegotiation_decisions import v_ren_vt as v_ren_dec 
 
- 
-def v_reshape(setup,desc,field,V_by_t,Tmax): 
+def v_reshape(setup,desc,field,V_by_t,Tmax,which=0): 
     # this reshapes V into many-dimensional object 
     if desc == "Couple, C" or desc == "Couple, M": 
          
         v0 = V_by_t[0][desc][field] 
+        
+        if type(v0) is tuple: v0=v0[which]
         
         if len(v0.shape)>3:
             v0=np.take_along_axis(v0,V_by_t[0][desc]['assdev'][:,:,setup.igridcoarse,None],axis=-1).squeeze(axis=-1)
@@ -35,6 +37,7 @@ def v_reshape(setup,desc,field,V_by_t,Tmax):
         out = np.empty(shape,v0.dtype)         
         for t in range(Tmax): 
             vin = V_by_t[t][desc][field] 
+            if type(vin) is tuple: vin=vin[which]
             if len(vin.shape)>3:
                 vin=np.take_along_axis(vin,V_by_t[t][desc]['assdev'][:,:,setup.igridcoarse,None],axis=-1).squeeze(axis=-1)
             out[...,t] = vin.reshape(shape[:-1]) 
@@ -127,7 +130,7 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
      
     # if ti = 0 it creates an object that was not used for the solutions,  
     # as V in v_ren_new is the next period value function. ti-1 should be here. 
-    V_ren_c = v_ren_uni(setup,Packed[ti],False,ti-1,return_extra=True)[1]['Values'][0][np.arange(agrid.size),nex,inde] 
+    V_ren_c = v_ren_dec(setup,Packed[ti],False,ti-1,return_extra=True)[1]['Values'][0][np.arange(agrid.size),nex,inde] 
     
     v_ren_mar = v_ren_uni if setup.div_costs.unilateral_divorce else v_ren_bil
     
@@ -169,10 +172,28 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
      
     thetam_R = setup.thetagrid_fine[ithetam_R] 
     thetam_R[ithetam_R==-1] = None 
+    
      
     ithetac_R = v_reshape(setup,'Couple, C','thetas',dec,T-1) 
     thetac_R = setup.thetagrid_fine[ithetac_R] 
     thetac_R[ithetac_R==-1] = None 
+    
+    togm = thetam_R
+    togc = thetac_R
+    #togm[ithetam_R.copy()!=-1]= 1.0
+    #togc[ithetac_R.copy()!=-1]= 1.0
+    
+    #Brining
+   
+    brib1t=v_reshape(setup,'Couple, M','Bribing',dec,T-1,1)
+    brib2t=v_reshape(setup,'Couple, M','Bribing',dec,T-1,2)
+    
+    brib1=agrids[brib1t]
+    brib2=agrids[brib2t]
+    brib1[brib1t==-1]=None
+    brib2[brib2t==-1]=None
+    
+    
      
      
     Vm, Vmm, Vfm, cm, sm, flsm,xm = [v_reshape(setup,'Couple, M',f,Packed,T) 
@@ -339,6 +360,23 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
                   fancybox=True, shadow=True, ncol=4, fontsize='x-small') 
     
     
+    #Brining
+    
+     ########################################## 
+    # thetan and Assets 
+    ##########################################  
+    fig = plt.figure() 
+    f6=fig.add_subplot(2,1,1) 
+    plt.plot(agrid, thetam_R[0:len(agrid),zfi,zmi,psii,thi,ti],'bo',markersize=6,markevery=5, label='Man, Marriage') 
+    plt.plot(agrid, thetac_R[0:len(agrid),zfi,zmi,psii,thi,ti],'b',linewidth=0.4, label='Man, Cohabitation') 
+    #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral') 
+    plt.ylabel('theta') 
+    plt.xlabel('Assets') 
+    #plt.title('Utility  Divorce costs: men=0.5, women=0.5') 
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3), 
+                  fancybox=True, shadow=True, ncol=4, fontsize='x-small') 
+    
+    
     fig = plt.figure() 
     f6=fig.add_subplot(2,1,1) 
 
@@ -391,10 +429,29 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     f8=fig.add_subplot(2,1,1) 
     plt.plot(agrid, Vm[0:len(agrid),zfi,zmi,psii,thi,ti],'bo',markersize=4, label='Before Ren M') 
     plt.plot(agrid, Vc[0:len(agrid),zfi,zmi,psii,thi,ti],'r*',markersize=2,label='Before Ren C') 
-    plt.plot(agrid, V_ren_c,'y', markersize=4,label='After Ren C') 
-    plt.plot(agrid, V_ren_m,'k', linestyle='--',markersize=4, label='After Ren M') 
+    plt.plot(agrid, V_ren_c[:,0]*togc[0:len(agrid),zfi,zmi,psii,thi,ti],'y', markersize=4,label='After Ren C') 
+    plt.plot(agrid, V_ren_m*togm[0:len(agrid),zfi,zmi,psii,thi,ti],'k', linestyle='--',markersize=4, label='After Ren M') 
+    plt.plot(agrid, Vfs[0:len(agrid),zfi,ti],'r',markersize=2,label='Women') 
+    plt.plot(agrid, Vms[0:len(agrid),zmi,ti],'b',markersize=2,label='Man') 
     #plt.plot(agrid, Vm_div[0:len(agrid),zfi,zmi,ti],'b',markersize=2, label='Male Divorce')  
     #plt.plot(agrid, setup.thetagrid[thi]*Vf_div[0:len(agrid),zfi,zmi,thi]+(1-setup.thetagrid[thi])*Vm_div[0:len(agrid),zfi,zmi,thi],'r', linestyle='--',markersize=2,label='Female Divorce')  
+    plt.ylabel('Utility') 
+    plt.xlabel('Assets') 
+    #plt.title('Utility  Divorce costs: men=0.5, women=0.5') 
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3), 
+                  fancybox=True, shadow=True, ncol=3, fontsize='x-small') 
+    
+    
+        ########################################## 
+    # brining
+    ##########################################  
+    fig = plt.figure() 
+    f8=fig.add_subplot(2,1,1) 
+    plt.plot(agrid, brib1[0:len(agrid),zfi,zmi,psii,thi,ti]/agrid,'bo',markersize=4, label='spouse 1') 
+    plt.plot(agrid, brib2[0:len(agrid),zfi,zmi,psii,thi,ti]/agrid,'r*',markersize=4,label='spouse 2') 
+    plt.plot(agrid, (agrid-brib2[0:len(agrid),zfi,zmi,psii,thi,ti]-brib1[0:len(agrid),zfi,zmi,psii,thi,ti])/agrid,'r',markersize=2,label='share lost') 
+    #plt.plot(agrid, Vm_div[0:len(agrid),zfi,zmi,ti],'b',markersize=2, label='Male Divorce')  
+    #plt.plot(agrid, setup.thetagrid[thi]*Vf_div[0:len(agrid),zfi,zmi,thi]+(1-setup.thetagrid[thi])*Vm_div[0:len(agrid),zfi,zmi,thi],'r', linestyle='--',markersize=2,label='Female Divorce')
     plt.ylabel('Utility') 
     plt.xlabel('Assets') 
     #plt.title('Utility  Divorce costs: men=0.5, women=0.5') 
@@ -589,7 +646,7 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3), 
                   fancybox=True, shadow=True, ncol=2, fontsize='x-small') 
     plt.xlabel('Love') 
-    plt.ylabel('Theta') 
+    plt.ylabel('Theta ren') 
      
     ########################################## 
     # Thetas and Assets 

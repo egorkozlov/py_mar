@@ -67,7 +67,7 @@ def v_ren_bil(setup,V,marriage,t,return_extra=False,return_vdiv_only=False):
     vf_n, vm_n = v_div_byshare(
         setup, dc, t, sc, share_f, share_m,
         V['Male, single']['V'], V['Female, single']['V'],
-        izf, izm, cost_fem=dc.money_lost_f, cost_mal=dc.money_lost_m)
+        izf, izm, cost_fem=dc.assets_kept, cost_mal=dc.assets_kept)
     
     
     
@@ -140,7 +140,7 @@ def ren_bilateral_wrap(setup,vy,vfy,vmy,vfn,vmn,vf_all_s,vm_all_s,aleft_c,
     v_resc = vout # rescale does not happen here
     
     #if np.any(bribe):
-    #    print('Bribing happens in {}% of divorces'.format(round(100*np.mean(~yes & bribe)/np.mean(~yes))))
+     #   print('Bribing happens in {}% of divorces'.format(round(100*np.mean(~yes & bribe)/np.mean(~yes))))
     
     def r(x): return x      
     
@@ -153,7 +153,7 @@ def ren_bilateral_wrap(setup,vy,vfy,vmy,vfn,vmn,vf_all_s,vm_all_s,aleft_c,
     
                     
 
-#@njit
+@njit
 def ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,vfn_as,vmn_as,aleft_c,ia_f_def_s,ia_m_def_s,agrid_s,thtgrid):
     #print('bilateral hi!')
 
@@ -205,7 +205,7 @@ def ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,vfn_as,vmn_as,aleft_c,ia_f_def_s,ia_m_
                     vmout_div_def = vmn[ia,ie]
                     
                     if sf_i < 0 and sm_i < 0:                        
-                        vout[ia,ie,it] = vout_div_def
+                        vout[ia,ie,it]  = vout_div_def
                         vfout[ia,ie,it] = vfout_div_def
                         vmout[ia,ie,it] = vmout_div_def
                         continue
@@ -235,7 +235,7 @@ def ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,vfn_as,vmn_as,aleft_c,ia_f_def_s,ia_m_
                                     break
                                 
                                 found = False
-                                for ia_f_new in range(ia_f_new,-1,-1):
+                                for ia_f_new in range(ia_f_def,-1,-1):
                                     if agrid_s[ia_f_new] + agrid_s[ia_m_new] <= a_left:
                                         found=True
                                         break
@@ -259,7 +259,7 @@ def ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,vfn_as,vmn_as,aleft_c,ia_f_def_s,ia_m_
                                     break
                                 
                                 found = False
-                                for ia_m_new in range(ia_m_new,-1,-1):
+                                for ia_m_new in range(ia_m_def,-1,-1):
                                     if agrid_s[ia_m_new] + agrid_s[ia_f_new] <= a_left:
                                         found=True
                                         break
@@ -286,6 +286,7 @@ def ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,vfn_as,vmn_as,aleft_c,ia_f_def_s,ia_m_
                         bribe[ia,ie,it] = True
                         vfout[ia,ie,it] = vfn_as[ia_f_new,ie]
                         vmout[ia,ie,it] = vmn_as[ia_m_new,ie]
+
                         vout[ia,ie,it] = tht*vfn_as[ia_f_new,ie] + \
                                         (1-tht)*vmn_as[ia_m_new,ie]
                         
@@ -295,6 +296,12 @@ def ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,vfn_as,vmn_as,aleft_c,ia_f_def_s,ia_m_
                         
                         continue
                         
+    #ccc=agrid_s[iaout_f]+agrid_s[iaout_m]-aleft_c
+    #ccc[iaout_f==-1]=-1
+    #print(np.max(ccc))
+    #ccc[iaout_f==-1]=1000
+    #print(np.min(ccc))
+     
   #  print(aleft_c[bribe]-agrid_s[iaout_f[bribe]]-agrid_s[iaout_m[bribe]])
     return vout, vfout, vmout, thetaout, yes, ithetaout, bribe, iaout_f, iaout_m
     

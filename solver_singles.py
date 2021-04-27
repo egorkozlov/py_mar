@@ -68,8 +68,8 @@ def v_iter_single(setup,t,EV,female,ushift,force_f32=False):
     #if np.max(aaa/money)>0.01:
      #   print(np.max(aaa/money),np.min(aaa/money))
     
-    if np.any(abs(c_opt-x_opt)>0.00001):
-        print(abs(c_opt-x_opt)/money)
+    #if np.any(abs(c_opt-x_opt)>0.00001):
+    #    print(abs(c_opt-x_opt)/money)
    
     EVexp = setup.vsgrid_s.apply_preserve_shape(EV)
     V_ret = setup.u_single_pub(c_opt,x_opt,ls) + ushift + beta*np.take_along_axis(EVexp,i_opt,0)

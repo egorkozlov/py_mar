@@ -42,7 +42,7 @@ class ModelSetup(object):
         p['n_zf_correct']=1
         p['sigma_psi_mult'] = 0.28
         p['sigma_psi']   = 0.11
-        p['n_psi_t']     = [15]*T
+        p['n_psi_t']     = [9]*T
         p['R_t'] = [1.0**period_year]*T
         p['beta_t'] = [0.98**period_year]*T
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
@@ -467,7 +467,7 @@ class ModelSetup(object):
         
         
         # this builds finer grid for potential savings
-        s_between = 17 # default numer of points between poitns on agrid
+        s_between = 7 # default numer of points between poitns on agrid
         s_da_min = 0.005*self.scala # minimal step (does not create more points)
         s_da_max = 0.1*self.scala # maximal step (creates more if not enough)
         
@@ -637,11 +637,11 @@ class ModelSetup(object):
                 for t in range(self.pars['T']):
                     lagrid_t = np.zeros_like(agrid_c)
                     
-                    i_neg = (agrid_c <= max(abar,a-mena) - 1e-5)
+                    i_neg = (agrid_c <= max(abar,a-mena) - 1e-6)
                     
                     # if a is zero this works a bit weird but does the job
                     
-                    lagrid_t[~i_neg] = np.log(2e-5 + (agrid_c[~i_neg] - max((a-mena),0))/max(abar,a))#agrid_c[~i_neg]#
+                    lagrid_t[~i_neg] = np.log(2e-6 + (agrid_c[~i_neg] - max((a-mena),0))/max(abar,a))#agrid_c[~i_neg]#
                     
                     
                     lmin = lagrid_t[~i_neg].min()

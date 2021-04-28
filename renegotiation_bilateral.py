@@ -67,7 +67,7 @@ def v_ren_bil(setup,V,marriage,t,return_extra=False,return_vdiv_only=False):
     vf_n, vm_n = v_div_byshare(
         setup, dc, t, sc, share_f, share_m,
         V['Male, single']['V'], V['Female, single']['V'],
-        izf, izm, cost_fem=dc.assets_kept, cost_mal=dc.assets_kept)
+        izf, izm, cost_fem=1.0, cost_mal=1.0)
     
     
     
@@ -139,7 +139,7 @@ def ren_bilateral_wrap(setup,vy,vfy,vmy,vfn,vmn,vf_all_s,vm_all_s,aleft_c,
         
         
     #If equal grid
-    if np.all(abs(np.diff(setup.agrid_s)[0]-np.diff(setup.agrid_s))<1e-6):
+    if 1>2:#np.all(abs(np.diff(setup.agrid_s)[0]-np.diff(setup.agrid_s))<1e-6):
        
         print(1)
         vout, vfout, vmout, thetaout, yes, ithetaout, bribe, iaout_f, iaout_m = \
@@ -152,7 +152,7 @@ def ren_bilateral_wrap(setup,vy,vfy,vmy,vfn,vmn,vf_all_s,vm_all_s,aleft_c,
     else:
          print(2)
          vout, vfout, vmout, thetaout, yes, ithetaout, bribe, iaout_f, iaout_m = \
-            ren_loop_bilateral2(vy,vfy,vmy,vfn,vmn,
+            ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,
                                vf_all_s,vm_all_s,aleft_c,
                                ia_div_fem,ia_div_mal,
                                setup.agrid_s,
@@ -177,7 +177,7 @@ def ren_bilateral_wrap(setup,vy,vfy,vmy,vfn,vmn,vf_all_s,vm_all_s,aleft_c,
                     
 
 @njit
-def ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,vfn_as,vmn_as,aleft_c,ia_f_def_s,ia_m_def_s,agrid_s,thtgrid,vfn_as1,vmn_as1,gridf,gridi,grids):
+def ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,vfn_as,vmn_as,aleft_c,ia_f_def_s,ia_m_def_s,agrid_s,thtgrid):
     #print('bilateral hi!')
 
 
@@ -236,8 +236,8 @@ def ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,vfn_as,vmn_as,aleft_c,ia_f_def_s,ia_m_
                         # if only one person wants do divorce -- possible
                         # to find reallocation of assets such that both could
                         # agree.
-                        ia_m_def = gridf[ia_m_def_s[ia,ie,it]]#
-                        ia_f_def = gridf[ia_f_def_s[ia,ie,it]]#
+                        ia_m_def = ia_m_def_s[ia,ie,it]
+                        ia_f_def = ia_f_def_s[ia,ie,it]
                         
                         ia_m_new = ia_m_def
                         ia_f_new = ia_f_def
@@ -254,18 +254,18 @@ def ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,vfn_as,vmn_as,aleft_c,ia_f_def_s,ia_m_
                             #print('at point {} m bribes out'.format((ia,ie,it)))
                             # increase ia_m
                             for ia_m_new in range(ia_m_def+1,na_s):
-                                if grids[ia_m_new] > a_left:
+                                if agrid_s[ia_m_new] > a_left:
                                     break
                                 
                                 found = False
-                                for ia_f_new in range(ia_f_new,-1,-1):
-                                    if grids[ia_f_new] + grids[ia_m_new] <= a_left+1e-06:
+                                for ia_f_new in range(ia_f_def,-1,-1):
+                                    if agrid_s[ia_f_new] + agrid_s[ia_m_new] <= a_left:
                                         found=True
                                         break
                                     
                                 if found:
-                                    sf_i_new  = vfy[ia,ie,it] - vfn_as1[ia_f_new,ie]
-                                    sm_i_new  = vmy[ia,ie,it] - vmn_as1[ia_m_new,ie]
+                                    sf_i_new  = vfy[ia,ie,it] - vfn_as[ia_f_new,ie]
+                                    sm_i_new  = vmy[ia,ie,it] - vmn_as[ia_m_new,ie]
                                     if sf_i_new < 0 and sm_i_new < 0:
                                         do_divorce = True
                                         #print('divorce happens: f bribes out!')
@@ -278,28 +278,24 @@ def ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,vfn_as,vmn_as,aleft_c,ia_f_def_s,ia_m_
                             # m bribes out
                             # increase ia_f
                             for ia_f_new in range(ia_f_def+1,na_s):
-                                if grids[ia_f_new] > a_left:
+                                if agrid_s[ia_f_new] > a_left:
                                     break
                                 
                                 found = False
-                                for ia_m_new in range(ia_m_new,-1,-1):
-                                    
-                                   
-                                    if grids[ia_m_new] + grids[ia_f_new] <= a_left+1e-06:
-                                        
+                                for ia_m_new in range(ia_m_def,-1,-1):
+                                    if agrid_s[ia_m_new] + agrid_s[ia_f_new] <= a_left:
                                         found=True
                                         break
                                     
                                 if found:
-                                    sf_i_new  = vfy[ia,ie,it] - vfn_as1[ia_f_new,ie]
-                                    sm_i_new  = vmy[ia,ie,it] - vmn_as1[ia_m_new,ie]
+                                    sf_i_new  = vfy[ia,ie,it] - vfn_as[ia_f_new,ie]
+                                    sm_i_new  = vmy[ia,ie,it] - vmn_as[ia_m_new,ie]
                                     if sf_i_new < 0 and sm_i_new < 0:
                                         do_divorce = True
                                         #print('divorce happens: m bribes out!')
                                         #print((ia_m_def,sm_i,ia_f_def,sf_i))
                                         #print((ia_f_new,sf_i_new,ia_m_new,sm_i_new))
                                         break
-                                   
                         
                                 
                         if not do_divorce:
@@ -311,14 +307,14 @@ def ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,vfn_as,vmn_as,aleft_c,ia_f_def_s,ia_m_
                         # else we do_divorce   
                         assert found
                         bribe[ia,ie,it] = True
-                        vfout[ia,ie,it] = vfn_as1[ia_f_new,ie]
-                        vmout[ia,ie,it] = vmn_as1[ia_m_new,ie]
+                        vfout[ia,ie,it] = vfn_as[ia_f_new,ie]
+                        vmout[ia,ie,it] = vmn_as[ia_m_new,ie]
 
-                        vout[ia,ie,it] = tht*vfn_as1[ia_f_new,ie] + \
-                                        (1-tht)*vmn_as1[ia_m_new,ie]
+                        vout[ia,ie,it] = tht*vfn_as[ia_f_new,ie] + \
+                                        (1-tht)*vmn_as[ia_m_new,ie]
                         
-                        iaout_f[ia,ie,it] = gridi[ia_f_new]
-                        iaout_m[ia,ie,it] = gridi[ia_m_new]
+                        iaout_f[ia,ie,it] = ia_f_new
+                        iaout_m[ia,ie,it] = ia_m_new
                         
                         
                         continue
@@ -331,6 +327,7 @@ def ren_loop_bilateral(vy,vfy,vmy,vfn,vmn,vfn_as,vmn_as,aleft_c,ia_f_def_s,ia_m_
      
   #  print(aleft_c[bribe]-agrid_s[iaout_f[bribe]]-agrid_s[iaout_m[bribe]])
     return vout, vfout, vmout, thetaout, yes, ithetaout, bribe, iaout_f, iaout_m
+    
     
 @njit
 def ren_loop_bilateral1(vy,vfy,vmy,vfn,vmn,vfn_as,vmn_as,aleft_c,ia_f_def_s,ia_m_def_s,agrid_s,thtgrid,vfn_as1,vmn_as1,gridf,gridi,grids):

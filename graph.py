@@ -185,8 +185,12 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     
     #Brining
    
-    brib1t=v_reshape(setup,'Couple, M','Bribing',dec,T-1,1)
-    brib2t=v_reshape(setup,'Couple, M','Bribing',dec,T-1,2)
+    if setup.div_costs.unilateral_divorce:
+        brib1t=v_reshape(setup,'Couple, M','thetas',dec,T-1,1)
+        brib2t=v_reshape(setup,'Couple, M','thetas',dec,T-1,2)
+    else:
+        brib1t=v_reshape(setup,'Couple, M','Bribing',dec,T-1,1)
+        brib2t=v_reshape(setup,'Couple, M','Bribing',dec,T-1,2)
     
     brib1=agrids[brib1t]
     brib2=agrids[brib2t]
@@ -342,22 +346,24 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
      
      
     ########################################## 
-    # Value Function and Assets 
+    # FLS and Assets 
     ##########################################  
     fig = plt.figure() 
-    f6=fig.add_subplot(2,1,1) 
-    plt.plot(agrid, (Vmm[0:len(agrid),zfi,zmi,psii,thi,ti]*(-0.5))**(-2),'bo',markersize=6,markevery=5, label='Man, Marriage') 
-    plt.plot(agrid, (Vmc[0:len(agrid),zfi,zmi,psii,thi,ti]*(-0.5))**(-2),'b',linewidth=0.4, label='Man, Cohabitation') 
-    plt.plot(agrid, (Vfc[0:len(agrid),zfi,zmi,psii,thi,ti]*(-0.5))**(-2),'r',linewidth=0.4, label='Women, Cohabitation') 
-    plt.plot(agrid, (Vfm[0:len(agrid),zfi,zmi,psii,thi,ti]*(-0.5))**(-2),'r*',markersize=6,markevery=5,label='Women, Marriage') 
-    plt.plot(agrid, (Vfs[0:len(agrid),zfi,ti]*(-0.5))**(-2),'r*',markersize=6,markevery=5,label='Women') 
-    plt.plot(agrid, (Vms[0:len(agrid),zmi,ti]*(-0.5))**(-2),'b',markersize=6,markevery=5,label='Man') 
+    f4=fig.add_subplot(2,1,1) 
+    graphc=[None] * len(setup.agrid_c) 
+    graphm=[None] * len(setup.agrid_c) 
+     
+    for i in range(len(setup.thetagrid)): 
+        graphc[i]=setup.ls_levels[flsc[i,zfi,zmi,psii,thi,ti]] 
+        graphm[i]=setup.ls_levels[flsm[i,zfi,zmi,psii,thi,ti]] 
+     
+    plt.plot(setup.agrid_c,graphm,'k',markersize=6, label='Marriage') 
+    plt.plot(setup.agrid_c, graphc,'r*',markersize=6,label='Cohabitation') 
     #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral') 
-    plt.ylabel('Utility tr') 
-    plt.xlabel('Assets') 
-    #plt.title('Utility  Divorce costs: men=0.5, women=0.5') 
+    plt.xlabel('assets') 
+    plt.ylabel('FLS') 
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3), 
-                  fancybox=True, shadow=True, ncol=4, fontsize='x-small') 
+                  fancybox=True, shadow=True, ncol=2, fontsize='x-small') 
     
     
     #Brining

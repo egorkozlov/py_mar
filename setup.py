@@ -26,7 +26,7 @@ class ModelSetup(object):
         Tret = int(43/period_year)#int(42/period_year) # first period when the agent is retired
         Tbef=int(1/period_year)
         Tren  = int(43/period_year)#int(42/period_year)#int(42/period_year) # period starting which people do not renegotiate/divroce
-        Tmeet = int(1/period_year)#int(42/period_year)#int(42/period_year) # period starting which you do not meet anyone
+        Tmeet = int(43/period_year)#int(42/period_year)#int(42/period_year) # period starting which you do not meet anyone
         p['py']=period_year
         p['ty']=transform
         p['T'] = T
@@ -42,7 +42,7 @@ class ModelSetup(object):
         p['n_zf_correct']=1
         p['sigma_psi_mult'] = 0.28
         p['sigma_psi']   = 0.11
-        p['n_psi_t']     = [7]*T
+        p['n_psi_t']     = [15]*T
         p['R_t'] = [1.0**period_year]*T
         p['beta_t'] = [0.98**period_year]*T
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
@@ -438,7 +438,7 @@ class ModelSetup(object):
         self.amax1 = 80*self.scala
         self.agrid_c = np.linspace(self.amin,self.amax,self.na,dtype=self.dtype)
         tune=0.0012#0.0000010# good30.5
-        self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
+        #self.agrid_c = np.geomspace(self.amin+tune,self.amax+tune,num=self.na)-tune
         #self.agrid_c[-1]=self.amax1
         #self.agrid_c[-2]=80*self.scala
         
@@ -497,14 +497,23 @@ class ModelSetup(object):
         self.sgrid_s = build_s_grid(self.agrid_s,s_between,s_da_min,s_da_max)
         self.vsgrid_s = VecOnGrid(self.agrid_s,self.sgrid_s)
         
+        #Get indexes from fine back to coarse thetagrid
+        self.sgrid_s2 = build_s_grid(np.concatenate((self.agrid_s,np.max(self.agrid_s)+self.agrid_s[1:]),axis=0),37,0.0000000001,100)
+        self.vsgrid_s2 = VecOnGrid(self.agrid_s,self.sgrid_s2)
+        self.isgrid=np.zeros(self.agrid_s.shape,dtype=np.int32)
+        for i in range(len(self.agrid_s)):self.isgrid[i]=np.where(self.sgrid_s2==self.agrid_s[i])[0][0]
+        
+    
+        ################à
         # grid for theta
-        self.ntheta = 11
+        #################
+        self.ntheta = 13
         self.thetamin = 0.1
         self.thetamax = 0.9
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta,dtype=self.dtype)
         
         #Grid for the share in assets
-        self.ashare = np.linspace(0.49999,0.50001,3,dtype=self.dtype)#self.ashare = np.linspace(0.15,0.85,3,dtype=self.dtype)
+        self.ashare = np.linspace(0.05,0.95,3,dtype=self.dtype)#self.ashare = np.linspace(0.15,0.85,3,dtype=self.dtype)
         
         
         
@@ -512,7 +521,7 @@ class ModelSetup(object):
         
         
         # construct finer grid for bargaining
-        ntheta_fine = 3*self.ntheta # actual number may be a bit bigger
+        ntheta_fine = 1*self.ntheta # actual number may be a bit bigger
         self.thetagrid_fine = np.unique(np.concatenate( (self.thetagrid,np.linspace(self.thetamin,self.thetamax,ntheta_fine,dtype=self.dtype)) ))
         self.ntheta_fine = self.thetagrid_fine.size
         
@@ -867,7 +876,7 @@ class ModelSetup(object):
     
     
     def u_pub(self,x,l,mt=0.0):
-        alp = 1.0#self.pars['util_alp_m']
+        alp = self.pars['util_alp_m']
         xi = self.pars['util_xi']
         lam = self.pars['util_lam']
         kap = self.pars['util_kap_m']        
@@ -894,7 +903,7 @@ class ModelSetup(object):
     def u_precompute(self):
         from intratemporal import int_sol
         sig = self.pars['crra_power']
-        alp = 1.0#self.pars['util_alp_m']
+        alp = self.pars['util_alp_m']
         xi = self.pars['util_xi']
         lam = self.pars['util_lam']
         kap = self.pars['util_kap_m']

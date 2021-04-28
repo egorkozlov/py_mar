@@ -199,16 +199,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     transition_matricesm=get_transition(age_uni['male'],welf)
 
 
-        
-    ai=0
-    zfi=0
-    zmi=0
-    psii=0
-    ti=2
-    thi=0
-      
-    #Actual Graphs
-    mdl.graph(ai,zfi,zmi,psii,ti,thi)    
+  
    
     #Get Number of simulated agent, malea and female
     N=30000#120000

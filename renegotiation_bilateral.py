@@ -67,7 +67,7 @@ def v_ren_bil(setup,V,marriage,t,return_extra=False,return_vdiv_only=False):
     vf_n, vm_n = v_div_byshare(
         setup, dc, t, sc, share_f, share_m,
         V['Male, single']['V'], V['Female, single']['V'],
-        izf, izm, cost_fem=1.0, cost_mal=1.0)
+        izf, izm, cost_fem=dc.assets_kept, cost_mal=dc.assets_kept)
     
     
     
@@ -139,7 +139,7 @@ def ren_bilateral_wrap(setup,vy,vfy,vmy,vfn,vmn,vf_all_s,vm_all_s,aleft_c,
         
         
     #If equal grid
-    if 1>2:#np.all(abs(np.diff(setup.agrid_s)[0]-np.diff(setup.agrid_s))<1e-6):
+    if np.all(abs(np.diff(setup.agrid_s)[0]-np.diff(setup.agrid_s))<1e-6):
        
         print(1)
         vout, vfout, vmout, thetaout, yes, ithetaout, bribe, iaout_f, iaout_m = \

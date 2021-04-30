@@ -183,20 +183,24 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     #togm[ithetam_R.copy()!=-1]= 1.0
     #togc[ithetac_R.copy()!=-1]= 1.0
     
-    #Brining
-   
-    if setup.div_costs.unilateral_divorce:
-        brib1t=v_reshape(setup,'Couple, M','thetas',dec,T-1,1)
-        brib2t=v_reshape(setup,'Couple, M','thetas',dec,T-1,2)
-    else:
-        brib1t=v_reshape(setup,'Couple, M','Bribing',dec,T-1,1)
-        brib2t=v_reshape(setup,'Couple, M','Bribing',dec,T-1,2)
+    # #Brining  
+    # if setup.div_costs.unilateral_divorce:
+    #     brib1t=v_reshape(setup,'Couple, M','thetas',dec,T-1,1)
+    #     brib2t=v_reshape(setup,'Couple, M','thetas',dec,T-1,2)
+    # else:
+    #     brib1t=v_reshape(setup,'Couple, M','thetas',dec,T-1,1)
+    #     brib2t=v_reshape(setup,'Couple, M','thetas',dec,T-1,2)
     
-    brib1=agrids[brib1t]
-    brib2=agrids[brib2t]
-    brib1[brib1t==-1]=None
-    brib2[brib2t==-1]=None
+    # brib1=agrids[brib1t]
+    # brib2=agrids[brib2t]
+    # brib1[brib1t==-1]=None
+    # brib2[brib2t==-1]=None
     
+    #Assdev
+    try: 
+        assdev=v_reshape(setup,'Couple, C','assdev',dec,T-1)
+    except:
+        assdev=np.ones(v_reshape(setup,'Couple, C','thetas',dec,T-1).shape)
     
      
      
@@ -366,7 +370,33 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
                   fancybox=True, shadow=True, ncol=2, fontsize='x-small') 
     
     
-    #Brining
+    # ########################################## 
+    # # Assdev and Assets 
+    # ########################################## 
+    # fig = plt.figure() 
+    # f6=fig.add_subplot(2,1,1) 
+    # plt.plot(agrid, assdev[0:len(agrid),zfi,zmi,psii,thi,ti],'bo',markersize=6,markevery=5, label='Man, Marriage') 
+    # plt.plot(agrid, assdev[0:len(agrid),zfi,zmi,psii,thi,ti],'b',linewidth=0.4, label='Man, Cohabitation') 
+    # #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral') 
+    # plt.ylabel('assdev') 
+    # plt.xlabel('Assets') 
+    # #plt.title('Utility  Divorce costs: men=0.5, women=0.5') 
+    # plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3), 
+    #               fancybox=True, shadow=True, ncol=4, fontsize='x-small')
+    
+    # ########################################## 
+    # # Assdev and theta
+    # ########################################## 
+    # fig = plt.figure() 
+    # f6=fig.add_subplot(2,1,1) 
+    # plt.plot(setup.thetagrid, assdev[ai,zfi,zmi,psii,:,ti],'bo',markersize=6,markevery=5, label='Man, Marriage') 
+    # plt.plot(setup.thetagrid, assdev[ai,zfi,zmi,psii,:,ti],'b',linewidth=0.4, label='Man, Cohabitation') 
+    # #plt.axvline(x=treb, color='b', linestyle='--', label='Tresh Bilateral') 
+    # plt.ylabel('assdev') 
+    # plt.xlabel('Assets') 
+    # #plt.title('Utility  Divorce costs: men=0.5, women=0.5') 
+    # plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3), 
+    #               fancybox=True, shadow=True, ncol=4, fontsize='x-small')
     
      ########################################## 
     # thetan and Assets 
@@ -450,19 +480,19 @@ def graphs(mdl,ai,zfi,zmi,psii,ti,thi):
     
         ########################################## 
     # brining
-    ##########################################  
-    fig = plt.figure() 
-    f8=fig.add_subplot(2,1,1) 
-    plt.plot(agrid, brib1[0:len(agrid),zfi,zmi,psii,thi,ti]/agrid,'bo',markersize=4, label='spouse 1') 
-    plt.plot(agrid, brib2[0:len(agrid),zfi,zmi,psii,thi,ti]/agrid,'r*',markersize=4,label='spouse 2') 
-    plt.plot(agrid, (agrid-brib2[0:len(agrid),zfi,zmi,psii,thi,ti]-brib1[0:len(agrid),zfi,zmi,psii,thi,ti])/agrid,'r',markersize=2,label='share lost') 
-    #plt.plot(agrid, Vm_div[0:len(agrid),zfi,zmi,ti],'b',markersize=2, label='Male Divorce')  
-    #plt.plot(agrid, setup.thetagrid[thi]*Vf_div[0:len(agrid),zfi,zmi,thi]+(1-setup.thetagrid[thi])*Vm_div[0:len(agrid),zfi,zmi,thi],'r', linestyle='--',markersize=2,label='Female Divorce')
-    plt.ylabel('Utility') 
-    plt.xlabel('Assets') 
-    #plt.title('Utility  Divorce costs: men=0.5, women=0.5') 
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3), 
-                  fancybox=True, shadow=True, ncol=3, fontsize='x-small') 
+    # ##########################################  
+    # fig = plt.figure() 
+    # f8=fig.add_subplot(2,1,1) 
+    # plt.plot(agrid, brib1[0:len(agrid),zfi,zmi,psii,thi,ti]/agrid,'bo',markersize=4, label='spouse 1') 
+    # plt.plot(agrid, brib2[0:len(agrid),zfi,zmi,psii,thi,ti]/agrid,'r*',markersize=4,label='spouse 2') 
+    # plt.plot(agrid, (agrid-brib2[0:len(agrid),zfi,zmi,psii,thi,ti]-brib1[0:len(agrid),zfi,zmi,psii,thi,ti])/agrid,'r',markersize=2,label='share lost') 
+    # #plt.plot(agrid, Vm_div[0:len(agrid),zfi,zmi,ti],'b',markersize=2, label='Male Divorce')  
+    # #plt.plot(agrid, setup.thetagrid[thi]*Vf_div[0:len(agrid),zfi,zmi,thi]+(1-setup.thetagrid[thi])*Vm_div[0:len(agrid),zfi,zmi,thi],'r', linestyle='--',markersize=2,label='Female Divorce')
+    # plt.ylabel('Utility') 
+    # plt.xlabel('Assets') 
+    # #plt.title('Utility  Divorce costs: men=0.5, women=0.5') 
+    # plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3), 
+    #               fancybox=True, shadow=True, ncol=3, fontsize='x-small') 
      
     ########################################## 
     # Consumption and Assets 

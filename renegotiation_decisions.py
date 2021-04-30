@@ -268,7 +268,7 @@ def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, ith
         vf_y_ni_0 = vf_y_ni[0]
         vm_y_ni_0 = vm_y_ni[0]
         
-    
+  
     dtype = v_y_ni.dtype
     
         
@@ -407,18 +407,18 @@ def v_ren_core_two_opts_with_int(v_y_ni, vf_y_ni, vm_y_ni, vf_n_ni, vm_n_ni, ith
                                 break
                         
                     
-                    # if found_increase and found_decrease:
-                    #     dist_increase = it_increase - it
-                    #     dist_decrease = it - it_decrease
+                    if found_increase and found_decrease:
+                        dist_increase = it_increase - it
+                        dist_decrease = it - it_decrease
                         
-                    #     if dist_increase != dist_decrease:
-                    #         it_ren = it_increase if dist_increase < dist_decrease else it_decrease
-                    #     else:
-                    #         # tie breaker
-                    #         dist_mid_inc = np.abs(it_increase - (nt/2))
-                    #         dist_mid_dec = np.abs(it_decrease - (nt/2))
-                    #         #it_ren = it_increase if dist_mid_inc < dist_mid_dec else it_decrease
-                    #         it_ren = it_decrease if dist_mid_inc > dist_mid_dec else it_increase
+                        if dist_increase != dist_decrease:
+                            it_ren = it_increase if dist_increase < dist_decrease else it_decrease
+                        else:
+                            # tie breaker
+                            dist_mid_inc = np.abs(it_increase - (nt/2))
+                            dist_mid_dec = np.abs(it_decrease - (nt/2))
+                            #it_ren = it_increase if dist_mid_inc < dist_mid_dec else it_decrease
+                            it_ren = it_decrease if dist_mid_inc > dist_mid_dec else it_increase
                            
                             
                         

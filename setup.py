@@ -43,21 +43,21 @@ class ModelSetup(object):
         p['sigma_psi_mult'] = 0.28
         p['sigma_psi']   = 0.11
         p['n_psi_t']     = [9]*T
-        p['R_t'] = [1.0**period_year]*T
+        p['R_t'] = [1.02**period_year]*T
         p['beta_t'] = [0.98**period_year]*T
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.0 
-        p['sig_partner_a'] = 0.1#0.05
+        p['sig_partner_a'] = 0.1#0.1#0.05
         p['sig_partner_zf'] = 1.5#4.0#1.8#0.4 #This is crazy powerful for the diff in diff estimate
         p['sig_partner_zm'] = 0.95#0.5
         p['sig_partner_mult'] = 1.0
         p['dump_factor_z'] = 0.25#0.85
-        p['dump_factor_a'] = 0.8#0.65
+        p['dump_factor_a'] = 0.6#0.65
         p['mean_partner_z_female'] = 0.01#0.05#0.02
         p['mean_partner_z_male'] =  -0.03#0.01#-0.02
-        p['mean_partner_a_female'] = 0.22#0.3
-        p['mean_partner_a_male'] = -0.22#-0.3
+        p['mean_partner_a_female'] = 0.3#0.22#0.3
+        p['mean_partner_a_male'] = -0.3#-0.22#-0.3
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
         
@@ -507,13 +507,13 @@ class ModelSetup(object):
         ################à
         # grid for theta
         #################
-        self.ntheta = 13
-        self.thetamin = 0.1
-        self.thetamax = 0.9
+        self.ntheta = 11
+        self.thetamin = 0.01
+        self.thetamax = 0.99
         self.thetagrid = np.linspace(self.thetamin,self.thetamax,self.ntheta,dtype=self.dtype)
         
         #Grid for the share in assets
-        self.ashare = np.linspace(0.05,0.95,3,dtype=self.dtype)#self.ashare = np.linspace(0.15,0.85,3,dtype=self.dtype)
+        self.ashare = np.linspace(0.35,0.65,3,dtype=self.dtype)#self.ashare = np.linspace(0.15,0.85,3,dtype=self.dtype)
         
         
         
@@ -521,7 +521,7 @@ class ModelSetup(object):
         
         
         # construct finer grid for bargaining
-        ntheta_fine = 1*self.ntheta # actual number may be a bit bigger
+        ntheta_fine = 3*self.ntheta # actual number may be a bit bigger
         self.thetagrid_fine = np.unique(np.concatenate( (self.thetagrid,np.linspace(self.thetamin,self.thetamax,ntheta_fine,dtype=self.dtype)) ))
         self.ntheta_fine = self.thetagrid_fine.size
         
@@ -629,8 +629,9 @@ class ModelSetup(object):
         for female in [True,False]:
             prob_a_mat = np.zeros((self.pars['T'],na,npoints),dtype=self.dtype)
             i_a_mat = np.zeros((self.pars['T'],na,npoints),dtype=np.int16)
-            #mena=-0.29 if female else 0.29
-            mena=-0.15 if female else 0.15
+            mena=-0.29 if female else 0.29
+            #mena=-0.15 if female else 0.15
+            #mena=-0.02 if female else 0.02
             
             
             for ia, a in enumerate(agrid_s):
@@ -661,11 +662,10 @@ class ModelSetup(object):
                         
                     #p_a = int_prob(lagrid_t,mu=mean,sig=st,n_points=npoints)
                     p_a = int_prob(lagrid_t,mu=mean,sig=st**0.5,n_points=npoints)
-                    
+                   
                     
                     p_a  = int_prob(lagrid_t, mu=self.pars['dump_factor_a']*mean
-                                      ,sig=(1-self.pars['dump_factor_a'])**
-                                      0.5*s_a_partner*self.pars['sig_partner_mult'],n_points=npoints)
+                                      ,sig=(1-self.pars['dump_factor_a'])**0.5*s_a_partner*self.pars['sig_partner_mult'],n_points=npoints)
                      
                     i_pa = (-p_a).argsort()[:npoints] # this is more robust then nonzero
                     p_pa = p_a[i_pa]

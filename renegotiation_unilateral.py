@@ -194,7 +194,7 @@ def v_div_allsplits(setup,dc,t,sc,Vmale,Vfemale,izm,izf,
     # find utilities of divorce for different divisions of assets
     for i, shr in enumerate(shrs):
         sv_m,wm = interp_npp(setup.agrid_s,shr*sc*(cost_mal),trim_half=True)
-        sv_f,wf = interp_npp(setup.agrid_s,shr*sc*(cost_mal),trim_half=True)
+        sv_f,wf = interp_npp(setup.agrid_s,shr*sc*(cost_fem),trim_half=True)
         
         for zz in range(setup.pars['n_zm_t'][t]):Vm_divorce_M[:,(izm==zz),i] = np.reshape(np.repeat(Vmale[sv_m,zz]*(1-wm)+Vmale[sv_m+1,zz]*wm     - dc.u_lost_m,np.sum(izm==zz)),Vm_divorce_M[:,(izm==zz),i].shape)
         for zz in range(setup.pars['n_zf_t'][t]):Vf_divorce_M[:,(izf==zz),i] = np.reshape(np.repeat(Vfemale[sv_f,zz]*(1-wf)+Vfemale[sv_f+1,zz]*wf - dc.u_lost_f,np.sum(izf==zz)),Vf_divorce_M[:,(izf==zz),i].shape)

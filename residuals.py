@@ -262,6 +262,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
  
     
     #if verbose:
+    print('Params are {}'.format(x))    
     print('data moments are {}'.format(dat))
     print('simulated moments are {}'.format(sim))
     
@@ -272,7 +273,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
     resid_sc = resid_all*np.sqrt(np.diag(W)) # resid_all**2*np.diag(W)#all residuals scaled
     
     dist = np.dot(np.dot(resid_all,W),resid_all)
-
+    #resid_all**2*np.diag(W)
 
     print('Distance is {}'.format(dist))
     

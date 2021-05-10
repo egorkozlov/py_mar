@@ -48,16 +48,16 @@ class ModelSetup(object):
         p['A'] = 1.0 # consumption in couple: c = (1/A)*[c_f^(1+rho) + c_m^(1+rho)]^(1/(1+rho))
         p['crra_power'] = 1.5
         p['couple_rts'] = 0.0 
-        p['sig_partner_a'] = 0.1#0.1#0.05
+        p['sig_partner_a'] = 0.15#0.1#0.05
         p['sig_partner_zf'] = 1.5#4.0#1.8#0.4 #This is crazy powerful for the diff in diff estimate
         p['sig_partner_zm'] = 0.95#0.5
         p['sig_partner_mult'] = 1.0
         p['dump_factor_z'] = 0.25#0.85
-        p['dump_factor_a'] = 0.6#0.65
+        p['dump_factor_a'] = 0.5#0.65
         p['mean_partner_z_female'] = 0.01#0.05#0.02
         p['mean_partner_z_male'] =  -0.03#0.01#-0.02
-        p['mean_partner_a_female'] = 0.3#0.22#0.3
-        p['mean_partner_a_male'] = -0.3#-0.22#-0.3
+        p['mean_partner_a_female'] = 0.0195#0.018#0.22#0.3
+        p['mean_partner_a_male'] = -0.0195#-0.018#-0.22#-0.3
         p['m_bargaining_weight'] = 0.5
         p['pmeet'] = 0.5
         
@@ -521,7 +521,7 @@ class ModelSetup(object):
         
         
         # construct finer grid for bargaining
-        ntheta_fine = 3*self.ntheta # actual number may be a bit bigger
+        ntheta_fine = 1*self.ntheta # actual number may be a bit bigger
         self.thetagrid_fine = np.unique(np.concatenate( (self.thetagrid,np.linspace(self.thetamin,self.thetamax,ntheta_fine,dtype=self.dtype)) ))
         self.ntheta_fine = self.thetagrid_fine.size
         
@@ -653,11 +653,11 @@ class ModelSetup(object):
                     # TODO: this needs to be checked
                     if female:
                         me=self.pars['av_a_m'][min(t,61)]
-                        mean=self.pars['mean_partner_a_female']#a*1.6+me*0.4#np.log(2e-6 + ( me)/max(abar,a))#
+                        mean=self.pars['mean_partner_a_female']*(t+10)#a*1.6+me*0.4#np.log(2e-6 + ( me)/max(abar,a))#
                         st=2.5*max(np.std((2e-6 + (self.pars['totm'][min(t,61)]))),0.01)#max(np.std(np.log(2e-6 + (self.pars['totm'][t])/max(abar,a))),0.001)#s_a_partner
                     else:
                         me=self.pars['av_a_f'][min(t,61)]
-                        mean=self.pars['mean_partner_a_male']#(a*1.6*0.95+me*0.4)#np.log(2e-6 + (me )/max(abar,a))#
+                        mean=self.pars['mean_partner_a_male']*(t+10)#(a*1.6*0.95+me*0.4)#np.log(2e-6 + (me )/max(abar,a))#
                         st=max(np.std((2e-6 + (self.pars['totf'][min(t,61)]))),0.01)#max(np.std(np.log(2e-6 + (self.pars['totf'][t])/max(abar,a))),0.001)#s_a_partner
                         
                     #p_a = int_prob(lagrid_t,mu=mean,sig=st,n_points=npoints)

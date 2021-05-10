@@ -64,6 +64,8 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
     betam=np.reshape(np.repeat(betag,len(state[:,0])),(len(state[:,0]),len(betag)),order='F')   
     durf=agents.duf
     #agegrid=np.reshape(agegridtemp,resha)   
+    
+
        
     #Fill psi and ushift here   
     for i in range(len(state[0,:])):   
@@ -90,6 +92,12 @@ def moment(mdl_list,agents,agents_male,draw=True,validation=False):
         assetss_w=mdl.setup.agrid_s[agents.iassetss]   
         assetss_w[agents.state<=1]=mdl.setup.agrid_s[agents.iassetss[agents.state<=1]]   
         changep_w=agents.policy_ind    
+        
+        #Compare blundell and pistaferri, prenston consumption growth variance
+        bau=np.zeros(np.diff(state).shape)
+        bau[(np.diff(state)==0) & (state[:,1:]==2)]=1
+        varc=np.var(np.diff(np.log(cons+agents.x))[bau==1])
+        print('the variance of consumption for married is {}'.format(varc))
         
         #Wages
         ifemale0=(female_w[:,0]==1)  

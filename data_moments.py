@@ -177,7 +177,7 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
     mare['how']=-1    
     mare['mar']=-1       
     mare['cohmar']=-1
-    mare['cohmar1']=-1
+    #mare['cohmar1']=-1
     for i in range(9):    
         mare.loc[(i+1==mare['rel']),'beg']=mare.loc[(i+1==mare['rel']),'MARDAT0'+str(i+1)]    
         mare.loc[(i+1==mare['rel']),'endd']=mare.loc[(i+1==mare['rel']),'ENDDAT0'+str(i+1)]    
@@ -194,6 +194,7 @@ def compute(hi,d_hrs,d_divo,period=3,transform=1):
     mare['cohb']=0
     mare.loc[(mare['cohmar']=='cohab') | (mare['cohmar']=='Yes') ,'cohb']=1  
     
+ 
     #mare['cohb1']=0
     #mare.loc[mare['cohmar1']=='coh','cohb1']=1 
     

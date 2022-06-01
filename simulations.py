@@ -508,28 +508,28 @@ class Agents:
                     zm_grid = self.setup.exo_grids['Male, single'][t]
                     
                     
-                    if self.cond:
-                        dece=self.Mlist[ipol].decisions[t-1]['Couple, C']
+                    # if self.cond:
+                    #     dece=self.Mlist[ipol].decisions[t-1]['Couple, C']
                         
-                        if len(dece['thetas'].shape)>3:
-                            dece1 = np.take_along_axis(dece['Decision'],dece['assdev'][:,:,self.setup.igridcoarse,None],axis=-1).squeeze(axis=-1)
-                        else:
-                            dece1=dece['Decision']
+                    #     if len(dece['thetas'].shape)>3:
+                    #         dece1 = np.take_along_axis(dece['Decision'],dece['assdev'][:,:,self.setup.igridcoarse,None],axis=-1).squeeze(axis=-1)
+                    #     else:
+                    #         dece1=dece['Decision']
                            
                      
-                        if len(dece['thetas'].shape)>3:
-                            imaro = np.take_along_axis(dece['Cohabitation preferred to Marriage'],dece['assdev'][:,:,self.setup.igridcoarse,None],axis=-1).squeeze(axis=-1)[isc,iall,thts]
-                        else:
-                            imaro =dece['Cohabitation preferred to Marriage'][isc,iall,thts]
-                        #i_stay=dece1[isc,iall]
+                    #     if len(dece['thetas'].shape)>3:
+                    #         imaro = np.take_along_axis(dece['Cohabitation preferred to Marriage'],dece['assdev'][:,:,self.setup.igridcoarse,None],axis=-1).squeeze(axis=-1)[isc,iall,thts]
+                    #     else:
+                    #         imaro =dece['Cohabitation preferred to Marriage'][isc,iall,thts]
+                    #     #i_stay=dece1[isc,iall]
                         
-                        i_div = (~dece1[isc,iall]) | (i_div) | (~imaro) if dece1.ndim==2 else (~dece1[isc,iall,itht]) | (i_div) | (~imaro)
-                        i_ren = (i_ren) & (~i_div)
-                        i_renf = (i_renf) & (~i_div)
-                        i_renm = (i_renm) & (~i_div)
-                        i_sq = (i_sq) & (~i_div)
-                        i_stay= (i_stay) & (~i_div)
-                        #i_div = i_stay 
+                    #     i_div = (~dece1[isc,iall]) | (i_div) | (~imaro) if dece1.ndim==2 else (~dece1[isc,iall,itht]) | (i_div) | (~imaro)
+                    #     i_ren = (i_ren) & (~i_div)
+                    #     i_renf = (i_renf) & (~i_div)
+                    #     i_renm = (i_renm) & (~i_div)
+                    #     i_sq = (i_sq) & (~i_div)
+                    #     i_stay= (i_stay) & (~i_div)
+                    #     #i_div = i_stay 
                         
                     
                     if np.any(i_div):

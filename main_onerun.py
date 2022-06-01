@@ -21,6 +21,8 @@ if __name__ == '__main__':
  
  
 from platform import system
+import warnings
+warnings.filterwarnings("ignore")
      
 import os
 if system() != 'Darwin' and system() != 'Windows':      
@@ -90,7 +92,7 @@ if __name__ == '__main__':
 
 
     #(199)-very very good
-    x0 = np.array([0.797307,0.0762312,0.57978,0.2577448,1.0199598,-0.0551496,-0.0789312,1.14015])
+    x0 = np.array([0.797307,0.762312,2.17978,0.377448,1.19598,-0.151496,-0.0789312,1.14015])
    
     #x0 = np.array([0.797307,0.762312,2.17978,0.377448,1.19598,-0.151496,-0.0789312,1.14015])
     
@@ -98,7 +100,7 @@ if __name__ == '__main__':
     #x0 = np.array([0.782733,0.821696,1.98509,0.409283,1.15559,-0.158216,-0.0720787,1.13099])
    
    # x0 = np.array([0.795805,0.300991,2.43472,0.437418,1.03025,-0.115475,-0.0848882,1.24947])
-    x0 = np.array([0.853383,0.519365,2.05275,0.416489,1.24812,-0.124625,-0.0854696,1.10525])
+    #x0 = np.array([0.853383,0.519365,2.05275,0.416489,1.24812,-0.124625,-0.0854696,1.10525])
   
     if system() == 'Windows':   
         path='D:/blasutto/store_model'
@@ -108,7 +110,7 @@ if __name__ == '__main__':
     out, mdl, agents, res = mdl_resid(x0,return_format=['distance','models','agents','scaled residuals'],
                                       #load_from=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       solve_transition=True,                                    
-                                      save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
+                                      #save_to=['mdl_save_bil.pkl','mdl_save_uni.pkl'],
                                       store_path=path,
                                       verbose=True,calibration_report=False,draw=graphs,graphs=graphs,
                                       welf=False) #Switch to true for decomposition of welfare analysis

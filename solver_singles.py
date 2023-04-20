@@ -73,4 +73,4 @@ def v_iter_single(setup,t,EV,female,ushift,force_f32=False):
     
     def r(x): return x
     
-    return r(V_ret), r(c_opt), r(x_opt), r(s_opt)
+    return r(V_ret), r(c_opt), r(x_opt), r(s_opt), r(i_opt)

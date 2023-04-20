@@ -13,7 +13,9 @@ from gridvec import VecOnGrid
 
 class Agents:
 
-    def __init__(self,Mlist,age_uni,female=False,pswitchlist=None,N=15000,T=None,verbose=True,nosim=False,draw=False):
+    def __init__(self,Mlist,age_uni,female=False,pswitchlist=None,N=15000, \
+                 T=None,verbose=True,nosim=False,draw=False,selin=False,\
+                     selinm=False,selout=False,welf=False):
             
             
         np.random.seed(8)
@@ -44,6 +46,7 @@ class Agents:
         self.T = T
         self.verbose = verbose
         self.timer = self.Mlist[0].time
+        self.welf=welf
         self.draw=draw
         
         self.female = female
@@ -81,8 +84,15 @@ class Agents:
         self.iassetss = np.zeros((N,T),np.int16)
         self.tempo=VecOnGrid(self.setup.agrid_s,self.iassets[:,0])
         
+        #This should take track of people that would have cohabited if self.selin was false
+        self.csw=np.zeros((N,T),np.int16)
+        
         #Length of relationship
         self.duf=np.zeros((N,T),np.int16) 
+        
+        self.selin=selin#selection into relationship as coh under MC
+        self.selinm=selinm#apply selection to marriages
+        self.selout=selout#selection out relationship as coh under MC
         
         # initialize FLS
         #self.ils=np.ones((N,T),np.float64)
@@ -112,6 +122,9 @@ class Agents:
         self.c = np.zeros((N,T),np.float32)
         self.x = np.zeros((N,T),np.float32)
         self.s = np.zeros((N,T),np.float32)
+        self.c2 = np.zeros((N,T),np.float32)
+        self.x2 = np.zeros((N,T),np.float32)
+        self.l2 = np.zeros((N,T),np.float32)
         self.share_m=np.zeros((T,2),np.float32)
         self.share_s=np.zeros((T,2),np.float32)
 
@@ -156,6 +169,8 @@ class Agents:
         else:
             self.policy_ind[:] = 0
             
+
+        
         if not nosim: self.simulate()
         
         
@@ -189,7 +204,7 @@ class Agents:
                 
                 
                 is_state_any_pol = (self.state[:,t]==ist)  
-                is_pol = (self.policy_ind[:,min(t+1,self.T-1)]==ipol)
+                is_pol =  (self.policy_ind[:,min(t+1,self.T-1)]==ipol)
                 
                 is_state = (is_state_any_pol) & (is_pol)
                 
@@ -202,6 +217,7 @@ class Agents:
                 ind = np.where(is_state)[0]
                 
                 pol = self.Mlist[ipol].decisions[t][sname]
+                if self.welf:pol2 = self.Mlist[ipol].V[t][sname]
                 
                 if not use_theta:
                     
@@ -215,14 +231,24 @@ class Agents:
                     self.s[ind,t] = anext
                     if self.draw:self.c[ind,t] = pol['c'][self.iassets[ind,t],self.iexo[ind,t]]
                     if self.draw:self.x[ind,t] = pol['x'][self.iassets[ind,t],self.iexo[ind,t]]
+                    
+                    if self.welf:
+                        self.c2[ind,t]=pol2['c'][self.iassets[ind,t],self.iexo[ind,t]]
+                        self.x2[ind,t]=pol2['x'][self.iassets[ind,t],self.iexo[ind,t]]
+                        self.l2[ind,t]=pol2['fls'][self.iassets[ind,t],self.iexo[ind,t]]
                    
                 else:
                     
                     # interpolate in both assets and theta
                     # function apply_2dim is experimental but I checked it at this setup
                     
-                    # apply for couples
                     
+                    if self.welf:
+                        self.c2[ind,t]=pol2['c'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
+                        self.x2[ind,t]=pol2['x'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
+                        self.l2[ind,t]=pol2['fls'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
+                        
+                    # apply for couples    
                     anext = pol['s'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
                     self.s[ind,t] = anext
                     if self.draw:self.x[ind,t] = pol['x'][self.iassets[ind,t],self.iexo[ind,t],self.itheta[ind,t]]
@@ -243,7 +269,7 @@ class Agents:
         for ipol in range(self.npol):
             for ist,sname in enumerate(self.state_names):
                 is_state_any_pol = (self.state[:,t]==ist)
-                is_pol = (self.policy_ind[:,t+1]==ipol)
+                is_pol =(self.policy_ind[:,t+1]==ipol)
                 is_state = (is_state_any_pol) & (is_pol)   
                 
                 nst = np.sum(is_state)
@@ -369,21 +395,47 @@ class Agents:
                     
                     i_disagree = (~i_pot_agree)
                     i_disagree_or_nomeet = (i_disagree) | (i_nomeet)
-                    i_disagree_and_meet = (i_disagree) & ~(i_nomeet)
                     
                     i_agree = ~i_disagree_or_nomeet
-    
-                    
+                        
                     i_agree_mar = (i_agree) & (i_m_preferred)
                     i_agree_coh = (i_agree) & (~i_m_preferred)
                     
-                    assert np.all(~i_nomeet[i_agree])
+                    #Control for selection in the relationship
+                    if self.selin: 
+                        newmatch=self.Mlist[0].decisions[t][ss]
+                        
+                        i_pot_agree = newmatch['Decision'][ia,iznow,i_pmat]
+                        i_m_preferred = newmatch['M or C'][ia,iznow,i_pmat]
+                        
+                        i_disagree = (~i_pot_agree)
+                        i_disagree_or_nomeet = (i_disagree) | (i_nomeet)
+                        
+                        i_agree = ~i_disagree_or_nomeet
+                        
+                        i_agree_coh = (i_agree) & (~i_m_preferred)
+                       
+                        self.csw[ind[i_agree_coh],t+1]=1.0
+                        
+                        
+                        if self.selinm:
+                            #If target marriage 
+                            i_agree_coh=np.zeros(i_agree.shape,dtype=bool)#
+                            i_agree_mar=i_agree.copy()
+                        else:
+                            #If target cohabitation
+                            i_agree_coh=i_agree.copy()
+                            i_agree_mar=np.zeros(i_agree.shape,dtype=bool)#
+                    
+                             
+                    
+                    #assert np.all(~i_nomeet[i_agree])
                     
                     
-                    nmar, ncoh, ndis, nnom = np.sum(i_agree_mar),np.sum(i_agree_coh),np.sum(i_disagree_and_meet),np.sum(i_nomeet)
-                    ntot = sum((nmar, ncoh, ndis, nnom))
+                    #nmar, ncoh, ndis, nnom = np.sum(i_agree_mar),np.sum(i_agree_coh),np.sum(i_disagree_and_meet),np.sum(i_nomeet)
+                    #ntot = sum((nmar, ncoh, ndis, nnom))
                     
-                    if self.verbose: print('{} mar, {} coh,  {} disagreed, {} did not meet ({} total)'.format(nmar,ncoh,ndis,nnom,ntot))
+                    #if self.verbose: print('{} mar, {} coh,  {} disagreed, {} did not meet ({} total)'.format(nmar,ncoh,ndis,nnom,ntot))
                     #assert np.all(ismar==(i_agree )
                     
                     if np.any(i_agree_mar):
@@ -476,15 +528,12 @@ class Agents:
                     #this guy below account for 24% of the time in couple
                     i_stay = dec[isc,iall] if dec.ndim==2 else dec[isc,iall,itht]#i_stay = dec[isc,iall,itht] 
                     
+
+                    
                     bil_bribing = ('Bribing' in decision)
                     
                     
-                    i_div = ~i_stay    
-                    
-                    #ifem=decision['Divorce'][0][isc,iall][...,None]<self.Mlist[ipol].V[t]['Couple, M']['VF'][isc,iall,:]
-                    #imal=decision['Divorce'][1][isc,iall][...,None]<self.Mlist[ipol].V[t]['Couple, M']['VM'][isc,iall,:]
-                    #both=~np.max((ifem) & (imal),axis=1)
-    
+                    i_div = ~i_stay        
                     i_ren = (i_stay) & (thts_orig != thts)
                     i_renf = (i_stay) & (thts_orig > thts)
                     i_renm = (i_stay) & (thts_orig < thts)
@@ -498,8 +547,30 @@ class Agents:
                     zf_grid = self.setup.exo_grids['Female, single'][t]
                     zm_grid = self.setup.exo_grids['Male, single'][t]
                     
-                    
-                    
+                    #Control for selection out of relationship
+                    if self.selout:
+                        dece=self.Mlist[0].decisions[t-1]['Couple, C']
+                        
+                        if len(dece['thetas'].shape)>3:
+                            dece1 = np.take_along_axis(dece['Decision'],dece['assdev'][:,:,self.setup.igridcoarse,None],axis=-1).squeeze(axis=-1)
+                        else:
+                            dece1=dece['Decision']
+                           
+                     
+                        if len(dece['thetas'].shape)>3:
+                            imaro = np.take_along_axis(dece['Cohabitation preferred to Marriage'],dece['assdev'][:,:,self.setup.igridcoarse,None],axis=-1).squeeze(axis=-1)[isc,iall,thts]
+                        else:
+                            imaro =dece['Cohabitation preferred to Marriage'][isc,iall,thts]
+                        #i_stay=dece1[isc,iall]
+                        
+                        i_div = (~dece1[isc,iall]) | (i_div) | (~imaro) if dece1.ndim==2 else (~dece1[isc,iall,itht]) | (i_div) | (~imaro)
+                        i_ren = (i_ren) & (~i_div)
+                        i_renf = (i_renf) & (~i_div)
+                        i_renm = (i_renm) & (~i_div)
+                        i_sq = (i_sq) & (~i_div)
+                        i_stay= (i_stay) & (~i_div)
+                        #i_div = i_stay 
+                        
                     
                     if np.any(i_div):
                         
@@ -674,11 +745,15 @@ class AgentsPooled:
         self.ils_i = combine([a.ils_i for a in AgentsList])
         self.itheta = combine([a.itheta for a in AgentsList])
         self.iassets = combine([a.iassets for a in AgentsList])
+        self.csw = combine([a.csw for a in AgentsList])
         self.iassetss = combine([a.iassetss for a in AgentsList])
         self.divorces = combine([a.divorces for a in AgentsList])
         self.c = combine([a.c for a in AgentsList])
         self.s = combine([a.s for a in AgentsList])
         self.x = combine([a.x for a in AgentsList])
+        self.c2 = combine([a.c2 for a in AgentsList])
+        self.x2 = combine([a.x2 for a in AgentsList])
+        self.l2 = combine([a.l2 for a in AgentsList])
         self.share_m = combine([a.share_m for a in AgentsList])
         self.share_s = combine([a.share_s for a in AgentsList])
         self.shocks_single_iexo=combine([a.shocks_single_iexo for a in AgentsList])

@@ -162,7 +162,7 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
         age_uni=pickle.load(file)
         
 
-    def get_transition(age_dist,welf=False):
+    def get_transition(age_dist):
         #Transformation of age at uni from actual age to model periods
         change=-np.ones(1000,np.int32)#the bigger is the size of this array, the more precise the final distribution
        
@@ -182,20 +182,18 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
         pr=np.sum(change<=0)/(np.sum(change<=np.inf))
         transition_matricest=transition_matricest+[np.array([[1-pr,pr],[0,1]])]
         for t in range(mdl.setup.pars['T']-1):
-            if not welf:
-                pr=np.sum(change==t+1)/(np.sum(change<=np.inf))
-                transition_matricest=transition_matricest+[np.array([[1-pr,pr],[0,1]])]
-            else:
-                transition_matricest=transition_matricest+[np.array([[1,0],[1,0]])]
-                
+   
+            pr=np.sum(change==t+1)/(np.sum(change<=np.inf))
+            transition_matricest=transition_matricest+[np.array([[1-pr,pr],[0,1]])]
+            
             
             
         return transition_matricest
     
    
     
-    transition_matricesf=get_transition(age_uni['female'],welf)
-    transition_matricesm=get_transition(age_uni['male'],welf)
+    transition_matricesf=get_transition(age_uni['female'])
+    transition_matricesm=get_transition(age_uni['male'])
 
     
     
@@ -203,11 +201,11 @@ def mdl_resid(x=None,save_to=None,load_from=None,return_format=['distance'],
         
    
     #Get Number of simulated agent, malea and female
-    N=30000#120000
+    N=140000#30000#
     Nf=int(N*age_uni['share_female'])
     Nm=N-Nf
-    agents_fem = Agents( mdl_list ,age_uni['female'],female=True,pswitchlist=transition_matricesf,verbose=False,N=Nf,draw=draw)
-    agents_mal = Agents( mdl_list ,age_uni['male'],female=False,pswitchlist=transition_matricesm,verbose=False,N=Nm,draw=draw)
+    agents_fem = Agents( mdl_list ,age_uni['female'],female=True,pswitchlist=transition_matricesf,verbose=False,N=Nf,draw=draw,welf=True)
+    agents_mal = Agents( mdl_list ,age_uni['male'],female=False,pswitchlist=transition_matricesm,verbose=False,N=Nm,draw=draw,welf=True)
     agents_pooled = AgentsPooled([agents_fem,agents_mal])
     
     

@@ -69,7 +69,7 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
     wntht = setup.v_thetagrid_fine.wnext
     thtgrid = setup.thetagrid_fine
         
-    if marriage:        
+    if 1>0:#marriage:        
         
         if not ugpu:
             v_out_nor, vf_out, vm_out, itheta_out, _ = \
@@ -78,7 +78,7 @@ def v_ren_vt(setup,V,marriage,t,return_extra=False,return_vdiv_only=False,rescal
                                           V['Couple, M']['VM'][None,...], 
                                           vf_n, vm_n,
                                           itht, wntht, thtgrid,setup.ashare)
-             
+            switch=np.ones(itheta_out.shape,dtype=bool) 
         else:
            
             v_out_nor, vf_out, vm_out, itheta_out  = \

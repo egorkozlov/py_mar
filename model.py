@@ -121,12 +121,12 @@ class Model(object):
             if desc == 'Female, single' or desc == 'Male, single':
                 
                 female = (desc == 'Female, single')                
-                V, c, x, s = v_iter_single(setup,t,EV,female,ushift)    
+                V, c, x, s, l = v_iter_single(setup,t,EV,female,ushift)    
 
                 
                 if self.display_v: print('at t = {} for {} mean V[0,:] is {}'.format(t,desc,V[0,:].mean()))
                                         
-                return {desc: {'V':V,'c':c,'x':x,'s':s}}   
+                return {desc: {'V':V,'c':c,'x':x,'s':s,'fls':l}}   
                 
              
             elif desc == 'Couple, M' or desc == 'Couple, C':

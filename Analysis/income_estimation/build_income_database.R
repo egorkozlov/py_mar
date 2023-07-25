@@ -1,0 +1,104 @@
+##################################################
+#Get the PSID Data to get info on income process
+##################################################
+
+
+## remove (almost) everything in the working environment.
+rm(list = ls())
+
+library(psidR)
+library(pracma)
+
+#Years I want to consider: we ned both cohabitation and marriage
+years<-linspace(1968,1997,n=30)
+#years<-linspace(1968,1993,n=26)
+
+
+#NLSY97: born 1980-1984: income 1997-2017
+#NSFH:   born 1951-1955: income 1968-1988
+#Get variable names
+cwf = openxlsx::read.xlsx(system.file(package="psidR","psid-lists","psid.xlsx"))
+
+#Variables
+date<-subset(getNamesPSID("V99", cwf, years=years),select=c("variable"))$variable
+state<-subset(getNamesPSID("V93", cwf, years=years),select=c("variable"))$variable
+age_w <- subset(getNamesPSID("V118", cwf, years=years),select=c("variable"))$variable
+age<- subset(getNamesPSID("V117", cwf, years=years),select=c("variable"))$variable
+
+
+mls<-subset(getNamesPSID("V5502", cwf, years=years),select=c("variable"))$variable
+ms<-subset(getNamesPSID("V239", cwf, years=years),select=c("variable"))$variable
+hea<-subset(getNamesPSID("ER30003", cwf, years=years),select=c("variable"))$variable
+wgt<-subset(getNamesPSID("ER30282", cwf, years=years),select=c("variable"))$variable
+weight<-subset(getNamesPSID("V439", cwf, years=years),select=c("variable"))$variable
+  
+total_hsw<-subset(getNamesPSID("V4350", cwf, years=years),select=c("variable"))$variable
+
+
+sex<-subset(getNamesPSID("V119", cwf, years=years),select=c("variable"))$variable
+edu<-subset(getNamesPSID("V313", cwf, years=years),select=c("variable"))$variable
+eduf<-subset(getNamesPSID("V246", cwf, years=years),select=c("variable"))$variable
+
+
+head_hrs=subset(getNamesPSID("V5232", cwf, years=years),select=c("variable"))$variable
+part_hrs<-subset(getNamesPSID("V53", cwf, years=years),select=c("variable"))$variable
+head_li<-subset(getNamesPSID("V5627", cwf, years=years),select=c("variable"))$variable
+partner_li<-subset(getNamesPSID("V5289", cwf, years=years),select=c("variable"))$variable
+
+ch_fu<-subset(getNamesPSID("V16634", cwf, years=years),select=c("variable"))$variable
+
+youngest_child<-subset(getNamesPSID("V120", cwf, years=years),select=c("variable"))$variable
+
+#Employment Status
+empsta<-subset(getNamesPSID("V196", cwf, years=years),select=c("variable"))$variable
+race<-subset(getNamesPSID("V181", cwf, years=years),select=c("variable"))$variable
+  
+
+
+
+#1= 1 mortgage,: 2 mortgages
+  mort<-subset(getNamesPSID("V104", cwf, years=years),select=c("variable"))$variable
+
+mort1<-subset(getNamesPSID("V104", cwf, years=years),select=c("variable"))$variable
+  
+
+# create family vars data.frame
+famvars = data.frame(year=years,age_w=age_w,head_hrs=head_hrs,head_li=head_li,
+                     partner_li=partner_li,age=age,date=date,state=state,mort=mort,
+                     ch_fu=ch_fu,part_hrs=part_hrs,mls=mls,ms=ms,sex=sex,eduf=eduf,edu=edu,youngest_child=youngest_child,
+                     empsta=empsta,race=race,weight=weight,total_hsw=total_hsw)
+indvars = data.frame(year=years,hea=hea,wgt=wgt)
+
+# Build Datasets
+path<-"C:\\Users\\Fabio\\Dropbox\\Data\\PSID\\Raw\\R"
+data<-build.panel(fam.vars=famvars,ind.vars=indvars,datadir=path,design="all")
+
+###############################
+#MEN SAMPLE
+###############################
+
+#Keep only if head
+data_m  <- data[(data$hea==1 & data$year<1983) | (data$hea==10 & data$year>=1983),]
+
+#Keep only is male head
+data_m<-data_m[data_m$sex==1]
+
+#Save on disk
+write.csv(data_m,file='C:\\Users\\Fabio\\Dropbox\\py_mar_3\\Analysis\\income_estimation\\income_men_ch1_old.csv')
+
+###############################
+#WOMEN SAMPLE
+###############################
+#Keep only if head or if married
+
+data_f  <- data[(data$hea==1 & data$year<1983) | (data$hea==10 & data$year>=1983),]
+
+data_f<-data[((data$hea==10  & data$ms==1 & data$sex==1 & data$year>=1983)) |
+               (data$sex==2 & data$hea==10 & data$year>=1983)               |
+             ((data$hea==1   & data$ms==1 & data$sex==1 & data$year<1983)) |
+               (data$sex==2 & data$hea==1  & data$year<1983) ,]
+
+#Save on disk
+write.csv(data_f,file='C:\\Users\\Fabio\\Dropbox\\py_mar_3\\Analysis\\income_estimation\\income_women_ch1_old.csv')
+
+

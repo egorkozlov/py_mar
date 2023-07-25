@@ -1,0 +1,17 @@
+\begin{table}[H]\centering                                                                   \caption{The average effect of unilateral divorce on the choice of cohabitation vs. marriage vs. staying single for single individuals}                                   \label{tab:tabrel}                                 \resizebox{\textwidth}{!}{                                 \begin{tabular}{@{\extracolsep{4pt}}lcccc} \toprule                                  &\multicolumn{2}{c}{\textit{Dependent variable: marry (1), stay single (0) }}&\multicolumn{2}{c}{\textit{Dependent variable: cohabit (1), stay single (0)}}\\
+\cline{2-3}\cline{4-5}
+Unilateral Divorce  &     -0.0033         &     -0.0056         &      0.0114\sym{***}&      0.0137\sym{***}\\
+                    &    (0.0037)         &    (0.0059)         &    (0.0021)         &    (0.0034)         \\
+State FE     & Yes & Yes& Yes & Yes\\                       Year FE     & Yes & Yes& Yes & Yes\\                           Additional controls    & No & Yes& No& Yes\\
+Dependent variable mean&       0.075         &       0.098         &       0.024         &       0.032         \\
+Observations        &       78512         &       60535         &       78512         &       60535         \\
+\bottomrule
+\noalign{\smallskip}
+\end{tabular}
+}
+\begin{minipage}{\textwidth}
+\scriptsize\smallskip
+Notes: This table reports the average effect of unilateral divorce on the choice of cohabitation vs. marriage vs. staying single using the methodology of \cite{borusyak2021} and data from the the \textit{relationships sample}. The unit of observation is one person-month where the respondent was single. Depending on the spefication, we study the risk of marriage (brekup) of singleness spells, where the event of breakup (marriage) is treated as censoring. The dummy variable \textit{Unilateral Divorce} takes value 1 if unilateral divorce was in place in state \textit{s} and year \textit{t} and 0 otherwise. The additional controls include dummies for ethnicity, age, education, and duration of the singleness spell. Standard errors are clustered at the state level. Coefficients that are significantly different from zero are denoted by *10\%, **5\%, and ***1\%.
+\\
+\end{minipage}
+\end{table}

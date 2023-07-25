@@ -1,0 +1,17 @@
+\begin{table}[H]\centering                                  \scriptsize                                 \caption{The average effect of unilateral divorce on the probability that a cohabitation spell ends (because of marriage or breakup). Unit of observation: cohabitation-month}                                   \label{tab:tabdur}                                 \resizebox{0.8\textwidth}{!}{                                 \begin{tabular}{l*{4}{c}} \toprule                                 \textit{Dependent variable:}&\multicolumn{4}{c}{\textit{keep cohabiting (0), cohabitation ends (1)}}\\
+\midrule
+Unilateral          &     -0.0162\sym{***}&     -0.0131\sym{***}&     -0.0191\sym{***}&     -0.0149\sym{**} \\
+                    &    (0.0048)         &    (0.0046)         &    (0.0061)         &    (0.0059)         \\
+State FE     & Yes & Yes& Yes & Yes\\                       Year cohabitation began FE     & Yes & Yes& Yes & Yes\\                           Additional controls    & No & Yes& No& Yes\\                                           State-specific linear time trend    & No & No & Yes & Yes\\
+Dependent variable mean&       0.037         &       0.037         &       0.037         &       0.037         \\
+Observations        &      105384         &      105384         &      105384         &      105384         \\
+\bottomrule
+\noalign{\smallskip}
+\end{tabular}
+}
+\begin{minipage}{\textwidth}
+\scriptsize\smallskip
+Notes: This table reports the average effect of unilateral divorce on the probability of cohabitation ending in a breakup or marriage. The analysis follows the methodology outlined in \cite{borusyak2021} uses and the \textit{cohabitations sample}. The unit of observation is one cohabitation-month, which corresponds to a specific month within a particular cohabitation spell. The focus of this table is to report the probability of a cohabitation spell (initiated in state \textit{s} and year \textit{t}) ending in a breakup or marriage. The dummy variable \textit{Unilateral Divorce} takes value 1 if unilateral divorce was in effect in state \textit{s} and year \textit{t} at the start of the cohabitation spell. The additional controls include dummies for ethnicity, age, education, duration of cohabitation, and the introduction of unilateral divorce \textit{after} the cohabitation period commenced. Standard errors are clustered at the state level. Coefficients that are significantly different from zero are denoted by *10\%, **5\%, and ***1\%.
+\\
+\end{minipage}
+\end{table}

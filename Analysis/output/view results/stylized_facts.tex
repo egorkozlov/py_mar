@@ -1,0 +1,224 @@
+% !TEX TS-program = pdflatex
+% !TEX encoding = UTF-8 Unicode
+
+% This is a simple template for a LaTeX document using the "article" class.
+% See "book", "report", "letter" for other types of document.
+
+\documentclass[12pt]{article}
+\usepackage[round, sort , authoryear]{natbib}
+\usepackage[T1]{fontenc}
+%%% PAGE DIMENSIONS
+\usepackage[margin=2.5 cm]{geometry}
+\usepackage{blindtext} % to change the page dimensions
+\geometry{a4paper} % or letterpaper (US) or a5paper or....
+% \geometry{margin=2in} % for example, change the margins to 2 inches all round
+% \geometry{landscape} % set up the page for landscape
+%   read geometry.pdf for detailed page layout information
+\usepackage[utf8]{inputenc} 
+\usepackage{graphicx} % support the \includegraphics command and options
+\usepackage{epstopdf}
+% \usepackage[parfill]{parskip} % Activate to begin paragraphs with an empty line rather than an indent
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.13}
+\usepackage{caption,fixltx2e}
+\usepackage[flushleft]{threeparttable}
+\usepackage{color, colortbl}
+\definecolor{Gray}{gray}{0.9}
+%%% PACKAGES
+\usepackage{placeins}
+\usepackage{booktabs} % for much better looking tables
+\usepackage{array} % for better arrays (eg matrices) in maths
+\usepackage{paralist} % very flexible & customisable lists (eg. enumerate/itemize, etc.)
+\usepackage{verbatim} % adds environment for commenting out blocks of text & for better verbatim
+% These packages are all incorporated in the memoir class to one degree or another...
+\usepackage{amsmath}
+\usepackage{cases}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{authblk}
+\usepackage{pgfplots}
+\usepackage{pdfpages}
+\linespread{1.5}
+
+\usepackage{amssymb} 
+\usepackage{tabularx}
+\usepackage{booktabs}   % for nice tables
+\usepackage[colorlinks=false, linktocpage=true]{hyperref}
+
+
+\usepackage{subcaption}
+\usepackage{graphicx}
+
+\captionsetup[sub]{labelformat=simple}
+
+\newtheorem{assumption*}{\assumptionnumber}
+\providecommand{\assumptionnumber}{}
+\makeatletter
+\newenvironment{assumption}[2]
+{%
+	\renewcommand{\assumptionnumber}{Assumption}%
+	\begin{assumption*}%
+		\protected@edef\@currentlabel{}%
+	}
+	{%
+	\end{assumption*}
+}
+\makeatother
+\hypersetup{
+	colorlinks,
+	linkcolor={red!50!black},
+	citecolor={blue!50!black},
+	urlcolor={blue!80!black}
+}
+% use for hypertext
+\usepackage[colorinlistoftodos]{todonotes}
+
+%For Figures, below
+
+\usepackage{tikz}
+\usetikzlibrary{shapes}
+\usepgflibrary{arrows} % LATEX and plain TEX and pure pgf
+\usepgflibrary[arrows] % ConTEXt and pure pgf
+\usetikzlibrary{arrows} % LATEX and plain TEX when using Tik Z
+\usetikzlibrary[arrows] % ConTEXt when using Tik Z
+\usepackage{hyperref}
+\def\sym#1{\ifmmode^{#1}\else\(^{#1}\)\fi}
+\usepackage{booktabs}
+\newcommand{\tabnotes}[2]{\bottomrule \multicolumn{#1}{@{}p{0.70\linewidth}@{}}{\footnotesize #2 }}
+
+%%% The "real" document content comes below...
+\title{Tables and Figures- Cohabitation and Divorce laws.}
+\author{}
+
+ \begin{document}
+ 	 % Bibliography style, important for biblatex functioning	
+ 	 \bibliographystyle{apa}
+ 	 
+ 	\maketitle
+ 	
+ 	\section{Wealth regression}
+ 	
+ 	\input{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/reg_wealth.tex}
+ \section{Partnership choice}
+
+
+\begin{table}[!htbp]\centering
+	\caption{\\Descriptive statistics, relationship sample}
+	\label{table:sum_rel}
+	\input{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/sum_sing.tex}
+\end{table}
+\FloatBarrier
+
+%\input{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/reg_rel}
+
+ \begin{figure}
+	\centering
+	\includegraphics[width=0.7\linewidth]{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/event_graph_rel}
+	\caption{}
+	\label{fig:eventgraphrel}
+\end{figure}
+
+
+%\begin{figure}[H]
+%	\caption{\\Event studies of cohabitation duration around the introduction of unilateral divorce}
+%	\label{fig:rsd}
+%	\begin{subfigure}{.49\textwidth}
+%		\centering
+%		\caption{Basic controls}
+%		\label{fig:rsd_bc}
+%		\includegraphics[width=\textwidth]{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/event_graph_rel1.png}
+%	\end{subfigure}
+%	\begin{subfigure}{.49\textwidth}
+%		\centering
+%		\caption{Full controls}
+%		\label{fig:rsd_fc}
+%		\includegraphics[width=\textwidth]{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/event_graph_rel2.png}
+%	\end{subfigure}
+	
+	
+%	\hspace{20em}
+	
+%	\begin{subfigure}{.49\textwidth}
+%		\centering
+%		\caption{Basic controls+linear time trend by State}
+%		\label{fig:rsd_bct}
+%		\includegraphics[width=\textwidth]{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/event_graph_rel3.png}
+%	\end{subfigure}
+%	\begin{subfigure}{.49\textwidth}
+%		\centering
+%		\caption{Full controls+linear time trend by State}
+%		\label{fig:rsd_fct}
+%		\includegraphics[width=\textwidth]{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/event_graph_rel4.png}
+%	\end{subfigure}
+%\end{figure}
+%\FloatBarrier
+
+
+\input{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/reg_rel_com}
+
+\input{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/reg_rel_ch}
+
+
+\input{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/reg_rel_keep}
+
+
+\input{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/reg_rel_smc}
+
+%\input{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/reg_rel_nsfg}
+ \section{Cohabitation duration.}
+ 
+
+\begin{table}[!htbp]\centering
+	\caption{\\Descriptive statistics, cohabitation sample}
+	\label{table:sum_coh}
+	\input{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/sum_coh.tex}
+\end{table} 
+ 
+ \input{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/reg_sep}
+ 
+ 
+
+\input{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/reg_dur}
+ 
+  \begin{figure}
+ 	\centering
+ 	\includegraphics[width=0.7\linewidth]{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/event_graph_dur}
+ 	\caption{}
+ 	\label{fig:eventgraphdur}
+ \end{figure}
+
+
+%\begin{figure}[H]
+%	\caption{\\Event studies of cohabitation duration around the introduction of unilateral divorce}
+%	\label{fig:esd}
+%		\begin{subfigure}{.49\textwidth}
+%			\centering
+%			\caption{Basic controls}
+%			\label{fig:esd_bc}
+%			\includegraphics[width=\textwidth]{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/event_graph_dur1.png}
+%		\end{subfigure}
+%		\begin{subfigure}{.49\textwidth}
+%			\centering
+%			\caption{Full controls}
+%			\label{fig:esd_fc}
+%			\includegraphics[width=\textwidth]{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/event_graph_dur2.png}
+%		\end{subfigure}
+
+	
+	\hspace{20em}
+	
+	
+
+
+ \input{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/reg_dur_b}
+  \input{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/reg_dur_m}
+ \input{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/reg_dur_b_com} 
+ \input{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/reg_dur_m_com}
+ 
+   \input{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/reg_dur_b_keep}
+ \input{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/reg_dur_m_keep} 
+ 
+% \input{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/reg_sep_nsfg}
+  %\input{C:/Users/Fabio/Dropbox/py_mar_3/Analysis/output/reg_dur_nsfg}
+   
+  \end{document}
